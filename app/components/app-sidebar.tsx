@@ -105,7 +105,7 @@ const data = {
   navSecondary: [
     {
       title: "设置",
-      url: "#",
+      url: "/settings",
       icon: Settings,
     }
   ]
@@ -126,6 +126,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <span className="font-medium">CutGo - 秒剧</span>
                   <span className="">v1.0.0</span>
                 </div>
+              
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

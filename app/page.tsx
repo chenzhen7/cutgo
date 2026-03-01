@@ -3,7 +3,6 @@ import { Plus, Film, Clock, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { AppSidebar } from "@/app/components/app-sidebar"
 import {
     SidebarInset,
@@ -72,7 +71,7 @@ export default function HomePage() {
                         {/* Project Grid */}
                         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {MOCK_PROJECTS.map((project) => (
-                                <Link key={project.id} href={`/project/${project.id}`}>
+                                <Link key={project.id} href={`/project(/${project.id}`}>
                                     <Card className="cursor-pointer transition-colors hover:border-foreground/20">
                                         <CardHeader className="pb-3">
                                             <div className="flex items-start justify-between">

@@ -28,7 +28,7 @@ export default function NewProjectPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-6 py-4">
-          <Link href="/">
+          <Link href="/public">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>

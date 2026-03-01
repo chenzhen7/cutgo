@@ -8,6 +8,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function NavSecondary({
   items,
@@ -31,6 +32,7 @@ export function NavSecondary({
                   <span>{item.title}</span>
                 </a>
               </SidebarMenuButton>
+              <ThemeToggle/>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
