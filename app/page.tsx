@@ -3,6 +3,7 @@ import { Plus, Film, Clock, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const MOCK_PROJECTS = [
   {
@@ -47,6 +48,7 @@ export default function HomePage() {
             <h1 className="text-xl font-bold tracking-tight text-foreground">CutGo</h1>
             <span className="text-sm text-muted-foreground">秒剧</span>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 
