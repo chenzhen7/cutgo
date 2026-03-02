@@ -1,0 +1,9 @@
+{
+    "window.commandCenter": true,
+    "cursor.general.disableHttp2": true,
+    "workbench.settings.applyToAllProfiles": [
+
+    ],
+    "files.autoSave": "afterDelay",
+    "workbench.tree.indent": 20
+}
