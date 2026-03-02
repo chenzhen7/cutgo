@@ -25,7 +25,7 @@ export default function ProjectLayout({
             <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-sidebar">
                 {/* Sidebar Header */}
                 <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-3">
-                    <Link href="/public">
+                    <Link href="/">
                         <Button variant="ghost" size="icon" className="h-7 w-7">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
