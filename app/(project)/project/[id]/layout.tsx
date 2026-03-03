@@ -52,7 +52,7 @@ export default function ProjectLayout({
                         return (
                             <Link
                                 key={step.key}
-                                href={`/project(/${projectId}/${step.key}`}
+                                href={`/project/${projectId}/${step.key}`}
                             >
                                 <div
                                     className={cn(
