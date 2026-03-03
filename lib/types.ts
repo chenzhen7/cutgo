@@ -53,19 +53,15 @@ export const PLATFORM_PRESETS = [
 
 export const DURATION_OPTIONS = ["30s", "60s", "90s", "自定义"] as const
 
-export const STYLE_PRESETS = {
-  realistic: [
-    { label: "都市霸总", value: "urban-ceo" },
-    { label: "古装仙侠", value: "ancient-xianxia" },
-    { label: "硬核科幻", value: "hard-scifi" },
-  ],
-  artistic: [
-    { label: "日漫风", value: "anime-jp" },
-    { label: "美漫风格", value: "comic-us" },
-    { label: "赛博朋克", value: "cyberpunk" },
-    { label: "水墨风", value: "ink-wash" },
-  ],
-} as const
+export const STYLE_PRESETS = [
+  { label: "都市霸总", value: "urban-ceo" },
+  { label: "古装仙侠", value: "ancient-xianxia" },
+  { label: "硬核科幻", value: "hard-scifi" },
+  { label: "日漫风", value: "anime-jp" },
+  { label: "美漫风格", value: "comic-us" },
+  { label: "赛博朋克", value: "cyberpunk" },
+  { label: "水墨风", value: "ink-wash" },
+] as const
 
 export const DEFAULT_NEGATIVE_PROMPTS =
   "bad anatomy, text, watermark, low quality, blurry, deformed, extra limbs, disfigured"

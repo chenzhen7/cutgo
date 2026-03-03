@@ -9,13 +9,14 @@ import {
   Ban,
   ImageIcon,
   Sparkles,
+  Plus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { STYLE_PRESETS, DEFAULT_NEGATIVE_PROMPTS } from "@/lib/types"
 import type { Project } from "@/lib/types"
@@ -26,19 +27,32 @@ export default function StylePage() {
 
   const [project, setProject] = useState<Project | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [customStyle, setCustomStyle] = useState("")
   const [negPrompt, setNegPrompt] = useState(DEFAULT_NEGATIVE_PROMPTS)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const isCustom = selectedPreset === "__custom__"
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}`)
       .then((res) => res.json())
       .then((data) => {
         setProject(data)
-        if (data.stylePreset) setSelectedPreset(data.stylePreset)
+        if (data.stylePreset) {
+          const matched = STYLE_PRESETS.some((s) => s.value === data.stylePreset)
+          if (matched) {
+            setSelectedPreset(data.stylePreset)
+          } else {
+            setSelectedPreset("__custom__")
+            setCustomStyle(data.stylePreset)
+          }
+        }
         if (data.globalNegPrompt) setNegPrompt(data.globalNegPrompt)
       })
   }, [projectId])
+
+  const resolvedStyle = isCustom ? customStyle.trim() : selectedPreset
 
   async function handleSave() {
     setSaving(true)
@@ -47,7 +61,7 @@ export default function StylePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          stylePreset: selectedPreset,
+          stylePreset: resolvedStyle || null,
           globalNegPrompt: negPrompt,
         }),
       })
@@ -85,68 +99,23 @@ export default function StylePage() {
       </div>
 
       <div className="mt-8 space-y-8">
-        {/* Style Presets - Realistic */}
+        {/* Style Presets */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Sparkles className="h-4 w-4" />
-              写实类风格
+              视觉风格
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {STYLE_PRESETS.realistic.map((style) => {
-                const isSelected = selectedPreset === style.value
-                return (
-                  <button
-                    key={style.value}
-                    onClick={() =>
-                      setSelectedPreset(
-                        isSelected ? null : style.value
-                      )
-                    }
-                    className={cn(
-                      "relative flex flex-col items-center gap-3 rounded-lg border-2 p-5 transition-all",
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-foreground/20"
-                    )}
-                  >
-                    <div className="h-20 w-full rounded bg-muted flex items-center justify-center">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-                    </div>
-                    <span className="text-sm font-medium">{style.label}</span>
-                    {isSelected && (
-                      <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                        <Check className="h-3 w-3" />
-                      </Badge>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Style Presets - Artistic */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Paintbrush className="h-4 w-4" />
-              艺术类风格
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {STYLE_PRESETS.artistic.map((style) => {
+              {STYLE_PRESETS.map((style) => {
                 const isSelected = selectedPreset === style.value
                 return (
                   <button
                     key={style.value}
                     onClick={() =>
-                      setSelectedPreset(
-                        isSelected ? null : style.value
-                      )
+                      setSelectedPreset(isSelected ? null : style.value)
                     }
                     className={cn(
                       "relative flex flex-col items-center gap-3 rounded-lg border-2 p-4 transition-all",
@@ -167,7 +136,44 @@ export default function StylePage() {
                   </button>
                 )
               })}
+
+              {/* Custom style button */}
+              <button
+                onClick={() =>
+                  setSelectedPreset(isCustom ? null : "__custom__")
+                }
+                className={cn(
+                  "relative flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-4 transition-all",
+                  isCustom
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-foreground/20"
+                )}
+              >
+                <div className="h-16 w-full rounded bg-muted flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-muted-foreground/50" />
+                </div>
+                <span className="text-sm font-medium">自定义风格</span>
+                {isCustom && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                    <Check className="h-3 w-3" />
+                  </Badge>
+                )}
+              </button>
             </div>
+
+            {isCustom && (
+              <div className="flex flex-col gap-2 pt-2">
+                <Label htmlFor="custom-style">输入你的风格名称</Label>
+                <Input
+                  id="custom-style"
+                  placeholder="例如：复古胶片、赛博水墨、暗黑哥特..."
+                  value={customStyle}
+                  onChange={(e) => setCustomStyle(e.target.value)}
+                  maxLength={50}
+                  autoFocus
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
