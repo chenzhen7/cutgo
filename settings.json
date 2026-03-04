@@ -1,9 +1,14 @@
 {
     "window.commandCenter": true,
-    "cursor.general.disableHttp2": true,
     "workbench.settings.applyToAllProfiles": [
+
 
     ],
     "files.autoSave": "afterDelay",
-    "workbench.tree.indent": 20
+    "workbench.tree.indent": 20,
+    "http.proxy": "http://127.0.0.1:7890",  // 替换为你的代理地址与端口，如 socks5://127.0.0.1:7891
+    "http.proxySupport": "override",        // 强制使用上述代理配置
+    "http.proxyStrictSSL": false,           // 关闭SSL严格校验（避免证书问题）
+    "http.noProxy": ["localhost", "127.0.0.1"], // 本地地址不走代理
+    "cursor.general.disableHttp2": true // 禁用HTTP/1 SSE，减少连接问题
 }
