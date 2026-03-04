@@ -14,8 +14,143 @@ export interface Project {
   status: string
   step: number
   stepLabel: string
+  novel?: Novel | null
   createdAt: string
   updatedAt: string
+}
+
+// ── Novel Import Types ──
+
+export interface Novel {
+  id: string
+  projectId: string
+  title: string | null
+  rawText: string
+  wordCount: number
+  source: "paste" | "file"
+  fileName: string | null
+  synopsis: string | null
+  status: "draft" | "analyzed" | "confirmed"
+  chapters: Chapter[]
+  characters: NovelCharacter[]
+  events: PlotEvent[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Chapter {
+  id: string
+  novelId: string
+  index: number
+  title: string | null
+  content: string
+  wordCount: number
+  selected: boolean
+  paragraphs: Paragraph[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Paragraph {
+  id: string
+  chapterId: string
+  index: number
+  content: string
+  wordCount: number
+  selected: boolean
+  createdAt: string
+}
+
+export interface NovelCharacter {
+  id: string
+  novelId: string
+  name: string
+  role: "protagonist" | "supporting" | "extra"
+  description: string | null
+  firstAppear: string | null
+  frequency: number
+  relations: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PlotEvent {
+  id: string
+  novelId: string
+  index: number
+  type: "setup" | "rising" | "climax" | "resolution"
+  summary: string
+  detail: string | null
+  emotion: string | null
+  sourceRef: string | null
+  adaptScore: number | null
+  isHighlight: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ImportNovelInput {
+  projectId: string
+  title?: string
+  rawText: string
+  source: "paste" | "file"
+  fileName?: string
+}
+
+export interface CharacterInput {
+  name: string
+  role?: "protagonist" | "supporting" | "extra"
+  description?: string
+  firstAppear?: string
+  frequency?: number
+  relations?: string
+}
+
+export interface EventInput {
+  index: number
+  type: "setup" | "rising" | "climax" | "resolution"
+  summary: string
+  detail?: string
+  emotion?: string
+  sourceRef?: string
+  adaptScore?: number
+  isHighlight?: boolean
+}
+
+export type AnalysisStatus = "idle" | "analyzing" | "completed" | "error"
+
+export interface AnalysisResult {
+  synopsis: string
+  chapters: {
+    index: number
+    title: string | null
+    content: string
+    paragraphs: { index: number; content: string }[]
+  }[]
+  characters: {
+    name: string
+    role: "protagonist" | "supporting" | "extra"
+    description: string
+    firstAppear: string
+    frequency: number
+    relations: { target: string; relation: string }[]
+  }[]
+  events: {
+    index: number
+    type: "setup" | "rising" | "climax" | "resolution"
+    summary: string
+    detail: string
+    emotion: string
+    sourceRef: string
+    adaptScore: number
+    isHighlight: boolean
+  }[]
+  stats: {
+    totalWords: number
+    chapterCount: number
+    characterCount: number
+    eventCount: number
+  }
 }
 
 export interface CreateProjectInput {

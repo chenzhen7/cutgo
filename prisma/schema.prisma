@@ -27,6 +27,95 @@ model Project {
   step      Int      @default(1)
   stepLabel String   @default("小说导入")
 
+  novel Novel?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Novel {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title     String?
+  rawText   String
+  wordCount Int
+  source    String  @default("paste") // "paste" | "file"
+  fileName  String?
+
+  synopsis String? // AI 生成的故事大纲
+
+  status String @default("draft") // "draft" | "analyzed" | "confirmed"
+
+  chapters   Chapter[]
+  characters NovelCharacter[]
+  events     PlotEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chapter {
+  id      String @id @default(cuid())
+  novelId String
+  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  index     Int
+  title     String?
+  content   String
+  wordCount Int
+  selected  Boolean @default(true)
+
+  paragraphs Paragraph[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Paragraph {
+  id        String  @id @default(cuid())
+  chapterId String
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  index     Int
+  content   String
+  wordCount Int
+  selected  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
+
+model NovelCharacter {
+  id      String @id @default(cuid())
+  novelId String
+  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  name        String
+  role        String  @default("supporting") // "protagonist" | "supporting" | "extra"
+  description String?
+  firstAppear String?
+  frequency   Int     @default(1)
+  relations   String? // JSON: [{ target: "角色B", relation: "恋人" }]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlotEvent {
+  id      String @id @default(cuid())
+  novelId String
+  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  index       Int
+  type        String  // "setup" | "rising" | "climax" | "resolution"
+  summary     String
+  detail      String?
+  emotion     String?
+  sourceRef   String?
+  adaptScore  Int?
+  isHighlight Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
