@@ -38,7 +38,7 @@ export function ConfirmImportDialog({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button size="lg" className="w-full" disabled={disabled}>
-          确认导入，进入剧本生成
+          确认导入，进入分集大纲
           <ArrowRight className="size-4" />
         </Button>
       </AlertDialogTrigger>
@@ -46,7 +46,7 @@ export function ConfirmImportDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>确认导入</AlertDialogTitle>
           <AlertDialogDescription>
-            确认后将保存所有分析结果，并进入剧本生成阶段。
+            确认后将保存所有分析结果，并进入分集大纲阶段。
           </AlertDialogDescription>
         </AlertDialogHeader>
 

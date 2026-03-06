@@ -81,7 +81,7 @@ export default function ImportPage() {
   const handleConfirm = useCallback(async () => {
     if (!novel) return
     await confirmImport(novel.id)
-    router.push(`/project/${projectId}/script`)
+    router.push(`/project/${projectId}/outline`)
   }, [novel, confirmImport, router, projectId])
 
   const handleToggleChapter = useCallback(

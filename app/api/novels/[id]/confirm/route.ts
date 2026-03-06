@@ -19,7 +19,7 @@ export async function POST(
 
   await prisma.project.update({
     where: { id: novel.projectId },
-    data: { step: 2, stepLabel: "剧本生成" },
+    data: { step: 2, stepLabel: "分集大纲" },
   })
 
   return NextResponse.json(updated)
