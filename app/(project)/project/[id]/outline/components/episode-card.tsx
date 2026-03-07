@@ -15,8 +15,8 @@ import {
   BookOpen,
 } from "lucide-react"
 import type { Episode, SceneInput } from "@/lib/types"
-import { SceneList } from "./scene-list"
-import { SceneFormDialog } from "./scene-form-dialog"
+import { SceneList } from "../components/scene-list"
+import { SceneFormDialog } from "../components/scene-form-dialog"
 
 interface EpisodeCardProps {
   episode: Episode
