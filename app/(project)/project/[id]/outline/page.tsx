@@ -112,7 +112,7 @@ export default function OutlinePage() {
 
   const handleConfirm = useCallback(async () => {
     await confirmOutline(projectId)
-    router.push(`/project/${projectId}/script`)
+    router.push(`/project/${projectId}/assets`)
   }, [projectId, confirmOutline, router])
 
   const displayedEpisodes = filteredEpisodes()

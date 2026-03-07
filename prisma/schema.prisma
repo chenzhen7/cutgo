@@ -31,6 +31,10 @@ model Project {
   episodes Episode[]
   scripts  Script[]
 
+  assetCharacters AssetCharacter[]
+  assetScenes     AssetScene[]
+  assetProps      AssetProp[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -209,6 +213,60 @@ model ScriptLine {
   content       String
   duration      String?
   parenthetical String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── Asset Models ──
+
+model AssetCharacter {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String
+  role        String  @default("supporting") // "protagonist" | "supporting" | "extra"
+  gender      String? // "male" | "female" | "other"
+  age         String?
+  description String?
+  appearance  String?
+  personality String?
+  imageUrl    String?
+  seed        Int?
+  locked      Boolean @default(false)
+
+  sourceNovelCharacterId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AssetScene {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  imageUrl    String?
+  tags        String?
+  timeOfDay   String?
+  weather     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AssetProp {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  imageUrl    String?
+  category    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

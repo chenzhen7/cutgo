@@ -275,6 +275,93 @@ export interface EventInput {
   isHighlight?: boolean
 }
 
+// ── Asset Types ──
+
+export interface AssetCharacter {
+  id: string
+  projectId: string
+  name: string
+  role: "protagonist" | "supporting" | "extra"
+  gender: string | null
+  age: string | null
+  description: string | null
+  appearance: string | null
+  personality: string | null
+  imageUrl: string | null
+  seed: number | null
+  locked: boolean
+  sourceNovelCharacterId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AssetScene {
+  id: string
+  projectId: string
+  name: string
+  description: string | null
+  imageUrl: string | null
+  tags: string | null
+  timeOfDay: string | null
+  weather: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AssetProp {
+  id: string
+  projectId: string
+  name: string
+  description: string | null
+  imageUrl: string | null
+  category: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AssetCharacterInput {
+  name: string
+  role?: "protagonist" | "supporting" | "extra"
+  gender?: string
+  age?: string
+  description?: string
+  appearance?: string
+  personality?: string
+  imageUrl?: string
+  seed?: number
+  locked?: boolean
+  sourceNovelCharacterId?: string
+}
+
+export interface AssetSceneInput {
+  name: string
+  description?: string
+  imageUrl?: string
+  tags?: string
+  timeOfDay?: string
+  weather?: string
+}
+
+export interface AssetPropInput {
+  name: string
+  description?: string
+  imageUrl?: string
+  category?: string
+}
+
+export type AssetGenerateStatus = "idle" | "generating" | "completed" | "error"
+
+export interface AssetGenerateResult {
+  characters: AssetCharacter[]
+  scenes: AssetScene[]
+  props: AssetProp[]
+  stats: {
+    characterCount: number
+    sceneCount: number
+    propCount: number
+  }
+}
+
 export type AnalysisStatus = "idle" | "analyzing" | "completed" | "error"
 
 export interface AnalysisResult {

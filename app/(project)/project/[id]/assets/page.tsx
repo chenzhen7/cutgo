@@ -1,78 +1,208 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import {
   FolderOpen,
   Users,
   MapPin,
   Box,
-  LayoutGrid,
-  ImageIcon,
   Plus,
   Search,
-  Import,
+  Loader2,
+  Sparkles,
+  Pencil,
+  Trash2,
   Lock,
+  Unlock,
+  RefreshCw,
+  ImageIcon,
+  ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { useAssetStore } from "@/store/asset-store"
+import type {
+  AssetCharacter,
+  AssetScene,
+  AssetProp,
+  AssetCharacterInput,
+  AssetSceneInput,
+  AssetPropInput,
+} from "@/lib/types"
 
-type AssetTab = "characters" | "scenes" | "props" | "storyboard"
-
-const TABS = [
-  { key: "characters" as const, label: "角色库", icon: Users, count: 0 },
-  { key: "scenes" as const, label: "场景库", icon: MapPin, count: 0 },
-  { key: "props" as const, label: "道具库", icon: Box, count: 0 },
-  { key: "storyboard" as const, label: "分镜资源", icon: LayoutGrid, count: 0 },
-]
-
-const MOCK_CHARACTERS = [
-  { id: "1", name: "男主角", desc: "28岁，都市精英", locked: true },
-  { id: "2", name: "女主角", desc: "24岁，设计师", locked: true },
-  { id: "3", name: "反派", desc: "35岁，商业对手", locked: false },
-]
-
-const MOCK_SCENES = [
-  { id: "1", name: "总裁办公室", desc: "高层写字楼，落地窗" },
-  { id: "2", name: "咖啡厅", desc: "文艺复古风格" },
-  { id: "3", name: "公园长椅", desc: "秋天，银杏落叶" },
-]
-
-const MOCK_PROPS = [
-  { id: "1", name: "合同文件", desc: "商务文件夹" },
-  { id: "2", name: "钻戒", desc: "六爪镶嵌" },
-]
+type AssetTab = "characters" | "scenes" | "props"
 
 export default function AssetsPage() {
+  const params = useParams()
+  const router = useRouter()
+  const projectId = params.id as string
+  const autoGenerateTriggered = useRef(false)
+
+  const {
+    characters,
+    scenes,
+    props,
+    generateStatus,
+    generateError,
+    fetchAssets,
+    generateAssets,
+    addCharacter,
+    updateCharacter,
+    deleteCharacter,
+    addScene,
+    updateScene,
+    deleteScene,
+    addProp,
+    updateProp,
+    deleteProp,
+  } = useAssetStore()
+
   const [activeTab, setActiveTab] = useState<AssetTab>("characters")
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const [showCharacterForm, setShowCharacterForm] = useState(false)
+  const [editingCharacter, setEditingCharacter] = useState<AssetCharacter | null>(null)
+  const [deletingCharacterId, setDeletingCharacterId] = useState<string | null>(null)
+
+  const [showSceneForm, setShowSceneForm] = useState(false)
+  const [editingScene, setEditingScene] = useState<AssetScene | null>(null)
+  const [deletingSceneId, setDeletingSceneId] = useState<string | null>(null)
+
+  const [showPropForm, setShowPropForm] = useState(false)
+  const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
+  const [deletingPropId, setDeletingPropId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true)
+      await fetchAssets(projectId)
+      setLoading(false)
+    }
+    init()
+  }, [projectId, fetchAssets])
+
+  useEffect(() => {
+    if (!loading && !autoGenerateTriggered.current && characters.length === 0 && scenes.length === 0 && props.length === 0 && generateStatus === "idle") {
+      autoGenerateTriggered.current = true
+      generateAssets(projectId, "skip_existing")
+    }
+  }, [loading, characters.length, scenes.length, props.length, generateStatus, projectId, generateAssets])
+
+  const handleGenerate = useCallback(
+    async (mode: "skip_existing" | "overwrite") => {
+      await generateAssets(projectId, mode)
+    },
+    [projectId, generateAssets]
+  )
+
+  const isGenerating = generateStatus === "generating"
+  const totalAssets = characters.length + scenes.length + props.length
+
+  const TABS = [
+    { key: "characters" as const, label: "角色库", icon: Users, count: characters.length },
+    { key: "scenes" as const, label: "场景库", icon: MapPin, count: scenes.length },
+    { key: "props" as const, label: "道具库", icon: Box, count: props.length },
+  ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className="mx-auto max-w-7xl px-6 py-8 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FolderOpen className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-xl font-semibold">资产库</h1>
-            <p className="text-sm text-muted-foreground">
-              项目内所有生成内容的集中仓库，支持跨章节调用
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <FolderOpen className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-foreground">资产库</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              项目内所有角色、场景、道具的集中管理，支持 AI 自动提取和手动编辑
             </p>
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          原型预览
-        </Badge>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            size="sm"
+            variant={totalAssets > 0 ? "outline" : "default"}
+            onClick={() => handleGenerate(totalAssets > 0 ? "overwrite" : "skip_existing")}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : totalAssets > 0 ? (
+              <RefreshCw className="size-3.5" />
+            ) : (
+              <Sparkles className="size-3.5" />
+            )}
+            {isGenerating ? "生成中..." : totalAssets > 0 ? "重新生成" : "AI 提取资产"}
+          </Button>
+        </div>
       </div>
 
-      {/* Coming Soon Banner */}
-      <div className="mt-6 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-3">
-        <p className="text-sm text-primary/80">
-          资产库功能正在开发中，当前为原型预览。后续将支持 AI 角色生成、场景管理、素材复用等完整功能。
-        </p>
-      </div>
+      {/* Generate error */}
+      {generateStatus === "error" && generateError && (
+        <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+          <p className="text-sm text-destructive">{generateError}</p>
+          <button
+            onClick={() => handleGenerate("skip_existing")}
+            className="mt-2 text-sm text-destructive underline hover:no-underline"
+          >
+            重试
+          </button>
+        </div>
+      )}
+
+      {/* Generating progress */}
+      {isGenerating && (
+        <div className="mt-4 rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
+          <Loader2 className="size-5 animate-spin text-primary" />
+          <div>
+            <p className="text-sm font-medium">正在从大纲中提取资产...</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              AI 正在分析分集大纲，提取角色、场景和道具信息
+            </p>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Tabs */}
       <div className="mt-6 flex items-center gap-1 border-b border-border">
@@ -106,170 +236,852 @@ export default function AssetsPage() {
       <div className="mt-4 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="搜索资产..." className="pl-9" disabled />
+          <Input
+            placeholder="搜索资产..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        <Button size="sm" disabled>
-          <Plus className="mr-2 h-3.5 w-3.5" />
+        <Button
+          size="sm"
+          onClick={() => {
+            if (activeTab === "characters") setShowCharacterForm(true)
+            else if (activeTab === "scenes") setShowSceneForm(true)
+            else setShowPropForm(true)
+          }}
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" />
           添加
-        </Button>
-        <Button variant="outline" size="sm" disabled>
-          <Import className="mr-2 h-3.5 w-3.5" />
-          从其他项目导入
         </Button>
       </div>
 
       {/* Content */}
       <div className="mt-6">
-        {activeTab === "characters" && (
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              展示本项目已定义的角色模型（Seed 值、人脸特征、固定服装）
+        {/* Empty state */}
+        {totalAssets === 0 && !isGenerating && (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-16">
+            <FolderOpen className="h-12 w-12 text-muted-foreground/30" />
+            <h3 className="mt-4 text-sm font-medium">暂无资产数据</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              请先生成分集大纲，然后点击「AI 提取资产」自动提取角色、场景和道具
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {MOCK_CHARACTERS.map((char) => (
-                <Card key={char.id} className="opacity-60">
-                  <CardContent className="pt-4">
-                    <div className="flex items-start gap-3">
-                      <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Users className="h-6 w-6 text-muted-foreground/50" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{char.name}</span>
-                          {char.locked && (
-                            <Lock className="h-3 w-3 text-muted-foreground" />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {char.desc}
-                        </p>
-                        <div className="mt-2 flex gap-1.5">
-                          <Badge variant="outline" className="text-[10px]">
-                            Seed: --
-                          </Badge>
-                          <Badge variant="outline" className="text-[10px]">
-                            人脸: --
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Add Card */}
-              <Card className="border-dashed opacity-40">
-                <CardContent className="flex h-full min-h-[100px] items-center justify-center pt-4">
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <Plus className="h-6 w-6" />
-                    <span className="text-xs">添加角色</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <Button
+              className="mt-4"
+              size="sm"
+              onClick={() => handleGenerate("skip_existing")}
+            >
+              <Sparkles className="size-3.5" />
+              AI 提取资产
+            </Button>
           </div>
         )}
 
-        {activeTab === "scenes" && (
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              存储已生成的固定背景，确保场景在不同镜头间不穿帮
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {MOCK_SCENES.map((scene) => (
-                <Card key={scene.id} className="opacity-60">
-                  <CardContent className="pt-4">
-                    <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-                    </div>
-                    <span className="text-sm font-medium">{scene.name}</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {scene.desc}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-
-              <Card className="border-dashed opacity-40">
-                <CardContent className="flex h-full min-h-[160px] items-center justify-center pt-4">
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <Plus className="h-6 w-6" />
-                    <span className="text-xs">添加场景</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+        {/* Characters Tab */}
+        {activeTab === "characters" && characters.length > 0 && (
+          <CharacterList
+            characters={characters}
+            searchQuery={searchQuery}
+            onEdit={setEditingCharacter}
+            onDelete={setDeletingCharacterId}
+            onToggleLock={(id, locked) => updateCharacter(id, { locked })}
+          />
+        )}
+        {activeTab === "characters" && characters.length === 0 && totalAssets > 0 && (
+          <EmptyTabState label="角色" onAdd={() => setShowCharacterForm(true)} />
         )}
 
-        {activeTab === "props" && (
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              管理项目中反复出现的道具，确保视觉一致性
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {MOCK_PROPS.map((prop) => (
-                <Card key={prop.id} className="opacity-60">
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Box className="h-5 w-5 text-muted-foreground/50" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium">{prop.name}</span>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {prop.desc}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              <Card className="border-dashed opacity-40">
-                <CardContent className="flex h-full min-h-[80px] items-center justify-center pt-4">
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <Plus className="h-6 w-6" />
-                    <span className="text-xs">添加道具</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+        {/* Scenes Tab */}
+        {activeTab === "scenes" && scenes.length > 0 && (
+          <SceneList
+            scenes={scenes}
+            searchQuery={searchQuery}
+            onEdit={setEditingScene}
+            onDelete={setDeletingSceneId}
+          />
+        )}
+        {activeTab === "scenes" && scenes.length === 0 && totalAssets > 0 && (
+          <EmptyTabState label="场景" onAdd={() => setShowSceneForm(true)} />
         )}
 
-        {activeTab === "storyboard" && (
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              分镜画面资源管理，后续由分镜生成模块自动填充
-            </p>
-            <div className="flex h-48 items-center justify-center rounded-lg border-2 border-dashed border-border">
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <LayoutGrid className="h-10 w-10 opacity-30" />
-                <span className="text-sm">分镜资源将在分镜生成后自动填充</span>
-                <span className="text-xs">请先完成剧本生成和分镜生成步骤</span>
+        {/* Props Tab */}
+        {activeTab === "props" && props.length > 0 && (
+          <PropList
+            props={props}
+            searchQuery={searchQuery}
+            onEdit={setEditingProp}
+            onDelete={setDeletingPropId}
+          />
+        )}
+        {activeTab === "props" && props.length === 0 && totalAssets > 0 && (
+          <EmptyTabState label="道具" onAdd={() => setShowPropForm(true)} />
+        )}
+      </div>
+
+      {/* Character Form Dialog */}
+      <CharacterFormDialog
+        open={showCharacterForm || !!editingCharacter}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCharacterForm(false)
+            setEditingCharacter(null)
+          }
+        }}
+        character={editingCharacter}
+        onSave={async (data) => {
+          if (editingCharacter) {
+            await updateCharacter(editingCharacter.id, data)
+            setEditingCharacter(null)
+          } else {
+            await addCharacter(projectId, data)
+            setShowCharacterForm(false)
+          }
+        }}
+      />
+
+      {/* Scene Form Dialog */}
+      <SceneFormDialog
+        open={showSceneForm || !!editingScene}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowSceneForm(false)
+            setEditingScene(null)
+          }
+        }}
+        scene={editingScene}
+        onSave={async (data) => {
+          if (editingScene) {
+            await updateScene(editingScene.id, data)
+            setEditingScene(null)
+          } else {
+            await addScene(projectId, data)
+            setShowSceneForm(false)
+          }
+        }}
+      />
+
+      {/* Prop Form Dialog */}
+      <PropFormDialog
+        open={showPropForm || !!editingProp}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowPropForm(false)
+            setEditingProp(null)
+          }
+        }}
+        prop={editingProp}
+        onSave={async (data) => {
+          if (editingProp) {
+            await updateProp(editingProp.id, data)
+            setEditingProp(null)
+          } else {
+            await addProp(projectId, data)
+            setShowPropForm(false)
+          }
+        }}
+      />
+
+      {/* Confirm & proceed */}
+      {totalAssets > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-6 py-4">
+          <div className="mx-auto max-w-7xl">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="lg" className="w-full">
+                  确认资产，进入剧本生成
+                  <ArrowRight className="size-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="sm:max-w-sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>确认资产入库</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-2 text-left">
+                      <p>确认后将进入剧本生成阶段，当前资产摘要：</p>
+                      <ul className="list-disc list-inside text-sm space-y-1">
+                        <li>角色：{characters.length} 个</li>
+                        <li>场景：{scenes.length} 个</li>
+                        <li>道具：{props.length} 个</li>
+                      </ul>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      const res = await fetch("/api/assets/confirm", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ projectId }),
+                      })
+                      if (res.ok) {
+                        router.push(`/project/${projectId}/script`)
+                      }
+                    }}
+                  >
+                    确认并继续
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmations */}
+      <AlertDialog
+        open={!!deletingCharacterId}
+        onOpenChange={(open) => !open && setDeletingCharacterId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除角色</AlertDialogTitle>
+            <AlertDialogDescription className="text-left">
+              确定要删除这个角色吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deletingCharacterId) {
+                  await deleteCharacter(deletingCharacterId)
+                  setDeletingCharacterId(null)
+                }
+              }}
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!deletingSceneId}
+        onOpenChange={(open) => !open && setDeletingSceneId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除场景</AlertDialogTitle>
+            <AlertDialogDescription className="text-left">
+              确定要删除这个场景吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deletingSceneId) {
+                  await deleteScene(deletingSceneId)
+                  setDeletingSceneId(null)
+                }
+              }}
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!deletingPropId}
+        onOpenChange={(open) => !open && setDeletingPropId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除道具</AlertDialogTitle>
+            <AlertDialogDescription className="text-left">
+              确定要删除这个道具吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deletingPropId) {
+                  await deleteProp(deletingPropId)
+                  setDeletingPropId(null)
+                }
+              }}
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
+
+// ── Sub-components ──
+
+function EmptyTabState({ label, onAdd }: { label: string; onAdd: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-12">
+      <p className="text-sm text-muted-foreground">暂无{label}数据</p>
+      <Button variant="outline" size="sm" className="mt-3" onClick={onAdd}>
+        <Plus className="size-3.5" />
+        手动添加{label}
+      </Button>
+    </div>
+  )
+}
+
+function CharacterList({
+  characters,
+  searchQuery,
+  onEdit,
+  onDelete,
+  onToggleLock,
+}: {
+  characters: AssetCharacter[]
+  searchQuery: string
+  onEdit: (c: AssetCharacter) => void
+  onDelete: (id: string) => void
+  onToggleLock: (id: string, locked: boolean) => void
+}) {
+  const filtered = characters.filter(
+    (c) =>
+      !searchQuery ||
+      c.name.includes(searchQuery) ||
+      c.description?.includes(searchQuery) ||
+      c.role.includes(searchQuery)
+  )
+
+  const roleLabel = (role: string) => {
+    switch (role) {
+      case "protagonist": return "主角"
+      case "supporting": return "配角"
+      case "extra": return "群演"
+      default: return role
+    }
+  }
+
+  const roleBadgeVariant = (role: string) => {
+    switch (role) {
+      case "protagonist": return "default" as const
+      case "supporting": return "secondary" as const
+      default: return "outline" as const
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      {filtered.map((char) => (
+        <Card key={char.id} className="group relative">
+          <CardContent className="pt-4">
+            <div className="flex items-start gap-3">
+              <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                {char.imageUrl ? (
+                  <img src={char.imageUrl} alt={char.name} className="h-14 w-14 rounded-lg object-cover" />
+                ) : (
+                  <Users className="h-6 w-6 text-muted-foreground/50" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium truncate">{char.name}</span>
+                  <Badge variant={roleBadgeVariant(char.role)} className="text-[10px] px-1.5 py-0 shrink-0">
+                    {roleLabel(char.role)}
+                  </Badge>
+                </div>
+                {(char.gender || char.age) && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {[char.gender, char.age].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                {char.description && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {char.description}
+                  </p>
+                )}
+                {char.appearance && (
+                  <p className="text-xs text-muted-foreground/70 mt-0.5 line-clamp-1">
+                    外貌: {char.appearance}
+                  </p>
+                )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Reuse Logic Info */}
-        <Separator className="my-8" />
-        <Card className="border-dashed opacity-60">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Import className="h-4 w-4" />
-              素材复用逻辑（即将推出）
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              支持将 A 项目的角色/场景直接导入 B 项目，系列剧制作必备功能。
-              此功能将在后续版本中实现。
-            </p>
+            <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onToggleLock(char.id, !char.locked)}
+              >
+                {char.locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onEdit(char)}
+              >
+                <Pencil className="size-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onDelete(char.id)}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      </div>
+      ))}
     </div>
+  )
+}
+
+function SceneList({
+  scenes,
+  searchQuery,
+  onEdit,
+  onDelete,
+}: {
+  scenes: AssetScene[]
+  searchQuery: string
+  onEdit: (s: AssetScene) => void
+  onDelete: (id: string) => void
+}) {
+  const filtered = scenes.filter(
+    (s) =>
+      !searchQuery ||
+      s.name.includes(searchQuery) ||
+      s.description?.includes(searchQuery)
+  )
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      {filtered.map((scene) => (
+        <Card key={scene.id} className="group relative">
+          <CardContent className="pt-4">
+            <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3">
+              {scene.imageUrl ? (
+                <img src={scene.imageUrl} alt={scene.name} className="h-24 w-full rounded-lg object-cover" />
+              ) : (
+                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+              )}
+            </div>
+            <span className="text-sm font-medium">{scene.name}</span>
+            {scene.description && (
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                {scene.description}
+              </p>
+            )}
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              {scene.timeOfDay && (
+                <Badge variant="outline" className="text-[10px]">{scene.timeOfDay}</Badge>
+              )}
+              {scene.weather && (
+                <Badge variant="outline" className="text-[10px]">{scene.weather}</Badge>
+              )}
+              {scene.tags?.split(",").map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-[10px]">
+                  {tag.trim()}
+                </Badge>
+              ))}
+            </div>
+            <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onEdit(scene)}
+              >
+                <Pencil className="size-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onDelete(scene.id)}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function PropList({
+  props,
+  searchQuery,
+  onEdit,
+  onDelete,
+}: {
+  props: AssetProp[]
+  searchQuery: string
+  onEdit: (p: AssetProp) => void
+  onDelete: (id: string) => void
+}) {
+  const filtered = props.filter(
+    (p) =>
+      !searchQuery ||
+      p.name.includes(searchQuery) ||
+      p.description?.includes(searchQuery)
+  )
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+      {filtered.map((prop) => (
+        <Card key={prop.id} className="group relative">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                {prop.imageUrl ? (
+                  <img src={prop.imageUrl} alt={prop.name} className="h-12 w-12 rounded-lg object-cover" />
+                ) : (
+                  <Box className="h-5 w-5 text-muted-foreground/50" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{prop.name}</span>
+                  {prop.category && (
+                    <Badge variant="secondary" className="text-[10px]">{prop.category}</Badge>
+                  )}
+                </div>
+                {prop.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                    {prop.description}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onEdit(prop)}
+              >
+                <Pencil className="size-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onDelete(prop.id)}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+// ── Form Dialogs ──
+
+function CharacterFormDialog({
+  open,
+  onOpenChange,
+  character,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  character: AssetCharacter | null
+  onSave: (data: AssetCharacterInput) => Promise<void>
+}) {
+  const [name, setName] = useState("")
+  const [role, setRole] = useState<"protagonist" | "supporting" | "extra">("supporting")
+  const [gender, setGender] = useState("")
+  const [age, setAge] = useState("")
+  const [description, setDescription] = useState("")
+  const [appearance, setAppearance] = useState("")
+  const [personality, setPersonality] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (character) {
+      setName(character.name)
+      setRole(character.role as "protagonist" | "supporting" | "extra")
+      setGender(character.gender || "")
+      setAge(character.age || "")
+      setDescription(character.description || "")
+      setAppearance(character.appearance || "")
+      setPersonality(character.personality || "")
+    } else {
+      setName("")
+      setRole("supporting")
+      setGender("")
+      setAge("")
+      setDescription("")
+      setAppearance("")
+      setPersonality("")
+    }
+  }, [character, open])
+
+  const handleSave = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    try {
+      await onSave({
+        name: name.trim(),
+        role,
+        gender: gender || undefined,
+        age: age || undefined,
+        description: description || undefined,
+        appearance: appearance || undefined,
+        personality: personality || undefined,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{character ? "编辑角色" : "添加角色"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-1">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>角色名 *</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="角色名称" />
+            </div>
+            <div className="grid gap-2">
+              <Label>角色类型</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="protagonist">主角</SelectItem>
+                  <SelectItem value="supporting">配角</SelectItem>
+                  <SelectItem value="extra">群演</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>性别</Label>
+              <Select value={gender} onValueChange={setGender}>
+                <SelectTrigger><SelectValue placeholder="选择性别" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">男</SelectItem>
+                  <SelectItem value="female">女</SelectItem>
+                  <SelectItem value="other">其他</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>年龄</Label>
+              <Input value={age} onChange={(e) => setAge(e.target.value)} placeholder="如 24岁" />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label>角色描述</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="角色简介" rows={2} />
+          </div>
+          <div className="grid gap-2">
+            <Label>外貌描述</Label>
+            <Textarea value={appearance} onChange={(e) => setAppearance(e.target.value)} placeholder="发型、身材、穿着风格等" rows={2} />
+          </div>
+          <div className="grid gap-2">
+            <Label>性格描述</Label>
+            <Textarea value={personality} onChange={(e) => setPersonality(e.target.value)} placeholder="性格特点" rows={2} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button onClick={handleSave} disabled={!name.trim() || saving}>
+            {saving ? <Loader2 className="size-4 animate-spin" /> : "保存"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function SceneFormDialog({
+  open,
+  onOpenChange,
+  scene,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  scene: AssetScene | null
+  onSave: (data: AssetSceneInput) => Promise<void>
+}) {
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [tags, setTags] = useState("")
+  const [timeOfDay, setTimeOfDay] = useState("")
+  const [weather, setWeather] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (scene) {
+      setName(scene.name)
+      setDescription(scene.description || "")
+      setTags(scene.tags || "")
+      setTimeOfDay(scene.timeOfDay || "")
+      setWeather(scene.weather || "")
+    } else {
+      setName("")
+      setDescription("")
+      setTags("")
+      setTimeOfDay("")
+      setWeather("")
+    }
+  }, [scene, open])
+
+  const handleSave = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    try {
+      await onSave({
+        name: name.trim(),
+        description: description || undefined,
+        tags: tags || undefined,
+        timeOfDay: timeOfDay || undefined,
+        weather: weather || undefined,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{scene ? "编辑场景" : "添加场景"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-1">
+          <div className="grid gap-2">
+            <Label>场景名称 *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="如 总裁办公室" />
+          </div>
+          <div className="grid gap-2">
+            <Label>场景描述</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="环境描述" rows={3} />
+          </div>
+          <div className="grid gap-2">
+            <Label>标签</Label>
+            <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="用逗号分隔，如 室内,现代,豪华" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>时间段</Label>
+              <Select value={timeOfDay} onValueChange={setTimeOfDay}>
+                <SelectTrigger><SelectValue placeholder="选择时间" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="白天">白天</SelectItem>
+                  <SelectItem value="黄昏">黄昏</SelectItem>
+                  <SelectItem value="夜晚">夜晚</SelectItem>
+                  <SelectItem value="清晨">清晨</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>天气</Label>
+              <Select value={weather} onValueChange={setWeather}>
+                <SelectTrigger><SelectValue placeholder="选择天气" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="晴天">晴天</SelectItem>
+                  <SelectItem value="阴天">阴天</SelectItem>
+                  <SelectItem value="雨天">雨天</SelectItem>
+                  <SelectItem value="雪天">雪天</SelectItem>
+                  <SelectItem value="室内">室内</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button onClick={handleSave} disabled={!name.trim() || saving}>
+            {saving ? <Loader2 className="size-4 animate-spin" /> : "保存"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function PropFormDialog({
+  open,
+  onOpenChange,
+  prop,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  prop: AssetProp | null
+  onSave: (data: AssetPropInput) => Promise<void>
+}) {
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [category, setCategory] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (prop) {
+      setName(prop.name)
+      setDescription(prop.description || "")
+      setCategory(prop.category || "")
+    } else {
+      setName("")
+      setDescription("")
+      setCategory("")
+    }
+  }, [prop, open])
+
+  const handleSave = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    try {
+      await onSave({
+        name: name.trim(),
+        description: description || undefined,
+        category: category || undefined,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{prop ? "编辑道具" : "添加道具"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-1">
+          <div className="grid gap-2">
+            <Label>道具名称 *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="如 合同文件" />
+          </div>
+          <div className="grid gap-2">
+            <Label>道具描述</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="道具描述" rows={3} />
+          </div>
+          <div className="grid gap-2">
+            <Label>分类</Label>
+            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="如 文件、首饰、交通工具" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button onClick={handleSave} disabled={!name.trim() || saving}>
+            {saving ? <Loader2 className="size-4 animate-spin" /> : "保存"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

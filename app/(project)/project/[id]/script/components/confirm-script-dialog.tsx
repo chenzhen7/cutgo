@@ -37,7 +37,7 @@ export function ConfirmScriptDialog({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button size="lg" className="w-full" disabled={disabled}>
-          确认剧本，进入角色生成
+          确认剧本，进入分镜生成
           <ArrowRight className="size-4" />
         </Button>
       </AlertDialogTrigger>
@@ -46,7 +46,7 @@ export function ConfirmScriptDialog({
           <AlertDialogTitle>确认剧本</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-2">
-              <p>确认后将进入角色生成阶段，当前剧本摘要：</p>
+              <p>确认后将进入分镜生成阶段，当前剧本摘要：</p>
               <ul className="list-disc list-inside text-sm space-y-1">
                 <li>已生成剧本：{scripts.length}/{episodes.length} 集</li>
                 <li>总场景数：{totalScenes} 个</li>

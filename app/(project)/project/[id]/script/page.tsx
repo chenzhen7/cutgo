@@ -61,7 +61,7 @@ export default function ScriptPage() {
       const res = await fetch(`/api/projects/${projectId}`)
       if (res.ok) {
         const project = await res.json()
-        setOutlineConfirmed(project.step >= 3)
+        setOutlineConfirmed(project.step >= 4)
       }
       setLoading(false)
     }
@@ -98,7 +98,7 @@ export default function ScriptPage() {
 
   const handleConfirm = useCallback(async () => {
     await confirmScripts(projectId)
-    router.push(`/project/${projectId}/characters`)
+    router.push(`/project/${projectId}/storyboard`)
   }, [projectId, confirmScripts, router])
 
   const handleDeleteScene = useCallback(
