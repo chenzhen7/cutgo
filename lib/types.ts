@@ -89,6 +89,75 @@ export interface PlotEvent {
   updatedAt: string
 }
 
+// ── Episode Outline Types ──
+
+export interface Episode {
+  id: string
+  projectId: string
+  chapterId: string
+  chapter: { id: string; index: number; title: string | null }
+  index: number
+  title: string
+  synopsis: string
+  keyConflict: string | null
+  cliffhanger: string | null
+  duration: string
+  scenes: EpisodeScene[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface EpisodeScene {
+  id: string
+  episodeId: string
+  index: number
+  title: string
+  summary: string
+  duration: string
+  characters: string | null
+  emotion: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type GenerateStatus = "idle" | "generating" | "completed" | "error"
+
+export interface GenerateProgress {
+  current: number
+  total: number
+  currentChapterTitle: string
+}
+
+export interface EpisodeInput {
+  chapterId: string
+  index?: number
+  title: string
+  synopsis?: string
+  keyConflict?: string
+  cliffhanger?: string
+  duration?: string
+}
+
+export interface SceneInput {
+  title: string
+  summary?: string
+  duration?: string
+  characters?: string
+  emotion?: string
+}
+
+export interface GenerateResult {
+  episodes: Episode[]
+  stats: {
+    episodeCount: number
+    totalScenes: number
+    totalDuration: string
+    characterCount: number
+    generatedChapters: number
+    skippedChapters: number
+  }
+}
+
 export interface ImportNovelInput {
   projectId: string
   title?: string
