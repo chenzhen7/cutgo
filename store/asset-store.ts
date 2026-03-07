@@ -96,7 +96,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, ...data }),
     })
-    if (!res.ok) throw new Error("添加角色失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "添加角色失败")
+    }
     const character = await res.json()
     set({ characters: [...get().characters, character] })
   },
@@ -107,7 +110,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error("更新角色失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "更新角色失败")
+    }
     const updated = await res.json()
     set({ characters: get().characters.map((c) => (c.id === id ? updated : c)) })
   },
@@ -124,7 +130,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, ...data }),
     })
-    if (!res.ok) throw new Error("添加场景失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "添加场景失败")
+    }
     const scene = await res.json()
     set({ scenes: [...get().scenes, scene] })
   },
@@ -135,7 +144,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error("更新场景失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "更新场景失败")
+    }
     const updated = await res.json()
     set({ scenes: get().scenes.map((s) => (s.id === id ? updated : s)) })
   },
@@ -152,7 +164,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, ...data }),
     })
-    if (!res.ok) throw new Error("添加道具失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "添加道具失败")
+    }
     const prop = await res.json()
     set({ props: [...get().props, prop] })
   },
@@ -163,7 +178,10 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error("更新道具失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "更新道具失败")
+    }
     const updated = await res.json()
     set({ props: get().props.map((p) => (p.id === id ? updated : p)) })
   },

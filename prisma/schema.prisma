@@ -194,6 +194,8 @@ model ScriptScene {
   emotion     String?
   bgm         String?
   location    String?
+  characters  String? // JSON array of asset character names, e.g. ["林晚秋","陆司琛"]
+  props       String? // JSON array of asset prop names, e.g. ["合同文件","戒指"]
 
   lines ScriptLine[]
 
@@ -240,6 +242,8 @@ model AssetCharacter {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
 }
 
 model AssetScene {
@@ -256,6 +260,8 @@ model AssetScene {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
 }
 
 model AssetProp {
@@ -270,4 +276,6 @@ model AssetProp {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
 }

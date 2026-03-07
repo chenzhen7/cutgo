@@ -7,7 +7,7 @@ export async function PATCH(
 ) {
   const { id: scriptId, sceneId } = await params
   const body = await request.json()
-  const { title, description, duration, emotion, bgm, location } = body
+  const { title, description, duration, emotion, bgm, location, characters, props } = body
 
   const data: Record<string, unknown> = {}
   if (title !== undefined) data.title = title
@@ -16,6 +16,8 @@ export async function PATCH(
   if (emotion !== undefined) data.emotion = emotion
   if (bgm !== undefined) data.bgm = bgm
   if (location !== undefined) data.location = location
+  if (characters !== undefined) data.characters = characters
+  if (props !== undefined) data.props = props
 
   const scene = await prisma.scriptScene.update({
     where: { id: sceneId },

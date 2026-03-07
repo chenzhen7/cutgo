@@ -9,6 +9,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "projectId is required" }, { status: 400 })
   }
 
+  if (data.name) {
+    const existing = await prisma.assetProp.findUnique({
+      where: { projectId_name: { projectId, name: data.name } },
+    })
+    if (existing) {
+      return NextResponse.json({ error: `道具名「${data.name}」已存在，请使用不同的名称` }, { status: 409 })
+    }
+  }
+
   const prop = await prisma.assetProp.create({
     data: { projectId, ...data },
   })

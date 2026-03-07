@@ -8,6 +8,18 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
 
+  if (body.name) {
+    const current = await prisma.assetCharacter.findUnique({ where: { id } })
+    if (current && body.name !== current.name) {
+      const dup = await prisma.assetCharacter.findUnique({
+        where: { projectId_name: { projectId: current.projectId, name: body.name } },
+      })
+      if (dup) {
+        return NextResponse.json({ error: `角色名「${body.name}」已存在，请使用不同的名称` }, { status: 409 })
+      }
+    }
+  }
+
   const character = await prisma.assetCharacter.update({
     where: { id },
     data: body,

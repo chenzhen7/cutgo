@@ -8,6 +8,8 @@ interface AIScriptScene {
   emotion: string
   bgm: string
   location: string
+  characters?: string[]
+  props?: string[]
   lines: {
     type: "dialogue" | "narration" | "action" | "transition"
     character?: string
@@ -34,7 +36,9 @@ async function callAIGenerateScript(
   characters: string,
   previousSceneContent: string | null,
   platform: string,
-  duration: string
+  duration: string,
+  scenesInfo: string,
+  propsInfo: string
 ): Promise<AIScriptResult> {
   const apiKey = process.env.OPENAI_API_KEY
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
@@ -65,6 +69,8 @@ ${chapterContent.slice(0, 8000)}
 ## 全局上下文
 - 故事大纲：${novelSynopsis || "无"}
 - 角色列表（含性格描述）：${characters || "无"}
+- 场景库（可选地点）：${scenesInfo || "无"}
+- 道具库：${propsInfo || "无"}
 ${previousSceneContent ? `- 前一集最后一个场景的剧本内容：${previousSceneContent}` : ""}
 
 ## 目标参数
@@ -89,12 +95,13 @@ ${previousSceneContent ? `- 前一集最后一个场景的剧本内容：${previ
 5. 动作描述要求：
    - 有画面感，便于后续分镜设计
    - 描述角色的表情、动作、位置变化
-6. 每个场景附带 BGM 建议和场景地点
-7. 每行附带预估时长（对白约 2-4s，旁白约 3-5s，动作约 2-6s）
-8. 所有场景的时长之和应接近目标时长
-9. 情绪标签从以下选项中选择：平静、紧张、悲伤、激昂、温馨、愤怒、震惊、心动、悬疑、冲击、感慨、压抑
-10. 如有前一集的内容，确保本集开头与之自然衔接
-11. 结尾场景必须体现 cliffhanger，制造悬念
+6. 每个场景附带 BGM 建议和场景地点（location 请使用场景库中的名称）
+7. 每个场景附带出场角色列表 characters（使用角色库中的名称）和涉及道具列表 props（使用道具库中的名称）
+8. 每行附带预估时长（对白约 2-4s，旁白约 3-5s，动作约 2-6s）
+9. 所有场景的时长之和应接近目标时长
+10. 情绪标签从以下选项中选择：平静、紧张、悲伤、激昂、温馨、愤怒、震惊、心动、悬疑、冲击、感慨、压抑
+11. 如有前一集的内容，确保本集开头与之自然衔接
+12. 结尾场景必须体现 cliffhanger，制造悬念
 
 ## 输出格式
 请严格按以下 JSON 格式输出：
@@ -108,6 +115,8 @@ ${previousSceneContent ? `- 前一集最后一个场景的剧本内容：${previ
       "emotion": "感慨",
       "bgm": "轻柔钢琴曲",
       "location": "机场出口",
+      "characters": ["林晚秋"],
+      "props": ["行李箱"],
       "lines": [
         {
           "type": "narration",
@@ -308,9 +317,31 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const charactersStr = novel.characters
-    .map((c) => `${c.name}(${c.role}): ${c.description || ""}`)
-    .join("; ")
+  const assetCharacters = await prisma.assetCharacter.findMany({ where: { projectId } })
+  const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
+  const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
+
+  const charactersStr = assetCharacters.length > 0
+    ? assetCharacters
+        .map((c) => {
+          const parts = [`${c.name}(${c.role})`]
+          if (c.description) parts.push(c.description)
+          if (c.appearance) parts.push(`外貌: ${c.appearance}`)
+          if (c.personality) parts.push(`性格: ${c.personality}`)
+          return parts.join(", ")
+        })
+        .join("; ")
+    : novel.characters
+        .map((c) => `${c.name}(${c.role}): ${c.description || ""}`)
+        .join("; ")
+
+  const scenesStr = assetScenes.length > 0
+    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}${s.timeOfDay ? ` (${s.timeOfDay})` : ""}`).join("; ")
+    : ""
+
+  const propsStr = assetProps.length > 0
+    ? assetProps.map((p) => `${p.name}: ${p.description || ""}`).join("; ")
+    : ""
 
   const chapterMap = new Map<string, string>()
   for (const ch of novel.chapters) {
@@ -367,7 +398,9 @@ export async function POST(request: NextRequest) {
         charactersStr,
         previousSceneContent,
         project.platform,
-        project.duration
+        project.duration,
+        scenesStr,
+        propsStr
       )
 
       await prisma.script.create({
@@ -385,6 +418,8 @@ export async function POST(request: NextRequest) {
               emotion: scene.emotion || null,
               bgm: scene.bgm || null,
               location: scene.location || null,
+              characters: scene.characters?.length ? JSON.stringify(scene.characters) : null,
+              props: scene.props?.length ? JSON.stringify(scene.props) : null,
               lines: {
                 create: (scene.lines || []).map((line, li) => ({
                   index: li,

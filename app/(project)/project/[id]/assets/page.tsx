@@ -801,6 +801,7 @@ function CharacterFormDialog({
   const [appearance, setAppearance] = useState("")
   const [personality, setPersonality] = useState("")
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (character) {
@@ -820,11 +821,13 @@ function CharacterFormDialog({
       setAppearance("")
       setPersonality("")
     }
+    setError("")
   }, [character, open])
 
   const handleSave = async () => {
     if (!name.trim()) return
     setSaving(true)
+    setError("")
     try {
       await onSave({
         name: name.trim(),
@@ -835,6 +838,8 @@ function CharacterFormDialog({
         appearance: appearance || undefined,
         personality: personality || undefined,
       })
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -848,10 +853,10 @@ function CharacterFormDialog({
         </DialogHeader>
         <div className="grid gap-4 py-1">
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>角色名 *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="角色名称" />
-            </div>
+          <div className="grid gap-2">
+            <Label>角色名 *</Label>
+            <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="角色名称" />
+          </div>
             <div className="grid gap-2">
               <Label>角色类型</Label>
               <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
@@ -894,6 +899,9 @@ function CharacterFormDialog({
             <Textarea value={personality} onChange={(e) => setPersonality(e.target.value)} placeholder="性格特点" rows={2} />
           </div>
         </div>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
           <Button onClick={handleSave} disabled={!name.trim() || saving}>
@@ -922,6 +930,7 @@ function SceneFormDialog({
   const [timeOfDay, setTimeOfDay] = useState("")
   const [weather, setWeather] = useState("")
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (scene) {
@@ -937,11 +946,13 @@ function SceneFormDialog({
       setTimeOfDay("")
       setWeather("")
     }
+    setError("")
   }, [scene, open])
 
   const handleSave = async () => {
     if (!name.trim()) return
     setSaving(true)
+    setError("")
     try {
       await onSave({
         name: name.trim(),
@@ -950,6 +961,8 @@ function SceneFormDialog({
         timeOfDay: timeOfDay || undefined,
         weather: weather || undefined,
       })
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -964,7 +977,7 @@ function SceneFormDialog({
         <div className="grid gap-4 py-1">
           <div className="grid gap-2">
             <Label>场景名称 *</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="如 总裁办公室" />
+            <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 总裁办公室" />
           </div>
           <div className="grid gap-2">
             <Label>场景描述</Label>
@@ -1002,6 +1015,9 @@ function SceneFormDialog({
             </div>
           </div>
         </div>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
           <Button onClick={handleSave} disabled={!name.trim() || saving}>
@@ -1028,6 +1044,7 @@ function PropFormDialog({
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState("")
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (prop) {
@@ -1039,17 +1056,21 @@ function PropFormDialog({
       setDescription("")
       setCategory("")
     }
+    setError("")
   }, [prop, open])
 
   const handleSave = async () => {
     if (!name.trim()) return
     setSaving(true)
+    setError("")
     try {
       await onSave({
         name: name.trim(),
         description: description || undefined,
         category: category || undefined,
       })
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -1064,7 +1085,7 @@ function PropFormDialog({
         <div className="grid gap-4 py-1">
           <div className="grid gap-2">
             <Label>道具名称 *</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="如 合同文件" />
+            <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 合同文件" />
           </div>
           <div className="grid gap-2">
             <Label>道具描述</Label>
@@ -1075,6 +1096,9 @@ function PropFormDialog({
             <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="如 文件、首饰、交通工具" />
           </div>
         </div>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
           <Button onClick={handleSave} disabled={!name.trim() || saving}>

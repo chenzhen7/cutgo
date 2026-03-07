@@ -10,6 +10,7 @@ import { ScriptSceneFormDialog } from "./script-scene-form-dialog"
 
 interface ScriptEditorProps {
   script: Script
+  projectId: string
   onAddScene: (data: ScriptSceneInput) => void
   onUpdateScene: (sceneId: string, data: Partial<ScriptSceneInput>) => void
   onDeleteScene: (sceneId: string) => void
@@ -20,6 +21,7 @@ interface ScriptEditorProps {
 
 export function ScriptEditor({
   script,
+  projectId,
   onAddScene,
   onUpdateScene,
   onDeleteScene,
@@ -74,6 +76,7 @@ export function ScriptEditor({
               key={scene.id}
               scene={scene}
               sceneNumber={idx + 1}
+              projectId={projectId}
               onUpdateScene={(data) => onUpdateScene(scene.id, data)}
               onDeleteScene={() => onDeleteScene(scene.id)}
               onAddLine={(data) => onAddLine(scene.id, data)}

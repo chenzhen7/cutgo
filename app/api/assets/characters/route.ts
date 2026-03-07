@@ -9,6 +9,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "projectId is required" }, { status: 400 })
   }
 
+  if (data.name) {
+    const existing = await prisma.assetCharacter.findUnique({
+      where: { projectId_name: { projectId, name: data.name } },
+    })
+    if (existing) {
+      return NextResponse.json({ error: `角色名「${data.name}」已存在，请使用不同的名称` }, { status: 409 })
+    }
+  }
+
   const character = await prisma.assetCharacter.create({
     data: { projectId, ...data },
   })

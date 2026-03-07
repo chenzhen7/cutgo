@@ -150,6 +150,8 @@ export interface ScriptSceneData {
   emotion: string | null
   bgm: string | null
   location: string | null
+  characters: string | null
+  props: string | null
   lines: ScriptLineData[]
   createdAt: string
   updatedAt: string
@@ -184,6 +186,8 @@ export interface ScriptSceneInput {
   emotion?: string
   bgm?: string
   location?: string
+  characters?: string
+  props?: string
 }
 
 export interface ScriptLineInput {

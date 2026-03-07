@@ -204,6 +204,7 @@ export default function ScriptPage() {
               {activeScript ? (
                 <ScriptEditor
                   script={activeScript}
+                  projectId={projectId}
                   onAddScene={(data) => addScene(activeScript.id, data)}
                   onUpdateScene={(sceneId, data) =>
                     updateScene(activeScript.id, sceneId, data)

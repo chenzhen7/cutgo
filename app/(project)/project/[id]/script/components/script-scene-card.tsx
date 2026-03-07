@@ -14,15 +14,30 @@ import {
   MapPin,
   Music,
   Heart,
+  FolderOpen,
+  Users,
+  Box,
 } from "lucide-react"
 import type { ScriptSceneData, ScriptSceneInput, ScriptLineInput } from "@/lib/types"
 import { ScriptLineItem } from "./script-line-item"
 import { ScriptLineFormDialog } from "./script-line-form-dialog"
 import { ScriptSceneFormDialog } from "./script-scene-form-dialog"
+import { SceneAssetDialog } from "./scene-asset-dialog"
+
+function parseJsonArray(val: string | null | undefined): string[] {
+  if (!val) return []
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
 
 interface ScriptSceneCardProps {
   scene: ScriptSceneData
   sceneNumber: number
+  projectId: string
   onUpdateScene: (data: Partial<ScriptSceneInput>) => void
   onDeleteScene: () => void
   onAddLine: (data: ScriptLineInput) => void
@@ -33,6 +48,7 @@ interface ScriptSceneCardProps {
 export function ScriptSceneCard({
   scene,
   sceneNumber,
+  projectId,
   onUpdateScene,
   onDeleteScene,
   onAddLine,
@@ -42,7 +58,11 @@ export function ScriptSceneCard({
   const [collapsed, setCollapsed] = useState(false)
   const [showAddLine, setShowAddLine] = useState(false)
   const [showEditScene, setShowEditScene] = useState(false)
+  const [showAssetDialog, setShowAssetDialog] = useState(false)
   const [insertAfterLineId, setInsertAfterLineId] = useState<string | undefined>()
+
+  const charNames = parseJsonArray(scene.characters)
+  const propNames = parseJsonArray(scene.props)
 
   return (
     <>
@@ -64,6 +84,14 @@ export function ScriptSceneCard({
               </button>
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover/scene:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowAssetDialog(true)}
+                title="编辑资产"
+              >
+                <FolderOpen className="size-3" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -102,6 +130,24 @@ export function ScriptSceneCard({
               </Badge>
             )}
           </div>
+
+          {/* Asset tags */}
+          {(charNames.length > 0 || propNames.length > 0) && (
+            <div className="flex items-center gap-1.5 flex-wrap mb-2">
+              {charNames.map((name) => (
+                <Badge key={name} variant="default" className="gap-1 text-[10px] px-1.5 py-0">
+                  <Users className="size-2.5" />
+                  {name}
+                </Badge>
+              ))}
+              {propNames.map((name) => (
+                <Badge key={name} variant="outline" className="gap-1 text-[10px] px-1.5 py-0">
+                  <Box className="size-2.5" />
+                  {name}
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {scene.description && !collapsed && (
             <p className="text-xs text-muted-foreground mb-3 italic">
@@ -161,6 +207,20 @@ export function ScriptSceneCard({
         onSave={(data) => {
           onUpdateScene(data)
           setShowEditScene(false)
+        }}
+      />
+
+      <SceneAssetDialog
+        open={showAssetDialog}
+        onOpenChange={setShowAssetDialog}
+        scene={scene}
+        projectId={projectId}
+        onSave={(data) => {
+          onUpdateScene({
+            characters: data.characters,
+            location: data.location,
+            props: data.props,
+          })
         }}
       />
     </>
