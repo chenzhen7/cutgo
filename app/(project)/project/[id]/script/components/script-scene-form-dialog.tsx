@@ -12,6 +12,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import {
+  Heading,
+  AlignLeft,
+  Clock,
+  Heart,
+  Music,
+  MapPin,
+} from "lucide-react"
 import type { ScriptSceneData, ScriptSceneInput } from "@/lib/types"
 
 interface ScriptSceneFormDialogProps {
@@ -73,7 +81,10 @@ export function ScriptSceneFormDialog({
 
         <div className="space-y-3">
           <div>
-            <Label className="text-xs">场景标题 *</Label>
+            <Label className="text-xs flex items-center gap-1.5">
+              <Heading className="size-3.5 text-muted-foreground" />
+              场景标题 *
+            </Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -83,7 +94,10 @@ export function ScriptSceneFormDialog({
           </div>
 
           <div>
-            <Label className="text-xs">场景描述</Label>
+            <Label className="text-xs flex items-center gap-1.5">
+              <AlignLeft className="size-3.5 text-muted-foreground" />
+              场景描述
+            </Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -94,7 +108,10 @@ export function ScriptSceneFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">预估时长</Label>
+              <Label className="text-xs flex items-center gap-1.5">
+                <Clock className="size-3.5 text-muted-foreground" />
+                预估时长
+              </Label>
               <Input
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
@@ -103,7 +120,10 @@ export function ScriptSceneFormDialog({
               />
             </div>
             <div>
-              <Label className="text-xs">情绪基调</Label>
+              <Label className="text-xs flex items-center gap-1.5">
+                <Heart className="size-3.5 text-muted-foreground" />
+                情绪基调
+              </Label>
               <Input
                 value={emotion}
                 onChange={(e) => setEmotion(e.target.value)}
@@ -115,7 +135,10 @@ export function ScriptSceneFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">BGM 建议</Label>
+              <Label className="text-xs flex items-center gap-1.5">
+                <Music className="size-3.5 text-muted-foreground" />
+                BGM 建议
+              </Label>
               <Input
                 value={bgm}
                 onChange={(e) => setBgm(e.target.value)}
@@ -124,7 +147,10 @@ export function ScriptSceneFormDialog({
               />
             </div>
             <div>
-              <Label className="text-xs">场景地点</Label>
+              <Label className="text-xs flex items-center gap-1.5">
+                <MapPin className="size-3.5 text-muted-foreground" />
+                场景地点
+              </Label>
               <Input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}

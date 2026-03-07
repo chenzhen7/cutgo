@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { List, User, Smile, MessageSquare, FileText, Clock } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -69,7 +70,10 @@ export function ScriptLineFormDialog({
 
         <div className="space-y-3">
           <div>
-            <Label className="text-xs">类型</Label>
+            <Label className="text-xs flex items-center gap-1.5">
+            <List className="size-3.5 text-muted-foreground" />
+            类型
+          </Label>
             <Select value={type} onValueChange={(v) => setType(v as ScriptLineInput["type"])}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
@@ -86,7 +90,10 @@ export function ScriptLineFormDialog({
           {type === "dialogue" && (
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <Label className="text-xs">角色</Label>
+                <Label className="text-xs flex items-center gap-1.5">
+                <User className="size-3.5 text-muted-foreground" />
+                角色
+              </Label>
                 <Input
                   value={character}
                   onChange={(e) => setCharacter(e.target.value)}
@@ -95,7 +102,10 @@ export function ScriptLineFormDialog({
                 />
               </div>
               <div>
-                <Label className="text-xs">情绪</Label>
+                <Label className="text-xs flex items-center gap-1.5">
+                <Smile className="size-3.5 text-muted-foreground" />
+                情绪
+              </Label>
                 <Input
                   value={emotion}
                   onChange={(e) => setEmotion(e.target.value)}
@@ -104,7 +114,10 @@ export function ScriptLineFormDialog({
                 />
               </div>
               <div>
-                <Label className="text-xs">括号注释</Label>
+                <Label className="text-xs flex items-center gap-1.5">
+                <MessageSquare className="size-3.5 text-muted-foreground" />
+                括号注释
+              </Label>
                 <Input
                   value={parenthetical}
                   onChange={(e) => setParenthetical(e.target.value)}
@@ -116,7 +129,10 @@ export function ScriptLineFormDialog({
           )}
 
           <div>
-            <Label className="text-xs">内容</Label>
+            <Label className="text-xs flex items-center gap-1.5">
+            <FileText className="size-3.5 text-muted-foreground" />
+            内容
+          </Label>
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -126,7 +142,10 @@ export function ScriptLineFormDialog({
           </div>
 
           <div>
-            <Label className="text-xs">预估时长</Label>
+            <Label className="text-xs flex items-center gap-1.5">
+            <Clock className="size-3.5 text-muted-foreground" />
+            预估时长
+          </Label>
             <Input
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
