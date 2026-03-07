@@ -120,6 +120,95 @@ export interface EpisodeScene {
   updatedAt: string
 }
 
+// ── Script Types ──
+
+export interface Script {
+  id: string
+  projectId: string
+  episodeId: string
+  episode: {
+    id: string
+    index: number
+    title: string
+    chapterId: string
+    chapter: { id: string; index: number; title: string | null }
+  }
+  title: string
+  status: "draft" | "generated" | "edited"
+  scenes: ScriptSceneData[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ScriptSceneData {
+  id: string
+  scriptId: string
+  index: number
+  title: string
+  description: string | null
+  duration: string
+  emotion: string | null
+  bgm: string | null
+  location: string | null
+  lines: ScriptLineData[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ScriptLineData {
+  id: string
+  sceneId: string
+  index: number
+  type: "dialogue" | "narration" | "action" | "transition"
+  character: string | null
+  emotion: string | null
+  content: string
+  duration: string | null
+  parenthetical: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type ScriptGenerateStatus = "idle" | "generating" | "completed" | "error"
+
+export interface ScriptGenerateProgress {
+  current: number
+  total: number
+  currentEpisodeTitle: string
+}
+
+export interface ScriptSceneInput {
+  title: string
+  description?: string
+  duration?: string
+  emotion?: string
+  bgm?: string
+  location?: string
+}
+
+export interface ScriptLineInput {
+  type: "dialogue" | "narration" | "action" | "transition"
+  character?: string
+  emotion?: string
+  content: string
+  duration?: string
+  parenthetical?: string
+  insertAfter?: string
+}
+
+export interface ScriptGenerateResult {
+  scripts: Script[]
+  stats: {
+    scriptCount: number
+    totalScenes: number
+    totalLines: number
+    totalDuration: string
+    characterCount: number
+    generatedEpisodes: number
+    skippedEpisodes: number
+  }
+}
+
 export type GenerateStatus = "idle" | "generating" | "completed" | "error"
 
 export interface GenerateProgress {

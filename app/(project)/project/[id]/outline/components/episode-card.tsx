@@ -42,8 +42,10 @@ export function EpisodeCard({
     <Card className="group">
       <CardContent className="pt-4 pb-3">
         <div className="flex items-start gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-sm mt-0.5">
-            {episode.index}
+          <div className="flex flex-col items-center shrink-0 mt-0.5 gap-0.5">
+            <div className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+              {episode.index}
+            </div>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
