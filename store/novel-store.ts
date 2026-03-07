@@ -10,6 +10,11 @@ import type {
   EventInput,
 } from "@/lib/types"
 
+interface ChapterInput {
+  title?: string
+  content?: string
+}
+
 interface NovelState {
   novel: Novel | null
   chapters: Chapter[]
@@ -35,7 +40,9 @@ interface NovelState {
   deleteEvent: (novelId: string, eventId: string) => Promise<void>
   reorderEvents: (novelId: string, orderedIds: string[]) => Promise<void>
 
-  toggleChapterSelection: (novelId: string, chapterId: string, selected: boolean) => Promise<void>
+  addChapter: (novelId: string, data: ChapterInput) => Promise<void>
+  updateChapter: (chapterId: string, data: Partial<ChapterInput>) => Promise<void>
+  deleteChapter: (novelId: string, chapterId: string) => Promise<void>
 
   reset: () => void
 }
@@ -193,18 +200,36 @@ export const useNovelStore = create<NovelState>((set, get) => ({
     set({ events })
   },
 
-  toggleChapterSelection: async (novelId, chapterId, selected) => {
+  addChapter: async (novelId, data) => {
+    const res = await fetch(`/api/novels/${novelId}/chapters`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error("添加章节失败")
+    const chapter = await res.json()
+    set({ chapters: [...get().chapters, chapter] })
+  },
+
+  updateChapter: async (chapterId, data) => {
+    const novelId = get().novel?.id
+    if (!novelId) return
     const res = await fetch(`/api/novels/${novelId}/chapters/${chapterId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ selected }),
+      body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error("更新章节失败")
-    set({
-      chapters: get().chapters.map((ch) =>
-        ch.id === chapterId ? { ...ch, selected } : ch
-      ),
+    const updated = await res.json()
+    set({ chapters: get().chapters.map((ch) => (ch.id === chapterId ? updated : ch)) })
+  },
+
+  deleteChapter: async (novelId, chapterId) => {
+    const res = await fetch(`/api/novels/${novelId}/chapters/${chapterId}`, {
+      method: "DELETE",
     })
+    if (!res.ok) throw new Error("删除章节失败")
+    set({ chapters: get().chapters.filter((ch) => ch.id !== chapterId) })
   },
 
   reset: () => {

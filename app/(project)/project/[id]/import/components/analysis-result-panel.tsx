@@ -20,8 +20,9 @@ interface AnalysisResultPanelProps {
   onAddEvent: (data: EventInput) => Promise<void>
   onUpdateEvent: (id: string, data: Partial<EventInput>) => Promise<void>
   onDeleteEvent: (id: string) => Promise<void>
-  onToggleChapter: (chapterId: string, selected: boolean) => void
-  onToggleAllChapters: (selected: boolean) => void
+  onAddChapter: (data: { title?: string; content?: string }) => Promise<void>
+  onUpdateChapter: (chapterId: string, data: { title?: string; content?: string }) => Promise<void>
+  onDeleteChapter: (chapterId: string) => Promise<void>
 }
 
 export function AnalysisResultPanel({
@@ -36,8 +37,9 @@ export function AnalysisResultPanel({
   onAddEvent,
   onUpdateEvent,
   onDeleteEvent,
-  onToggleChapter,
-  onToggleAllChapters,
+  onAddChapter,
+  onUpdateChapter,
+  onDeleteChapter,
 }: AnalysisResultPanelProps) {
   return (
     <Card>
@@ -87,8 +89,9 @@ export function AnalysisResultPanel({
             <TabsContent value="chapters">
               <TabChapters
                 chapters={chapters}
-                onToggle={onToggleChapter}
-                onToggleAll={onToggleAllChapters}
+                onAdd={onAddChapter}
+                onUpdate={onUpdateChapter}
+                onDelete={onDeleteChapter}
               />
             </TabsContent>
           </CardContent>

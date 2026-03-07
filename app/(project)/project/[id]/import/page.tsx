@@ -41,7 +41,9 @@ export default function ImportPage() {
     addEvent,
     updateEvent,
     deleteEvent,
-    toggleChapterSelection,
+    addChapter,
+    updateChapter,
+    deleteChapter,
   } = useNovelStore()
 
   const [text, setText] = useState("")
@@ -83,13 +85,6 @@ export default function ImportPage() {
     await confirmImport(novel.id)
     router.push(`/project/${projectId}/outline`)
   }, [novel, confirmImport, router, projectId])
-
-  const handleToggleChapter = useCallback(
-    (chapterId: string, selected: boolean) => {
-      if (novel) toggleChapterSelection(novel.id, chapterId, selected)
-    },
-    [novel, toggleChapterSelection]
-  )
 
   const isAnalyzed = analysisStatus === "completed"
   const isAnalyzing = analysisStatus === "analyzing"
@@ -141,14 +136,9 @@ export default function ImportPage() {
           onAddEvent={(data) => addEvent(novel.id, data)}
           onUpdateEvent={updateEvent}
           onDeleteEvent={(id) => deleteEvent(novel.id, id)}
-          onToggleChapter={handleToggleChapter}
-          onToggleAllChapters={(selected) => {
-            chapters.forEach((ch) => {
-              if (ch.selected !== selected) {
-                toggleChapterSelection(novel.id, ch.id, selected)
-              }
-            })
-          }}
+          onAddChapter={(data) => addChapter(novel.id, data)}
+          onUpdateChapter={updateChapter}
+          onDeleteChapter={(id) => deleteChapter(novel.id, id)}
         />
       )}
 

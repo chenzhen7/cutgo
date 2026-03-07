@@ -32,8 +32,6 @@ export function ConfirmImportDialog({
   onConfirm,
   disabled,
 }: ConfirmImportDialogProps) {
-  const selectedChapters = chapters.filter((c) => c.selected)
-
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -57,7 +55,7 @@ export function ConfirmImportDialog({
           </div>
           <div className="flex items-center gap-2 text-sm">
             <BookOpen className="size-4 text-muted-foreground" />
-            <span>{selectedChapters.length} 个章节</span>
+            <span>{chapters.length} 个章节</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Users className="size-4 text-muted-foreground" />
