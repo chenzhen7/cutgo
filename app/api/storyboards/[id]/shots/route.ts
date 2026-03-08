@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/db"
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: storyboardId } = await params
+  const body = await request.json()
+
+  const {
+    shotSize,
+    cameraMovement = "static",
+    cameraAngle = "eye_level",
+    composition,
+    prompt,
+    negativePrompt,
+    duration = "3s",
+    scriptLineIds,
+    dialogueText,
+    actionNote,
+    insertAfter,
+  } = body
+
+  if (!shotSize || !composition || !prompt) {
+    return NextResponse.json(
+      { error: "shotSize, composition, and prompt are required" },
+      { status: 400 }
+    )
+  }
+
+  const existingShots = await prisma.shot.findMany({
+    where: { storyboardId },
+    orderBy: { index: "asc" },
+  })
+
+  let newIndex: number
+  if (insertAfter) {
+    const afterShot = existingShots.find((s) => s.id === insertAfter)
+    newIndex = afterShot ? afterShot.index + 1 : existingShots.length
+  } else {
+    newIndex = existingShots.length
+  }
+
+  const shotsToShift = existingShots.filter((s) => s.index >= newIndex)
+  for (const shot of shotsToShift) {
+    await prisma.shot.update({
+      where: { id: shot.id },
+      data: { index: shot.index + 1 },
+    })
+  }
+
+  await prisma.shot.create({
+    data: {
+      storyboardId,
+      index: newIndex,
+      shotSize,
+      cameraMovement,
+      cameraAngle,
+      composition,
+      prompt,
+      negativePrompt: negativePrompt || null,
+      duration,
+      scriptLineIds: scriptLineIds || null,
+      dialogueText: dialogueText || null,
+      actionNote: actionNote || null,
+    },
+  })
+
+  await prisma.storyboard.update({
+    where: { id: storyboardId },
+    data: { status: "edited" },
+  })
+
+  const shots = await prisma.shot.findMany({
+    where: { storyboardId },
+    orderBy: { index: "asc" },
+  })
+
+  return NextResponse.json(shots)
+}

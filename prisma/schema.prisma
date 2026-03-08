@@ -30,6 +30,7 @@ model Project {
   novel    Novel?
   episodes Episode[]
   scripts  Script[]
+  storyboards Storyboard[]
 
   assetCharacters AssetCharacter[]
   assetScenes     AssetScene[]
@@ -198,6 +199,7 @@ model ScriptScene {
   props       String? // JSON array of asset prop names, e.g. ["合同文件","戒指"]
 
   lines ScriptLine[]
+  storyboard Storyboard?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -278,4 +280,45 @@ model AssetProp {
   updatedAt DateTime @updatedAt
 
   @@unique([projectId, name])
+}
+
+// ── Storyboard Models ──
+
+model Storyboard {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  scriptSceneId String      @unique
+  scriptScene   ScriptScene @relation(fields: [scriptSceneId], references: [id], onDelete: Cascade)
+
+  status String @default("draft") // "draft" | "generated" | "edited"
+
+  shots Shot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Shot {
+  id           String     @id @default(cuid())
+  storyboardId String
+  storyboard   Storyboard @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
+
+  index           Int
+  shotSize        String
+  cameraMovement  String    @default("static")
+  cameraAngle     String    @default("eye_level")
+  composition     String
+  prompt          String
+  negativePrompt  String?
+  duration        String    @default("3s")
+  imageUrl        String?
+
+  scriptLineIds   String?
+  dialogueText    String?
+  actionNote      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

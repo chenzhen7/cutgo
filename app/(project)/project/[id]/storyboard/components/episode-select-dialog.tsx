@@ -1,0 +1,158 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import type { Episode, Storyboard, Script } from "@/lib/types"
+
+interface EpisodeSelectDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  episodes: Episode[]
+  scripts: Script[]
+  storyboards: Storyboard[]
+  onGenerate: (episodeIds: string[]) => void
+}
+
+export function EpisodeSelectDialog({
+  open,
+  onOpenChange,
+  episodes,
+  scripts,
+  storyboards,
+  onGenerate,
+}: EpisodeSelectDialogProps) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const selectAll = () => setSelectedIds(episodes.map((e) => e.id))
+  const selectUngenerated = () => {
+    const ungeneratedIds = episodes.filter((ep) => {
+      const epScripts = scripts.filter((s) => s.episodeId === ep.id)
+      const sceneIds = epScripts.flatMap((s) => s.scenes.map((sc) => sc.id))
+      const generatedCount = storyboards.filter(
+        (sb) => sceneIds.includes(sb.scriptSceneId) && sb.shots.length > 0
+      ).length
+      return generatedCount === 0
+    }).map((e) => e.id)
+    setSelectedIds(ungeneratedIds)
+  }
+
+  const getEpisodeStatus = (episodeId: string) => {
+    const epScripts = scripts.filter((s) => s.episodeId === episodeId)
+    const sceneIds = epScripts.flatMap((s) => s.scenes.map((sc) => sc.id))
+    if (sceneIds.length === 0) return { status: "none" as const, shotCount: 0, sceneCount: 0 }
+    const generatedSbs = storyboards.filter(
+      (sb) => sceneIds.includes(sb.scriptSceneId) && sb.shots.length > 0
+    )
+    const shotCount = generatedSbs.reduce((sum, sb) => sum + sb.shots.length, 0)
+    if (generatedSbs.length === 0) return { status: "none" as const, shotCount: 0, sceneCount: sceneIds.length }
+    if (generatedSbs.length < sceneIds.length) return { status: "partial" as const, shotCount, sceneCount: sceneIds.length }
+    return { status: "generated" as const, shotCount, sceneCount: sceneIds.length }
+  }
+
+  const handleGenerate = () => {
+    if (selectedIds.length === 0) return
+    onGenerate(selectedIds)
+    onOpenChange(false)
+    setSelectedIds([])
+  }
+
+  const hasGeneratedSelected = selectedIds.some((id) => getEpisodeStatus(id).status !== "none")
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>选择要生成分镜的分集</DialogTitle>
+          <DialogDescription>
+            选择需要 AI 生成分镜的分集，已有分镜的分集重新生成将覆盖现有数据。
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex gap-2 mb-3">
+          <Button variant="outline" size="sm" onClick={selectAll}>
+            全选
+          </Button>
+          <Button variant="outline" size="sm" onClick={selectUngenerated}>
+            仅选未生成
+          </Button>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto space-y-2">
+          {episodes.map((ep) => {
+            const info = getEpisodeStatus(ep.id)
+            return (
+              <label
+                key={ep.id}
+                className="flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <Checkbox
+                  checked={selectedIds.includes(ep.id)}
+                  onCheckedChange={() => toggle(ep.id)}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    第{ep.index + 1}集 · {ep.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {info.sceneCount} 场景
+                  </p>
+                </div>
+                <div>
+                  {info.status === "generated" && (
+                    <Badge variant="default" className="text-xs bg-green-600">
+                      已生成 {info.shotCount}镜头
+                    </Badge>
+                  )}
+                  {info.status === "partial" && (
+                    <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
+                      部分生成 {info.shotCount}镜头
+                    </Badge>
+                  )}
+                  {info.status === "none" && (
+                    <Badge variant="outline" className="text-xs">
+                      未生成
+                    </Badge>
+                  )}
+                </div>
+              </label>
+            )
+          })}
+        </div>
+
+        <div className="text-sm text-muted-foreground">
+          已选 {selectedIds.length} 个分集
+          {hasGeneratedSelected && (
+            <span className="text-amber-600 ml-2">
+              ⚠ 已生成的分集重新生成将覆盖现有分镜
+            </span>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button onClick={handleGenerate} disabled={selectedIds.length === 0}>
+            生成选中分镜
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

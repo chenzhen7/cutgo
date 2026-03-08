@@ -449,3 +449,114 @@ export const STYLE_PRESETS = [
 
 export const DEFAULT_NEGATIVE_PROMPTS =
   "bad anatomy, text, watermark, low quality, blurry, deformed, extra limbs, disfigured"
+
+// ── Storyboard Types ──
+
+export type ShotSize = "extreme_wide" | "wide" | "medium" | "medium_close" | "close" | "extreme_close"
+export type CameraMovement = "static" | "push_in" | "pull_out" | "pan" | "tilt" | "tracking" | "orbit" | "crane" | "handheld"
+export type CameraAngle = "eye_level" | "high" | "low" | "birds_eye" | "dutch"
+export type StoryboardStatus = "draft" | "generated" | "edited"
+
+export const SHOT_SIZE_OPTIONS: { value: ShotSize; label: string; en: string }[] = [
+  { value: "extreme_wide", label: "远景", en: "Extreme Wide Shot" },
+  { value: "wide", label: "全景", en: "Wide Shot" },
+  { value: "medium", label: "中景", en: "Medium Shot" },
+  { value: "medium_close", label: "中近景", en: "Medium Close-Up" },
+  { value: "close", label: "近景", en: "Close-Up" },
+  { value: "extreme_close", label: "特写", en: "Extreme Close-Up" },
+]
+
+export const CAMERA_MOVEMENT_OPTIONS: { value: CameraMovement; label: string; en: string }[] = [
+  { value: "static", label: "静止", en: "Static" },
+  { value: "push_in", label: "推进", en: "Push In" },
+  { value: "pull_out", label: "拉远", en: "Pull Out" },
+  { value: "pan", label: "横摇", en: "Pan" },
+  { value: "tilt", label: "竖摇", en: "Tilt" },
+  { value: "tracking", label: "跟拍", en: "Tracking" },
+  { value: "orbit", label: "环绕", en: "Orbit" },
+  { value: "crane", label: "升降", en: "Crane" },
+  { value: "handheld", label: "手持", en: "Handheld" },
+]
+
+export const CAMERA_ANGLE_OPTIONS: { value: CameraAngle; label: string; en: string }[] = [
+  { value: "eye_level", label: "平视", en: "Eye Level" },
+  { value: "high", label: "俯拍", en: "High Angle" },
+  { value: "low", label: "仰拍", en: "Low Angle" },
+  { value: "birds_eye", label: "鸟瞰", en: "Bird's Eye" },
+  { value: "dutch", label: "荷兰角", en: "Dutch Angle" },
+]
+
+export interface Shot {
+  id: string
+  storyboardId: string
+  index: number
+  shotSize: ShotSize
+  cameraMovement: CameraMovement
+  cameraAngle: CameraAngle
+  composition: string
+  prompt: string
+  negativePrompt: string | null
+  duration: string
+  imageUrl: string | null
+  scriptLineIds: string | null
+  dialogueText: string | null
+  actionNote: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Storyboard {
+  id: string
+  projectId: string
+  scriptSceneId: string
+  scriptScene: ScriptSceneData & {
+    script: {
+      id: string
+      episodeId: string
+      episode: {
+        id: string
+        index: number
+        title: string
+      }
+    }
+  }
+  status: StoryboardStatus
+  shots: Shot[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type StoryboardGenerateStatus = "idle" | "generating" | "completed" | "error"
+
+export interface StoryboardGenerateProgress {
+  current: number
+  total: number
+  currentSceneTitle: string
+  currentEpisodeTitle: string
+}
+
+export interface ShotInput {
+  shotSize: string
+  cameraMovement?: string
+  cameraAngle?: string
+  composition: string
+  prompt: string
+  negativePrompt?: string
+  duration?: string
+  scriptLineIds?: string
+  dialogueText?: string
+  actionNote?: string
+  insertAfter?: string
+}
+
+export interface StoryboardGenerateResult {
+  storyboards: Storyboard[]
+  stats: {
+    storyboardCount: number
+    totalShots: number
+    totalDuration: string
+    avgShotsPerScene: number
+    generatedScenes: number
+    skippedScenes: number
+  }
+}
