@@ -128,18 +128,31 @@ export function ScriptEditor({
 
         {/* Content */}
         {editing ? (
-          <Textarea
-            ref={textareaRef}
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="flex-1 min-h-0 rounded-none border-0 resize-none p-4 text-sm leading-relaxed font-mono focus-visible:ring-0"
-            placeholder="输入剧本内容..."
-          />
+          <div className="flex-1 min-h-0 mx-3 my-3 rounded-sm overflow-hidden border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/40 dark:bg-amber-950/20">
+            <Textarea
+              ref={textareaRef}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="flex-1 min-h-0 rounded-none border-0 resize-none p-4 text-sm leading-relaxed font-mono focus-visible:ring-0 bg-transparent"
+              placeholder="输入剧本内容..."
+            />
+          </div>
         ) : (
           <ScrollArea className="flex-1 min-h-0">
             {script.content ? (
-              <div className="p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono">
-                {script.content}
+              <div className="min-h-full bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-sm mx-3 my-3">
+                <div className="flex font-mono text-sm leading-relaxed">
+                  <div className="flex-shrink-0 select-none text-right text-muted-foreground/70 border-r border-amber-200/60 dark:border-amber-700/40 bg-amber-100/30 dark:bg-amber-900/20 py-4 pl-3 pr-4 min-w-[2.5rem]">
+                    {script.content.split("\n").map((_, i) => (
+                      <div key={i} className="leading-relaxed">
+                        {i + 1}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex-1 py-4 px-4 whitespace-pre-wrap break-words">
+                    {script.content}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
