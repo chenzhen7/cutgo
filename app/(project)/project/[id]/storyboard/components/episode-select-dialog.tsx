@@ -43,9 +43,9 @@ export function EpisodeSelectDialog({
   const selectUngenerated = () => {
     const ungeneratedIds = episodes.filter((ep) => {
       const epScripts = scripts.filter((s) => s.episodeId === ep.id)
-      const sceneIds = epScripts.flatMap((s) => s.scenes.map((sc) => sc.id))
+      const scriptIds = epScripts.map((s) => s.id)
       const generatedCount = storyboards.filter(
-        (sb) => sceneIds.includes(sb.scriptSceneId) && sb.shots.length > 0
+        (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
       ).length
       return generatedCount === 0
     }).map((e) => e.id)
@@ -54,15 +54,15 @@ export function EpisodeSelectDialog({
 
   const getEpisodeStatus = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const sceneIds = epScripts.flatMap((s) => s.scenes.map((sc) => sc.id))
-    if (sceneIds.length === 0) return { status: "none" as const, shotCount: 0, sceneCount: 0 }
+    const scriptIds = epScripts.map((s) => s.id)
+    if (scriptIds.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: 0 }
     const generatedSbs = storyboards.filter(
-      (sb) => sceneIds.includes(sb.scriptSceneId) && sb.shots.length > 0
+      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     )
     const shotCount = generatedSbs.reduce((sum, sb) => sum + sb.shots.length, 0)
-    if (generatedSbs.length === 0) return { status: "none" as const, shotCount: 0, sceneCount: sceneIds.length }
-    if (generatedSbs.length < sceneIds.length) return { status: "partial" as const, shotCount, sceneCount: sceneIds.length }
-    return { status: "generated" as const, shotCount, sceneCount: sceneIds.length }
+    if (generatedSbs.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: scriptIds.length }
+    if (generatedSbs.length < scriptIds.length) return { status: "partial" as const, shotCount, scriptCount: scriptIds.length }
+    return { status: "generated" as const, shotCount, scriptCount: scriptIds.length }
   }
 
   const handleGenerate = () => {
@@ -110,7 +110,7 @@ export function EpisodeSelectDialog({
                     第{ep.index + 1}集 · {ep.title}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {info.sceneCount} 场景
+                    {info.scriptCount} 集剧本
                   </p>
                 </div>
                 <div>
@@ -139,7 +139,7 @@ export function EpisodeSelectDialog({
           已选 {selectedIds.length} 个分集
           {hasGeneratedSelected && (
             <span className="text-amber-600 ml-2">
-              ⚠ 已生成的分集重新生成将覆盖现有分镜
+              已生成的分集重新生成将覆盖现有分镜
             </span>
           )}
         </div>

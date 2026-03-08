@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { CheckCircle2, Circle, Loader2, AlertCircle, Clock } from "lucide-react"
+import { CheckCircle2, Circle, Clock } from "lucide-react"
 import type { Episode, Script, Storyboard } from "@/lib/types"
 
 interface EpisodeNavListProps {
@@ -21,9 +21,9 @@ export function EpisodeNavList({
 }: EpisodeNavListProps) {
   const getEpisodeInfo = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const sceneIds = epScripts.flatMap((s) => s.scenes.map((sc) => sc.id))
+    const scriptIds = epScripts.map((s) => s.id)
     const epStoryboards = storyboards.filter(
-      (sb) => sceneIds.includes(sb.scriptSceneId) && sb.shots.length > 0
+      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     )
     const shotCount = epStoryboards.reduce((sum, sb) => sum + sb.shots.length, 0)
     const totalDuration = epStoryboards.reduce(
@@ -32,10 +32,10 @@ export function EpisodeNavList({
     )
 
     let status: "none" | "partial" | "generated" = "none"
-    if (epStoryboards.length > 0 && epStoryboards.length >= sceneIds.length) status = "generated"
+    if (epStoryboards.length > 0 && epStoryboards.length >= scriptIds.length) status = "generated"
     else if (epStoryboards.length > 0) status = "partial"
 
-    return { sceneCount: sceneIds.length, shotCount, totalDuration: Math.round(totalDuration), status }
+    return { scriptCount: scriptIds.length, shotCount, totalDuration: Math.round(totalDuration), status }
   }
 
   return (
@@ -76,7 +76,7 @@ export function EpisodeNavList({
               </p>
               <div className="flex items-center gap-2 mt-1 ml-5">
                 <span className="text-xs text-muted-foreground">
-                  {info.sceneCount}场景
+                  {info.scriptCount}集剧本
                 </span>
                 {info.shotCount > 0 && (
                   <>

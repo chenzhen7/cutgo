@@ -3,14 +3,11 @@
 import { useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   CheckCircle2,
   Circle,
   Loader2,
-  AlertCircle,
   Sparkles,
-  Film,
   BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -56,12 +53,12 @@ export function EpisodeNavList({
   const isGenerating = generateStatus === "generating"
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
       <div className="flex flex-col gap-1 p-2">
         {chapterGroups.map((group) => (
           <div key={group.chapter.id} className="mb-2">
-            <div className="flex items-center gap-1.5 px-2 py-1.5">
-              <BookOpen className="size-3 text-muted-foreground" />
+            <div className="flex items-center gap-1.5 px-2 py-1.5 min-w-0">
+              <BookOpen className="size-3 shrink-0 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground truncate">
                 {group.chapter.title || `第${group.chapter.index + 1}章`}
               </span>
@@ -84,7 +81,7 @@ export function EpisodeNavList({
                     if (script) onSelectScript(script.id)
                   }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     {isGenerating ? (
                       <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
                     ) : hasScript ? (
@@ -95,7 +92,7 @@ export function EpisodeNavList({
                     <span className="text-[10px] text-muted-foreground shrink-0">
                       第{ep.index}集
                     </span>
-                    <span className="text-sm font-medium truncate flex-1">
+                    <span className="text-sm font-medium truncate">
                       {ep.title}
                     </span>
                   </div>
@@ -103,12 +100,8 @@ export function EpisodeNavList({
                   {hasScript ? (
                     <div className="flex items-center gap-2 ml-5.5">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-                        <Film className="size-2.5" />
-                        {script.scenes.length}场
+                        {script.content.length}字
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">
-                        {script.scenes.reduce((s, sc) => s + sc.lines.length, 0)}行
-                      </span>
                     </div>
                   ) : (
                     <div className="ml-5.5">
@@ -133,6 +126,6 @@ export function EpisodeNavList({
           </div>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   )
 }

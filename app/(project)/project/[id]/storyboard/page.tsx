@@ -103,9 +103,9 @@ export default function StoryboardPage() {
     [projectId, generateStoryboards]
   )
 
-  const handleRegenerateScene = useCallback(
-    async (scriptSceneId: string) => {
-      await generateStoryboards(projectId, undefined, [scriptSceneId], "overwrite")
+  const handleRegenerateScript = useCallback(
+    async (scriptId: string) => {
+      await generateStoryboards(projectId, undefined, [scriptId], "overwrite")
     },
     [projectId, generateStoryboards]
   )
@@ -298,7 +298,7 @@ export default function StoryboardPage() {
                     onDuplicateShot={(sbId, shotId) => duplicateShot(sbId, shotId)}
                     onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
                     onAddShot={handleAddShot}
-                    onRegenerateScene={handleRegenerateScene}
+                    onRegenerateScript={handleRegenerateScript}
                     onViewScript={(sb) => setViewingScriptStoryboard(sb)}
                   />
                 ))

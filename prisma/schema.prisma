@@ -174,49 +174,14 @@ model Script {
   episodeId String  @unique
   episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
-  title  String
-  status String @default("draft") // "draft" | "generated" | "edited"
+  title      String
+  content    String    @default("")
+  status     String    @default("draft") // "draft" | "generated" | "edited"
+  characters String?   // JSON array of asset character names
+  props      String?   // JSON array of asset prop names
+  location   String?   // asset scene name
 
-  scenes ScriptScene[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ScriptScene {
-  id       String @id @default(cuid())
-  scriptId String
-  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-
-  index       Int
-  title       String
-  description String?
-  duration    String  @default("15s")
-  emotion     String?
-  bgm         String?
-  location    String?
-  characters  String? // JSON array of asset character names, e.g. ["林晚秋","陆司琛"]
-  props       String? // JSON array of asset prop names, e.g. ["合同文件","戒指"]
-
-  lines ScriptLine[]
-  storyboard Storyboard?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ScriptLine {
-  id      String      @id @default(cuid())
-  sceneId String
-  scene   ScriptScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
-
-  index         Int
-  type          String  // "dialogue" | "narration" | "action" | "transition"
-  character     String?
-  emotion       String?
-  content       String
-  duration      String?
-  parenthetical String?
+  storyboards Storyboard[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -289,8 +254,8 @@ model Storyboard {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  scriptSceneId String      @unique
-  scriptScene   ScriptScene @relation(fields: [scriptSceneId], references: [id], onDelete: Cascade)
+  scriptId String
+  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
 
   status String @default("draft") // "draft" | "generated" | "edited"
 

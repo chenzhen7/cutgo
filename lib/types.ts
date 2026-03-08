@@ -134,39 +134,11 @@ export interface Script {
     chapter: { id: string; index: number; title: string | null }
   }
   title: string
+  content: string
   status: "draft" | "generated" | "edited"
-  scenes: ScriptSceneData[]
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ScriptSceneData {
-  id: string
-  scriptId: string
-  index: number
-  title: string
-  description: string | null
-  duration: string
-  emotion: string | null
-  bgm: string | null
-  location: string | null
   characters: string | null
   props: string | null
-  lines: ScriptLineData[]
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ScriptLineData {
-  id: string
-  sceneId: string
-  index: number
-  type: "dialogue" | "narration" | "action" | "transition"
-  character: string | null
-  emotion: string | null
-  content: string
-  duration: string | null
-  parenthetical: string | null
+  location: string | null
   createdAt: string
   updatedAt: string
 }
@@ -179,35 +151,10 @@ export interface ScriptGenerateProgress {
   currentEpisodeTitle: string
 }
 
-export interface ScriptSceneInput {
-  title: string
-  description?: string
-  duration?: string
-  emotion?: string
-  bgm?: string
-  location?: string
-  characters?: string
-  props?: string
-}
-
-export interface ScriptLineInput {
-  type: "dialogue" | "narration" | "action" | "transition"
-  character?: string
-  emotion?: string
-  content: string
-  duration?: string
-  parenthetical?: string
-  insertAfter?: string
-}
-
 export interface ScriptGenerateResult {
   scripts: Script[]
   stats: {
     scriptCount: number
-    totalScenes: number
-    totalLines: number
-    totalDuration: string
-    characterCount: number
     generatedEpisodes: number
     skippedEpisodes: number
   }
@@ -508,16 +455,16 @@ export interface Shot {
 export interface Storyboard {
   id: string
   projectId: string
-  scriptSceneId: string
-  scriptScene: ScriptSceneData & {
-    script: {
+  scriptId: string
+  script: {
+    id: string
+    title: string
+    content: string
+    episodeId: string
+    episode: {
       id: string
-      episodeId: string
-      episode: {
-        id: string
-        index: number
-        title: string
-      }
+      index: number
+      title: string
     }
   }
   status: StoryboardStatus

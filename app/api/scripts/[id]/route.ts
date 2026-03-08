@@ -11,12 +11,6 @@ const scriptInclude = {
       chapter: { select: { id: true, index: true, title: true } },
     },
   },
-  scenes: {
-    orderBy: { index: "asc" as const },
-    include: {
-      lines: { orderBy: { index: "asc" as const } },
-    },
-  },
 }
 
 export async function GET(
@@ -40,11 +34,15 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await request.json()
-  const { title, status } = body
+  const { title, content, status, characters, props, location } = body
 
-  const data: Record<string, string> = {}
+  const data: Record<string, unknown> = {}
   if (title !== undefined) data.title = title
+  if (content !== undefined) data.content = content
   if (status !== undefined) data.status = status
+  if (characters !== undefined) data.characters = characters
+  if (props !== undefined) data.props = props
+  if (location !== undefined) data.location = location
 
   const script = await prisma.script.update({
     where: { id },

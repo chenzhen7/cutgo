@@ -26,11 +26,7 @@ export function ConfirmScriptDialog({
   episodes,
   onConfirm,
 }: ConfirmScriptDialogProps) {
-  const totalScenes = scripts.reduce((sum, s) => sum + s.scenes.length, 0)
-  const totalLines = scripts.reduce(
-    (sum, s) => sum + s.scenes.reduce((ss, sc) => ss + sc.lines.length, 0),
-    0
-  )
+  const totalWords = scripts.reduce((sum, s) => sum + s.content.length, 0)
   const disabled = scripts.length === 0
 
   return (
@@ -49,8 +45,7 @@ export function ConfirmScriptDialog({
               <p>确认后将进入分镜生成阶段，当前剧本摘要：</p>
               <ul className="list-disc list-inside text-sm space-y-1">
                 <li>已生成剧本：{scripts.length}/{episodes.length} 集</li>
-                <li>总场景数：{totalScenes} 个</li>
-                <li>总台词行数：{totalLines} 行</li>
+                <li>总字数：{totalWords} 字</li>
               </ul>
             </div>
           </AlertDialogDescription>

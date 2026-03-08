@@ -14,16 +14,16 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, Users, MapPin, Box, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
-  ScriptSceneData,
+  Script,
   AssetCharacter,
   AssetScene,
   AssetProp,
 } from "@/lib/types"
 
-interface SceneAssetDialogProps {
+interface ScriptAssetDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  scene: ScriptSceneData
+  script: Script
   projectId: string
   onSave: (data: {
     characters: string
@@ -44,13 +44,13 @@ function parseJsonArray(val: string | null | undefined): string[] {
   }
 }
 
-export function SceneAssetDialog({
+export function ScriptAssetDialog({
   open,
   onOpenChange,
-  scene,
+  script,
   projectId,
   onSave,
-}: SceneAssetDialogProps) {
+}: ScriptAssetDialogProps) {
   const [tab, setTab] = useState<AssetTab>("characters")
   const [loading, setLoading] = useState(false)
 
@@ -80,11 +80,11 @@ export function SceneAssetDialog({
   useEffect(() => {
     if (open) {
       fetchAssets()
-      setSelectedCharNames(parseJsonArray(scene.characters))
-      setSelectedLocation(scene.location || null)
-      setSelectedPropNames(parseJsonArray(scene.props))
+      setSelectedCharNames(parseJsonArray(script.characters))
+      setSelectedLocation(script.location || null)
+      setSelectedPropNames(parseJsonArray(script.props))
     }
-  }, [open, scene, fetchAssets])
+  }, [open, script, fetchAssets])
 
   const toggleCharacter = (name: string) => {
     setSelectedCharNames((prev) =>
@@ -126,7 +126,7 @@ export function SceneAssetDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>编辑场景资产 — {scene.title}</DialogTitle>
+          <DialogTitle>关联资产 — {script.title}</DialogTitle>
         </DialogHeader>
 
         {loading ? (

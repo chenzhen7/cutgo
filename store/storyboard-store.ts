@@ -29,11 +29,11 @@ interface StoryboardState {
   generateStoryboards: (
     projectId: string,
     episodeIds?: string[],
-    scriptSceneIds?: string[],
+    scriptIds?: string[],
     mode?: "skip_existing" | "overwrite"
   ) => Promise<void>
 
-  createStoryboard: (projectId: string, scriptSceneId: string) => Promise<void>
+  createStoryboard: (projectId: string, scriptId: string) => Promise<void>
   updateStoryboard: (storyboardId: string, data: { status?: string }) => Promise<void>
   deleteStoryboard: (storyboardId: string) => Promise<void>
 
@@ -72,7 +72,7 @@ interface StoryboardState {
     totalDuration: string
     shotSizeDistribution: Record<string, number>
     coverage: string
-    totalScenes: number
+    totalScripts: number
   }
 
   reset: () => void
@@ -114,13 +114,13 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     set({ scripts: data || [] })
   },
 
-  generateStoryboards: async (projectId, episodeIds, scriptSceneIds, mode = "skip_existing") => {
+  generateStoryboards: async (projectId, episodeIds, scriptIds, mode = "skip_existing") => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
       const res = await fetch("/api/storyboards/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, episodeIds, scriptSceneIds, mode }),
+        body: JSON.stringify({ projectId, episodeIds, scriptIds, mode }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -141,11 +141,11 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     }
   },
 
-  createStoryboard: async (projectId, scriptSceneId) => {
+  createStoryboard: async (projectId, scriptId) => {
     const res = await fetch("/api/storyboards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, scriptSceneId }),
+      body: JSON.stringify({ projectId, scriptId }),
     })
     if (!res.ok) throw new Error("创建分镜板失败")
     const sb = await res.json()
@@ -308,7 +308,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     const { storyboards, activeEpisodeId } = get()
     if (!activeEpisodeId) return storyboards
     return storyboards.filter(
-      (sb) => sb.scriptScene?.script?.episodeId === activeEpisodeId
+      (sb) => sb.script?.episodeId === activeEpisodeId
     )
   },
 
@@ -326,7 +326,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     const { storyboards, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
     const episodeSbs = activeEpisodeId
-      ? storyboards.filter((sb) => sb.scriptScene?.script?.episodeId === activeEpisodeId)
+      ? storyboards.filter((sb) => sb.script?.episodeId === activeEpisodeId)
       : storyboards
     const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, storyboard: sb })))
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
@@ -337,7 +337,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     const { storyboards, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
     const episodeSbs = activeEpisodeId
-      ? storyboards.filter((sb) => sb.scriptScene?.script?.episodeId === activeEpisodeId)
+      ? storyboards.filter((sb) => sb.script?.episodeId === activeEpisodeId)
       : storyboards
     const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, storyboard: sb })))
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
@@ -348,19 +348,19 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     const { storyboards, scripts, generateStatus } = get()
     if (generateStatus === "generating") return "generating"
     const episodeScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const allSceneIds = episodeScripts.flatMap((s) => s.scenes.map((sc) => sc.id))
-    if (allSceneIds.length === 0) return "none"
+    const scriptIds = episodeScripts.map((s) => s.id)
+    if (scriptIds.length === 0) return "none"
     const generatedCount = storyboards.filter(
-      (sb) => allSceneIds.includes(sb.scriptSceneId) && sb.shots.length > 0
+      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     ).length
     if (generatedCount === 0) return "none"
-    if (generatedCount < allSceneIds.length) return "partial"
+    if (generatedCount < scriptIds.length) return "partial"
     return "generated"
   },
 
   storyboardStats: () => {
     const { storyboards, scripts } = get()
-    const totalScenes = scripts.reduce((sum, s) => sum + s.scenes.length, 0)
+    const totalScripts = scripts.length
     const generatedSbs = storyboards.filter((sb) => sb.shots.length > 0)
     const totalShots = storyboards.reduce((sum, sb) => sum + sb.shots.length, 0)
     const totalDurationSec = storyboards.reduce(
@@ -379,8 +379,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       avgShotsPerScene: generatedSbs.length > 0 ? Math.round((totalShots / generatedSbs.length) * 10) / 10 : 0,
       totalDuration: `${Math.round(totalDurationSec)}s`,
       shotSizeDistribution,
-      coverage: `${generatedSbs.length}/${totalScenes}`,
-      totalScenes,
+      coverage: `${generatedSbs.length}/${totalScripts}`,
+      totalScripts,
     }
   },
 

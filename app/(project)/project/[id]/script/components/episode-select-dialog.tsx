@@ -37,11 +37,10 @@ export function EpisodeSelectDialog({
     [scripts]
   )
 
-  const scriptLineCount = useMemo(() => {
+  const scriptWordCount = useMemo(() => {
     const map = new Map<string, number>()
     for (const s of scripts) {
-      const count = s.scenes.reduce((sum, sc) => sum + sc.lines.length, 0)
-      map.set(s.episodeId, count)
+      map.set(s.episodeId, s.content.length)
     }
     return map
   }, [scripts])
@@ -86,7 +85,7 @@ export function EpisodeSelectDialog({
           <div className="flex flex-col gap-1">
             {episodes.map((ep) => {
               const hasScript = scriptEpisodeIds.has(ep.id)
-              const lineCount = scriptLineCount.get(ep.id) || 0
+              const wordCount = scriptWordCount.get(ep.id) || 0
               const isChecked = selectedIds.includes(ep.id)
 
               return (
@@ -103,16 +102,13 @@ export function EpisodeSelectDialog({
                       <span className="text-sm font-medium truncate">
                         {ep.title}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        ({ep.scenes.length}场景)
-                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {hasScript ? (
                       <Badge variant="secondary" className="gap-1 text-xs">
                         <CheckCircle2 className="size-3 text-green-500" />
-                        已生成 {lineCount}行
+                        已生成 {wordCount}字
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="gap-1 text-xs opacity-60">

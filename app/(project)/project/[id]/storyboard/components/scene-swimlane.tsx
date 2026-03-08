@@ -10,10 +10,9 @@ import {
   RefreshCw,
   BookOpen,
   Plus,
-  MapPin,
 } from "lucide-react"
 import { ShotCard } from "./shot-card"
-import type { Storyboard, Shot } from "@/lib/types"
+import type { Storyboard } from "@/lib/types"
 
 interface SceneSwimlaneProps {
   storyboard: Storyboard
@@ -23,7 +22,7 @@ interface SceneSwimlaneProps {
   onDuplicateShot: (storyboardId: string, shotId: string) => void
   onDeleteShot: (storyboardId: string, shotId: string) => void
   onAddShot: (storyboardId: string) => void
-  onRegenerateScene: (scriptSceneId: string) => void
+  onRegenerateScript: (scriptId: string) => void
   onViewScript: (storyboard: Storyboard) => void
 }
 
@@ -35,11 +34,11 @@ export function SceneSwimlane({
   onDuplicateShot,
   onDeleteShot,
   onAddShot,
-  onRegenerateScene,
+  onRegenerateScript,
   onViewScript,
 }: SceneSwimlaneProps) {
   const [collapsed, setCollapsed] = useState(false)
-  const scene = storyboard.scriptScene
+  const script = storyboard.script
   const totalDuration = storyboard.shots.reduce(
     (sum, s) => sum + (parseFloat(s.duration) || 0),
     0
@@ -61,19 +60,11 @@ export function SceneSwimlane({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium truncate">
-              {scene.title}
+              {script.title}
             </span>
-            {scene.location && (
-              <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                <MapPin className="size-3" />
-                {scene.location}
-              </span>
-            )}
-            {scene.emotion && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                {scene.emotion}
-              </Badge>
-            )}
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              第{script.episode.index}集
+            </Badge>
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">
@@ -91,7 +82,7 @@ export function SceneSwimlane({
             variant="ghost"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => onRegenerateScene(scene.id)}
+            onClick={() => onRegenerateScript(script.id)}
           >
             <RefreshCw className="size-3 mr-1" />
             重新生成
@@ -123,7 +114,6 @@ export function SceneSwimlane({
             />
           ))}
 
-          {/* Add shot placeholder */}
           <button
             onClick={() => onAddShot(storyboard.id)}
             className="w-40 shrink-0 h-[180px] rounded-lg border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"

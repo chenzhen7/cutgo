@@ -92,17 +92,7 @@ export function ShotDetailPanel({
     }
   }
 
-  const scene = storyboard.scriptScene
-  const relatedLines = shot.scriptLineIds
-    ? (() => {
-        try {
-          const ids = JSON.parse(shot.scriptLineIds) as string[]
-          return scene.lines.filter((l) => ids.includes(l.id))
-        } catch {
-          return []
-        }
-      })()
-    : []
+  const script = storyboard.script
 
   return (
     <div className="flex flex-col h-full">
@@ -276,20 +266,12 @@ export function ShotDetailPanel({
           />
         </div>
 
-        {/* Related script lines */}
-        {relatedLines.length > 0 && (
+        {/* Related script */}
+        {script && (
           <div>
-            <Label className="text-xs">关联剧本行</Label>
-            <div className="mt-1 space-y-1">
-              {relatedLines.map((line) => (
-                <div key={line.id} className="text-xs rounded bg-muted/50 px-2 py-1.5">
-                  <span className="text-muted-foreground">
-                    [{line.type === "dialogue" ? "对白" : line.type === "narration" ? "旁白" : line.type === "action" ? "动作" : "转场"}]
-                  </span>{" "}
-                  {line.character && <span className="font-medium">{line.character}：</span>}
-                  {line.content}
-                </div>
-              ))}
+            <Label className="text-xs">关联剧本</Label>
+            <div className="mt-1 text-xs rounded bg-muted/50 px-2 py-1.5 text-muted-foreground">
+              {script.title} · 第{script.episode.index}集
             </div>
           </div>
         )}

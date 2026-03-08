@@ -11,12 +11,6 @@ const scriptInclude = {
       chapter: { select: { id: true, index: true, title: true } },
     },
   },
-  scenes: {
-    orderBy: { index: "asc" as const },
-    include: {
-      lines: { orderBy: { index: "asc" as const } },
-    },
-  },
 }
 
 export async function GET(request: NextRequest) {

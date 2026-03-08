@@ -3,18 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
-import { Button } from "@/components/ui/button"
-import { Loader2, FileText } from "lucide-react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Loader2 } from "lucide-react"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
 import { GenerateScriptDropdown } from "./components/generate-script-dropdown"
@@ -37,12 +26,7 @@ export default function ScriptPage() {
     fetchScripts,
     fetchEpisodes,
     generateScripts,
-    addScene,
-    updateScene,
-    deleteScene,
-    addLine,
-    updateLine,
-    deleteLine,
+    updateScript,
     setActiveScriptId,
     confirmScripts,
   } = useScriptStore()
@@ -50,7 +34,6 @@ export default function ScriptPage() {
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
   const [outlineConfirmed, setOutlineConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [deletingSceneId, setDeletingSceneId] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -68,7 +51,6 @@ export default function ScriptPage() {
     init()
   }, [projectId, fetchEpisodes, fetchScripts])
 
-  // Auto-select first script
   useEffect(() => {
     if (scripts.length > 0 && !activeScriptId) {
       setActiveScriptId(scripts[0].id)
@@ -101,14 +83,6 @@ export default function ScriptPage() {
     router.push(`/project/${projectId}/storyboard`)
   }, [projectId, confirmScripts, router])
 
-  const handleDeleteScene = useCallback(
-    async (scriptId: string, sceneId: string) => {
-      await deleteScene(scriptId, sceneId)
-      setDeletingSceneId(null)
-    },
-    [deleteScene]
-  )
-
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
   const hasScripts = scripts.length > 0
   const isGenerating = generateStatus === "generating"
@@ -128,7 +102,7 @@ export default function ScriptPage() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">剧本生成</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            基于分集大纲，AI 为每一集生成结构化剧本
+            基于分集大纲，AI 为每一集生成剧本文本
           </p>
         </div>
         {hasScripts && (
@@ -160,7 +134,7 @@ export default function ScriptPage() {
           <div>
             <p className="text-sm font-medium">正在生成剧本...</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              AI 正在为每个分集生成结构化剧本，请稍候
+              AI 正在为每个分集生成剧本，请稍候
             </p>
           </div>
         </div>
@@ -179,7 +153,7 @@ export default function ScriptPage() {
         </div>
       )}
 
-      {/* Main content: Stats + Two-column layout */}
+      {/* Main content */}
       {hasScripts && (
         <>
           <div className="px-6 mb-4">
@@ -205,26 +179,10 @@ export default function ScriptPage() {
                 <ScriptEditor
                   script={activeScript}
                   projectId={projectId}
-                  onAddScene={(data) => addScene(activeScript.id, data)}
-                  onUpdateScene={(sceneId, data) =>
-                    updateScene(activeScript.id, sceneId, data)
-                  }
-                  onDeleteScene={(sceneId) =>
-                    setDeletingSceneId(sceneId)
-                  }
-                  onAddLine={(sceneId, data) =>
-                    addLine(activeScript.id, sceneId, data)
-                  }
-                  onUpdateLine={(sceneId, lineId, data) =>
-                    updateLine(activeScript.id, sceneId, lineId, data)
-                  }
-                  onDeleteLine={(sceneId, lineId) =>
-                    deleteLine(activeScript.id, sceneId, lineId)
-                  }
+                  onUpdateScript={(data) => updateScript(activeScript.id, data)}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <FileText className="size-12 text-muted-foreground mb-4" />
                   <h3 className="text-base font-medium mb-2">选择一个分集</h3>
                   <p className="text-sm text-muted-foreground">
                     从左侧列表中选择一个已生成剧本的分集进行查看和编辑
@@ -255,33 +213,6 @@ export default function ScriptPage() {
         scripts={scripts}
         onGenerate={handleGenerateSelected}
       />
-
-      {/* Delete scene confirmation */}
-      <AlertDialog
-        open={!!deletingSceneId}
-        onOpenChange={(open) => !open && setDeletingSceneId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>删除场景</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除这个场景吗？该场景下的所有剧本行也会一并删除，此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (activeScript && deletingSceneId) {
-                  handleDeleteScene(activeScript.id, deletingSceneId)
-                }
-              }}
-            >
-              确认删除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

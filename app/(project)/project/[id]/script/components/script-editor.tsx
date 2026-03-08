@@ -1,108 +1,175 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Plus, FileText } from "lucide-react"
-import type { Script, ScriptSceneInput, ScriptLineInput } from "@/lib/types"
-import { ScriptSceneCard } from "./script-scene-card"
-import { ScriptSceneFormDialog } from "./script-scene-form-dialog"
+import { Pencil, Save, X, FolderOpen, Users, Box, MapPin } from "lucide-react"
+import type { Script } from "@/lib/types"
+import { ScriptAssetDialog } from "./script-asset-dialog"
+
+function parseJsonArray(val: string | null | undefined): string[] {
+  if (!val) return []
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
 
 interface ScriptEditorProps {
   script: Script
   projectId: string
-  onAddScene: (data: ScriptSceneInput) => void
-  onUpdateScene: (sceneId: string, data: Partial<ScriptSceneInput>) => void
-  onDeleteScene: (sceneId: string) => void
-  onAddLine: (sceneId: string, data: ScriptLineInput) => void
-  onUpdateLine: (sceneId: string, lineId: string, data: Partial<ScriptLineInput>) => void
-  onDeleteLine: (sceneId: string, lineId: string) => void
+  onUpdateScript: (data: {
+    content?: string
+    characters?: string
+    props?: string
+    location?: string
+  }) => void
 }
 
 export function ScriptEditor({
   script,
   projectId,
-  onAddScene,
-  onUpdateScene,
-  onDeleteScene,
-  onAddLine,
-  onUpdateLine,
-  onDeleteLine,
+  onUpdateScript,
 }: ScriptEditorProps) {
-  const [showAddScene, setShowAddScene] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editContent, setEditContent] = useState("")
+  const [showAssetDialog, setShowAssetDialog] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  if (script.scenes.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <FileText className="size-12 text-muted-foreground mb-4" />
-        <h3 className="text-base font-medium mb-2">暂无场景</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          该集剧本尚无场景内容，点击下方按钮添加
-        </p>
-        <Button onClick={() => setShowAddScene(true)}>
-          <Plus className="size-4" />
-          添加场景
-        </Button>
-        <ScriptSceneFormDialog
-          open={showAddScene}
-          onOpenChange={setShowAddScene}
-          onSave={(data) => {
-            onAddScene(data)
-            setShowAddScene(false)
-          }}
-        />
-      </div>
-    )
-  }
+  const charNames = parseJsonArray(script.characters)
+  const propNames = parseJsonArray(script.props)
+
+  const startEditing = useCallback(() => {
+    setEditContent(script.content)
+    setEditing(true)
+    setTimeout(() => textareaRef.current?.focus(), 50)
+  }, [script.content])
+
+  const saveContent = useCallback(() => {
+    onUpdateScript({ content: editContent })
+    setEditing(false)
+  }, [editContent, onUpdateScript])
+
+  const cancelEditing = useCallback(() => {
+    setEditing(false)
+  }, [])
 
   return (
-    <ScrollArea className="h-full">
-      <div className="flex flex-col gap-4 p-4">
-        {/* Episode title header */}
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5">
-            第{script.episode.index}集
-          </span>
-          <h3 className="text-sm font-semibold">{script.title}</h3>
-          <span className="text-xs text-muted-foreground ml-auto">
-            {script.scenes.length} 场景 · {script.scenes.reduce((s, sc) => s + sc.lines.length, 0)} 行
-          </span>
+    <>
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5">
+              第{script.episode.index}集
+            </span>
+            <h3 className="text-sm font-semibold">{script.title}</h3>
+            <span className="text-xs text-muted-foreground">
+              {script.content.length} 字
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAssetDialog(true)}
+            >
+              <FolderOpen className="size-3.5" />
+              关联资产
+            </Button>
+            {!editing && (
+              <Button variant="outline" size="sm" onClick={startEditing}>
+                <Pencil className="size-3.5" />
+                编辑
+              </Button>
+            )}
+            {editing && (
+              <>
+                <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                  <X className="size-3.5" />
+                  取消
+                </Button>
+                <Button size="sm" onClick={saveContent}>
+                  <Save className="size-3.5" />
+                  保存
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        {script.scenes
-          .sort((a, b) => a.index - b.index)
-          .map((scene, idx) => (
-            <ScriptSceneCard
-              key={scene.id}
-              scene={scene}
-              sceneNumber={idx + 1}
-              projectId={projectId}
-              onUpdateScene={(data) => onUpdateScene(scene.id, data)}
-              onDeleteScene={() => onDeleteScene(scene.id)}
-              onAddLine={(data) => onAddLine(scene.id, data)}
-              onUpdateLine={(lineId, data) => onUpdateLine(scene.id, lineId, data)}
-              onDeleteLine={(lineId) => onDeleteLine(scene.id, lineId)}
-            />
-          ))}
+        {/* Asset tags */}
+        {(charNames.length > 0 || propNames.length > 0 || script.location) && (
+          <div className="flex items-center gap-1.5 flex-wrap px-4 py-2 border-b bg-muted/20">
+            {charNames.map((name) => (
+              <Badge key={name} variant="default" className="gap-1 text-[10px] px-1.5 py-0">
+                <Users className="size-2.5" />
+                {name}
+              </Badge>
+            ))}
+            {script.location && (
+              <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
+                <MapPin className="size-2.5" />
+                {script.location}
+              </Badge>
+            )}
+            {propNames.map((name) => (
+              <Badge key={name} variant="outline" className="gap-1 text-[10px] px-1.5 py-0">
+                <Box className="size-2.5" />
+                {name}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-        <Button
-          variant="outline"
-          className="w-full border-dashed"
-          onClick={() => setShowAddScene(true)}
-        >
-          <Plus className="size-4" />
-          添加场景
-        </Button>
+        {/* Content */}
+        {editing ? (
+          <Textarea
+            ref={textareaRef}
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="flex-1 min-h-0 rounded-none border-0 resize-none p-4 text-sm leading-relaxed font-mono focus-visible:ring-0"
+            placeholder="输入剧本内容..."
+          />
+        ) : (
+          <ScrollArea className="flex-1 min-h-0">
+            {script.content ? (
+              <div className="p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+                {script.content}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <h3 className="text-base font-medium mb-2">暂无剧本内容</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  点击编辑按钮手动编写，或使用 AI 生成
+                </p>
+                <Button onClick={startEditing}>
+                  <Pencil className="size-4" />
+                  开始编写
+                </Button>
+              </div>
+            )}
+          </ScrollArea>
+        )}
       </div>
 
-      <ScriptSceneFormDialog
-        open={showAddScene}
-        onOpenChange={setShowAddScene}
+      <ScriptAssetDialog
+        open={showAssetDialog}
+        onOpenChange={setShowAssetDialog}
+        script={script}
+        projectId={projectId}
         onSave={(data) => {
-          onAddScene(data)
-          setShowAddScene(false)
+          onUpdateScript({
+            characters: data.characters,
+            location: data.location,
+            props: data.props,
+          })
         }}
       />
-    </ScrollArea>
+    </>
   )
 }
