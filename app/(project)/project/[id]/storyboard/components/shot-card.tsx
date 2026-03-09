@@ -33,7 +33,7 @@ export function ShotCard({
         e.preventDefault()
       }}
       className={cn(
-        "group relative w-40 shrink-0 rounded-lg border bg-card cursor-pointer transition-all hover:shadow-md",
+        "group relative rounded-lg border bg-card cursor-pointer transition-all hover:shadow-md",
         isActive && "ring-2 ring-primary border-primary",
         isSelected && "ring-2 ring-blue-400 border-blue-400"
       )}
@@ -65,11 +65,11 @@ export function ShotCard({
       </div>
 
       {/* Image preview */}
-      <div className="mx-2 mt-7 h-20 rounded bg-muted flex items-center justify-center overflow-hidden">
+      <div className="mx-2 mt-7 aspect-[16/9] rounded bg-muted flex items-center justify-center overflow-hidden">
         {shot.imageUrl ? (
           <img src={shot.imageUrl} alt="" className="size-full object-cover" />
         ) : (
-          <ImageIcon className="size-6 text-muted-foreground/40" />
+          <ImageIcon className="size-8 text-muted-foreground/40" />
         )}
       </div>
 

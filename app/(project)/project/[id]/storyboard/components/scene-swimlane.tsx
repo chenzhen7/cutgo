@@ -101,7 +101,7 @@ export function SceneSwimlane({
 
       {/* Shots */}
       {!collapsed && (
-        <div className="flex items-start gap-3 p-3 overflow-x-auto">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 p-3">
           {storyboard.shots.map((shot) => (
             <ShotCard
               key={shot.id}
@@ -116,7 +116,7 @@ export function SceneSwimlane({
 
           <button
             onClick={() => onAddShot(storyboard.id)}
-            className="w-40 shrink-0 h-[180px] rounded-lg border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            className="min-h-[240px] rounded-lg border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
           >
             <Plus className="size-5 text-muted-foreground/40" />
             <span className="text-xs text-muted-foreground/60">添加镜头</span>

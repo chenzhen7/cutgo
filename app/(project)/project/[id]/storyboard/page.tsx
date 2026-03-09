@@ -48,7 +48,6 @@ export default function StoryboardPage() {
     updateShot,
     deleteShot,
     duplicateShot,
-    optimizePrompt,
     setActiveEpisodeId,
     setActiveShotId,
     setDetailPanelOpen,
@@ -333,7 +332,6 @@ export default function StoryboardPage() {
                   shot={currentActiveShot.shot}
                   storyboard={currentActiveShot.storyboard}
                   onUpdate={handleUpdateShot}
-                  onOptimizePrompt={optimizePrompt}
                   onPrev={prevShot() ? handlePrevShot : null}
                   onNext={nextShot() ? handleNextShot : null}
                   onClose={() => setDetailPanelOpen(false)}

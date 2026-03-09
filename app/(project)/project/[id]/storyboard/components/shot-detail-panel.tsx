@@ -16,8 +16,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  Loader2,
   ImageIcon,
 } from "lucide-react"
 import type { Shot, Storyboard, ShotInput } from "@/lib/types"
@@ -31,7 +29,6 @@ interface ShotDetailPanelProps {
   shot: Shot
   storyboard: Storyboard
   onUpdate: (storyboardId: string, shotId: string, data: Partial<ShotInput>) => void
-  onOptimizePrompt: (storyboardId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
   onPrev: (() => void) | null
   onNext: (() => void) | null
   onClose: () => void
@@ -41,27 +38,17 @@ export function ShotDetailPanel({
   shot,
   storyboard,
   onUpdate,
-  onOptimizePrompt,
   onPrev,
   onNext,
   onClose,
 }: ShotDetailPanelProps) {
   const [composition, setComposition] = useState(shot.composition)
-  const [prompt, setPrompt] = useState(shot.prompt)
-  const [negativePrompt, setNegativePrompt] = useState(shot.negativePrompt || "")
-  const [dialogueText, setDialogueText] = useState(shot.dialogueText || "")
-  const [actionNote, setActionNote] = useState(shot.actionNote || "")
   const [duration, setDuration] = useState(shot.duration.replace("s", ""))
-  const [optimizing, setOptimizing] = useState(false)
 
   useEffect(() => {
     setComposition(shot.composition)
-    setPrompt(shot.prompt)
-    setNegativePrompt(shot.negativePrompt || "")
-    setDialogueText(shot.dialogueText || "")
-    setActionNote(shot.actionNote || "")
     setDuration(shot.duration.replace("s", ""))
-  }, [shot.id, shot.composition, shot.prompt, shot.negativePrompt, shot.dialogueText, shot.actionNote, shot.duration])
+  }, [shot.id, shot.composition, shot.duration])
 
   const debouncedUpdate = useCallback(
     (data: Partial<ShotInput>) => {
@@ -75,21 +62,6 @@ export function ShotDetailPanel({
 
   const handleSelectChange = (field: string, value: string) => {
     onUpdate(storyboard.id, shot.id, { [field]: value })
-  }
-
-  const handleOptimize = async () => {
-    setOptimizing(true)
-    try {
-      const result = await onOptimizePrompt(storyboard.id, shot.id)
-      setPrompt(result.optimizedPrompt)
-      setNegativePrompt(result.negativePrompt)
-      onUpdate(storyboard.id, shot.id, {
-        prompt: result.optimizedPrompt,
-        negativePrompt: result.negativePrompt,
-      })
-    } finally {
-      setOptimizing(false)
-    }
   }
 
   const script = storyboard.script
@@ -210,7 +182,7 @@ export function ShotDetailPanel({
 
         {/* Composition */}
         <div>
-          <Label className="text-xs">画面构图（中文）</Label>
+          <Label className="text-xs">画面提示词</Label>
           <Textarea
             value={composition}
             onChange={(e) => {
@@ -219,50 +191,6 @@ export function ShotDetailPanel({
             }}
             className="mt-1 text-xs min-h-[60px] resize-none"
             placeholder="描述画面中的元素布局..."
-          />
-        </div>
-
-        {/* Prompt */}
-        <div>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">画面 Prompt（英文）</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={handleOptimize}
-              disabled={optimizing}
-            >
-              {optimizing ? (
-                <Loader2 className="size-3 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="size-3 mr-1" />
-              )}
-              AI 优化
-            </Button>
-          </div>
-          <Textarea
-            value={prompt}
-            onChange={(e) => {
-              setPrompt(e.target.value)
-              debouncedUpdate({ prompt: e.target.value })
-            }}
-            className="mt-1 text-xs min-h-[80px] resize-none"
-            placeholder="English prompt for AI image generation..."
-          />
-        </div>
-
-        {/* Negative prompt */}
-        <div>
-          <Label className="text-xs">负面提示词</Label>
-          <Textarea
-            value={negativePrompt}
-            onChange={(e) => {
-              setNegativePrompt(e.target.value)
-              debouncedUpdate({ negativePrompt: e.target.value })
-            }}
-            className="mt-1 text-xs min-h-[40px] resize-none"
-            placeholder="blurry, low quality, distorted..."
           />
         </div>
 
@@ -275,34 +203,6 @@ export function ShotDetailPanel({
             </div>
           </div>
         )}
-
-        {/* Dialogue text */}
-        <div>
-          <Label className="text-xs">台词/字幕文本</Label>
-          <Textarea
-            value={dialogueText}
-            onChange={(e) => {
-              setDialogueText(e.target.value)
-              debouncedUpdate({ dialogueText: e.target.value })
-            }}
-            className="mt-1 text-xs min-h-[40px] resize-none"
-            placeholder="该镜头期间的台词或旁白文本..."
-          />
-        </div>
-
-        {/* Action note */}
-        <div>
-          <Label className="text-xs">动作备注</Label>
-          <Textarea
-            value={actionNote}
-            onChange={(e) => {
-              setActionNote(e.target.value)
-              debouncedUpdate({ actionNote: e.target.value })
-            }}
-            className="mt-1 text-xs min-h-[40px] resize-none"
-            placeholder="该镜头的动作备注..."
-          />
-        </div>
       </div>
 
       {/* Footer */}
