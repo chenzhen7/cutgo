@@ -76,8 +76,6 @@ interface StoryboardState {
     storyboardCount: number
     totalShots: number
     avgShotsPerScene: number
-    totalDuration: string
-    shotSizeDistribution: Record<string, number>
     coverage: string
     totalScripts: number
   }
@@ -238,13 +236,10 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
     await get().addShot(storyboardId, {
-      shotSize: shot.shotSize,
-      cameraMovement: shot.cameraMovement,
-      cameraAngle: shot.cameraAngle,
+      shotSize: "medium",
       composition: shot.composition,
       prompt: shot.prompt,
       negativePrompt: shot.negativePrompt || undefined,
-      duration: shot.duration,
       scriptLineIds: shot.scriptLineIds || undefined,
       dialogueText: shot.dialogueText || undefined,
       actionNote: shot.actionNote || undefined,
@@ -387,22 +382,10 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     const totalScripts = scripts.length
     const generatedSbs = storyboards.filter((sb) => sb.shots.length > 0)
     const totalShots = storyboards.reduce((sum, sb) => sum + sb.shots.length, 0)
-    const totalDurationSec = storyboards.reduce(
-      (sum, sb) => sum + sb.shots.reduce((ss, s) => ss + (parseFloat(s.duration) || 0), 0),
-      0
-    )
-    const shotSizeDistribution: Record<string, number> = {}
-    for (const sb of storyboards) {
-      for (const s of sb.shots) {
-        shotSizeDistribution[s.shotSize] = (shotSizeDistribution[s.shotSize] || 0) + 1
-      }
-    }
     return {
       storyboardCount: generatedSbs.length,
       totalShots,
       avgShotsPerScene: generatedSbs.length > 0 ? Math.round((totalShots / generatedSbs.length) * 10) / 10 : 0,
-      totalDuration: `${Math.round(totalDurationSec)}s`,
-      shotSizeDistribution,
       coverage: `${generatedSbs.length}/${totalScripts}`,
       totalScripts,
     }

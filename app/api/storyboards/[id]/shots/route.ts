@@ -9,7 +9,7 @@ export async function POST(
   const body = await request.json()
 
   const {
-    shotSize,
+    shotSize = "medium",
     cameraMovement = "static",
     cameraAngle = "eye_level",
     composition,
@@ -25,9 +25,9 @@ export async function POST(
     insertAfter,
   } = body
 
-  if (!shotSize || !composition || !prompt) {
+  if (!composition || !prompt) {
     return NextResponse.json(
-      { error: "shotSize, composition, and prompt are required" },
+      { error: "composition and prompt are required" },
       { status: 400 }
     )
   }

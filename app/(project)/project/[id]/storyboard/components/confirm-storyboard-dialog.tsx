@@ -26,10 +26,6 @@ export function ConfirmStoryboardDialog({
 }: ConfirmStoryboardDialogProps) {
   const generatedSbs = storyboards.filter((sb) => sb.shots.length > 0)
   const totalShots = storyboards.reduce((sum, sb) => sum + sb.shots.length, 0)
-  const totalDuration = storyboards.reduce(
-    (sum, sb) => sum + sb.shots.reduce((ss, s) => ss + (parseFloat(s.duration) || 0), 0),
-    0
-  )
   const hasStoryboards = generatedSbs.length > 0
 
   return (
@@ -51,10 +47,7 @@ export function ConfirmStoryboardDialog({
                   已生成分镜：<span className="font-medium">{generatedSbs.length}</span> 个场景
                 </p>
                 <p className="text-sm">
-                  总镜头数：<span className="font-medium">{totalShots}</span> 个
-                </p>
-                <p className="text-sm">
-                  预估总时长：<span className="font-medium">{Math.round(totalDuration)}s</span>
+                  总画面数：<span className="font-medium">{totalShots}</span> 个
                 </p>
               </div>
             </div>

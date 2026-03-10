@@ -26,16 +26,12 @@ export function EpisodeNavList({
       (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     )
     const shotCount = epStoryboards.reduce((sum, sb) => sum + sb.shots.length, 0)
-    const totalDuration = epStoryboards.reduce(
-      (sum, sb) => sum + sb.shots.reduce((ss, s) => ss + (parseFloat(s.duration) || 0), 0),
-      0
-    )
 
     let status: "none" | "partial" | "generated" = "none"
     if (epStoryboards.length > 0 && epStoryboards.length >= scriptIds.length) status = "generated"
     else if (epStoryboards.length > 0) status = "partial"
 
-    return { scriptCount: scriptIds.length, shotCount, totalDuration: Math.round(totalDuration), status }
+    return { scriptCount: scriptIds.length, shotCount, status }
   }
 
   return (
@@ -43,7 +39,7 @@ export function EpisodeNavList({
       <div className="px-3 py-2.5 border-b">
         <h3 className="text-sm font-semibold">分集导航</h3>
       </div>
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto py-1 pb-24">
         {episodes.map((ep) => {
           const info = getEpisodeInfo(ep.id)
           const isActive = activeEpisodeId === ep.id
@@ -82,11 +78,7 @@ export function EpisodeNavList({
                   <>
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className="text-xs text-muted-foreground">
-                      {info.shotCount}镜头
-                    </span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">
-                      {info.totalDuration}s
+                      {info.shotCount}个画面
                     </span>
                   </>
                 )}

@@ -2,17 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   Popover,
   PopoverContent,
@@ -23,17 +21,13 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ImageIcon,
   User,
   MapPin,
   Package,
+  Info,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type { Shot, Storyboard, ShotInput, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
-import {
-  SHOT_SIZE_OPTIONS,
-  CAMERA_MOVEMENT_OPTIONS,
-  CAMERA_ANGLE_OPTIONS,
-} from "@/lib/types"
 
 interface ShotDetailPanelProps {
   shot: Shot
@@ -64,12 +58,10 @@ export function ShotDetailPanel({
   onClose,
 }: ShotDetailPanelProps) {
   const [composition, setComposition] = useState(shot.composition)
-  const [duration, setDuration] = useState(shot.duration.replace("s", ""))
 
   useEffect(() => {
     setComposition(shot.composition)
-    setDuration(shot.duration.replace("s", ""))
-  }, [shot.id, shot.composition, shot.duration])
+  }, [shot.id, shot.composition])
 
   const debouncedUpdate = useCallback(
     (data: Partial<ShotInput>) => {
@@ -80,10 +72,6 @@ export function ShotDetailPanel({
     },
     [onUpdate, storyboard.id, shot.id]
   )
-
-  const handleSelectChange = (field: string, value: string) => {
-    onUpdate(storyboard.id, shot.id, { [field]: value })
-  }
 
   const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
   const boundPropIds = useMemo(() => parseJsonArray(shot.propIds), [shot.propIds])
@@ -155,22 +143,84 @@ export function ShotDetailPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        {/* Image preview */}
-        <div className="rounded-lg bg-muted h-44 flex items-center justify-center overflow-hidden">
-          {shot.imageUrl ? (
-            <img src={shot.imageUrl} alt="" className="size-full object-cover" />
-          ) : (
-            <div className="flex flex-col items-center gap-1">
-              <ImageIcon className="size-8 text-muted-foreground/30" />
-              <span className="text-xs text-muted-foreground/50">画面预览</span>
-            </div>
-          )}
-        </div>
-
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-24 space-y-4">
         {/* Asset bindings section */}
         <div className="space-y-3">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
+
+          {/* Scene */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <MapPin className="size-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">场景</span>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2">
+                    编辑
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => handleChangeScene("__none__")}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors",
+                        !shot.sceneId && "bg-muted font-medium"
+                      )}
+                    >
+                      无
+                    </button>
+                    {assetScenes.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2 text-center">暂无场景资产</p>
+                    ) : (
+                      assetScenes.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => handleChangeScene(s.id)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs text-left transition-colors",
+                            shot.sceneId === s.id && "bg-muted font-medium text-primary"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {s.imageUrl ? (
+                              <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                            ) : (
+                              <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                <MapPin className="size-3 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="truncate">{s.name}</span>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {boundScene ? (
+              <div className="rounded-lg overflow-hidden border bg-muted/30">
+                {boundScene.imageUrl ? (
+                  <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-24 object-cover" />
+                ) : (
+                  <div className="w-full h-20 flex items-center justify-center bg-muted/50">
+                    <MapPin className="size-6 text-muted-foreground/20" />
+                  </div>
+                )}
+                <div className="px-2 py-1.5 border-t bg-card">
+                  <p className="text-xs font-medium">{boundScene.name}</p>
+                  {boundScene.description && (
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{boundScene.description}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/50 italic">未绑定场景</p>
+            )}
+          </div>
 
           {/* Characters */}
           <div>
@@ -234,47 +284,7 @@ export function ShotDetailPanel({
                 ))}
               </div>
             ) : (
-              <p className="text-[10px] text-muted-foreground/50">未绑定角色</p>
-            )}
-          </div>
-
-          {/* Scene */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="size-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium">场景</span>
-              </div>
-            </div>
-            <Select value={shot.sceneId || "__none__"} onValueChange={handleChangeScene}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="选择场景..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__" className="text-xs">无</SelectItem>
-                {assetScenes.map((s) => (
-                  <SelectItem key={s.id} value={s.id} className="text-xs">
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {boundScene && (
-              <div className="mt-2 rounded-lg overflow-hidden border bg-muted">
-                {boundScene.imageUrl ? (
-                  <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-24 object-cover" />
-                ) : (
-                  <div className="w-full h-24 flex items-center justify-center">
-                    <MapPin className="size-6 text-muted-foreground/30" />
-                  </div>
-                )}
-                <div className="px-2 py-1.5">
-                  <p className="text-xs font-medium">{boundScene.name}</p>
-                  {boundScene.description && (
-                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{boundScene.description}</p>
-                  )}
-                </div>
-              </div>
+              <p className="text-[10px] text-muted-foreground/50 italic">未绑定角色</p>
             )}
           </div>
 
@@ -322,89 +332,36 @@ export function ShotDetailPanel({
                 ))}
               </div>
             ) : (
-              <p className="text-[10px] text-muted-foreground/50">未绑定道具</p>
+              <p className="text-[10px] text-muted-foreground/50 italic">未绑定道具</p>
             )}
-          </div>
-        </div>
-
-        {/* Selects row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-xs">景别</Label>
-            <Select value={shot.shotSize} onValueChange={(v) => handleSelectChange("shotSize", v)}>
-              <SelectTrigger className="h-8 text-xs mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SHOT_SIZE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">镜头运动</Label>
-            <Select value={shot.cameraMovement} onValueChange={(v) => handleSelectChange("cameraMovement", v)}>
-              <SelectTrigger className="h-8 text-xs mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CAMERA_MOVEMENT_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">镜头角度</Label>
-            <Select value={shot.cameraAngle} onValueChange={(v) => handleSelectChange("cameraAngle", v)}>
-              <SelectTrigger className="h-8 text-xs mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CAMERA_ANGLE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">时长</Label>
-            <div className="flex items-center gap-1 mt-1">
-              <Input
-                type="number"
-                min={1}
-                max={15}
-                step={0.5}
-                value={duration}
-                onChange={(e) => {
-                  setDuration(e.target.value)
-                  debouncedUpdate({ duration: `${e.target.value}s` })
-                }}
-                className="h-8 text-xs w-full"
-              />
-              <span className="text-xs text-muted-foreground">s</span>
-            </div>
           </div>
         </div>
 
         {/* Composition */}
         <div>
-          <Label className="text-xs">画面提示词</Label>
+          <div className="flex items-center gap-1.5 mb-1">
+            <Label className="text-xs">画面描述</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="size-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[240px]">
+                  <p className="text-xs leading-relaxed">
+                    用中文简述画面内容和氛围，帮助理解每个画面表现什么场景
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Textarea
             value={composition}
             onChange={(e) => {
               setComposition(e.target.value)
               debouncedUpdate({ composition: e.target.value })
             }}
-            className="mt-1 text-xs min-h-[60px] resize-none"
-            placeholder="描述画面中的元素布局..."
+            className="text-xs min-h-[60px] resize-none"
+            placeholder="描述画面内容和氛围..."
           />
         </div>
 

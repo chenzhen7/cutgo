@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
 interface AIShotResult {
-  shotSize: string
-  cameraMovement: string
-  cameraAngle: string
   composition: string
   prompt: string
   negativePrompt: string
-  duration: string
   dialogueText?: string
   actionNote?: string
 }
@@ -52,10 +48,10 @@ async function callAIGenerateStoryboard(
     return generateLocalStoryboard(scriptTitle, scriptContent)
   }
 
-  const prompt = `你是一位资深分镜师/电影摄影师，擅长将剧本转化为精确的分镜设计。
+  const prompt = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的画面描述提示词。
 
 ## 任务
-请基于以下剧本内容，为其设计详细的分镜镜头序列。
+请基于以下剧本内容，为每个关键画面生成高质量的图像生成提示词（Prompt）。
 
 ## 剧本信息
 - 标题：${scriptTitle}
@@ -74,31 +70,28 @@ ${assetScenesStr || "无"}
 
 ## 全局参数
 - 目标平台：${platform}
-- 画幅比例：${aspectRatio}（竖屏构图）
+- 画幅比例：${aspectRatio}
 - 视觉风格：${stylePreset || "电影感"}
 - 全局负面提示词：${globalNegPrompt || "blurry, low quality, distorted"}
 
 ${previousShotStr ? `## 前一个剧本最后一个镜头信息\n${previousShotStr}（确保衔接）` : ""}
 
 ## 要求
-1. 将剧本内容转化为具体的镜头序列，通常一个剧本拆分为 4-12 个镜头
-2. 合理搭配景别：
-   - 开头用远景/全景建立环境
-   - 对话用中景/中近景
-   - 情绪高潮用近景/特写
-   - 关键道具/表情用特写
-3. 每个镜头需包含：
-   - shotSize：景别（extreme_wide/wide/medium/medium_close/close/extreme_close）
-   - cameraMovement：镜头运动（static/push_in/pull_out/pan/tilt/tracking/orbit/crane/handheld）
-   - cameraAngle：镜头角度（eye_level/high/low/birds_eye/dutch）
-   - composition：画面构图描述（中文）
-   - prompt：画面描述（英文，用于 AI 图像生成）
-   - negativePrompt：负面提示词（英文）
-   - duration：预估时长
-   - dialogueText：该镜头期间的台词/旁白文本（如有）
-   - actionNote：动作备注（如有）
-4. prompt 要求英文，详细且具体，包含场景环境、角色外貌、表情动作、光影效果等
-5. 所有镜头时长之和应合理覆盖剧本内容
+1. 将剧本内容转化为具体的画面序列，通常一个剧本拆分为 4-12 个画面
+2. 每个画面需包含：
+   - composition：画面描述（中文，简洁描述这个画面表现的内容和氛围）
+   - prompt：英文图像生成提示词（用于 AI 图像生成模型）
+   - negativePrompt：英文负面提示词
+   - dialogueText：该画面期间的台词/旁白文本（如有）
+   - actionNote：动作/情节备注（如有）
+3. prompt 编写指南：
+   - 使用英文，详细且具体
+   - 包含：主体描述、场景环境、光影氛围、色调风格、画面构图
+   - 角色描述要具体：外貌特征、服装、表情、动作姿态
+   - 环境描述要丰富：时间、天气、光线方向、材质细节
+   - 可以加入风格关键词：cinematic, photorealistic, dramatic lighting 等
+   - 画幅比例 ${aspectRatio} 的构图特点要体现在 prompt 中
+4. 画面之间应有叙事连贯性，覆盖剧本的关键情节
 
 ## 输出格式
 请严格按以下 JSON 格式输出：
@@ -106,13 +99,9 @@ ${previousShotStr ? `## 前一个剧本最后一个镜头信息\n${previousShotS
 {
   "shots": [
     {
-      "shotSize": "wide",
-      "cameraMovement": "push_in",
-      "cameraAngle": "eye_level",
-      "composition": "画面构图描述",
-      "prompt": "English prompt...",
+      "composition": "画面中文描述",
+      "prompt": "English image generation prompt...",
       "negativePrompt": "blurry, low quality...",
-      "duration": "4s",
       "dialogueText": "台词文本",
       "actionNote": "动作备注"
     }
@@ -160,19 +149,12 @@ function generateLocalStoryboard(
   const contentLength = scriptContent.length
   const shotCount = Math.max(2, Math.min(Math.ceil(contentLength / 200), 6))
 
-  const sizes = ["wide", "medium", "medium_close", "close", "medium", "wide"]
-  const movements = ["push_in", "static", "static", "push_in", "pan", "pull_out"]
-
   const shots: AIShotResult[] = []
   for (let i = 0; i < shotCount; i++) {
     shots.push({
-      shotSize: sizes[i % sizes.length],
-      cameraMovement: movements[i % movements.length],
-      cameraAngle: "eye_level",
-      composition: `${scriptTitle} - 镜头 ${i + 1} 构图描述（本地生成，建议配置 AI API Key）`,
-      prompt: `Scene: ${scriptTitle}, shot ${i + 1}, ${sizes[i % sizes.length]} shot, cinematic lighting, 9:16 vertical frame, photorealistic. (Local fallback - configure AI API Key for better results)`,
+      composition: `${scriptTitle} - 画面 ${i + 1}（本地生成，建议配置 AI API Key 获得更好效果）`,
+      prompt: `Scene from "${scriptTitle}", shot ${i + 1}, cinematic lighting, 9:16 vertical frame, photorealistic, detailed environment, dramatic atmosphere. (Local fallback - configure AI API Key for better results)`,
       negativePrompt: "blurry, low quality, distorted face, extra limbs, watermark, text",
-      duration: `${Math.round(3 + Math.random() * 3)}s`,
     })
   }
 
@@ -293,13 +275,13 @@ export async function POST(request: NextRequest) {
           shots: {
             create: (aiResult.shots || []).map((shot, si) => ({
               index: si,
-              shotSize: shot.shotSize || "medium",
-              cameraMovement: shot.cameraMovement || "static",
-              cameraAngle: shot.cameraAngle || "eye_level",
+              shotSize: "medium",
+              cameraMovement: "static",
+              cameraAngle: "eye_level",
               composition: shot.composition || "",
               prompt: shot.prompt || "",
               negativePrompt: shot.negativePrompt || null,
-              duration: shot.duration || "3s",
+              duration: "3s",
               dialogueText: shot.dialogueText || null,
               actionNote: shot.actionNote || null,
               characterIds: matchedCharacterIds.length > 0 ? JSON.stringify(matchedCharacterIds) : null,
@@ -312,7 +294,7 @@ export async function POST(request: NextRequest) {
 
       if (aiResult.shots?.length) {
         const lastShot = aiResult.shots[aiResult.shots.length - 1]
-        previousShotStr = `景别: ${lastShot.shotSize}, 运镜: ${lastShot.cameraMovement}, 构图: ${lastShot.composition}`
+        previousShotStr = `画面描述: ${lastShot.composition}`
       }
     }
 
@@ -323,10 +305,6 @@ export async function POST(request: NextRequest) {
     })
 
     const totalShots = allStoryboards.reduce((sum, sb) => sum + sb.shots.length, 0)
-    const totalDuration = allStoryboards.reduce(
-      (sum, sb) => sum + sb.shots.reduce((ss, s) => ss + (parseFloat(s.duration) || 0), 0),
-      0
-    )
     const generatedSbs = allStoryboards.filter((sb) => sb.shots.length > 0)
 
     return NextResponse.json({
@@ -334,7 +312,6 @@ export async function POST(request: NextRequest) {
       stats: {
         storyboardCount: generatedSbs.length,
         totalShots,
-        totalDuration: `${Math.round(totalDuration)}s`,
         avgShotsPerScene: generatedSbs.length > 0 ? Math.round(totalShots / generatedSbs.length * 10) / 10 : 0,
         generatedScripts: targetScripts.length,
         skippedScripts,

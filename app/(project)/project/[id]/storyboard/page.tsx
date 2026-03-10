@@ -136,11 +136,8 @@ export default function StoryboardPage() {
     async (storyboardId: string) => {
       await addShot(storyboardId, {
         shotSize: "medium",
-        cameraMovement: "static",
-        cameraAngle: "eye_level",
-        composition: "新镜头构图描述",
-        prompt: "New shot prompt, cinematic, 9:16 vertical frame",
-        duration: "3s",
+        composition: "新画面描述",
+        prompt: "Cinematic scene, detailed environment, dramatic lighting, photorealistic",
       })
     },
     [addShot]
@@ -219,9 +216,9 @@ export default function StoryboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between px-6 pt-6 pb-4 shrink-0">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">分镜生成</h2>
+          <h2 className="text-xl font-semibold text-foreground">分镜设置</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            根据剧本自动生成分镜提示词与画面设计
+            根据剧本自动生成分镜设计，设置完成后进入下一步生成画面
           </p>
         </div>
       </div>
@@ -279,9 +276,9 @@ export default function StoryboardPage() {
           </div>
 
           {/* Three-column layout */}
-          <div className="flex flex-1 min-h-0 px-6 gap-4 pb-20">
+          <div className="flex flex-1 min-h-0 px-6 gap-4 pb-24">
             {/* Left: Episode navigation */}
-            <div className="w-48 shrink-0 rounded-lg border bg-card overflow-hidden">
+            <div className="w-48 h-full shrink-0 rounded-lg border bg-card overflow-hidden">
               <EpisodeNavList
                 episodes={episodes}
                 scripts={scripts}
@@ -292,7 +289,7 @@ export default function StoryboardPage() {
             </div>
 
             {/* Center: Timeline editor */}
-            <div className="flex-1 min-w-0 overflow-y-auto space-y-3">
+            <div className="flex-1 h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-24 custom-scrollbar">
               {currentStoryboards.length > 0 ? (
                 currentStoryboards.map((sb) => (
                   <SceneSwimlane
@@ -300,6 +297,9 @@ export default function StoryboardPage() {
                     storyboard={sb}
                     activeShotId={activeShotId}
                     selectedShotIds={selectedShotIds}
+                    assetCharacters={assetCharacters}
+                    assetScenes={assetScenes}
+                    assetProps={assetProps}
                     onSelectShot={handleSelectShot}
                     onDuplicateShot={(sbId, shotId) => duplicateShot(sbId, shotId)}
                     onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
@@ -334,7 +334,7 @@ export default function StoryboardPage() {
 
             {/* Right: Shot detail panel */}
             {detailPanelOpen && currentActiveShot && (
-              <div className="w-96 shrink-0 rounded-lg border bg-card overflow-hidden">
+              <div className="w-96 h-full shrink-0 rounded-lg border bg-card overflow-hidden">
                 <ShotDetailPanel
                   shot={currentActiveShot.shot}
                   storyboard={currentActiveShot.storyboard}

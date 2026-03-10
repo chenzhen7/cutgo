@@ -486,7 +486,7 @@ export interface StoryboardGenerateProgress {
 }
 
 export interface ShotInput {
-  shotSize: string
+  shotSize?: string
   cameraMovement?: string
   cameraAngle?: string
   composition: string
@@ -507,7 +507,6 @@ export interface StoryboardGenerateResult {
   stats: {
     storyboardCount: number
     totalShots: number
-    totalDuration: string
     avgShotsPerScene: number
     generatedScenes: number
     skippedScenes: number

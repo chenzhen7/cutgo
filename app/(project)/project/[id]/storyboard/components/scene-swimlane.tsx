@@ -12,12 +12,15 @@ import {
   Plus,
 } from "lucide-react"
 import { ShotCard } from "./shot-card"
-import type { Storyboard } from "@/lib/types"
+import type { Storyboard, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
   storyboard: Storyboard
   activeShotId: string | null
   selectedShotIds: Set<string>
+  assetCharacters: AssetCharacter[]
+  assetScenes: AssetScene[]
+  assetProps: AssetProp[]
   onSelectShot: (shotId: string) => void
   onDuplicateShot: (storyboardId: string, shotId: string) => void
   onDeleteShot: (storyboardId: string, shotId: string) => void
@@ -30,6 +33,9 @@ export function SceneSwimlane({
   storyboard,
   activeShotId,
   selectedShotIds,
+  assetCharacters,
+  assetScenes,
+  assetProps,
   onSelectShot,
   onDuplicateShot,
   onDeleteShot,
@@ -39,10 +45,6 @@ export function SceneSwimlane({
 }: SceneSwimlaneProps) {
   const [collapsed, setCollapsed] = useState(false)
   const script = storyboard.script
-  const totalDuration = storyboard.shots.reduce(
-    (sum, s) => sum + (parseFloat(s.duration) || 0),
-    0
-  )
 
   return (
     <div className="rounded-lg border bg-card">
@@ -68,11 +70,7 @@ export function SceneSwimlane({
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">
-              {storyboard.shots.length} 镜头
-            </span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground">
-              {Math.round(totalDuration)}s
+              {storyboard.shots.length} 个画面
             </span>
           </div>
         </div>
@@ -101,13 +99,16 @@ export function SceneSwimlane({
 
       {/* Shots */}
       {!collapsed && (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 p-3">
+        <div className="flex flex-col gap-3 p-3">
           {storyboard.shots.map((shot) => (
             <ShotCard
               key={shot.id}
               shot={shot}
               isActive={activeShotId === shot.id}
               isSelected={selectedShotIds.has(shot.id)}
+              assetCharacters={assetCharacters}
+              assetScenes={assetScenes}
+              assetProps={assetProps}
               onSelect={() => onSelectShot(shot.id)}
               onDuplicate={() => onDuplicateShot(storyboard.id, shot.id)}
               onDelete={() => onDeleteShot(storyboard.id, shot.id)}
@@ -116,10 +117,10 @@ export function SceneSwimlane({
 
           <button
             onClick={() => onAddShot(storyboard.id)}
-            className="min-h-[240px] rounded-lg border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            className="h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
           >
-            <Plus className="size-5 text-muted-foreground/40" />
-            <span className="text-xs text-muted-foreground/60">添加镜头</span>
+            <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
+            <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
           </button>
         </div>
       )}
@@ -130,8 +131,7 @@ export function SceneSwimlane({
             {storyboard.shots.slice(0, 8).map((shot) => (
               <div
                 key={shot.id}
-                className="h-1.5 rounded-full bg-primary/30"
-                style={{ width: `${Math.max(16, (parseFloat(shot.duration) || 3) * 8)}px` }}
+                className="h-1.5 w-5 rounded-full bg-primary/30"
               />
             ))}
             {storyboard.shots.length > 8 && (

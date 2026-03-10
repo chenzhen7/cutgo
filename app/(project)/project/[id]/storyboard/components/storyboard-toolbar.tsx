@@ -17,7 +17,6 @@ interface StoryboardToolbarProps {
   stats: {
     storyboardCount: number
     totalShots: number
-    totalDuration: string
     coverage: string
     avgShotsPerScene: number
   }
@@ -40,13 +39,10 @@ export function StoryboardToolbar({
           {stats.coverage} 场景
         </Badge>
         <Badge variant="secondary" className="text-xs">
-          {stats.totalShots} 镜头
+          {stats.totalShots} 个画面
         </Badge>
         <Badge variant="secondary" className="text-xs">
-          {stats.totalDuration}
-        </Badge>
-        <Badge variant="secondary" className="text-xs">
-          均 {stats.avgShotsPerScene} 镜/场景
+          均 {stats.avgShotsPerScene} 画面/场景
         </Badge>
       </div>
 
