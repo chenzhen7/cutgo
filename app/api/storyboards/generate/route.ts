@@ -237,6 +237,7 @@ export async function POST(request: NextRequest) {
 
   const assetCharacters = await prisma.assetCharacter.findMany({ where: { projectId } })
   const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
+  const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
 
   const assetCharactersStr = assetCharacters.length > 0
     ? assetCharacters
@@ -272,6 +273,18 @@ export async function POST(request: NextRequest) {
         previousShotStr
       )
 
+      const scriptCharacterNames: string[] = script.characters ? (() => { try { return JSON.parse(script.characters!) } catch { return [] } })() : []
+      const scriptPropNames: string[] = script.props ? (() => { try { return JSON.parse(script.props!) } catch { return [] } })() : []
+      const matchedCharacterIds = assetCharacters
+        .filter((c) => scriptCharacterNames.includes(c.name))
+        .map((c) => c.id)
+      const matchedScene = script.location
+        ? assetScenes.find((s) => s.name === script.location)
+        : null
+      const matchedPropIds = assetProps
+        .filter((p) => scriptPropNames.includes(p.name))
+        .map((p) => p.id)
+
       await prisma.storyboard.create({
         data: {
           projectId,
@@ -289,6 +302,9 @@ export async function POST(request: NextRequest) {
               duration: shot.duration || "3s",
               dialogueText: shot.dialogueText || null,
               actionNote: shot.actionNote || null,
+              characterIds: matchedCharacterIds.length > 0 ? JSON.stringify(matchedCharacterIds) : null,
+              sceneId: matchedScene?.id || null,
+              propIds: matchedPropIds.length > 0 ? JSON.stringify(matchedPropIds) : null,
             })),
           },
         },

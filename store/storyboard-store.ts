@@ -7,12 +7,18 @@ import type {
   StoryboardGenerateProgress,
   Episode,
   Script,
+  AssetCharacter,
+  AssetScene,
+  AssetProp,
 } from "@/lib/types"
 
 interface StoryboardState {
   storyboards: Storyboard[]
   episodes: Episode[]
   scripts: Script[]
+  assetCharacters: AssetCharacter[]
+  assetScenes: AssetScene[]
+  assetProps: AssetProp[]
   generateStatus: StoryboardGenerateStatus
   generateError: string | null
   generateProgress: StoryboardGenerateProgress | null
@@ -25,6 +31,7 @@ interface StoryboardState {
   fetchStoryboards: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<void>
   fetchScripts: (projectId: string) => Promise<void>
+  fetchAssets: (projectId: string) => Promise<void>
 
   generateStoryboards: (
     projectId: string,
@@ -82,6 +89,9 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   storyboards: [],
   episodes: [],
   scripts: [],
+  assetCharacters: [],
+  assetScenes: [],
+  assetProps: [],
   generateStatus: "idle",
   generateError: null,
   generateProgress: null,
@@ -112,6 +122,17 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     if (!res.ok) return
     const data = await res.json()
     set({ scripts: data || [] })
+  },
+
+  fetchAssets: async (projectId) => {
+    const res = await fetch(`/api/assets?projectId=${projectId}`)
+    if (!res.ok) return
+    const data = await res.json()
+    set({
+      assetCharacters: data.characters || [],
+      assetScenes: data.scenes || [],
+      assetProps: data.props || [],
+    })
   },
 
   generateStoryboards: async (projectId, episodeIds, scriptIds, mode = "skip_existing") => {
@@ -227,6 +248,9 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       scriptLineIds: shot.scriptLineIds || undefined,
       dialogueText: shot.dialogueText || undefined,
       actionNote: shot.actionNote || undefined,
+      characterIds: shot.characterIds || undefined,
+      sceneId: shot.sceneId || undefined,
+      propIds: shot.propIds || undefined,
       insertAfter: shotId,
     })
   },
@@ -389,6 +413,9 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       storyboards: [],
       episodes: [],
       scripts: [],
+      assetCharacters: [],
+      assetScenes: [],
+      assetProps: [],
       generateStatus: "idle",
       generateError: null,
       generateProgress: null,

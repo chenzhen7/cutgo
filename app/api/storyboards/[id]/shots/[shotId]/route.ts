@@ -13,6 +13,7 @@ export async function PATCH(
     "shotSize", "cameraMovement", "cameraAngle", "composition",
     "prompt", "negativePrompt", "duration", "imageUrl",
     "scriptLineIds", "dialogueText", "actionNote",
+    "characterIds", "sceneId", "propIds",
   ]
 
   for (const field of fields) {

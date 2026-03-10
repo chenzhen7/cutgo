@@ -284,6 +284,10 @@ model Shot {
   dialogueText    String?
   actionNote      String?
 
+  characterIds    String?   // JSON array of AssetCharacter IDs
+  sceneId         String?   // AssetScene ID
+  propIds         String?   // JSON array of AssetProp IDs
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

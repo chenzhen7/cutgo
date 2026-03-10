@@ -448,6 +448,9 @@ export interface Shot {
   scriptLineIds: string | null
   dialogueText: string | null
   actionNote: string | null
+  characterIds: string | null
+  sceneId: string | null
+  propIds: string | null
   createdAt: string
   updatedAt: string
 }
@@ -493,6 +496,9 @@ export interface ShotInput {
   scriptLineIds?: string
   dialogueText?: string
   actionNote?: string
+  characterIds?: string
+  sceneId?: string
+  propIds?: string
   insertAfter?: string
 }
 

@@ -19,6 +19,9 @@ export async function POST(
     scriptLineIds,
     dialogueText,
     actionNote,
+    characterIds,
+    sceneId,
+    propIds,
     insertAfter,
   } = body
 
@@ -64,6 +67,9 @@ export async function POST(
       scriptLineIds: scriptLineIds || null,
       dialogueText: dialogueText || null,
       actionNote: actionNote || null,
+      characterIds: characterIds || null,
+      sceneId: sceneId || null,
+      propIds: propIds || null,
     },
   })
 

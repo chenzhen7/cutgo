@@ -34,6 +34,9 @@ export default function StoryboardPage() {
     storyboards,
     episodes,
     scripts,
+    assetCharacters,
+    assetScenes,
+    assetProps,
     generateStatus,
     generateError,
     activeEpisodeId,
@@ -43,6 +46,7 @@ export default function StoryboardPage() {
     fetchStoryboards,
     fetchEpisodes,
     fetchScripts,
+    fetchAssets,
     generateStoryboards,
     addShot,
     updateShot,
@@ -68,9 +72,12 @@ export default function StoryboardPage() {
   useEffect(() => {
     const init = async () => {
       setLoading(true)
-      await fetchEpisodes(projectId)
-      await fetchScripts(projectId)
-      await fetchStoryboards(projectId)
+      await Promise.all([
+        fetchEpisodes(projectId),
+        fetchScripts(projectId),
+        fetchStoryboards(projectId),
+        fetchAssets(projectId),
+      ])
 
       const res = await fetch(`/api/projects/${projectId}`)
       if (res.ok) {
@@ -80,7 +87,7 @@ export default function StoryboardPage() {
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, fetchScripts, fetchStoryboards])
+  }, [projectId, fetchEpisodes, fetchScripts, fetchStoryboards, fetchAssets])
 
   useEffect(() => {
     if (episodes.length > 0 && !activeEpisodeId) {
@@ -331,6 +338,9 @@ export default function StoryboardPage() {
                 <ShotDetailPanel
                   shot={currentActiveShot.shot}
                   storyboard={currentActiveShot.storyboard}
+                  assetCharacters={assetCharacters}
+                  assetScenes={assetScenes}
+                  assetProps={assetProps}
                   onUpdate={handleUpdateShot}
                   onPrev={prevShot() ? handlePrevShot : null}
                   onNext={nextShot() ? handleNextShot : null}

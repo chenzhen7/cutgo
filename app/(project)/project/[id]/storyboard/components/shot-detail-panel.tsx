@@ -1,10 +1,11 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -13,12 +14,21 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
   X,
   ChevronLeft,
   ChevronRight,
   ImageIcon,
+  User,
+  MapPin,
+  Package,
 } from "lucide-react"
-import type { Shot, Storyboard, ShotInput } from "@/lib/types"
+import type { Shot, Storyboard, ShotInput, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 import {
   SHOT_SIZE_OPTIONS,
   CAMERA_MOVEMENT_OPTIONS,
@@ -28,15 +38,26 @@ import {
 interface ShotDetailPanelProps {
   shot: Shot
   storyboard: Storyboard
+  assetCharacters: AssetCharacter[]
+  assetScenes: AssetScene[]
+  assetProps: AssetProp[]
   onUpdate: (storyboardId: string, shotId: string, data: Partial<ShotInput>) => void
   onPrev: (() => void) | null
   onNext: (() => void) | null
   onClose: () => void
 }
 
+function parseJsonArray(value: string | null): string[] {
+  if (!value) return []
+  try { return JSON.parse(value) } catch { return [] }
+}
+
 export function ShotDetailPanel({
   shot,
   storyboard,
+  assetCharacters,
+  assetScenes,
+  assetProps,
   onUpdate,
   onPrev,
   onNext,
@@ -62,6 +83,40 @@ export function ShotDetailPanel({
 
   const handleSelectChange = (field: string, value: string) => {
     onUpdate(storyboard.id, shot.id, { [field]: value })
+  }
+
+  const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
+  const boundPropIds = useMemo(() => parseJsonArray(shot.propIds), [shot.propIds])
+
+  const boundCharacters = useMemo(
+    () => assetCharacters.filter((c) => boundCharacterIds.includes(c.id)),
+    [assetCharacters, boundCharacterIds]
+  )
+  const boundScene = useMemo(
+    () => (shot.sceneId ? assetScenes.find((s) => s.id === shot.sceneId) : null),
+    [assetScenes, shot.sceneId]
+  )
+  const boundProps = useMemo(
+    () => assetProps.filter((p) => boundPropIds.includes(p.id)),
+    [assetProps, boundPropIds]
+  )
+
+  const handleToggleCharacter = (charId: string) => {
+    const next = boundCharacterIds.includes(charId)
+      ? boundCharacterIds.filter((id) => id !== charId)
+      : [...boundCharacterIds, charId]
+    onUpdate(storyboard.id, shot.id, { characterIds: next.length > 0 ? JSON.stringify(next) : undefined })
+  }
+
+  const handleChangeScene = (sceneId: string) => {
+    onUpdate(storyboard.id, shot.id, { sceneId: sceneId === "__none__" ? undefined : sceneId })
+  }
+
+  const handleToggleProp = (propId: string) => {
+    const next = boundPropIds.includes(propId)
+      ? boundPropIds.filter((id) => id !== propId)
+      : [...boundPropIds, propId]
+    onUpdate(storyboard.id, shot.id, { propIds: next.length > 0 ? JSON.stringify(next) : undefined })
   }
 
   const script = storyboard.script
@@ -111,6 +166,165 @@ export function ShotDetailPanel({
               <span className="text-xs text-muted-foreground/50">画面预览</span>
             </div>
           )}
+        </div>
+
+        {/* Asset bindings section */}
+        <div className="space-y-3">
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
+
+          {/* Characters */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <User className="size-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">角色</span>
+                {boundCharacters.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0">{boundCharacters.length}</Badge>
+                )}
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2">
+                    编辑
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {assetCharacters.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2 text-center">暂无角色资产</p>
+                    ) : (
+                      assetCharacters.map((c) => (
+                        <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                          <Checkbox
+                            checked={boundCharacterIds.includes(c.id)}
+                            onCheckedChange={() => handleToggleCharacter(c.id)}
+                          />
+                          <div className="flex items-center gap-2 min-w-0">
+                            {c.imageUrl ? (
+                              <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                            ) : (
+                              <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                <User className="size-3 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="text-xs truncate">{c.name}</span>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {boundCharacters.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
+                {boundCharacters.map((c) => (
+                  <div key={c.id} className="flex flex-col items-center gap-1 group">
+                    <div className="relative size-12 rounded-lg overflow-hidden bg-muted border">
+                      {c.imageUrl ? (
+                        <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                      ) : (
+                        <div className="size-full flex items-center justify-center">
+                          <User className="size-5 text-muted-foreground/40" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[48px]">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/50">未绑定角色</p>
+            )}
+          </div>
+
+          {/* Scene */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <MapPin className="size-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">场景</span>
+              </div>
+            </div>
+            <Select value={shot.sceneId || "__none__"} onValueChange={handleChangeScene}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="选择场景..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__" className="text-xs">无</SelectItem>
+                {assetScenes.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {boundScene && (
+              <div className="mt-2 rounded-lg overflow-hidden border bg-muted">
+                {boundScene.imageUrl ? (
+                  <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-24 object-cover" />
+                ) : (
+                  <div className="w-full h-24 flex items-center justify-center">
+                    <MapPin className="size-6 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="px-2 py-1.5">
+                  <p className="text-xs font-medium">{boundScene.name}</p>
+                  {boundScene.description && (
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{boundScene.description}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Props */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <Package className="size-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">道具</span>
+                {boundProps.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0">{boundProps.length}</Badge>
+                )}
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2">
+                    编辑
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {assetProps.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2 text-center">暂无道具资产</p>
+                    ) : (
+                      assetProps.map((p) => (
+                        <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                          <Checkbox
+                            checked={boundPropIds.includes(p.id)}
+                            onCheckedChange={() => handleToggleProp(p.id)}
+                          />
+                          <span className="text-xs truncate">{p.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {boundProps.length > 0 ? (
+              <div className="flex gap-1.5 flex-wrap">
+                {boundProps.map((p) => (
+                  <Badge key={p.id} variant="outline" className="text-[10px]">
+                    {p.name}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/50">未绑定道具</p>
+            )}
+          </div>
         </div>
 
         {/* Selects row */}
