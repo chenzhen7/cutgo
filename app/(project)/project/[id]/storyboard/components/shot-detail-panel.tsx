@@ -143,7 +143,7 @@ export function ShotDetailPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-24 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-12 space-y-4">
         {/* Asset bindings section */}
         <div className="space-y-3">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>

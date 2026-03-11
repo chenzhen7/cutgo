@@ -212,7 +212,7 @@ export default function StoryboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100vh-0.5rem)]">
       {/* Header */}
       <div className="flex items-start justify-between px-6 pt-6 pb-4 shrink-0">
         <div>
@@ -276,7 +276,7 @@ export default function StoryboardPage() {
           </div>
 
           {/* Three-column layout */}
-          <div className="flex flex-1 min-h-0 px-6 gap-4 pb-24">
+          <div className="flex flex-1 min-h-0 px-6 gap-4 pb-20">
             {/* Left: Episode navigation */}
             <div className="w-48 h-full shrink-0 rounded-lg border bg-card overflow-hidden">
               <EpisodeNavList
@@ -289,7 +289,7 @@ export default function StoryboardPage() {
             </div>
 
             {/* Center: Timeline editor */}
-            <div className="flex-1 h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-24 custom-scrollbar">
+            <div className="flex-1 h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-12 custom-scrollbar">
               {currentStoryboards.length > 0 ? (
                 currentStoryboards.map((sb) => (
                   <SceneSwimlane
