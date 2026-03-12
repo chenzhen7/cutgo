@@ -18,7 +18,6 @@ import {
 import { StoryboardEmptyState } from "./components/storyboard-empty-state"
 import { StoryboardToolbar } from "./components/storyboard-toolbar"
 import { EpisodeSelectDialog } from "./components/episode-select-dialog"
-import { EpisodeNavList } from "./components/episode-nav-list"
 import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ConfirmStoryboardDialog } from "./components/confirm-storyboard-dialog"
@@ -313,6 +312,11 @@ export default function StoryboardPage() {
               batchImageProgress={batchImageProgress}
               stats={stats}
               imageStats={imageStats}
+              episodes={episodes}
+              scripts={scripts}
+              storyboards={storyboards}
+              activeEpisodeId={activeEpisodeId}
+              onSelectEpisode={setActiveEpisodeId}
               onGenerateAll={handleGenerateAll}
               onSelectEpisodes={() => setShowEpisodeSelect(true)}
               onBatchGenerateImages={handleBatchGenerateImages}
@@ -320,19 +324,8 @@ export default function StoryboardPage() {
             />
           </div>
 
-          {/* Three-column layout */}
+          {/* Two-column layout */}
           <div className="flex flex-1 min-h-0 px-6 gap-4 pb-20">
-            {/* Left: Episode navigation */}
-            <div className="w-48 h-full shrink-0 rounded-lg border bg-card overflow-hidden">
-              <EpisodeNavList
-                episodes={episodes}
-                scripts={scripts}
-                storyboards={storyboards}
-                activeEpisodeId={activeEpisodeId}
-                onSelectEpisode={setActiveEpisodeId}
-              />
-            </div>
-
             {/* Center: Timeline editor */}
             <div className="flex-1 h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-12 custom-scrollbar">
               {currentStoryboards.length > 0 ? (
@@ -364,7 +357,7 @@ export default function StoryboardPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     {activeEpisodeId
                       ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
-                      : "从左侧列表中选择一个分集进行查看和编辑"}
+                      : "从上方选择一个分集进行查看和编辑"}
                   </p>
                   {activeEpisodeId && (
                     <Button
