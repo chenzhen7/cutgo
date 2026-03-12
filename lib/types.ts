@@ -433,6 +433,21 @@ export const CAMERA_ANGLE_OPTIONS: { value: CameraAngle; label: string; en: stri
   { value: "dutch", label: "荷兰角", en: "Dutch Angle" },
 ]
 
+export type ImageType = "keyframe" | "first_last" | "multi_grid"
+export type GridLayout = "2x2" | "1x3" | "2x3"
+
+export const IMAGE_TYPE_OPTIONS: { value: ImageType; label: string; description: string }[] = [
+  { value: "keyframe", label: "关键帧", description: "生成1张关键画面" },
+  { value: "first_last", label: "首尾帧", description: "生成首帧和尾帧各1张，适合运镜" },
+  { value: "multi_grid", label: "多宫格", description: "多画面拼合为1张图" },
+]
+
+export const GRID_LAYOUT_OPTIONS: { value: GridLayout; label: string; cols: number; rows: number; count: number }[] = [
+  { value: "2x2", label: "2×2", cols: 2, rows: 2, count: 4 },
+  { value: "1x3", label: "1×3", cols: 3, rows: 1, count: 3 },
+  { value: "2x3", label: "2×3", cols: 3, rows: 2, count: 6 },
+]
+
 export interface Shot {
   id: string
   storyboardId: string
@@ -445,6 +460,11 @@ export interface Shot {
   negativePrompt: string | null
   duration: string
   imageUrl: string | null
+  imageType: ImageType
+  imageUrls: string | null
+  promptEnd: string | null
+  gridLayout: GridLayout | null
+  gridPrompts: string | null
   scriptLineIds: string | null
   dialogueText: string | null
   actionNote: string | null
@@ -493,6 +513,12 @@ export interface ShotInput {
   prompt: string
   negativePrompt?: string
   duration?: string
+  imageType?: ImageType
+  imageUrl?: string
+  imageUrls?: string
+  promptEnd?: string
+  gridLayout?: GridLayout
+  gridPrompts?: string
   scriptLineIds?: string
   dialogueText?: string
   actionNote?: string

@@ -10,6 +10,7 @@ import type {
   AssetCharacter,
   AssetScene,
   AssetProp,
+  ImageType,
 } from "@/lib/types"
 
 interface StoryboardState {
@@ -27,6 +28,10 @@ interface StoryboardState {
   activeShotId: string | null
   selectedShotIds: Set<string>
   detailPanelOpen: boolean
+
+  imageGeneratingIds: Set<string>
+  batchImageStatus: "idle" | "generating" | "completed" | "error"
+  batchImageProgress: { current: number; total: number } | null
 
   fetchStoryboards: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<void>
@@ -58,6 +63,10 @@ interface StoryboardState {
   ) => Promise<void>
 
   optimizePrompt: (storyboardId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
+
+  generateImage: (storyboardId: string, shotId: string) => Promise<void>
+  generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
+  clearImage: (storyboardId: string, shotId: string) => Promise<void>
 
   setActiveEpisodeId: (episodeId: string | null) => void
   setActiveShotId: (shotId: string | null) => void
@@ -97,6 +106,10 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   activeShotId: null,
   selectedShotIds: new Set(),
   detailPanelOpen: false,
+
+  imageGeneratingIds: new Set(),
+  batchImageStatus: "idle",
+  batchImageProgress: null,
 
   fetchStoryboards: async (projectId, episodeId) => {
     const url = episodeId
@@ -295,6 +308,113 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     return await res.json()
   },
 
+  generateImage: async (storyboardId, shotId) => {
+    const sb = get().storyboards.find((s) => s.id === storyboardId)
+    const shot = sb?.shots.find((s) => s.id === shotId)
+    if (!shot) return
+
+    const generating = new Set(get().imageGeneratingIds)
+    generating.add(shotId)
+    set({ imageGeneratingIds: generating })
+
+    try {
+      const body: Record<string, unknown> = {
+        shotId,
+        imageType: shot.imageType || "keyframe",
+        prompt: shot.prompt,
+        negativePrompt: shot.negativePrompt,
+      }
+      if (shot.imageType === "first_last") {
+        body.promptEnd = shot.promptEnd || shot.prompt
+      }
+      if (shot.imageType === "multi_grid") {
+        body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : [shot.prompt]
+        body.gridLayout = shot.gridLayout || "2x2"
+      }
+
+      const res = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error("生成失败")
+      const data = await res.json()
+      const updatedShot = data.shot as Shot
+
+      set({
+        storyboards: get().storyboards.map((s) =>
+          s.id === storyboardId
+            ? { ...s, shots: s.shots.map((sh) => (sh.id === shotId ? updatedShot : sh)) }
+            : s
+        ),
+      })
+    } finally {
+      const after = new Set(get().imageGeneratingIds)
+      after.delete(shotId)
+      set({ imageGeneratingIds: after })
+    }
+  },
+
+  generateBatchImages: async (projectId, options) => {
+    set({ batchImageStatus: "generating", batchImageProgress: null })
+    try {
+      const res = await fetch("/api/images/generate-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          episodeId: options?.episodeId,
+          mode: options?.mode || "missing_only",
+        }),
+      })
+      if (!res.ok) throw new Error("批量生成失败")
+      const data = await res.json()
+
+      const resultMap = new Map<string, { imageUrl?: string; imageUrls?: string[] }>()
+      for (const r of data.results) {
+        if (r.status === "success") {
+          resultMap.set(r.shotId, { imageUrl: r.imageUrl, imageUrls: r.imageUrls })
+        }
+      }
+
+      set({
+        storyboards: get().storyboards.map((sb) => ({
+          ...sb,
+          shots: sb.shots.map((shot) => {
+            const update = resultMap.get(shot.id)
+            if (!update) return shot
+            return {
+              ...shot,
+              imageUrl: update.imageUrl || shot.imageUrl,
+              imageUrls: update.imageUrls ? JSON.stringify(update.imageUrls) : shot.imageUrls,
+            }
+          }),
+        })),
+        batchImageStatus: "completed",
+        batchImageProgress: { current: data.stats.total, total: data.stats.total },
+      })
+    } catch {
+      set({ batchImageStatus: "error", batchImageProgress: null })
+    }
+  },
+
+  clearImage: async (storyboardId, shotId) => {
+    const res = await fetch(`/api/storyboards/${storyboardId}/shots/${shotId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageUrl: null, imageUrls: null }),
+    })
+    if (!res.ok) throw new Error("清除失败")
+    const updated: Shot = await res.json()
+    set({
+      storyboards: get().storyboards.map((sb) =>
+        sb.id === storyboardId
+          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
+          : sb
+      ),
+    })
+  },
+
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
   setActiveShotId: (shotId) => set({ activeShotId: shotId, detailPanelOpen: !!shotId }),
   setDetailPanelOpen: (open) => set({ detailPanelOpen: open, activeShotId: open ? get().activeShotId : null }),
@@ -406,6 +526,9 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       activeShotId: null,
       selectedShotIds: new Set(),
       detailPanelOpen: false,
+      imageGeneratingIds: new Set(),
+      batchImageStatus: "idle",
+      batchImageProgress: null,
     })
   },
 }))

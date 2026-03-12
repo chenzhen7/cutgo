@@ -12,6 +12,7 @@ export async function PATCH(
   const fields = [
     "shotSize", "cameraMovement", "cameraAngle", "composition",
     "prompt", "negativePrompt", "duration", "imageUrl",
+    "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
     "scriptLineIds", "dialogueText", "actionNote",
     "characterIds", "sceneId", "propIds",
   ]

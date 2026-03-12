@@ -279,6 +279,11 @@ model Shot {
   negativePrompt  String?
   duration        String    @default("3s")
   imageUrl        String?
+  imageType       String    @default("keyframe") // "keyframe" | "first_last" | "multi_grid"
+  imageUrls       String?   // JSON: first_last mode ["url1", "url2"]
+  promptEnd       String?   // first_last mode: end-frame prompt
+  gridLayout      String?   // multi_grid layout: "2x2" | "1x3" | "2x3"
+  gridPrompts     String?   // JSON: multi_grid per-cell prompts ["p1","p2",...]
 
   scriptLineIds   String?
   dialogueText    String?

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useStoryboardStore } from "@/store/storyboard-store"
 import { Button } from "@/components/ui/button"
@@ -43,6 +43,9 @@ export default function StoryboardPage() {
     activeShotId,
     selectedShotIds,
     detailPanelOpen,
+    imageGeneratingIds,
+    batchImageStatus,
+    batchImageProgress,
     fetchStoryboards,
     fetchEpisodes,
     fetchScripts,
@@ -52,6 +55,9 @@ export default function StoryboardPage() {
     updateShot,
     deleteShot,
     duplicateShot,
+    generateImage,
+    generateBatchImages,
+    clearImage,
     setActiveEpisodeId,
     setActiveShotId,
     setDetailPanelOpen,
@@ -167,7 +173,33 @@ export default function StoryboardPage() {
     if (next) setActiveShotId(next.shot.id)
   }, [nextShot, setActiveShotId])
 
-  // Keyboard shortcuts
+  const handleGenerateImage = useCallback(
+    (storyboardId: string, shotId: string) => {
+      generateImage(storyboardId, shotId)
+    },
+    [generateImage]
+  )
+
+  const handleBatchGenerateImages = useCallback(
+    (mode: "all" | "missing_only") => {
+      generateBatchImages(projectId, { mode })
+    },
+    [projectId, generateBatchImages]
+  )
+
+  const handleBatchGenerateEpisodeImages = useCallback(() => {
+    if (activeEpisodeId) {
+      generateBatchImages(projectId, { episodeId: activeEpisodeId, mode: "missing_only" })
+    }
+  }, [projectId, activeEpisodeId, generateBatchImages])
+
+  const handleClearImage = useCallback(() => {
+    const active = activeShot()
+    if (active) {
+      clearImage(active.storyboard.id, active.shot.id)
+    }
+  }, [activeShot, clearImage])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -203,6 +235,14 @@ export default function StoryboardPage() {
   const hasStoryboards = storyboards.some((sb) => sb.shots.length > 0)
   const isGenerating = generateStatus === "generating"
 
+  const imageStats = useMemo(() => {
+    const allShots = storyboards.flatMap((sb) => sb.shots)
+    return {
+      withImage: allShots.filter((s) => s.imageUrl).length,
+      total: allShots.length,
+    }
+  }, [storyboards])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -218,7 +258,7 @@ export default function StoryboardPage() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">分镜设置</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            根据剧本自动生成分镜设计，设置完成后进入下一步生成画面
+            根据剧本自动生成分镜设计，可直接为每个镜头生成画面
           </p>
         </div>
       </div>
@@ -269,9 +309,14 @@ export default function StoryboardPage() {
           <div className="px-6 mb-4 shrink-0">
             <StoryboardToolbar
               generateStatus={generateStatus}
+              batchImageStatus={batchImageStatus}
+              batchImageProgress={batchImageProgress}
               stats={stats}
+              imageStats={imageStats}
               onGenerateAll={handleGenerateAll}
               onSelectEpisodes={() => setShowEpisodeSelect(true)}
+              onBatchGenerateImages={handleBatchGenerateImages}
+              onBatchGenerateEpisodeImages={handleBatchGenerateEpisodeImages}
             />
           </div>
 
@@ -297,6 +342,7 @@ export default function StoryboardPage() {
                     storyboard={sb}
                     activeShotId={activeShotId}
                     selectedShotIds={selectedShotIds}
+                    imageGeneratingIds={imageGeneratingIds}
                     assetCharacters={assetCharacters}
                     assetScenes={assetScenes}
                     assetProps={assetProps}
@@ -304,6 +350,7 @@ export default function StoryboardPage() {
                     onDuplicateShot={(sbId, shotId) => duplicateShot(sbId, shotId)}
                     onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
                     onAddShot={handleAddShot}
+                    onGenerateImage={handleGenerateImage}
                     onRegenerateScript={handleRegenerateScript}
                     onViewScript={(sb) => setViewingScriptStoryboard(sb)}
                   />
@@ -338,10 +385,13 @@ export default function StoryboardPage() {
                 <ShotDetailPanel
                   shot={currentActiveShot.shot}
                   storyboard={currentActiveShot.storyboard}
+                  isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
                   assetCharacters={assetCharacters}
                   assetScenes={assetScenes}
                   assetProps={assetProps}
                   onUpdate={handleUpdateShot}
+                  onGenerateImage={() => handleGenerateImage(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
+                  onClearImage={handleClearImage}
                   onPrev={prevShot() ? handlePrevShot : null}
                   onNext={nextShot() ? handleNextShot : null}
                   onClose={() => setDetailPanelOpen(false)}

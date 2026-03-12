@@ -18,6 +18,7 @@ interface SceneSwimlaneProps {
   storyboard: Storyboard
   activeShotId: string | null
   selectedShotIds: Set<string>
+  imageGeneratingIds: Set<string>
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -25,6 +26,7 @@ interface SceneSwimlaneProps {
   onDuplicateShot: (storyboardId: string, shotId: string) => void
   onDeleteShot: (storyboardId: string, shotId: string) => void
   onAddShot: (storyboardId: string) => void
+  onGenerateImage: (storyboardId: string, shotId: string) => void
   onRegenerateScript: (scriptId: string) => void
   onViewScript: (storyboard: Storyboard) => void
 }
@@ -33,6 +35,7 @@ export function SceneSwimlane({
   storyboard,
   activeShotId,
   selectedShotIds,
+  imageGeneratingIds,
   assetCharacters,
   assetScenes,
   assetProps,
@@ -40,11 +43,13 @@ export function SceneSwimlane({
   onDuplicateShot,
   onDeleteShot,
   onAddShot,
+  onGenerateImage,
   onRegenerateScript,
   onViewScript,
 }: SceneSwimlaneProps) {
   const [collapsed, setCollapsed] = useState(false)
   const script = storyboard.script
+  const shotsWithImage = storyboard.shots.filter((s) => s.imageUrl).length
 
   return (
     <div className="rounded-lg border bg-card">
@@ -72,6 +77,11 @@ export function SceneSwimlane({
             <span className="text-xs text-muted-foreground">
               {storyboard.shots.length} 个画面
             </span>
+            {storyboard.shots.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                · {shotsWithImage}/{storyboard.shots.length} 已生图
+              </span>
+            )}
           </div>
         </div>
 
@@ -106,12 +116,14 @@ export function SceneSwimlane({
               shot={shot}
               isActive={activeShotId === shot.id}
               isSelected={selectedShotIds.has(shot.id)}
+              isGeneratingImage={imageGeneratingIds.has(shot.id)}
               assetCharacters={assetCharacters}
               assetScenes={assetScenes}
               assetProps={assetProps}
               onSelect={() => onSelectShot(shot.id)}
               onDuplicate={() => onDuplicateShot(storyboard.id, shot.id)}
               onDelete={() => onDeleteShot(storyboard.id, shot.id)}
+              onGenerateImage={() => onGenerateImage(storyboard.id, shot.id)}
             />
           ))}
 
@@ -131,7 +143,10 @@ export function SceneSwimlane({
             {storyboard.shots.slice(0, 8).map((shot) => (
               <div
                 key={shot.id}
-                className="h-1.5 w-5 rounded-full bg-primary/30"
+                className={cn(
+                  "h-1.5 w-5 rounded-full",
+                  shot.imageUrl ? "bg-primary/60" : "bg-primary/20"
+                )}
               />
             ))}
             {storyboard.shots.length > 8 && (
