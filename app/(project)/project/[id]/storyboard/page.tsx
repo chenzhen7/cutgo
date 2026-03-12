@@ -374,7 +374,7 @@ export default function StoryboardPage() {
 
             {/* Right: Shot detail panel */}
             {detailPanelOpen && currentActiveShot && (
-              <div className="w-96 h-full shrink-0 rounded-lg border bg-card overflow-hidden">
+              <div className="w-[580px] h-full shrink-0 rounded-lg border bg-card overflow-hidden">
                 <ShotDetailPanel
                   shot={currentActiveShot.shot}
                   storyboard={currentActiveShot.storyboard}

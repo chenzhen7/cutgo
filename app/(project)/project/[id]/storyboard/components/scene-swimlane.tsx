@@ -129,7 +129,7 @@ export function SceneSwimlane({
 
           <button
             onClick={() => onAddShot(storyboard.id)}
-            className="h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+            className="col-span-2 h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
           >
             <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
             <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>

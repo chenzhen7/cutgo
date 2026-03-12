@@ -51,29 +51,29 @@ function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boole
 
   if (isGenerating) {
     return (
-      <div className="relative size-[72px] rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
-        <Loader2 className="size-5 animate-spin text-primary" />
-        <span className="absolute bottom-0.5 text-[8px] text-muted-foreground">{typeLabel}</span>
+      <div className="relative size-[96px] rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <span className="absolute bottom-1 text-[9px] text-muted-foreground">{typeLabel}</span>
       </div>
     )
   }
 
   if (!hasImage) {
     return (
-      <div className="relative size-[72px] rounded-lg bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center shrink-0 gap-1">
-        <ImageIcon className="size-5 text-muted-foreground/25" />
-        <span className="text-[8px] text-muted-foreground/40">{typeLabel}</span>
+      <div className="relative size-[96px] rounded-lg bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center shrink-0 gap-1.5">
+        <ImageIcon className="size-6 text-muted-foreground/25" />
+        <span className="text-[9px] text-muted-foreground/40">{typeLabel}</span>
       </div>
     )
   }
 
   if (imageType === "first_last" && imageUrls.length >= 2) {
     return (
-      <div className="relative w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0 flex flex-col gap-0.5">
-        <img src={imageUrls[0]} alt="首帧" className="w-full h-[35px] object-cover rounded-t-lg" />
-        <img src={imageUrls[1]} alt="尾帧" className="w-full h-[35px] object-cover rounded-b-lg" />
+      <div className="relative w-[96px] h-[96px] rounded-lg overflow-hidden shrink-0 flex flex-col gap-0.5">
+        <img src={imageUrls[0]} alt="首帧" className="w-full h-[47px] object-cover rounded-t-lg" />
+        <img src={imageUrls[1]} alt="尾帧" className="w-full h-[47px] object-cover rounded-b-lg" />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-black/40 text-white text-[7px] px-1 rounded">首尾帧</div>
+          <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
         </div>
       </div>
     )
@@ -81,13 +81,13 @@ function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boole
 
   if (imageType === "multi_grid") {
     return (
-      <div className="relative size-[72px] rounded-lg overflow-hidden shrink-0">
+      <div className="relative size-[96px] rounded-lg overflow-hidden shrink-0">
         <img src={shot.imageUrl!} alt="多宫格" className="size-full object-cover" />
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
           backgroundSize: "50% 50%",
         }} />
-        <div className="absolute bottom-0.5 right-0.5 bg-black/40 text-white text-[7px] px-1 rounded">
+        <div className="absolute bottom-1 right-1 bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">
           {shot.gridLayout || "2x2"}
         </div>
       </div>
@@ -95,7 +95,7 @@ function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boole
   }
 
   return (
-    <div className="relative size-[72px] rounded-lg overflow-hidden shrink-0">
+    <div className="relative size-[96px] rounded-lg overflow-hidden shrink-0">
       <img src={shot.imageUrl!} alt="关键帧" className="size-full object-cover" />
     </div>
   )
@@ -161,7 +161,7 @@ export function ShotCard({
 
         <div className="flex-1 min-w-0 flex flex-col gap-2">
           <p className={cn(
-            "text-[14px] leading-relaxed",
+            "text-[14px] leading-relaxed line-clamp-2",
             shot.composition ? "text-foreground font-medium" : "text-muted-foreground/60 italic"
           )}>
             {shot.composition || "暂无画面描述"}

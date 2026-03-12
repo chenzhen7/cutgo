@@ -186,87 +186,90 @@ export function ShotDetailPanel({
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-12 space-y-4">
 
-        {/* === Image Type Selector === */}
-        <div className="space-y-2">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面类型</Label>
-          <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg">
-            {IMAGE_TYPE_OPTIONS.map((opt) => (
-              <TooltipProvider key={opt.value} delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => handleImageTypeChange(opt.value)}
-                      className={cn(
-                        "flex-1 text-xs py-1.5 rounded-md transition-all font-medium",
-                        imageType === opt.value
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">{opt.description}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
+        {/* === Image Type + Preview: Two columns === */}
+        <div className="flex gap-3">
+          {/* Left column: Type selector + Generate button */}
+          <div className="w-[160px] shrink-0 space-y-2.5">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面类型</Label>
+            <div className="flex flex-col gap-0.5 p-0.5 bg-muted/50 rounded-lg">
+              {IMAGE_TYPE_OPTIONS.map((opt) => (
+                <TooltipProvider key={opt.value} delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => handleImageTypeChange(opt.value)}
+                        className={cn(
+                          "w-full text-xs py-1.5 rounded-md transition-all font-medium text-left px-2",
+                          imageType === opt.value
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">{opt.description}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+
+            <Button
+              size="sm"
+              className="w-full text-xs"
+              onClick={onGenerateImage}
+              disabled={isGeneratingImage}
+            >
+              {isGeneratingImage ? (
+                <Loader2 className="size-3 mr-1.5 animate-spin" />
+              ) : (
+                <Paintbrush className="size-3 mr-1.5" />
+              )}
+              {hasImage ? "重新生成" : "生成画面"}
+            </Button>
           </div>
-        </div>
 
-        {/* === Image Preview === */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面预览</Label>
-            {hasImage && (
-              <button onClick={onClearImage} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
-                <Trash2 className="size-3" />清除
-              </button>
-            )}
-          </div>
+          {/* Right column: Image preview */}
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面预览</Label>
+              {hasImage && (
+                <button onClick={onClearImage} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
+                  <Trash2 className="size-3" />清除
+                </button>
+              )}
+            </div>
 
-          {isGeneratingImage ? (
-            <div className="w-full aspect-[9/16] max-h-[240px] rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2">
-              <Loader2 className="size-6 animate-spin text-primary" />
-              <span className="text-xs text-muted-foreground">生成中...</span>
-            </div>
-          ) : imageType === "first_last" && imageUrls.length >= 2 ? (
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-1">
-                <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
-                <img src={imageUrls[0]} alt="首帧" className="w-full aspect-[9/16] max-h-[180px] object-cover rounded-lg border" />
-              </div>
-              <div className="flex-1 space-y-1">
-                <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
-                <img src={imageUrls[1]} alt="尾帧" className="w-full aspect-[9/16] max-h-[180px] object-cover rounded-lg border" />
-              </div>
-            </div>
-          ) : hasImage ? (
-            <img src={shot.imageUrl!} alt="画面预览" className="w-full aspect-[9/16] max-h-[240px] object-cover rounded-lg border" />
-          ) : (
-            <div className="w-full aspect-[9/16] max-h-[180px] rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2">
-              <ImageIcon className="size-8 text-muted-foreground/20" />
-              <span className="text-xs text-muted-foreground/40">暂无画面</span>
-            </div>
-          )}
-
-          <Button
-            size="sm"
-            className="w-full text-xs"
-            onClick={onGenerateImage}
-            disabled={isGeneratingImage}
-          >
             {isGeneratingImage ? (
-              <Loader2 className="size-3 mr-1.5 animate-spin" />
+              <div className="w-full aspect-[9/16] max-h-[260px] rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="size-6 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">生成中...</span>
+              </div>
+            ) : imageType === "first_last" && imageUrls.length >= 2 ? (
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
+                  <img src={imageUrls[0]} alt="首帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
+                  <img src={imageUrls[1]} alt="尾帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
+                </div>
+              </div>
+            ) : hasImage ? (
+              <img src={shot.imageUrl!} alt="画面预览" className="w-full aspect-[9/16] max-h-[260px] object-cover rounded-lg border" />
             ) : (
-              <Paintbrush className="size-3 mr-1.5" />
+              <div className="w-full aspect-[9/16] max-h-[200px] rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2">
+                <ImageIcon className="size-8 text-muted-foreground/20" />
+                <span className="text-xs text-muted-foreground/40">暂无画面</span>
+              </div>
             )}
-            {hasImage ? "重新生成画面" : "生成画面"}
-          </Button>
+          </div>
         </div>
 
         {/* === Prompts by Type === */}
         {imageType === "first_last" && (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Label className="text-xs">首帧提示词</Label>
@@ -311,8 +314,7 @@ export function ShotDetailPanel({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs">各格提示词</Label>
+            <div className="grid grid-cols-2 gap-2">
               {Array.from({ length: currentGridLayout.count }).map((_, i) => (
                 <div key={i} className="space-y-1">
                   <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
@@ -328,190 +330,195 @@ export function ShotDetailPanel({
           </div>
         )}
 
-        {/* Asset bindings section */}
-        <div className="space-y-3">
+        {/* Asset bindings section: 3 columns */}
+        <div className="space-y-2">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
 
-          {/* Scene */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="size-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium">场景</span>
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2">编辑</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align="end">
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    <button
-                      onClick={() => handleChangeScene("__none__")}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors",
-                        !shot.sceneId && "bg-muted font-medium"
-                      )}
-                    >
-                      无
-                    </button>
-                    {assetScenes.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-2 text-center">暂无场景资产</p>
-                    ) : (
-                      assetScenes.map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => handleChangeScene(s.id)}
-                          className={cn(
-                            "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs text-left transition-colors",
-                            shot.sceneId === s.id && "bg-muted font-medium text-primary"
-                          )}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {s.imageUrl ? (
-                              <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
-                            ) : (
-                              <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                <MapPin className="size-3 text-muted-foreground" />
-                              </div>
-                            )}
-                            <span className="truncate">{s.name}</span>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            {boundScene ? (
-              <div className="rounded-lg overflow-hidden border bg-muted/30">
-                {boundScene.imageUrl ? (
-                  <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-24 object-cover" />
-                ) : (
-                  <div className="w-full h-20 flex items-center justify-center bg-muted/50">
-                    <MapPin className="size-6 text-muted-foreground/20" />
-                  </div>
-                )}
-                <div className="px-2 py-1.5 border-t bg-card">
-                  <p className="text-xs font-medium">{boundScene.name}</p>
-                  {boundScene.description && (
-                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{boundScene.description}</p>
-                  )}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Scene */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <MapPin className="size-3 text-muted-foreground" />
+                  <span className="text-[11px] font-medium">场景</span>
                 </div>
-              </div>
-            ) : (
-              <p className="text-[10px] text-muted-foreground/50 italic">未绑定场景</p>
-            )}
-          </div>
-
-          {/* Characters */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <User className="size-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium">角色</span>
-                {boundCharacters.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] px-1 py-0">{boundCharacters.length}</Badge>
-                )}
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2">编辑</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align="end">
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {assetCharacters.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-2 text-center">暂无角色资产</p>
-                    ) : (
-                      assetCharacters.map((c) => (
-                        <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
-                          <Checkbox
-                            checked={boundCharacterIds.includes(c.id)}
-                            onCheckedChange={() => handleToggleCharacter(c.id)}
-                          />
-                          <div className="flex items-center gap-2 min-w-0">
-                            {c.imageUrl ? (
-                              <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
-                            ) : (
-                              <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                <User className="size-3 text-muted-foreground" />
-                              </div>
-                            )}
-                            <span className="text-xs truncate">{c.name}</span>
-                          </div>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            {boundCharacters.length > 0 ? (
-              <div className="flex gap-2 flex-wrap">
-                {boundCharacters.map((c) => (
-                  <div key={c.id} className="flex flex-col items-center gap-1 group">
-                    <div className="relative size-12 rounded-lg overflow-hidden bg-muted border">
-                      {c.imageUrl ? (
-                        <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      <button
+                        onClick={() => handleChangeScene("__none__")}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors",
+                          !shot.sceneId && "bg-muted font-medium"
+                        )}
+                      >
+                        无
+                      </button>
+                      {assetScenes.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2 text-center">暂无场景资产</p>
                       ) : (
-                        <div className="size-full flex items-center justify-center">
-                          <User className="size-5 text-muted-foreground/40" />
-                        </div>
+                        assetScenes.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => handleChangeScene(s.id)}
+                            className={cn(
+                              "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs text-left transition-colors",
+                              shot.sceneId === s.id && "bg-muted font-medium text-primary"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {s.imageUrl ? (
+                                <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                              ) : (
+                                <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                  <MapPin className="size-3 text-muted-foreground" />
+                                </div>
+                              )}
+                              <span className="truncate">{s.name}</span>
+                            </div>
+                          </button>
+                        ))
                       )}
                     </div>
-                    <span className="text-[10px] text-muted-foreground truncate max-w-[48px]">{c.name}</span>
-                  </div>
-                ))}
+                  </PopoverContent>
+                </Popover>
               </div>
-            ) : (
-              <p className="text-[10px] text-muted-foreground/50 italic">未绑定角色</p>
-            )}
-          </div>
-
-          {/* Props */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <Package className="size-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium">道具</span>
-                {boundProps.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] px-1 py-0">{boundProps.length}</Badge>
-                )}
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2">编辑</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align="end">
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {assetProps.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-2 text-center">暂无道具资产</p>
-                    ) : (
-                      assetProps.map((p) => (
-                        <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
-                          <Checkbox
-                            checked={boundPropIds.includes(p.id)}
-                            onCheckedChange={() => handleToggleProp(p.id)}
-                          />
-                          <span className="text-xs truncate">{p.name}</span>
-                        </label>
-                      ))
-                    )}
+              {boundScene ? (
+                <div className="rounded-lg overflow-hidden border bg-muted/30">
+                  {boundScene.imageUrl ? (
+                    <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-16 object-cover" />
+                  ) : (
+                    <div className="w-full h-12 flex items-center justify-center bg-muted/50">
+                      <MapPin className="size-4 text-muted-foreground/20" />
+                    </div>
+                  )}
+                  <div className="px-1.5 py-1 border-t bg-card">
+                    <p className="text-[10px] font-medium truncate">{boundScene.name}</p>
                   </div>
-                </PopoverContent>
-              </Popover>
+                </div>
+              ) : (
+                <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
+                  <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
+                </div>
+              )}
             </div>
-            {boundProps.length > 0 ? (
-              <div className="flex gap-1.5 flex-wrap">
-                {boundProps.map((p) => (
-                  <Badge key={p.id} variant="outline" className="text-[10px]">
-                    {p.name}
-                  </Badge>
-                ))}
+
+            {/* Characters */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <User className="size-3 text-muted-foreground" />
+                  <span className="text-[11px] font-medium">角色</span>
+                  {boundCharacters.length > 0 && (
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{boundCharacters.length}</Badge>
+                  )}
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {assetCharacters.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2 text-center">暂无角色资产</p>
+                      ) : (
+                        assetCharacters.map((c) => (
+                          <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={boundCharacterIds.includes(c.id)}
+                              onCheckedChange={() => handleToggleCharacter(c.id)}
+                            />
+                            <div className="flex items-center gap-2 min-w-0">
+                              {c.imageUrl ? (
+                                <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                  <User className="size-3 text-muted-foreground" />
+                                </div>
+                              )}
+                              <span className="text-xs truncate">{c.name}</span>
+                            </div>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-            ) : (
-              <p className="text-[10px] text-muted-foreground/50 italic">未绑定道具</p>
-            )}
+              {boundCharacters.length > 0 ? (
+                <div className="flex gap-1.5 flex-wrap">
+                  {boundCharacters.map((c) => (
+                    <div key={c.id} className="flex flex-col items-center gap-0.5">
+                      <div className="size-9 rounded-md overflow-hidden bg-muted border">
+                        {c.imageUrl ? (
+                          <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                        ) : (
+                          <div className="size-full flex items-center justify-center">
+                            <User className="size-4 text-muted-foreground/40" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[9px] text-muted-foreground truncate max-w-[36px]">{c.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
+                  <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
+                </div>
+              )}
+            </div>
+
+            {/* Props */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Package className="size-3 text-muted-foreground" />
+                  <span className="text-[11px] font-medium">道具</span>
+                  {boundProps.length > 0 && (
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{boundProps.length}</Badge>
+                  )}
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {assetProps.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2 text-center">暂无道具资产</p>
+                      ) : (
+                        assetProps.map((p) => (
+                          <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={boundPropIds.includes(p.id)}
+                              onCheckedChange={() => handleToggleProp(p.id)}
+                            />
+                            <span className="text-xs truncate">{p.name}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {boundProps.length > 0 ? (
+                <div className="flex gap-1 flex-wrap">
+                  {boundProps.map((p) => (
+                    <Badge key={p.id} variant="outline" className="text-[9px] px-1.5">
+                      {p.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
+                  <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
