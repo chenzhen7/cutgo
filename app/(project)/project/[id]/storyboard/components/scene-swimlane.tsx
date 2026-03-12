@@ -29,6 +29,7 @@ interface SceneSwimlaneProps {
   onGenerateImage: (storyboardId: string, shotId: string) => void
   onRegenerateScript: (scriptId: string) => void
   onViewScript: (storyboard: Storyboard) => void
+  noBorder?: boolean
 }
 
 export function SceneSwimlane({
@@ -46,13 +47,17 @@ export function SceneSwimlane({
   onGenerateImage,
   onRegenerateScript,
   onViewScript,
+  noBorder = false,
 }: SceneSwimlaneProps) {
   const [collapsed, setCollapsed] = useState(false)
   const script = storyboard.script
   const shotsWithImage = storyboard.shots.filter((s) => s.imageUrl).length
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div className={cn(
+      "bg-card transition-all",
+      noBorder ? "border-0 border-b last:border-b-0 rounded-none shadow-none" : "rounded-lg border shadow-sm"
+    )}>
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-2 border-b cursor-pointer hover:bg-muted/30 transition-colors"

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useStoryboardStore } from "@/store/storyboard-store"
 import { Button } from "@/components/ui/button"
 import { Loader2, LayoutGrid } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +16,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 import { StoryboardEmptyState } from "./components/storyboard-empty-state"
 import { StoryboardToolbar } from "./components/storyboard-toolbar"
 import { EpisodeSelectDialog } from "./components/episode-select-dialog"
@@ -324,73 +330,91 @@ export default function StoryboardPage() {
             />
           </div>
 
-          {/* Two-column layout */}
-          <div className="flex flex-1 min-h-0 px-6 gap-4 pb-20">
-            {/* Center: Timeline editor */}
-            <div className="flex-1 h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-12 custom-scrollbar">
-              {currentStoryboards.length > 0 ? (
-                currentStoryboards.map((sb) => (
-                  <SceneSwimlane
-                    key={sb.id}
-                    storyboard={sb}
-                    activeShotId={activeShotId}
-                    selectedShotIds={selectedShotIds}
-                    imageGeneratingIds={imageGeneratingIds}
-                    assetCharacters={assetCharacters}
-                    assetScenes={assetScenes}
-                    assetProps={assetProps}
-                    onSelectShot={handleSelectShot}
-                    onDuplicateShot={(sbId, shotId) => duplicateShot(sbId, shotId)}
-                    onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
-                    onAddShot={handleAddShot}
-                    onGenerateImage={handleGenerateImage}
-                    onRegenerateScript={handleRegenerateScript}
-                    onViewScript={(sb) => setViewingScriptStoryboard(sb)}
-                  />
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <LayoutGrid className="size-12 text-muted-foreground mb-4" />
-                  <h3 className="text-base font-medium mb-2">
-                    {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {activeEpisodeId
-                      ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
-                      : "从上方选择一个分集进行查看和编辑"}
-                  </p>
-                  {activeEpisodeId && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleGenerateEpisodes([activeEpisodeId])}
-                      disabled={isGenerating}
-                    >
-                      生成该集分镜
-                    </Button>
+          {/* Two-column layout with Resizable */}
+          <div className="flex-1 min-h-0 px-6 pb-20">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Center: Timeline editor */}
+              <ResizablePanel defaultSize={60} minSize={30}>
+                <div className={cn(
+                  "h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-12 custom-scrollbar",
+                  detailPanelOpen ? "border-y border-l bg-background/50 rounded-l-lg" : "border rounded-lg"
+                )}>
+                  {currentStoryboards.length > 0 ? (
+                    <div className={cn(
+                      "space-y-3",
+                      detailPanelOpen ? "p-0" : ""
+                    )}>
+                      {currentStoryboards.map((sb) => (
+                        <SceneSwimlane
+                          key={sb.id}
+                          storyboard={sb}
+                          activeShotId={activeShotId}
+                          selectedShotIds={selectedShotIds}
+                          imageGeneratingIds={imageGeneratingIds}
+                          assetCharacters={assetCharacters}
+                          assetScenes={assetScenes}
+                          assetProps={assetProps}
+                          onSelectShot={handleSelectShot}
+                          onDuplicateShot={(sbId, shotId) => duplicateShot(sbId, shotId)}
+                          onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
+                          onAddShot={handleAddShot}
+                          onGenerateImage={handleGenerateImage}
+                          onRegenerateScript={handleRegenerateScript}
+                          onViewScript={(sb) => setViewingScriptStoryboard(sb)}
+                          noBorder={detailPanelOpen}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <LayoutGrid className="size-12 text-muted-foreground mb-4" />
+                      <h3 className="text-base font-medium mb-2">
+                        {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {activeEpisodeId
+                          ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
+                          : "从上方选择一个分集进行查看和编辑"}
+                      </p>
+                      {activeEpisodeId && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleGenerateEpisodes([activeEpisodeId])}
+                          disabled={isGenerating}
+                        >
+                          生成该集分镜
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              </ResizablePanel>
 
-            {/* Right: Shot detail panel */}
-            {detailPanelOpen && currentActiveShot && (
-              <div className="w-[580px] h-full shrink-0 rounded-lg border bg-card overflow-hidden">
-                <ShotDetailPanel
-                  shot={currentActiveShot.shot}
-                  storyboard={currentActiveShot.storyboard}
-                  isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
-                  assetCharacters={assetCharacters}
-                  assetScenes={assetScenes}
-                  assetProps={assetProps}
-                  onUpdate={handleUpdateShot}
-                  onGenerateImage={() => handleGenerateImage(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
-                  onClearImage={handleClearImage}
-                  onPrev={prevShot() ? handlePrevShot : null}
-                  onNext={nextShot() ? handleNextShot : null}
-                  onClose={() => setDetailPanelOpen(false)}
-                />
-              </div>
-            )}
+              {/* Right: Shot detail panel */}
+              {detailPanelOpen && currentActiveShot && (
+                <>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={40} minSize={20}>
+                    <div className="h-full shrink-0 border-y border-r rounded-r-lg bg-card overflow-hidden">
+                      <ShotDetailPanel
+                        shot={currentActiveShot.shot}
+                        storyboard={currentActiveShot.storyboard}
+                        isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
+                        assetCharacters={assetCharacters}
+                        assetScenes={assetScenes}
+                        assetProps={assetProps}
+                        onUpdate={handleUpdateShot}
+                        onGenerateImage={() => handleGenerateImage(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
+                        onClearImage={handleClearImage}
+                        onPrev={prevShot() ? handlePrevShot : null}
+                        onNext={nextShot() ? handleNextShot : null}
+                        onClose={() => setDetailPanelOpen(false)}
+                      />
+                    </div>
+                  </ResizablePanel>
+                </>
+              )}
+            </ResizablePanelGroup>
           </div>
 
           {/* Bottom bar */}
