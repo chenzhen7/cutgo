@@ -332,7 +332,7 @@ export default function StoryboardPage() {
 
           {/* Two-column layout with Resizable */}
           <div className="flex-1 min-h-0 px-6 pb-20">
-            <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanelGroup orientation="horizontal" className="h-full">
               {/* Center: Timeline editor */}
               <ResizablePanel defaultSize={60} minSize={30}>
                 <div className={cn(
