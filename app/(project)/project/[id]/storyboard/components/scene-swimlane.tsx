@@ -1,12 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  ChevronDown,
-  ChevronRight,
   RefreshCw,
   BookOpen,
   Plus,
@@ -49,7 +46,6 @@ export function SceneSwimlane({
   onViewScript,
   noBorder = false,
 }: SceneSwimlaneProps) {
-  const [collapsed, setCollapsed] = useState(false)
   const script = storyboard.script
   const shotsWithImage = storyboard.shots.filter((s) => s.imageUrl).length
 
@@ -60,15 +56,8 @@ export function SceneSwimlane({
     )}>
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2 border-b cursor-pointer hover:bg-muted/30 transition-colors"
-        onClick={() => setCollapsed(!collapsed)}
+        className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2 border-b bg-card"
       >
-        {collapsed ? (
-          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
-        )}
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium truncate">
@@ -113,55 +102,32 @@ export function SceneSwimlane({
       </div>
 
       {/* Shots */}
-      {!collapsed && (
-        <div className="flex flex-col gap-3 p-3">
-          {storyboard.shots.map((shot) => (
-            <ShotCard
-              key={shot.id}
-              shot={shot}
-              isActive={activeShotId === shot.id}
-              isSelected={selectedShotIds.has(shot.id)}
-              isGeneratingImage={imageGeneratingIds.has(shot.id)}
-              assetCharacters={assetCharacters}
-              assetScenes={assetScenes}
-              assetProps={assetProps}
-              onSelect={() => onSelectShot(shot.id)}
-              onDuplicate={() => onDuplicateShot(storyboard.id, shot.id)}
-              onDelete={() => onDeleteShot(storyboard.id, shot.id)}
-              onGenerateImage={() => onGenerateImage(storyboard.id, shot.id)}
-            />
-          ))}
+      <div className="flex flex-col gap-3 p-3">
+        {storyboard.shots.map((shot) => (
+          <ShotCard
+            key={shot.id}
+            shot={shot}
+            isActive={activeShotId === shot.id}
+            isSelected={selectedShotIds.has(shot.id)}
+            isGeneratingImage={imageGeneratingIds.has(shot.id)}
+            assetCharacters={assetCharacters}
+            assetScenes={assetScenes}
+            assetProps={assetProps}
+            onSelect={() => onSelectShot(shot.id)}
+            onDuplicate={() => onDuplicateShot(storyboard.id, shot.id)}
+            onDelete={() => onDeleteShot(storyboard.id, shot.id)}
+            onGenerateImage={() => onGenerateImage(storyboard.id, shot.id)}
+          />
+        ))}
 
-          <button
-            onClick={() => onAddShot(storyboard.id)}
-            className="col-span-2 h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
-          >
-            <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
-            <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
-          </button>
-        </div>
-      )}
-
-      {collapsed && (
-        <div className="px-3 py-1.5">
-          <div className="flex gap-1">
-            {storyboard.shots.slice(0, 8).map((shot) => (
-              <div
-                key={shot.id}
-                className={cn(
-                  "h-1.5 w-5 rounded-full",
-                  shot.imageUrl ? "bg-primary/60" : "bg-primary/20"
-                )}
-              />
-            ))}
-            {storyboard.shots.length > 8 && (
-              <span className="text-[10px] text-muted-foreground ml-1">
-                +{storyboard.shots.length - 8}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+        <button
+          onClick={() => onAddShot(storyboard.id)}
+          className="col-span-2 h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+        >
+          <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
+          <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
+        </button>
+      </div>
     </div>
   )
 }
