@@ -245,33 +245,153 @@ export function ShotDetailPanel({
 
           {/* === Image Generation Tab === */}
           <TabsContent value="image" className="space-y-4">
-            {/* Composition */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-1">
-                <Label className="text-xs">画面描述</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-3 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-[240px]">
-                      <p className="text-xs leading-relaxed">
-                        用中文简述画面内容和氛围，帮助理解每个画面表现什么场景
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+          
+
+            
+
+            {/* Image Type + Preview */}
+            <div className="flex gap-3">
+              {/* Left column: Type selector + Generate button */}
+              <div className="w-[160px] shrink-0 space-y-2.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面类型</Label>
+                <div className="flex flex-col gap-0.5 p-0.5 bg-muted/50 rounded-lg">
+                  {IMAGE_TYPE_OPTIONS.map((opt) => (
+                    <TooltipProvider key={opt.value} delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleImageTypeChange(opt.value)}
+                            className={cn(
+                              "w-full text-xs py-1.5 rounded-md transition-all font-medium text-left px-2",
+                              imageType === opt.value
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="text-xs">{opt.description}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+
+                <Button
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={onGenerateImage}
+                  disabled={isGeneratingImage}
+                >
+                  {isGeneratingImage ? (
+                    <Loader2 className="size-3 mr-1.5 animate-spin" />
+                  ) : (
+                    <Paintbrush className="size-3 mr-1.5" />
+                  )}
+                  {hasImage ? "重新生成" : "生成画面"}
+                </Button>
               </div>
-              <Textarea
-                value={composition || ""}
-                onChange={(e) => {
-                  setComposition(e.target.value)
-                  debouncedUpdate({ composition: e.target.value })
-                }}
-                className="text-xs min-h-[60px] max-h-[120px] resize-none"
-                placeholder="描述画面内容和氛围..."
-              />
+
+              {/* Right column: Image preview */}
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面预览</Label>
+                  {hasImage && (
+                    <button onClick={onClearImage} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
+                      <Trash2 className="size-3" />清除
+                    </button>
+                  )}
+                </div>
+
+                {isGeneratingImage ? (
+                  <div className="w-full aspect-[9/16] max-h-[260px] rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="size-6 animate-spin text-primary" />
+                    <span className="text-xs text-muted-foreground">生成中...</span>
+                  </div>
+                ) : imageType === "first_last" && imageUrls.length >= 2 ? (
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
+                      <img src={imageUrls[0]} alt="首帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
+                      <img src={imageUrls[1]} alt="尾帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
+                    </div>
+                  </div>
+                ) : hasImage ? (
+                  <img src={shot.imageUrl!} alt="画面预览" className="w-full aspect-[9/16] max-h-[260px] object-cover rounded-lg border" />
+                ) : (
+                  <div className="w-full aspect-[9/16] max-h-[200px] rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2">
+                    <ImageIcon className="size-8 text-muted-foreground/20" />
+                    <span className="text-xs text-muted-foreground/40">暂无画面</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Prompts by Type */}
+            {imageType === "first_last" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Label className="text-xs">首帧提示词</Label>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground bg-muted/40 rounded p-2 leading-relaxed max-h-20 overflow-y-auto">
+                    {shot.prompt || "（使用画面描述中的 prompt）"}
+                  </p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Label className="text-xs">尾帧提示词</Label>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0">promptEnd</Badge>
+                  </div>
+                  <Textarea
+                    value={promptEnd}
+                    onChange={(e) => {
+                      setPromptEnd(e.target.value)
+                      debouncedUpdate({ promptEnd: e.target.value })
+                    }}
+                    className="text-xs min-h-[60px] resize-none"
+                    placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {imageType === "multi_grid" && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs mb-1.5 block">宫格布局</Label>
+                  <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRID_LAYOUT_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label} ({opt.count}格)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: currentGridLayout.count }).map((_, i) => (
+                    <div key={i} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
+                      <Textarea
+                        value={gridPrompts[i] || ""}
+                        onChange={(e) => handleGridPromptChange(i, e.target.value)}
+                        className="text-xs min-h-[40px] resize-none"
+                        placeholder={`第 ${i + 1} 格画面提示词...`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Asset bindings section: 3 columns */}
             <div className="space-y-2">
@@ -465,149 +585,33 @@ export function ShotDetailPanel({
               </div>
             </div>
 
-            {/* Image Type + Preview */}
-            <div className="flex gap-3">
-              {/* Left column: Type selector + Generate button */}
-              <div className="w-[160px] shrink-0 space-y-2.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面类型</Label>
-                <div className="flex flex-col gap-0.5 p-0.5 bg-muted/50 rounded-lg">
-                  {IMAGE_TYPE_OPTIONS.map((opt) => (
-                    <TooltipProvider key={opt.value} delayDuration={300}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => handleImageTypeChange(opt.value)}
-                            className={cn(
-                              "w-full text-xs py-1.5 rounded-md transition-all font-medium text-left px-2",
-                              imageType === opt.value
-                                ? "bg-background text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="text-xs">{opt.description}</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
-
-                <Button
-                  size="sm"
-                  className="w-full text-xs"
-                  onClick={onGenerateImage}
-                  disabled={isGeneratingImage}
-                >
-                  {isGeneratingImage ? (
-                    <Loader2 className="size-3 mr-1.5 animate-spin" />
-                  ) : (
-                    <Paintbrush className="size-3 mr-1.5" />
-                  )}
-                  {hasImage ? "重新生成" : "生成画面"}
-                </Button>
+            {/* Composition */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面描述</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="size-3 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[240px]">
+                      <p className="text-xs leading-relaxed">
+                        用中文简述画面内容和氛围，帮助理解每个画面表现什么场景
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-
-              {/* Right column: Image preview */}
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面预览</Label>
-                  {hasImage && (
-                    <button onClick={onClearImage} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
-                      <Trash2 className="size-3" />清除
-                    </button>
-                  )}
-                </div>
-
-                {isGeneratingImage ? (
-                  <div className="w-full aspect-[9/16] max-h-[260px] rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="size-6 animate-spin text-primary" />
-                    <span className="text-xs text-muted-foreground">生成中...</span>
-                  </div>
-                ) : imageType === "first_last" && imageUrls.length >= 2 ? (
-                  <div className="flex gap-2">
-                    <div className="flex-1 space-y-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
-                      <img src={imageUrls[0]} alt="首帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
-                      <img src={imageUrls[1]} alt="尾帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
-                    </div>
-                  </div>
-                ) : hasImage ? (
-                  <img src={shot.imageUrl!} alt="画面预览" className="w-full aspect-[9/16] max-h-[260px] object-cover rounded-lg border" />
-                ) : (
-                  <div className="w-full aspect-[9/16] max-h-[200px] rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2">
-                    <ImageIcon className="size-8 text-muted-foreground/20" />
-                    <span className="text-xs text-muted-foreground/40">暂无画面</span>
-                  </div>
-                )}
-              </div>
+              <Textarea
+                value={composition || ""}
+                onChange={(e) => {
+                  setComposition(e.target.value)
+                  debouncedUpdate({ composition: e.target.value })
+                }}
+                className="text-xs min-h-[60px] max-h-[120px] resize-none"
+                placeholder="描述画面内容和氛围..."
+              />
             </div>
-
-            {/* Prompts by Type */}
-            {imageType === "first_last" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Label className="text-xs">首帧提示词</Label>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground bg-muted/40 rounded p-2 leading-relaxed max-h-20 overflow-y-auto">
-                    {shot.prompt || "（使用画面描述中的 prompt）"}
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Label className="text-xs">尾帧提示词</Label>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0">promptEnd</Badge>
-                  </div>
-                  <Textarea
-                    value={promptEnd}
-                    onChange={(e) => {
-                      setPromptEnd(e.target.value)
-                      debouncedUpdate({ promptEnd: e.target.value })
-                    }}
-                    className="text-xs min-h-[60px] resize-none"
-                    placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {imageType === "multi_grid" && (
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs mb-1.5 block">宫格布局</Label>
-                  <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRID_LAYOUT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                          {opt.label} ({opt.count}格)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {Array.from({ length: currentGridLayout.count }).map((_, i) => (
-                    <div key={i} className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
-                      <Textarea
-                        value={gridPrompts[i] || ""}
-                        onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                        className="text-xs min-h-[40px] resize-none"
-                        placeholder={`第 ${i + 1} 格画面提示词...`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Image prompt */}
             <div>
