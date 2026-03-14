@@ -45,7 +45,6 @@ export default function VideoGenPage() {
         </Button>
       </div>
 
-   
     </div>
   )
 }
