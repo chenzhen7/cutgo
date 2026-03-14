@@ -772,18 +772,6 @@ export function ShotDetailPanel({
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2 border-t shrink-0">
-        <Button variant="outline" size="sm" className="text-xs" disabled={!onPrev} onClick={onPrev || undefined}>
-          <ChevronLeft className="size-3 mr-1" />
-          上一镜头
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs" disabled={!onNext} onClick={onNext || undefined}>
-          下一镜头
-          <ChevronRight className="size-3 ml-1" />
-        </Button>
-      </div>
     </div>
   )
 }
