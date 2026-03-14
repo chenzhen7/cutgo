@@ -34,7 +34,7 @@ interface StoryboardState {
   batchImageProgress: { current: number; total: number } | null
 
   fetchStoryboards: (projectId: string, episodeId?: string) => Promise<void>
-  fetchEpisodes: (projectId: string) => Promise<void>
+  fetchEpisodes: (projectId: string) => Promise<Episode[]>
   fetchScripts: (projectId: string) => Promise<void>
   fetchAssets: (projectId: string) => Promise<void>
 
@@ -126,6 +126,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     if (!res.ok) return
     const data = await res.json()
     set({ episodes: data || [] })
+    return data || []
   },
 
   fetchScripts: async (projectId) => {

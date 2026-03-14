@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useStoryboardStore } from "@/store/storyboard-store"
 import { Button } from "@/components/ui/button"
-import { Loader2, LayoutGrid } from "lucide-react"
+import { Loader2, LayoutGrid, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   AlertDialog,
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/resizable"
 import { StoryboardEmptyState } from "./components/storyboard-empty-state"
 import { StoryboardToolbar } from "./components/storyboard-toolbar"
-import { EpisodeSelectDialog } from "./components/episode-select-dialog"
+import { EpisodeSelectView } from "./components/episode-select-view"
 import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ConfirmStoryboardDialog } from "./components/confirm-storyboard-dialog"
@@ -73,10 +73,9 @@ export default function StoryboardPage() {
     activeShot,
     nextShot,
     prevShot,
-    storyboardStats,
   } = useStoryboardStore()
 
-  const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
+  const [view, setView] = useState<"episode-select" | "storyboard-list">("storyboard-list")
   const [scriptConfirmed, setScriptConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ storyboardId: string; shotId: string } | null>(null)
@@ -92,7 +91,7 @@ export default function StoryboardPage() {
   useEffect(() => {
     const init = async () => {
       setLoading(true)
-      await Promise.all([
+      const [eps] = await Promise.all([
         fetchEpisodes(projectId),
         fetchScripts(projectId),
         fetchStoryboards(projectId),
@@ -104,16 +103,31 @@ export default function StoryboardPage() {
         const project = await res.json()
         setScriptConfirmed(project.step >= 5)
       }
+
+      // 如果没有选中的分集，且有分集数据，默认选中第一个
+      if (!activeEpisodeId && eps && eps.length > 0) {
+        setActiveEpisodeId(eps[0].id)
+      }
+
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, fetchScripts, fetchStoryboards, fetchAssets])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
 
-  useEffect(() => {
-    if (episodes.length > 0 && !activeEpisodeId) {
-      setActiveEpisodeId(episodes[0].id)
-    }
-  }, [episodes, activeEpisodeId, setActiveEpisodeId])
+  // 默认进入分镜列表页面，如果已有分集则选中第一个
+
+  const handleEnterEpisode = useCallback(
+    (episodeId: string) => {
+      setActiveEpisodeId(episodeId)
+      setView("storyboard-list")
+    },
+    [setActiveEpisodeId]
+  )
+
+  const handleBackToEpisodeSelect = useCallback(() => {
+    setView("episode-select")
+  }, [])
 
   const handleGenerateAll = useCallback(
     async (mode: "skip_existing" | "overwrite") => {
@@ -380,7 +394,6 @@ export default function StoryboardPage() {
 
   const currentStoryboards = activeEpisodeStoryboards()
   const currentActiveShot = activeShot()
-  const stats = storyboardStats()
   const hasStoryboards = storyboards.some((sb) => sb.shots.length > 0)
   const isGenerating = generateStatus === "generating"
 
@@ -400,18 +413,22 @@ export default function StoryboardPage() {
     )
   }
 
+  // 分集选择视图
+  if (view === "episode-select") {
+    return (
+      <div className="flex flex-col h-[calc(100vh-0.5rem)] overflow-y-auto custom-scrollbar">
+        <EpisodeSelectView
+          episodes={episodes}
+          scripts={scripts}
+          storyboards={storyboards}
+          onSelectEpisode={handleEnterEpisode}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-0.5rem)]">
-      {/* Header */}
-      <div className="flex items-start justify-between px-6 pt-6 pb-4 shrink-0">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">分镜设置</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            根据剧本自动生成分镜设计，可直接为每个镜头生成画面
-          </p>
-        </div>
-      </div>
-
       {/* Generate error */}
       {generateStatus === "error" && generateError && (
         <div className="mx-6 mb-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4 shrink-0">
@@ -440,12 +457,23 @@ export default function StoryboardPage() {
 
       {/* Empty state */}
       {!hasStoryboards && !isGenerating && (
-        <div className="px-6">
+        <div className="px-6 pt-4">
+          <div className="mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToEpisodeSelect}
+              className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+            >
+              <ArrowLeft className="size-4" />
+              分集
+            </Button>
+          </div>
           <StoryboardEmptyState
             scripts={scripts}
             scriptConfirmed={scriptConfirmed}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
-            onSelectEpisodes={() => setShowEpisodeSelect(true)}
+            onSelectEpisodes={handleBackToEpisodeSelect}
             onGoToScript={() => router.push(`/project/${projectId}/script`)}
           />
         </div>
@@ -455,21 +483,24 @@ export default function StoryboardPage() {
       {(hasStoryboards || isGenerating) && (
         <>
           {/* Toolbar */}
-          <div className="px-6 mb-4 shrink-0">
+          <div className="px-6 pt-4 mb-2 shrink-0 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToEpisodeSelect}
+                className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 -ml-2"
+              >
+                <ArrowLeft className="size-4" />
+                分集
+              </Button>
+              <div className="w-px h-4 bg-border shrink-0" />
+            </div>
             <StoryboardToolbar
               generateStatus={generateStatus}
               batchImageStatus={batchImageStatus}
               batchImageProgress={batchImageProgress}
-              stats={stats}
-              imageStats={imageStats}
-              episodes={episodes}
-              scripts={scripts}
-              storyboards={storyboards}
-              activeEpisodeId={activeEpisodeId}
-              shotDisplayMode={shotDisplayMode}
-              onSelectEpisode={setActiveEpisodeId}
               onGenerateAll={handleGenerateAll}
-              onSelectEpisodes={() => setShowEpisodeSelect(true)}
               onBatchGenerateImages={handleBatchGenerateImages}
               onBatchGenerateEpisodeImages={handleBatchGenerateEpisodeImages}
               batchVideoStatus={batchVideoStatus}
@@ -576,16 +607,6 @@ export default function StoryboardPage() {
 
         </>
       )}
-
-      {/* Episode select dialog */}
-      <EpisodeSelectDialog
-        open={showEpisodeSelect}
-        onOpenChange={setShowEpisodeSelect}
-        episodes={episodes}
-        scripts={scripts}
-        storyboards={storyboards}
-        onGenerate={handleGenerateEpisodes}
-      />
 
       {/* Script lines dialog */}
       <ScriptLinesDialog
