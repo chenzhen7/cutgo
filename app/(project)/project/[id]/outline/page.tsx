@@ -22,7 +22,6 @@ import { ChapterSelectDialog } from "./components/chapter-select-dialog"
 import { GenerateOutlineDropdown } from "./components/generate-outline-dropdown"
 import { EpisodeCard } from "./components/episode-card"
 import { EpisodeFormDialog } from "./components/episode-form-dialog"
-import { ConfirmOutlineDialog } from "./components/confirm-outline-dialog"
 import type { Episode, EpisodeInput } from "@/lib/types"
 
 export default function OutlinePage() {
@@ -54,7 +53,6 @@ export default function OutlinePage() {
   const [showAddEpisode, setShowAddEpisode] = useState(false)
   const [editingEpisode, setEditingEpisode] = useState<Episode | null>(null)
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null)
-  const [novelConfirmed, setNovelConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -62,12 +60,6 @@ export default function OutlinePage() {
       setLoading(true)
       await fetchChapters(projectId)
       await fetchEpisodes(projectId)
-
-      const res = await fetch(`/api/novels?projectId=${projectId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setNovelConfirmed(data?.status === "confirmed")
-      }
       setLoading(false)
     }
     init()
@@ -109,11 +101,6 @@ export default function OutlinePage() {
     await deleteEpisode(deletingEpisodeId)
     setDeletingEpisodeId(null)
   }, [deletingEpisodeId, deleteEpisode])
-
-  const handleConfirm = useCallback(async () => {
-    await confirmOutline(projectId)
-    router.push(`/project/${projectId}/assets`)
-  }, [projectId, confirmOutline, router])
 
   const displayedEpisodes = filteredEpisodes()
   const hasEpisodes = episodes.length > 0
@@ -186,7 +173,6 @@ export default function OutlinePage() {
       {!hasEpisodes && !isGenerating && (
         <OutlineEmptyState
           chapters={chapters}
-          novelConfirmed={novelConfirmed}
           onGenerateAll={() => handleGenerateAll("skip_existing")}
           onSelectChapters={() => setShowChapterSelect(true)}
           onGoToImport={() => router.push(`/project/${projectId}/import`)}

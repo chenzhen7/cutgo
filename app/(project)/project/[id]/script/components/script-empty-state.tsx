@@ -8,7 +8,6 @@ import type { Episode } from "@/lib/types"
 
 interface ScriptEmptyStateProps {
   episodes: Episode[]
-  outlineConfirmed: boolean
   onGenerateAll: () => void
   onSelectEpisodes: () => void
   onGoToOutline: () => void
@@ -16,27 +15,10 @@ interface ScriptEmptyStateProps {
 
 export function ScriptEmptyState({
   episodes,
-  outlineConfirmed,
   onGenerateAll,
   onSelectEpisodes,
   onGoToOutline,
 }: ScriptEmptyStateProps) {
-  if (!outlineConfirmed) {
-    return (
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <AlertTriangle className="size-10 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-base font-medium mb-2">请先完成分集大纲</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          剧本生成需要基于已确认的分集大纲数据
-        </p>
-        <Button onClick={onGoToOutline}>
-          <ArrowLeft className="size-4" />
-          前往分集大纲
-        </Button>
-      </div>
-    )
-  }
-
   if (episodes.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-12 text-center">

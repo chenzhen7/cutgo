@@ -174,10 +174,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "项目不存在" }, { status: 404 })
   }
 
-  if (project.step < 5) {
-    return NextResponse.json({ error: "请先完成剧本生成并确认" }, { status: 400 })
-  }
-
   let targetScripts = await prisma.script.findMany({
     where: { projectId },
     include: { episode: true },

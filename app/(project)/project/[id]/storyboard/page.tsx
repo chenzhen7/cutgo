@@ -26,7 +26,6 @@ import { StoryboardToolbar } from "./components/storyboard-toolbar"
 import { EpisodeSelectView } from "./components/episode-select-view"
 import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
-import { ConfirmStoryboardDialog } from "./components/confirm-storyboard-dialog"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import type { ShotCardDisplayMode } from "./components/shot-card"
@@ -76,7 +75,6 @@ export default function StoryboardPage() {
   } = useStoryboardStore()
 
   const [view, setView] = useState<"episode-select" | "storyboard-list">("storyboard-list")
-  const [scriptConfirmed, setScriptConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ storyboardId: string; shotId: string } | null>(null)
   const [viewingScriptStoryboard, setViewingScriptStoryboard] = useState<Storyboard | null>(null)
@@ -97,12 +95,6 @@ export default function StoryboardPage() {
         fetchStoryboards(projectId),
         fetchAssets(projectId),
       ])
-
-      const res = await fetch(`/api/projects/${projectId}`)
-      if (res.ok) {
-        const project = await res.json()
-        setScriptConfirmed(project.step >= 5)
-      }
 
       // 如果没有选中的分集，且有分集数据，默认选中第一个
       if (!activeEpisodeId && eps && eps.length > 0) {
@@ -149,11 +141,6 @@ export default function StoryboardPage() {
     },
     [projectId, generateStoryboards]
   )
-
-  const handleConfirm = useCallback(async () => {
-    await confirmStoryboards(projectId)
-    router.push(`/project/${projectId}/video`)
-  }, [projectId, confirmStoryboards, router])
 
   const handleDeleteShot = useCallback(
     async (storyboardId: string, shotId: string) => {
@@ -471,7 +458,6 @@ export default function StoryboardPage() {
           </div>
           <StoryboardEmptyState
             scripts={scripts}
-            scriptConfirmed={scriptConfirmed}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
             onSelectEpisodes={handleBackToEpisodeSelect}
             onGoToScript={() => router.push(`/project/${projectId}/script`)}

@@ -6,7 +6,6 @@ import { useNovelStore } from "@/store/novel-store"
 import { TextInputPanel } from "./components/text-input-panel"
 import { AnalysisProgress } from "./components/analysis-progress"
 import { AnalysisResultPanel } from "./components/analysis-result-panel"
-import { ConfirmImportDialog } from "./components/confirm-import-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -79,12 +78,6 @@ export default function ImportPage() {
     })
     await analyzeNovel(imported.id)
   }, [projectId, text, fileName, importNovel, analyzeNovel])
-
-  const handleConfirm = useCallback(async () => {
-    if (!novel) return
-    await confirmImport(novel.id)
-    router.push(`/project/${projectId}/outline`)
-  }, [novel, confirmImport, router, projectId])
 
   const isAnalyzed = analysisStatus === "completed"
   const isAnalyzing = analysisStatus === "analyzing"

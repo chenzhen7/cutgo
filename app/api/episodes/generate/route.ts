@@ -206,8 +206,8 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  if (!novel || novel.status !== "confirmed") {
-    return NextResponse.json({ error: "请先完成小说导入并确认" }, { status: 400 })
+  if (!novel) {
+    return NextResponse.json({ error: "请先完成小说导入" }, { status: 400 })
   }
 
   let targetChapters = novel.chapters.filter((ch) => ch.selected)

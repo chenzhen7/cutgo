@@ -154,23 +154,6 @@ export default function VideoPage() {
     )
   }
 
-  if (projectStep < 6) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <AlertTriangle className="h-10 w-10 text-amber-500" />
-        <div>
-          <h3 className="text-lg font-semibold">请先完成分镜生成</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            视频合成需要先完成分镜生成并确认（步骤 6）
-          </p>
-        </div>
-        <Button onClick={() => router.push(`/project/${projectId}/storyboard`)}>
-          前往分镜生成
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b px-6 py-4">

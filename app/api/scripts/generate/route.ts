@@ -174,10 +174,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "项目不存在" }, { status: 404 })
   }
 
-  if (project.step < 3) {
-    return NextResponse.json({ error: "请先完成分集大纲" }, { status: 400 })
-  }
-
   const novel = await prisma.novel.findUnique({
     where: { projectId },
     include: {
@@ -186,8 +182,8 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  if (!novel || novel.status !== "confirmed") {
-    return NextResponse.json({ error: "请先完成小说导入并确认" }, { status: 400 })
+  if (!novel) {
+    return NextResponse.json({ error: "请先完成小说导入" }, { status: 400 })
   }
 
   let targetEpisodes = await prisma.episode.findMany({

@@ -10,7 +10,6 @@ import { GenerateScriptDropdown } from "./components/generate-script-dropdown"
 import { EpisodeSelectDialog } from "./components/episode-select-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
-import { ConfirmScriptDialog } from "./components/confirm-script-dialog"
 
 export default function ScriptPage() {
   const params = useParams()
@@ -32,7 +31,6 @@ export default function ScriptPage() {
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
-  const [outlineConfirmed, setOutlineConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -40,12 +38,6 @@ export default function ScriptPage() {
       setLoading(true)
       await fetchEpisodes(projectId)
       await fetchScripts(projectId)
-
-      const res = await fetch(`/api/projects/${projectId}`)
-      if (res.ok) {
-        const project = await res.json()
-        setOutlineConfirmed(project.step >= 4)
-      }
       setLoading(false)
     }
     init()
@@ -77,11 +69,6 @@ export default function ScriptPage() {
     },
     [projectId, generateScripts]
   )
-
-  const handleConfirm = useCallback(async () => {
-    await confirmScripts(projectId)
-    router.push(`/project/${projectId}/storyboard`)
-  }, [projectId, confirmScripts, router])
 
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
   const hasScripts = scripts.length > 0
@@ -145,7 +132,6 @@ export default function ScriptPage() {
         <div className="px-6">
           <ScriptEmptyState
             episodes={episodes}
-            outlineConfirmed={outlineConfirmed}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
             onSelectEpisodes={() => setShowEpisodeSelect(true)}
             onGoToOutline={() => router.push(`/project/${projectId}/outline`)}

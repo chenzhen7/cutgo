@@ -7,7 +7,6 @@ import type { Script } from "@/lib/types"
 
 interface StoryboardEmptyStateProps {
   scripts: Script[]
-  scriptConfirmed: boolean
   onGenerateAll: () => void
   onSelectEpisodes: () => void
   onGoToScript: () => void
@@ -15,29 +14,10 @@ interface StoryboardEmptyStateProps {
 
 export function StoryboardEmptyState({
   scripts,
-  scriptConfirmed,
   onGenerateAll,
   onSelectEpisodes,
   onGoToScript,
 }: StoryboardEmptyStateProps) {
-  if (!scriptConfirmed) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16">
-          <LayoutGrid className="size-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">请先完成剧本生成</h3>
-          <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-            分镜生成需要基于已确认的剧本数据。请先完成剧本生成并确认后再进入分镜生成。
-          </p>
-          <Button onClick={onGoToScript}>
-            <ArrowLeft className="size-4 mr-2" />
-            返回剧本生成
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-16">

@@ -47,9 +47,6 @@ export async function POST(request: NextRequest) {
     if (!project) {
       return NextResponse.json({ error: "项目不存在" }, { status: 404 })
     }
-    if (project.step < 6) {
-      return NextResponse.json({ error: "请先完成分镜生成步骤" }, { status: 400 })
-    }
 
     let targetEpisodes
     if (episodeIds && episodeIds.length > 0) {
