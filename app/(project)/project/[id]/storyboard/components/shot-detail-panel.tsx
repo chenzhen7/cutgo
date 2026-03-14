@@ -114,6 +114,7 @@ export function ShotDetailPanel({
     () => assetProps.filter((p) => boundPropIds.includes(p.id)),
     [assetProps, boundPropIds]
   )
+  const [scenePopoverOpen, setScenePopoverOpen] = useState(false)
 
   const handleToggleCharacter = (charId: string) => {
     const next = boundCharacterIds.includes(charId)
@@ -123,7 +124,11 @@ export function ShotDetailPanel({
   }
 
   const handleChangeScene = (sceneId: string) => {
-    onUpdate(storyboard.id, shot.id, { sceneId: sceneId === "__none__" ? undefined : sceneId })
+    setScenePopoverOpen(false)
+    // 延迟更新数据，让弹窗先关闭，减少卡顿感
+    setTimeout(() => {
+      onUpdate(storyboard.id, shot.id, { sceneId: sceneId === "__none__" ? undefined : sceneId })
+    }, 100)
   }
 
   const handleToggleProp = (propId: string) => {
@@ -342,7 +347,7 @@ export function ShotDetailPanel({
                   <MapPin className="size-3 text-muted-foreground" />
                   <span className="text-[11px] font-medium">场景</span>
                 </div>
-                <Popover>
+                <Popover open={scenePopoverOpen} onOpenChange={setScenePopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
                   </PopoverTrigger>
@@ -545,7 +550,7 @@ export function ShotDetailPanel({
               setComposition(e.target.value)
               debouncedUpdate({ composition: e.target.value })
             }}
-            className="text-xs min-h-[60px] resize-none"
+            className="text-xs min-h-[60px] max-h-[120px] resize-none"
             placeholder="描述画面内容和氛围..."
           />
         </div>
