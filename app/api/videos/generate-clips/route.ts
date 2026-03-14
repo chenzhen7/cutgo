@@ -11,7 +11,7 @@ export async function POST(
 
     // 这里应该是调用 AI 视频生成服务的逻辑
     // 目前先模拟更新数据库状态
-    
+
     if (shotIds && Array.isArray(shotIds)) {
       await prisma.shot.updateMany({
         where: {
@@ -42,7 +42,7 @@ export async function GET(
 ) {
   try {
     const projectId = params.id
-    
+
     const shots = await prisma.shot.findMany({
       where: {
         storyboard: {
