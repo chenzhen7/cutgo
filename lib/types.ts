@@ -555,3 +555,180 @@ export interface StoryboardGenerateResult {
     skippedScenes: number
   }
 }
+
+// ── Video Composition Types ──
+
+export interface VideoCompositionConfig {
+  subtitle: {
+    enabled: boolean
+    dialoguePosition: "bottom_center" | "bottom_left" | "bottom_right" | "top_center"
+    narrationPosition: "top_center" | "bottom_center" | "middle_center"
+    fontFamily: string
+    fontSize: number
+    fontColor: string
+    strokeColor: string
+    strokeWidth: number
+    backgroundColor: string
+    backgroundOpacity: number
+    borderRadius: number
+  }
+  tts: {
+    enabled: boolean
+    speed: number
+    narrationVoice: string
+    characterVoices: Record<string, string>
+  }
+  bgm: {
+    enabled: boolean
+    masterVolume: number
+    fadeInDuration: number
+    fadeOutDuration: number
+    track: {
+      fileUrl: string
+      startTime: number
+      endTime: number
+      volume: number
+      loop: boolean
+    } | null
+  }
+  output: {
+    resolution: "1080x1920" | "720x1280" | "540x960"
+    fps: 24 | 30 | 60
+    videoBitrate: string
+    audioBitrate: string
+    format: "mp4"
+    outputDir: string
+  }
+}
+
+export type VideoCompositionStatus =
+  | "idle"
+  | "preparing"
+  | "tts_generating"
+  | "subtitle_generating"
+  | "compositing"
+  | "completed"
+  | "error"
+
+export interface VideoComposition {
+  id: string
+  projectId: string
+  episodeId: string
+  episode: {
+    id: string
+    index: number
+    title: string
+  }
+  config: string
+  status: VideoCompositionStatus
+  outputPath: string | null
+  fileSize: number | null
+  videoDuration: number | null
+  version: number
+  errorMessage: string | null
+  progress: number
+  currentStep: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TtsVoice {
+  id: string
+  name: string
+  gender: "male" | "female" | "child"
+  previewUrl: string
+}
+
+export const DEFAULT_VIDEO_COMPOSITION_CONFIG: VideoCompositionConfig = {
+  subtitle: {
+    enabled: true,
+    dialoguePosition: "bottom_center",
+    narrationPosition: "top_center",
+    fontFamily: "思源黑体",
+    fontSize: 36,
+    fontColor: "#FFFFFF",
+    strokeColor: "#000000",
+    strokeWidth: 2,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundOpacity: 50,
+    borderRadius: 8,
+  },
+  tts: {
+    enabled: false,
+    speed: 1.0,
+    narrationVoice: "female_gentle",
+    characterVoices: {},
+  },
+  bgm: {
+    enabled: true,
+    masterVolume: 40,
+    fadeInDuration: 2,
+    fadeOutDuration: 3,
+    track: null,
+  },
+  output: {
+    resolution: "1080x1920",
+    fps: 30,
+    videoBitrate: "8M",
+    audioBitrate: "192k",
+    format: "mp4",
+    outputDir: "./output",
+  },
+}
+
+export const TTS_VOICES: TtsVoice[] = [
+  { id: "female_gentle", name: "温柔女声", gender: "female", previewUrl: "" },
+  { id: "female_lively", name: "活泼女声", gender: "female", previewUrl: "" },
+  { id: "female_mature", name: "成熟女声", gender: "female", previewUrl: "" },
+  { id: "male_deep", name: "低沉男声", gender: "male", previewUrl: "" },
+  { id: "male_sunny", name: "阳光男声", gender: "male", previewUrl: "" },
+  { id: "male_magnetic", name: "磁性男声", gender: "male", previewUrl: "" },
+  { id: "child", name: "儿童声线", gender: "child", previewUrl: "" },
+  { id: "narration", name: "旁白专用", gender: "female", previewUrl: "" },
+]
+
+export const BGM_LIBRARY: { category: string; items: { id: string; name: string; duration: string; url: string }[] }[] = [
+  {
+    category: "温情/感人",
+    items: [
+      { id: "bgm_piano_gentle", name: "轻柔钢琴曲", duration: "02:30", url: "" },
+      { id: "bgm_strings_warm", name: "温柔弦乐", duration: "03:15", url: "" },
+      { id: "bgm_piano_touching", name: "感人钢琴", duration: "01:45", url: "" },
+    ],
+  },
+  {
+    category: "紧张/悬疑",
+    items: [
+      { id: "bgm_suspense_1", name: "悬疑低音", duration: "02:00", url: "" },
+      { id: "bgm_tension_1", name: "紧张节奏", duration: "01:30", url: "" },
+    ],
+  },
+  {
+    category: "激昂/热血",
+    items: [
+      { id: "bgm_epic_1", name: "史诗热血", duration: "03:00", url: "" },
+      { id: "bgm_battle_1", name: "战斗激昂", duration: "02:15", url: "" },
+    ],
+  },
+  {
+    category: "轻松/日常",
+    items: [
+      { id: "bgm_light_1", name: "轻松日常", duration: "02:45", url: "" },
+      { id: "bgm_casual_1", name: "休闲小调", duration: "02:00", url: "" },
+    ],
+  },
+  {
+    category: "悲伤/离别",
+    items: [
+      { id: "bgm_sad_1", name: "离别悲歌", duration: "03:30", url: "" },
+      { id: "bgm_melancholy_1", name: "忧郁旋律", duration: "02:50", url: "" },
+    ],
+  },
+  {
+    category: "浪漫/甜蜜",
+    items: [
+      { id: "bgm_romantic_1", name: "浪漫钢琴", duration: "02:20", url: "" },
+      { id: "bgm_sweet_1", name: "甜蜜小提琴", duration: "03:10", url: "" },
+    ],
+  },
+]

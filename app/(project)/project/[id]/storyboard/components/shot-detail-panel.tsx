@@ -106,7 +106,7 @@ export function ShotDetailPanel({
   }, [])
 
   useEffect(() => {
-    setComposition(shot.composition)
+    setComposition(shot.composition || "")
     setPrompt(shot.prompt || "")
     setPromptEnd(shot.promptEnd || "")
     setVideoPrompt(shot.videoPrompt || "")
@@ -118,12 +118,22 @@ export function ShotDetailPanel({
     }
   }, [shot.id, shot.composition, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.videoDuration, shot.videoPrompt])
 
-  const debouncedUpdate = useCallback(
+  const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
-      const timer = setTimeout(() => {
-        onUpdate(storyboard.id, shot.id, data)
-      }, 500)
-      return () => clearTimeout(timer)
+      onUpdate(storyboard.id, shot.id, data)
+    },
+    [onUpdate, storyboard.id, shot.id]
+  )
+
+  const debouncedUpdate = useMemo(
+    () => {
+      let timer: NodeJS.Timeout
+      return (data: Partial<ShotInput>) => {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          onUpdate(storyboard.id, shot.id, data)
+        }, 500)
+      }
     },
     [onUpdate, storyboard.id, shot.id]
   )
@@ -149,14 +159,14 @@ export function ShotDetailPanel({
     const next = boundCharacterIds.includes(charId)
       ? boundCharacterIds.filter((id) => id !== charId)
       : [...boundCharacterIds, charId]
-    onUpdate(storyboard.id, shot.id, { characterIds: next.length > 0 ? JSON.stringify(next) : undefined })
+    updateShotData({ characterIds: next.length > 0 ? JSON.stringify(next) : undefined })
   }
 
   const handleChangeScene = (sceneId: string) => {
     setScenePopoverOpen(false)
     // 延迟更新数据，让弹窗先关闭，减少卡顿感
     setTimeout(() => {
-      onUpdate(storyboard.id, shot.id, { sceneId: sceneId === "__none__" ? undefined : sceneId })
+      updateShotData({ sceneId: sceneId === "__none__" ? undefined : sceneId })
     }, 100)
   }
 
@@ -164,11 +174,11 @@ export function ShotDetailPanel({
     const next = boundPropIds.includes(propId)
       ? boundPropIds.filter((id) => id !== propId)
       : [...boundPropIds, propId]
-    onUpdate(storyboard.id, shot.id, { propIds: next.length > 0 ? JSON.stringify(next) : undefined })
+    updateShotData({ propIds: next.length > 0 ? JSON.stringify(next) : undefined })
   }
 
   const handleImageTypeChange = (type: string) => {
-    onUpdate(storyboard.id, shot.id, { imageType: type as ImageType })
+    updateShotData({ imageType: type as ImageType })
   }
 
   const handleGridLayoutChange = (layout: string) => {
@@ -177,7 +187,7 @@ export function ShotDetailPanel({
     const currentPrompts = gridPrompts.length > 0 ? gridPrompts : [shot.prompt]
     const newPrompts = Array.from({ length: layoutOpt.count }, (_, i) => currentPrompts[i] || shot.prompt)
     setGridPrompts(newPrompts)
-    onUpdate(storyboard.id, shot.id, {
+    updateShotData({
       gridLayout: layout as GridLayout,
       gridPrompts: JSON.stringify(newPrompts),
     })
@@ -253,7 +263,7 @@ export function ShotDetailPanel({
                 </TooltipProvider>
               </div>
               <Textarea
-                value={composition}
+                value={composition || ""}
                 onChange={(e) => {
                   setComposition(e.target.value)
                   debouncedUpdate({ composition: e.target.value })
@@ -706,7 +716,7 @@ export function ShotDetailPanel({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-[10px] text-muted-foreground mb-1 block">视频时长</Label>
-                <Select value={videoDuration} onValueChange={(v) => { setVideoDuration(v); onUpdate(storyboard.id, shot.id, { videoDuration: v }) }}>
+                <Select value={videoDuration} onValueChange={(v) => { setVideoDuration(v); updateShotData({ videoDuration: v }) }}>
                   <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>

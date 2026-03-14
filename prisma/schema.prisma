@@ -32,9 +32,10 @@ model Project {
   scripts  Script[]
   storyboards Storyboard[]
 
-  assetCharacters AssetCharacter[]
-  assetScenes     AssetScene[]
-  assetProps      AssetProp[]
+  assetCharacters   AssetCharacter[]
+  assetScenes       AssetScene[]
+  assetProps        AssetProp[]
+  videoCompositions VideoComposition[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -143,8 +144,9 @@ model Episode {
   cliffhanger String?
   duration    String  @default("60s")
 
-  scenes EpisodeScene[]
-  script Script?
+  scenes            EpisodeScene[]
+  script            Script?
+  videoCompositions VideoComposition[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -265,6 +267,32 @@ model Storyboard {
   updatedAt DateTime @updatedAt
 }
 
+model VideoComposition {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  episodeId String
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  config   String  // JSON: VideoCompositionConfig
+
+  status   String  @default("idle")
+  // "idle" | "preparing" | "tts_generating" | "subtitle_generating" | "compositing" | "completed" | "error"
+
+  outputPath    String?
+  fileSize      Int?
+  videoDuration Float?
+  version       Int     @default(1)
+
+  errorMessage  String?
+  progress      Int     @default(0)
+  currentStep   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Shot {
   id           String     @id @default(cuid())
   storyboardId String
@@ -292,6 +320,11 @@ model Shot {
   characterIds    String?   // JSON array of AssetCharacter IDs
   sceneId         String?   // AssetScene ID
   propIds         String?   // JSON array of AssetProp IDs
+
+  videoUrl      String?
+  videoStatus   String?   // "idle" | "generating" | "completed" | "error"
+  videoPrompt   String?
+  videoDuration String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
