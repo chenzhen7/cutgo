@@ -129,7 +129,7 @@ export default function StoryboardPage() {
 
   const handleConfirm = useCallback(async () => {
     await confirmStoryboards(projectId)
-    router.push(`/project/${projectId}/video`)
+    router.push(`/project/${projectId}/video-gen`)
   }, [projectId, confirmStoryboards, router])
 
   const handleDeleteShot = useCallback(

@@ -285,6 +285,11 @@ model Shot {
   gridLayout      String?   // multi_grid layout: "2x2" | "1x3" | "2x3"
   gridPrompts     String?   // JSON: multi_grid per-cell prompts ["p1","p2",...]
 
+  videoUrl        String?   // AI 生成的视频片段 URL
+  videoStatus     String    @default("pending") // "pending" | "generating" | "completed" | "failed"
+  videoPrompt     String?   // 视频生成专用提示词 (如果与图片不同)
+  videoDuration   Float?    // 实际生成的视频时长
+
   scriptLineIds   String?
   dialogueText    String?
   actionNote      String?

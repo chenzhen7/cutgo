@@ -15,8 +15,9 @@ export const PIPELINE_STEPS = [
   { key: "assets", label: "资产生成", icon: FolderOpen, step: 3 },
   { key: "script", label: "剧本生成", icon: FileText, step: 4 },
   { key: "storyboard", label: "分镜生成", icon: LayoutGrid, step: 5 },
-  { key: "video", label: "视频合成", icon: Video, step: 6 },
-  { key: "export", label: "导出发布", icon: Download, step: 7 },
+  { key: "video-gen", label: "视频生成", icon: Image, step: 6 },
+  { key: "video", label: "视频合成", icon: Video, step: 7 },
+  { key: "export", label: "导出发布", icon: Download, step: 8 },
 ] as const
 
 export type StepKey = (typeof PIPELINE_STEPS)[number]["key"]

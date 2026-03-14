@@ -32,7 +32,7 @@ export function ConfirmStoryboardDialog({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button className="w-full" disabled={!hasStoryboards}>
-          确认分镜，进入视频合成
+          确认分镜，进入视频生成
           <ArrowRight className="size-4 ml-2" />
         </Button>
       </AlertDialogTrigger>
@@ -41,7 +41,7 @@ export function ConfirmStoryboardDialog({
           <AlertDialogTitle>确认分镜设计</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3">
-              <p>确认后将进入视频合成阶段，您仍可以返回修改分镜。</p>
+              <p>确认后将进入视频生成阶段，利用 AI 将静态分镜转化为动态视频，您仍可以返回修改分镜。</p>
               <div className="rounded-lg bg-muted p-3 space-y-1">
                 <p className="text-sm">
                   已生成分镜：<span className="font-medium">{generatedSbs.length}</span> 个场景
