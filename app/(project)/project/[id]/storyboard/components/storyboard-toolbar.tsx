@@ -9,9 +9,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sparkles, ChevronDown, Loader2, Paintbrush, ImageIcon, CheckCircle2, Circle, Clock } from "lucide-react"
+import { Sparkles, ChevronDown, Loader2, Paintbrush, ImageIcon, CheckCircle2, Circle, Clock, Video, Type, Film } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { StoryboardGenerateStatus, Episode, Script, Storyboard } from "@/lib/types"
+import type { ShotCardDisplayMode } from "./shot-card"
 
 interface StoryboardToolbarProps {
   generateStatus: StoryboardGenerateStatus
@@ -28,11 +29,16 @@ interface StoryboardToolbarProps {
   scripts: Script[]
   storyboards: Storyboard[]
   activeEpisodeId: string | null
+  shotDisplayMode: ShotCardDisplayMode
   onSelectEpisode: (episodeId: string) => void
   onGenerateAll: (mode: "skip_existing" | "overwrite") => void
   onSelectEpisodes: () => void
   onBatchGenerateImages: (mode: "all" | "missing_only") => void
   onBatchGenerateEpisodeImages: () => void
+  batchVideoStatus: "idle" | "generating" | "completed" | "error"
+  batchVideoProgress: { current: number; total: number } | null
+  onBatchGenerateVideos: (mode: "all" | "missing_only") => void
+  onBatchGenerateEpisodeVideos: () => void
 }
 
 export function StoryboardToolbar({
@@ -45,14 +51,20 @@ export function StoryboardToolbar({
   scripts,
   storyboards,
   activeEpisodeId,
+  shotDisplayMode,
   onSelectEpisode,
   onGenerateAll,
   onSelectEpisodes,
   onBatchGenerateImages,
   onBatchGenerateEpisodeImages,
+  batchVideoStatus,
+  batchVideoProgress,
+  onBatchGenerateVideos,
+  onBatchGenerateEpisodeVideos,
 }: StoryboardToolbarProps) {
   const isGenerating = generateStatus === "generating"
   const isImageGenerating = batchImageStatus === "generating"
+  const isVideoGenerating = batchVideoStatus === "generating"
 
   const getEpisodeStatus = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
@@ -129,6 +141,37 @@ export function StoryboardToolbar({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onBatchGenerateEpisodeImages}>
                 生成当前分集画面
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Batch video generation */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={isVideoGenerating} size="sm" className="border-violet-500/30 text-violet-700 dark:text-violet-400 hover:bg-violet-500/10">
+                {isVideoGenerating ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <Video className="size-4 mr-2" />
+                )}
+                {isVideoGenerating
+                  ? batchVideoProgress
+                    ? `生成视频 ${batchVideoProgress.current}/${batchVideoProgress.total}`
+                    : "生成视频中..."
+                  : "批量生成视频"}
+                <ChevronDown className="size-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onBatchGenerateVideos("missing_only")}>
+                生成全部视频（跳过已有）
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onBatchGenerateVideos("all")}>
+                重新生成全部视频
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onBatchGenerateEpisodeVideos}>
+                生成当前分集视频
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

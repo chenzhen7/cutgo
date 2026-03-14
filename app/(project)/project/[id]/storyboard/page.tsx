@@ -28,7 +28,9 @@ import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ConfirmStoryboardDialog } from "./components/confirm-storyboard-dialog"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
-import type { Storyboard, ShotInput } from "@/lib/types"
+import { VideoPreviewDialog } from "./components/video-preview-dialog"
+import type { ShotCardDisplayMode } from "./components/shot-card"
+import type { Storyboard, ShotInput, Shot } from "@/lib/types"
 
 export default function StoryboardPage() {
   const params = useParams()
@@ -79,6 +81,13 @@ export default function StoryboardPage() {
   const [loading, setLoading] = useState(true)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ storyboardId: string; shotId: string } | null>(null)
   const [viewingScriptStoryboard, setViewingScriptStoryboard] = useState<Storyboard | null>(null)
+
+  // Video generation mock state
+  const [videoGeneratingIds, setVideoGeneratingIds] = useState<Set<string>>(new Set())
+  const [batchVideoStatus, setBatchVideoStatus] = useState<"idle" | "generating" | "completed" | "error">("idle")
+  const [batchVideoProgress, setBatchVideoProgress] = useState<{ current: number; total: number } | null>(null)
+  const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
+  const [shotDisplayMode, setShotDisplayMode] = useState<ShotCardDisplayMode>("composition")
 
   useEffect(() => {
     const init = async () => {
@@ -205,6 +214,141 @@ export default function StoryboardPage() {
     }
   }, [activeShot, clearImage])
 
+  // Mock: simulate single shot video generation (3-5s delay)
+  const handleGenerateVideo = useCallback(
+    (_storyboardId: string, shotId: string) => {
+      setVideoGeneratingIds((prev) => new Set(prev).add(shotId))
+      const delay = 3000 + Math.random() * 2000
+      setTimeout(() => {
+        setVideoGeneratingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(shotId)
+          return next
+        })
+        // Mock: update shot with a fake videoUrl
+        updateShot(_storyboardId, shotId, {
+          videoUrl: `/mock-videos/${shotId}.mp4`,
+          videoStatus: "completed",
+          videoDuration: "5s",
+        } as Partial<ShotInput>)
+      }, delay)
+    },
+    [updateShot]
+  )
+
+  const handleClearVideo = useCallback(() => {
+    const active = activeShot()
+    if (active) {
+      updateShot(active.storyboard.id, active.shot.id, {
+        videoUrl: undefined,
+        videoStatus: undefined,
+        videoDuration: undefined,
+      } as Partial<ShotInput>)
+    }
+  }, [activeShot, updateShot])
+
+  // Mock: batch video generation
+  const handleBatchGenerateVideos = useCallback(
+    (mode: "all" | "missing_only") => {
+      const allShots = storyboards.flatMap((sb) =>
+        sb.shots.filter((s) => s.imageUrl).map((s) => ({ storyboardId: sb.id, shot: s }))
+      )
+      const targets = mode === "missing_only"
+        ? allShots.filter((s) => !s.shot.videoUrl)
+        : allShots
+      if (targets.length === 0) return
+
+      setBatchVideoStatus("generating")
+      setBatchVideoProgress({ current: 0, total: targets.length })
+
+      targets.forEach((target, i) => {
+        const delay = (i + 1) * 1500 + Math.random() * 1000
+        setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
+        setTimeout(() => {
+          setVideoGeneratingIds((prev) => {
+            const next = new Set(prev)
+            next.delete(target.shot.id)
+            return next
+          })
+          updateShot(target.storyboardId, target.shot.id, {
+            videoUrl: `/mock-videos/${target.shot.id}.mp4`,
+            videoStatus: "completed",
+            videoDuration: "5s",
+          } as Partial<ShotInput>)
+          setBatchVideoProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null)
+          if (i === targets.length - 1) {
+            setBatchVideoStatus("completed")
+            setTimeout(() => {
+              setBatchVideoStatus("idle")
+              setBatchVideoProgress(null)
+            }, 2000)
+          }
+        }, delay)
+      })
+    },
+    [storyboards, updateShot]
+  )
+
+  const handleBatchGenerateEpisodeVideos = useCallback(() => {
+    if (!activeEpisodeId) return
+    const epStoryboards = storyboards.filter((sb) => sb.script.episode.id === activeEpisodeId)
+    const targets = epStoryboards.flatMap((sb) =>
+      sb.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ storyboardId: sb.id, shot: s }))
+    )
+    if (targets.length === 0) return
+
+    setBatchVideoStatus("generating")
+    setBatchVideoProgress({ current: 0, total: targets.length })
+
+    targets.forEach((target, i) => {
+      const delay = (i + 1) * 1500 + Math.random() * 1000
+      setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
+      setTimeout(() => {
+        setVideoGeneratingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(target.shot.id)
+          return next
+        })
+        updateShot(target.storyboardId, target.shot.id, {
+          videoUrl: `/mock-videos/${target.shot.id}.mp4`,
+          videoStatus: "completed",
+          videoDuration: "5s",
+        } as Partial<ShotInput>)
+        setBatchVideoProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null)
+        if (i === targets.length - 1) {
+          setBatchVideoStatus("completed")
+          setTimeout(() => {
+            setBatchVideoStatus("idle")
+            setBatchVideoProgress(null)
+          }, 2000)
+        }
+      }, delay)
+    })
+  }, [activeEpisodeId, storyboards, updateShot])
+
+  const handlePlayVideo = useCallback(
+    (shotId: string) => {
+      const allShots = storyboards.flatMap((sb) => sb.shots)
+      const shot = allShots.find((s) => s.id === shotId)
+      if (shot?.videoUrl) setVideoPreviewShot(shot)
+    },
+    [storyboards]
+  )
+
+  const handleVideoPreviewPrev = useCallback(() => {
+    if (!videoPreviewShot) return
+    const allShots = storyboards.flatMap((sb) => sb.shots).filter((s) => s.videoUrl)
+    const idx = allShots.findIndex((s) => s.id === videoPreviewShot.id)
+    if (idx > 0) setVideoPreviewShot(allShots[idx - 1])
+  }, [videoPreviewShot, storyboards])
+
+  const handleVideoPreviewNext = useCallback(() => {
+    if (!videoPreviewShot) return
+    const allShots = storyboards.flatMap((sb) => sb.shots).filter((s) => s.videoUrl)
+    const idx = allShots.findIndex((s) => s.id === videoPreviewShot.id)
+    if (idx < allShots.length - 1) setVideoPreviewShot(allShots[idx + 1])
+  }, [videoPreviewShot, storyboards])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -322,11 +466,16 @@ export default function StoryboardPage() {
               scripts={scripts}
               storyboards={storyboards}
               activeEpisodeId={activeEpisodeId}
+              shotDisplayMode={shotDisplayMode}
               onSelectEpisode={setActiveEpisodeId}
               onGenerateAll={handleGenerateAll}
               onSelectEpisodes={() => setShowEpisodeSelect(true)}
               onBatchGenerateImages={handleBatchGenerateImages}
               onBatchGenerateEpisodeImages={handleBatchGenerateEpisodeImages}
+              batchVideoStatus={batchVideoStatus}
+              batchVideoProgress={batchVideoProgress}
+              onBatchGenerateVideos={handleBatchGenerateVideos}
+              onBatchGenerateEpisodeVideos={handleBatchGenerateEpisodeVideos}
             />
           </div>
 
@@ -351,6 +500,8 @@ export default function StoryboardPage() {
                           activeShotId={activeShotId}
                           selectedShotIds={selectedShotIds}
                           imageGeneratingIds={imageGeneratingIds}
+                          videoGeneratingIds={videoGeneratingIds}
+                          shotDisplayMode={shotDisplayMode}
                           assetCharacters={assetCharacters}
                           assetScenes={assetScenes}
                           assetProps={assetProps}
@@ -359,8 +510,11 @@ export default function StoryboardPage() {
                           onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
                           onAddShot={handleAddShot}
                           onGenerateImage={handleGenerateImage}
+                          onGenerateVideo={handleGenerateVideo}
+                          onPlayVideo={handlePlayVideo}
                           onRegenerateScript={handleRegenerateScript}
                           onViewScript={(sb) => setViewingScriptStoryboard(sb)}
+                          onToggleShotDisplayMode={() => setShotDisplayMode((m) => m === "composition" ? "prompts" : "composition")}
                         />
                       ))}
                     </div>
@@ -399,12 +553,16 @@ export default function StoryboardPage() {
                         shot={currentActiveShot.shot}
                         storyboard={currentActiveShot.storyboard}
                         isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
+                        isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
                         assetCharacters={assetCharacters}
                         assetScenes={assetScenes}
                         assetProps={assetProps}
                         onUpdate={handleUpdateShot}
                         onGenerateImage={() => handleGenerateImage(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
                         onClearImage={handleClearImage}
+                        onGenerateVideo={() => handleGenerateVideo(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
+                        onClearVideo={handleClearVideo}
+                        onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
                         onPrev={prevShot() ? handlePrevShot : null}
                         onNext={nextShot() ? handleNextShot : null}
                         onClose={() => setDetailPanelOpen(false)}
@@ -471,6 +629,15 @@ export default function StoryboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Video preview dialog */}
+      <VideoPreviewDialog
+        open={!!videoPreviewShot}
+        onOpenChange={(open) => !open && setVideoPreviewShot(null)}
+        shot={videoPreviewShot}
+        onPrev={handleVideoPreviewPrev}
+        onNext={handleVideoPreviewNext}
+      />
     </div>
   )
 }

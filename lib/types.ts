@@ -471,9 +471,22 @@ export interface Shot {
   characterIds: string | null
   sceneId: string | null
   propIds: string | null
+  videoUrl: string | null
+  videoStatus: VideoStatus | null
+  videoPrompt: string | null
+  videoDuration: string | null
   createdAt: string
   updatedAt: string
 }
+
+export type VideoStatus = "idle" | "generating" | "completed" | "error"
+
+export const VIDEO_DURATION_OPTIONS = ["3s", "5s", "8s"] as const
+export const VIDEO_MOTION_OPTIONS: { value: string; label: string }[] = [
+  { value: "low", label: "低" },
+  { value: "medium", label: "中" },
+  { value: "high", label: "高" },
+]
 
 export interface Storyboard {
   id: string
@@ -525,6 +538,10 @@ export interface ShotInput {
   characterIds?: string
   sceneId?: string
   propIds?: string
+  videoUrl?: string
+  videoStatus?: VideoStatus
+  videoPrompt?: string
+  videoDuration?: string
   insertAfter?: string
 }
 

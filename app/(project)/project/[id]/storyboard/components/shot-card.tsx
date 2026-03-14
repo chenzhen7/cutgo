@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush } from "lucide-react"
+import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush, Video, Play, Type, Film } from "lucide-react"
 import { SHOT_SIZE_OPTIONS, CAMERA_MOVEMENT_OPTIONS, CAMERA_ANGLE_OPTIONS, IMAGE_TYPE_OPTIONS } from "@/lib/types"
 import type { Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
@@ -29,11 +29,15 @@ function matchKeywords(text: string): string[] {
   return ALL_KEYWORDS.filter((kw) => text.includes(kw))
 }
 
+export type ShotCardDisplayMode = "composition" | "prompts"
+
 interface ShotCardProps {
   shot: Shot
   isActive: boolean
   isSelected: boolean
   isGeneratingImage: boolean
+  isGeneratingVideo: boolean
+  displayMode: ShotCardDisplayMode
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -41,15 +45,53 @@ interface ShotCardProps {
   onDuplicate: () => void
   onDelete: () => void
   onGenerateImage: () => void
+  onGenerateVideo: () => void
+  onPlayVideo?: () => void
 }
 
-function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boolean }) {
+function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; isGeneratingVideo: boolean; onPlayVideo?: () => void }) {
+  const hasVideo = !!shot.videoUrl
+
+  if (isGeneratingVideo) {
+    return (
+      <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg z-10">
+        <div className="flex flex-col items-center gap-1">
+          <Loader2 className="size-5 animate-spin text-violet-400" />
+          <span className="text-[8px] text-white/80">生成视频</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (hasVideo) {
+    return (
+      <>
+        <div className="absolute bottom-1 left-1 z-10 bg-violet-600/80 text-white text-[8px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
+          <Video className="size-2.5" />
+          {shot.videoDuration || "5s"}
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onPlayVideo?.() }}
+          className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30 rounded-lg"
+        >
+          <div className="size-8 rounded-full bg-white/90 flex items-center justify-center">
+            <Play className="size-4 text-violet-600 ml-0.5" />
+          </div>
+        </button>
+      </>
+    )
+  }
+
+  return null
+}
+
+function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo }: { shot: Shot; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void }) {
   const imageType = shot.imageType || "keyframe"
   const hasImage = !!shot.imageUrl
   const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
-  if (isGenerating) {
+  if (isGeneratingImage) {
     return (
       <div className="relative size-[96px] rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
         <Loader2 className="size-6 animate-spin text-primary" />
@@ -75,6 +117,7 @@ function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boole
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
         </div>
+        <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     )
   }
@@ -90,6 +133,7 @@ function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boole
         <div className="absolute bottom-1 right-1 bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">
           {shot.gridLayout || "2x2"}
         </div>
+        <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     )
   }
@@ -97,6 +141,7 @@ function ShotThumbnail({ shot, isGenerating }: { shot: Shot; isGenerating: boole
   return (
     <div className="relative size-[96px] rounded-lg overflow-hidden shrink-0">
       <img src={shot.imageUrl!} alt="关键帧" className="size-full object-cover" />
+      <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
     </div>
   )
 }
@@ -106,6 +151,8 @@ export function ShotCard({
   isActive,
   isSelected,
   isGeneratingImage,
+  isGeneratingVideo,
+  displayMode,
   assetCharacters,
   assetScenes,
   assetProps,
@@ -113,6 +160,8 @@ export function ShotCard({
   onDuplicate,
   onDelete,
   onGenerateImage,
+  onGenerateVideo,
+  onPlayVideo,
 }: ShotCardProps) {
   const matchedTags = useMemo(() => matchKeywords(shot.composition), [shot.composition])
 
@@ -144,7 +193,7 @@ export function ShotCard({
       )}
     >
       {/* Left: Thumbnail */}
-      <ShotThumbnail shot={shot} isGenerating={isGeneratingImage} />
+      <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
 
       {/* Center: Index + Content */}
       <div className="flex-1 min-w-0 flex gap-3">
@@ -160,12 +209,35 @@ export function ShotCard({
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col gap-2">
-          <p className={cn(
-            "text-[14px] leading-relaxed line-clamp-2",
-            shot.composition ? "text-foreground font-medium" : "text-muted-foreground/60 italic"
-          )}>
-            {shot.composition || "暂无画面描述"}
-          </p>
+          {displayMode === "composition" ? (
+            <p className={cn(
+              "text-[14px] leading-relaxed line-clamp-4",
+              shot.composition ? "text-foreground font-medium" : "text-muted-foreground/60 italic"
+            )}>
+              {shot.composition || "暂无画面描述"}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-start gap-1.5">
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20">
+                  <Type className="size-2.5 mr-0.5" />
+                  生图
+                </Badge>
+                <p className="text-[11px] text-muted-foreground line-clamp-3 leading-relaxed">
+                  {shot.prompt || "暂无生图提示词"}
+                </p>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20">
+                  <Film className="size-2.5 mr-0.5" />
+                  视频
+                </Badge>
+                <p className="text-[11px] text-muted-foreground line-clamp-3 leading-relaxed">
+                  {shot.videoPrompt || "暂无视频提示词"}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-3 flex-wrap">
             {matchedTags.length > 0 && (
@@ -242,6 +314,31 @@ export function ShotCard({
         >
           <Paintbrush className="size-3.5 text-primary/70 hover:text-primary" />
         </button>
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) onGenerateVideo() }}
+                className={cn(
+                  "rounded-lg p-2 transition-colors",
+                  shot.imageUrl
+                    ? "hover:bg-violet-500/10"
+                    : "opacity-40 cursor-not-allowed"
+                )}
+                title={shot.videoUrl ? "重新生成视频" : "生成视频"}
+                disabled={!shot.imageUrl || isGeneratingVideo}
+              >
+                <Video className={cn(
+                  "size-3.5",
+                  shot.imageUrl ? "text-violet-500/70 hover:text-violet-500" : "text-muted-foreground/40"
+                )} />
+              </button>
+            </TooltipTrigger>
+            {!shot.imageUrl && (
+              <TooltipContent side="left" className="text-xs">请先生成画面</TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate() }}
           className="rounded-lg p-2 hover:bg-muted transition-colors"

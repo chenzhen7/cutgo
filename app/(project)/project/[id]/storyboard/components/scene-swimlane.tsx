@@ -7,8 +7,11 @@ import {
   RefreshCw,
   BookOpen,
   Plus,
+  Type,
+  Film,
 } from "lucide-react"
 import { ShotCard } from "./shot-card"
+import type { ShotCardDisplayMode } from "./shot-card"
 import type { Storyboard, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
@@ -16,6 +19,8 @@ interface SceneSwimlaneProps {
   activeShotId: string | null
   selectedShotIds: Set<string>
   imageGeneratingIds: Set<string>
+  videoGeneratingIds: Set<string>
+  shotDisplayMode: ShotCardDisplayMode
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -24,8 +29,11 @@ interface SceneSwimlaneProps {
   onDeleteShot: (storyboardId: string, shotId: string) => void
   onAddShot: (storyboardId: string) => void
   onGenerateImage: (storyboardId: string, shotId: string) => void
+  onGenerateVideo: (storyboardId: string, shotId: string) => void
+  onPlayVideo: (shotId: string) => void
   onRegenerateScript: (scriptId: string) => void
   onViewScript: (storyboard: Storyboard) => void
+  onToggleShotDisplayMode: () => void
 }
 
 export function SceneSwimlane({
@@ -33,6 +41,8 @@ export function SceneSwimlane({
   activeShotId,
   selectedShotIds,
   imageGeneratingIds,
+  videoGeneratingIds,
+  shotDisplayMode,
   assetCharacters,
   assetScenes,
   assetProps,
@@ -41,11 +51,15 @@ export function SceneSwimlane({
   onDeleteShot,
   onAddShot,
   onGenerateImage,
+  onGenerateVideo,
+  onPlayVideo,
   onRegenerateScript,
   onViewScript,
+  onToggleShotDisplayMode,
 }: SceneSwimlaneProps) {
   const script = storyboard.script
   const shotsWithImage = storyboard.shots.filter((s) => s.imageUrl).length
+  const shotsWithVideo = storyboard.shots.filter((s) => s.videoUrl).length
 
   return (
     <div className={cn(
@@ -68,14 +82,39 @@ export function SceneSwimlane({
               {storyboard.shots.length} 个画面
             </span>
             {storyboard.shots.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                · {shotsWithImage}/{storyboard.shots.length} 已生图
-              </span>
+              <>
+                <span className="text-xs text-muted-foreground">
+                  · {shotsWithImage}/{storyboard.shots.length} 已生图
+                </span>
+                {shotsWithVideo > 0 && (
+                  <span className="text-xs text-violet-600 dark:text-violet-400">
+                    · {shotsWithVideo} 已生视频
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={onToggleShotDisplayMode}
+          >
+            {shotDisplayMode === "composition" ? (
+              <>
+                <Type className="size-3 mr-1" />
+                画面描述
+              </>
+            ) : (
+              <>
+                <Film className="size-3 mr-1" />
+                提示词
+              </>
+            )}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -106,6 +145,8 @@ export function SceneSwimlane({
             isActive={activeShotId === shot.id}
             isSelected={selectedShotIds.has(shot.id)}
             isGeneratingImage={imageGeneratingIds.has(shot.id)}
+            isGeneratingVideo={videoGeneratingIds.has(shot.id)}
+            displayMode={shotDisplayMode}
             assetCharacters={assetCharacters}
             assetScenes={assetScenes}
             assetProps={assetProps}
@@ -113,6 +154,8 @@ export function SceneSwimlane({
             onDuplicate={() => onDuplicateShot(storyboard.id, shot.id)}
             onDelete={() => onDeleteShot(storyboard.id, shot.id)}
             onGenerateImage={() => onGenerateImage(storyboard.id, shot.id)}
+            onGenerateVideo={() => onGenerateVideo(storyboard.id, shot.id)}
+            onPlayVideo={() => onPlayVideo(shot.id)}
           />
         ))}
 
