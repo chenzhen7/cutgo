@@ -90,7 +90,7 @@ export default function ImportPage() {
   const isAnalyzing = analysisStatus === "analyzing"
 
   return (
-    <div className="flex flex-col gap-6 p-6 pb-24">
+    <div className="flex flex-col gap-6 p-6">
       <div>
         <h2 className="text-xl font-semibold text-foreground">小说导入</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -142,19 +142,6 @@ export default function ImportPage() {
         />
       )}
 
-      {isAnalyzed && novel && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-6 py-4">
-          <div className="mx-auto max-w-3xl">
-            <ConfirmImportDialog
-              wordCount={novel.wordCount}
-              chapters={chapters}
-              characters={characters}
-              events={events}
-              onConfirm={handleConfirm}
-            />
-          </div>
-        </div>
-      )}
 
       {/* 空状态 */}
       {!isAnalyzing && !isAnalyzed && analysisStatus !== "error" && !novel && (

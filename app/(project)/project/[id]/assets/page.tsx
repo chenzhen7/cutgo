@@ -145,7 +145,7 @@ export default function AssetsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8 pb-24">
+    <div className="mx-auto max-w-7xl px-6 py-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -381,53 +381,6 @@ export default function AssetsPage() {
         }}
       />
 
-      {/* Confirm & proceed */}
-      {totalAssets > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-6 py-4">
-          <div className="mx-auto max-w-7xl">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="lg" className="w-full">
-                  确认资产，进入剧本生成
-                  <ArrowRight className="size-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="sm:max-w-sm">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>确认资产入库</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="space-y-2 text-left">
-                      <p>确认后将进入剧本生成阶段，当前资产摘要：</p>
-                      <ul className="list-disc list-inside text-sm space-y-1">
-                        <li>角色：{characters.length} 个</li>
-                        <li>场景：{scenes.length} 个</li>
-                        <li>道具：{props.length} 个</li>
-                      </ul>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      const res = await fetch("/api/assets/confirm", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ projectId }),
-                      })
-                      if (res.ok) {
-                        router.push(`/project/${projectId}/script`)
-                      }
-                    }}
-                  >
-                    确认并继续
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      )}
 
       {/* Delete confirmations */}
       <AlertDialog

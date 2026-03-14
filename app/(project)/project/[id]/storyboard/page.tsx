@@ -480,7 +480,7 @@ export default function StoryboardPage() {
           </div>
 
           {/* Two-column layout with Resizable */}
-          <div className="flex-1 min-h-0 px-6 pb-20">
+          <div className="flex-1 min-h-0 px-6">
             <ResizablePanelGroup orientation="horizontal" className="h-full">
               {/* Center: Timeline editor */}
               <ResizablePanel defaultSize={60} minSize={30}>
@@ -574,15 +574,6 @@ export default function StoryboardPage() {
             </ResizablePanelGroup>
           </div>
 
-          {/* Bottom bar */}
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-6 py-4">
-            <div className="mx-auto max-w-3xl">
-              <ConfirmStoryboardDialog
-                storyboards={storyboards}
-                onConfirm={handleConfirm}
-              />
-            </div>
-          </div>
         </>
       )}
 

@@ -31,7 +31,7 @@ export function ConfirmStoryboardDialog({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="w-full" disabled={!hasStoryboards}>
+        <Button className="px-8" disabled={!hasStoryboards}>
           确认分镜，进入视频合成
           <ArrowRight className="size-4 ml-2" />
         </Button>

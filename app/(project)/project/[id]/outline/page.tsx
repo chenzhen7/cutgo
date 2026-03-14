@@ -128,7 +128,7 @@ export default function OutlinePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 pb-24">
+    <div className="flex flex-col gap-6 p-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -213,7 +213,7 @@ export default function OutlinePage() {
               <h3 className="text-sm font-medium">
                 分集列表
                 {filterChapterIds.length > 0 && (
-                  
+
                   <span className="text-muted-foreground ml-1">
                     ({displayedEpisodes.length}/{episodes.length})
                   </span>
@@ -246,18 +246,6 @@ export default function OutlinePage() {
         </>
       )}
 
-      {/* Bottom bar */}
-      {hasEpisodes && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-6 py-4">
-          <div className="mx-auto max-w-3xl">
-            <ConfirmOutlineDialog
-              episodes={episodes}
-              chapters={chapters}
-              onConfirm={handleConfirm}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Chapter select dialog */}
       <ChapterSelectDialog

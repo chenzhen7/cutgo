@@ -32,7 +32,7 @@ export function ConfirmScriptDialog({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button size="lg" className="w-full" disabled={disabled}>
+        <Button size="lg" variant="outline" className="w-full" disabled={disabled}>
           确认剧本，进入分镜生成
           <ArrowRight className="size-4" />
         </Button>

@@ -160,7 +160,7 @@ export default function ScriptPage() {
             <ScriptStatsPanel scripts={scripts} episodes={episodes} />
           </div>
 
-          <div className="flex flex-1 min-h-0 px-6 gap-4 pb-20">
+          <div className="flex flex-1 min-h-0 px-6 gap-4">
             {/* Left: Episode navigation */}
             <div className="w-64 shrink-0 rounded-lg border bg-card">
               <EpisodeNavList
@@ -192,16 +192,6 @@ export default function ScriptPage() {
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-6 py-4">
-            <div className="mx-auto max-w-3xl">
-              <ConfirmScriptDialog
-                scripts={scripts}
-                episodes={episodes}
-                onConfirm={handleConfirm}
-              />
-            </div>
-          </div>
         </>
       )}
 
