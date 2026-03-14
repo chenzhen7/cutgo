@@ -1,0 +1,5 @@
+file 'G:/Study_Data/VSCode/cutgo/output/cmmq40b910000qgv7szgglfjl/temp_ep06/shot_000.png'
+duration 3
+file 'G:/Study_Data/VSCode/cutgo/output/cmmq40b910000qgv7szgglfjl/temp_ep06/shot_001.png'
+duration 3
+file 'G:/Study_Data/VSCode/cutgo/output/cmmq40b910000qgv7szgglfjl/temp_ep06/shot_001.png'
