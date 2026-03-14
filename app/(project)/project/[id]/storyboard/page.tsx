@@ -336,7 +336,7 @@ export default function StoryboardPage() {
               {/* Center: Timeline editor */}
               <ResizablePanel defaultSize={60} minSize={30}>
                 <div className={cn(
-                  "h-full min-w-0 overflow-y-auto space-y-3 pr-2 pb-12 custom-scrollbar",
+                  "h-full min-w-0 overflow-y-auto space-y-3 px-2 pb-12 custom-scrollbar",
                   detailPanelOpen ? "border-y border-l bg-background/50 rounded-l-lg" : "border rounded-lg"
                 )}>
                   {currentStoryboards.length > 0 ? (
@@ -361,7 +361,6 @@ export default function StoryboardPage() {
                           onGenerateImage={handleGenerateImage}
                           onRegenerateScript={handleRegenerateScript}
                           onViewScript={(sb) => setViewingScriptStoryboard(sb)}
-                          noBorder={detailPanelOpen}
                         />
                       ))}
                     </div>
