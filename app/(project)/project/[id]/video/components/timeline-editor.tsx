@@ -1,0 +1,545 @@
+"use client"
+
+import React, { useRef, useCallback, useEffect, useState, useMemo } from "react"
+import { useVideoEditorStore, type TimelineClip, type AudioClip, type SubtitleClip } from "@/store/video-editor-store"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+  Scissors,
+  Trash2,
+  ZoomIn,
+  ZoomOut,
+  Volume2,
+  VolumeX,
+  Lock,
+  Unlock,
+  Music,
+  Type,
+  Film,
+} from "lucide-react"
+
+// 1. 优化：将片段渲染抽离为 memo 组件，减少重绘
+const TimelineClipItem = React.memo(({ 
+  clip, 
+  type, 
+  isSelected, 
+  left, 
+  width, 
+  isDragging,
+  onSelect,
+  onDragStart,
+  onResizeStart
+}: {
+  clip: TimelineClip | AudioClip | SubtitleClip
+  type: "video" | "audio" | "subtitle"
+  isSelected: boolean
+  left: number
+  width: number
+  isDragging: boolean
+  onSelect: (id: string, type: "video" | "audio" | "subtitle") => void
+  onDragStart: (e: React.MouseEvent, id: string, type: "video" | "audio" | "subtitle") => void
+  onResizeStart: (e: React.MouseEvent, id: string, edge: "left" | "right", type: "video" | "audio" | "subtitle") => void
+}) => {
+  const colorMap = {
+    video: "bg-blue-500/80 border-blue-400",
+    audio: "bg-green-500/80 border-green-400",
+    subtitle: "bg-amber-500/80 border-amber-400",
+  }
+
+  const iconMap = {
+    video: <Film className="size-3 shrink-0" />,
+    audio: <Music className="size-3 shrink-0" />,
+    subtitle: <Type className="size-3 shrink-0" />,
+  }
+
+  return (
+    <div
+      className={cn(
+        "absolute top-1 rounded-md border cursor-pointer select-none flex items-center gap-1 px-1.5 overflow-hidden transition-shadow",
+        colorMap[type],
+        isSelected && "ring-2 ring-white shadow-lg z-10",
+        isDragging && "opacity-70"
+      )}
+      style={{
+        left: `${left}px`,
+        width: `${Math.max(width, 24)}px`,
+        height: type === "video" ? "56px" : type === "audio" ? "40px" : "32px",
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+        onSelect(clip.id, type)
+      }}
+      onMouseDown={(e) => onDragStart(e, clip.id, type)}
+    >
+      <div
+        className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/30 z-20"
+        onMouseDown={(e) => onResizeStart(e, clip.id, "left", type)}
+      />
+
+      {type === "video" && (clip as TimelineClip).thumbnailUrl && (
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
+          <img
+            src={(clip as TimelineClip).thumbnailUrl!}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      <div className="relative flex items-center gap-1 min-w-0 z-10 pointer-events-none">
+        {iconMap[type]}
+        <span className="text-[10px] text-white font-medium truncate">
+          {"label" in clip ? (clip as TimelineClip | AudioClip).label : ""}
+          {"text" in clip ? (clip as SubtitleClip).text.slice(0, 15) : ""}
+        </span>
+      </div>
+
+      <div
+        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/30 z-20"
+        onMouseDown={(e) => onResizeStart(e, clip.id, "right", type)}
+      />
+    </div>
+  )
+})
+
+TimelineClipItem.displayName = "TimelineClipItem"
+
+// 2. 优化：将刻度尺抽离为 memo 组件
+const TimeRuler = React.memo(({ 
+  timeMarkers, 
+  timeToX, 
+  scrollLeft 
+}: { 
+  timeMarkers: any[], 
+  timeToX: (t: number) => number, 
+  scrollLeft: number 
+}) => {
+  return (
+    <div className="h-6 border-b bg-muted/30 relative overflow-hidden">
+      {timeMarkers.map((marker) => (
+        <div
+          key={marker.time}
+          className="absolute top-0 bottom-0 flex flex-col items-center"
+          style={{ left: `${timeToX(marker.time) - scrollLeft}px` }}
+        >
+          <span className="text-[9px] text-muted-foreground/70 mt-0.5">
+            {marker.major ? marker.label : ""}
+          </span>
+          <div className={cn("w-px flex-1", marker.major ? "bg-border" : "bg-border/40")} />
+        </div>
+      ))}
+    </div>
+  )
+})
+TimeRuler.displayName = "TimeRuler"
+
+export function TimelineEditor() {
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false)
+  const [dragClipId, setDragClipId] = useState<string | null>(null)
+  const [dragStartX, setDragStartX] = useState(0)
+  const [dragOriginalStart, setDragOriginalStart] = useState(0)
+  const [resizingClip, setResizingClip] = useState<{ id: string; edge: "left" | "right"; type: "video" | "audio" | "subtitle" } | null>(null)
+  const [resizeStartX, setResizeStartX] = useState(0)
+  const [resizeOriginal, setResizeOriginal] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number }>({ startTime: 0, duration: 0, trimStart: 0, trimEnd: 0 })
+
+  // 本地播放头位置，用于拖动时的超平滑反馈
+  const [localPlayheadX, setLocalPlayheadX] = useState<number | null>(null)
+
+  const tracks = useVideoEditorStore(s => s.tracks)
+  const videoClips = useVideoEditorStore(s => s.videoClips)
+  const audioClips = useVideoEditorStore(s => s.audioClips)
+  const subtitleClips = useVideoEditorStore(s => s.subtitleClips)
+  const bgmTrack = useVideoEditorStore(s => s.bgmTrack)
+  const selectedClipId = useVideoEditorStore(s => s.selectedClipId)
+  const selectedClipType = useVideoEditorStore(s => s.selectedClipType)
+  const currentTime = useVideoEditorStore(s => s.currentTime)
+  const duration = useVideoEditorStore(s => s.duration)
+  const zoom = useVideoEditorStore(s => s.zoom)
+  const scrollLeft = useVideoEditorStore(s => s.scrollLeft)
+  const pixelsPerSecond = useVideoEditorStore(s => s.pixelsPerSecond)
+
+  const {
+    selectClip,
+    setCurrentTime,
+    setZoom,
+    setScrollLeft,
+    updateVideoClip,
+    updateAudioClip,
+    updateSubtitleClip,
+    removeVideoClip,
+    removeAudioClip,
+    removeSubtitleClip,
+    splitVideoClip,
+    toggleTrackMute,
+    toggleTrackLock,
+  } = useVideoEditorStore()
+
+  const pps = pixelsPerSecond * zoom
+  const totalWidth = Math.max(duration * pps + 400, 1200)
+
+  const timeMarkers = useMemo(() => {
+    const markers: { time: number; label: string; major: boolean }[] = []
+    let step = 1
+    if (pps < 20) step = 10
+    else if (pps < 40) step = 5
+    else if (pps < 80) step = 2
+    else if (pps > 200) step = 0.5
+
+    const maxTime = Math.max(duration + 20, 60)
+    for (let t = 0; t <= maxTime; t += step) {
+      const m = Math.floor(t / 60)
+      const s = Math.floor(t % 60)
+      markers.push({
+        time: t,
+        label: `${m}:${s.toString().padStart(2, "0")}`,
+        major: t % (step * 5 === 0 ? step * 5 : step * 2) === 0,
+      })
+    }
+    return markers
+  }, [duration, pps])
+
+  const timeToX = useCallback((time: number) => time * pps, [pps])
+  const xToTime = useCallback((x: number) => Math.max(0, x / pps), [pps])
+
+  const handleTimelineClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (isDraggingPlayhead || dragClipId || resizingClip) return
+      const rect = e.currentTarget.getBoundingClientRect()
+      const x = e.clientX - rect.left + scrollLeft
+      setCurrentTime(xToTime(x))
+    },
+    [isDraggingPlayhead, dragClipId, resizingClip, scrollLeft, xToTime, setCurrentTime]
+  )
+
+  const handlePlayheadMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsDraggingPlayhead(true)
+    const rect = timelineRef.current?.getBoundingClientRect()
+    if (rect) {
+      setLocalPlayheadX(e.clientX - rect.left + scrollLeft)
+    }
+  }, [scrollLeft])
+
+  useEffect(() => {
+    if (!isDraggingPlayhead) {
+      setLocalPlayheadX(null)
+      return
+    }
+
+    const handleMove = (e: MouseEvent) => {
+      const timeline = timelineRef.current
+      if (!timeline) return
+      const rect = timeline.getBoundingClientRect()
+      const x = e.clientX - rect.left + scrollLeft
+      
+      // 1. 立即更新本地状态，实现 0 延迟反馈
+      setLocalPlayheadX(x)
+      
+      // 2. 异步更新 store，避免阻塞 UI
+      const newTime = xToTime(x)
+      setCurrentTime(newTime)
+    }
+
+    const handleUp = () => setIsDraggingPlayhead(false)
+    window.addEventListener("mousemove", handleMove, { passive: true })
+    window.addEventListener("mouseup", handleUp)
+    return () => {
+      window.removeEventListener("mousemove", handleMove)
+      window.removeEventListener("mouseup", handleUp)
+    }
+  }, [isDraggingPlayhead, scrollLeft, xToTime, setCurrentTime])
+
+  const handleClipDragStart = useCallback(
+    (e: React.MouseEvent, clipId: string, clipType: "video" | "audio" | "subtitle") => {
+      e.stopPropagation()
+      const clips = clipType === "video" ? videoClips : clipType === "audio" ? audioClips : subtitleClips
+      const clip = clips.find((c) => c.id === clipId)
+      if (!clip) return
+      setDragClipId(clipId)
+      setDragStartX(e.clientX)
+      setDragOriginalStart(clip.startTime)
+      selectClip(clipId, clipType)
+    },
+    [videoClips, audioClips, subtitleClips, selectClip]
+  )
+
+  useEffect(() => {
+    if (!dragClipId) return
+    const handleMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStartX
+      const dt = dx / pps
+      const newStart = Math.max(0, dragOriginalStart + dt)
+      if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: newStart })
+      else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: newStart })
+      else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: newStart })
+    }
+    const handleUp = () => setDragClipId(null)
+    window.addEventListener("mousemove", handleMove, { passive: true })
+    window.addEventListener("mouseup", handleUp)
+    return () => {
+      window.removeEventListener("mousemove", handleMove)
+      window.removeEventListener("mouseup", handleUp)
+    }
+  }, [dragClipId, dragStartX, dragOriginalStart, pps, selectedClipType, updateVideoClip, updateAudioClip, updateSubtitleClip])
+
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, clipId: string, edge: "left" | "right", clipType: "video" | "audio" | "subtitle") => {
+      e.stopPropagation()
+      const clips = clipType === "video" ? videoClips : clipType === "audio" ? audioClips : subtitleClips
+      const clip = clips.find((c) => c.id === clipId)
+      if (!clip) return
+      setResizingClip({ id: clipId, edge, type: clipType })
+      setResizeStartX(e.clientX)
+      setResizeOriginal({
+        startTime: clip.startTime,
+        duration: clip.duration,
+        trimStart: "trimStart" in clip ? (clip as TimelineClip).trimStart : 0,
+        trimEnd: "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0,
+      })
+      selectClip(clipId, clipType)
+    },
+    [videoClips, audioClips, subtitleClips, selectClip]
+  )
+
+  useEffect(() => {
+    if (!resizingClip) return
+    const handleMove = (e: MouseEvent) => {
+      const dx = e.clientX - resizeStartX
+      const dt = dx / pps
+
+      if (resizingClip.edge === "right") {
+        const newDuration = Math.max(0.5, resizeOriginal.duration + dt)
+        if (resizingClip.type === "video") updateVideoClip(resizingClip.id, { duration: newDuration })
+        else if (resizingClip.type === "audio") updateAudioClip(resizingClip.id, { duration: newDuration })
+        else updateSubtitleClip(resizingClip.id, { duration: newDuration })
+      } else {
+        const maxShift = resizeOriginal.duration - 0.5
+        const shift = Math.max(-resizeOriginal.startTime, Math.min(maxShift, dt))
+        const newStart = resizeOriginal.startTime + shift
+        const newDuration = resizeOriginal.duration - shift
+        if (resizingClip.type === "video") {
+          updateVideoClip(resizingClip.id, {
+            startTime: newStart,
+            duration: newDuration,
+            trimStart: resizeOriginal.trimStart + shift,
+          })
+        } else if (resizingClip.type === "audio") {
+          updateAudioClip(resizingClip.id, { startTime: newStart, duration: newDuration })
+        } else {
+          updateSubtitleClip(resizingClip.id, { startTime: newStart, duration: newDuration })
+        }
+      }
+    }
+    const handleUp = () => setResizingClip(null)
+    window.addEventListener("mousemove", handleMove, { passive: true })
+    window.addEventListener("mouseup", handleUp)
+    return () => {
+      window.removeEventListener("mousemove", handleMove)
+      window.removeEventListener("mouseup", handleUp)
+    }
+  }, [resizingClip, resizeStartX, resizeOriginal, pps, updateVideoClip, updateAudioClip, updateSubtitleClip])
+
+  const handleSplit = useCallback(() => {
+    if (selectedClipId && selectedClipType === "video") {
+      splitVideoClip(selectedClipId, currentTime)
+    }
+  }, [selectedClipId, selectedClipType, currentTime, splitVideoClip])
+
+  const handleDelete = useCallback(() => {
+    if (!selectedClipId || !selectedClipType) return
+    if (selectedClipType === "video") removeVideoClip(selectedClipId)
+    else if (selectedClipType === "audio") removeAudioClip(selectedClipId)
+    else removeSubtitleClip(selectedClipId)
+  }, [selectedClipId, selectedClipType, removeVideoClip, removeAudioClip, removeSubtitleClip])
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        const delta = e.deltaY > 0 ? -0.1 : 0.1
+        setZoom(zoom + delta)
+      } else {
+        setScrollLeft(scrollLeft + e.deltaX + e.deltaY)
+      }
+    },
+    [zoom, scrollLeft, setZoom, setScrollLeft]
+  )
+
+  // 播放头 X 位置：优先使用本地拖拽位置，否则使用 store 时间转换的位置
+  const playheadX = localPlayheadX !== null ? localPlayheadX : timeToX(currentTime)
+
+  return (
+    <div className="flex flex-col h-full bg-background border rounded-lg overflow-hidden">
+      {/* Toolbar */}
+      <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={handleSplit}
+            disabled={!selectedClipId || selectedClipType !== "video"}
+            title="分割片段 (S)"
+          >
+            <Scissors className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={handleDelete}
+            disabled={!selectedClipId}
+            title="删除片段 (Delete)"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => setZoom(Math.max(0.1, zoom - 0.2))}
+          >
+            <ZoomOut className="size-3.5" />
+          </Button>
+          <span className="text-[10px] text-muted-foreground w-10 text-center tabular-nums">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => setZoom(Math.min(10, zoom + 0.2))}
+          >
+            <ZoomIn className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 min-h-0">
+        {/* Track headers */}
+        <div className="shrink-0 w-28 border-r bg-muted/20">
+          <div className="h-6 border-b bg-muted/30" />
+          {tracks.map((track) => (
+            <div
+              key={track.id}
+              className="flex items-center gap-0.5 px-1.5 border-b"
+              style={{ height: `${track.height}px` }}
+            >
+              <span className="text-[10px] font-medium truncate flex-1 text-muted-foreground">
+                {track.label}
+              </span>
+              <button className="p-0.5 hover:bg-muted rounded" onClick={() => toggleTrackMute(track.id)}>
+                {track.muted ? <VolumeX className="size-3 text-muted-foreground" /> : <Volume2 className="size-3 text-muted-foreground" />}
+              </button>
+              <button className="p-0.5 hover:bg-muted rounded" onClick={() => toggleTrackLock(track.id)}>
+                {track.locked ? <Lock className="size-3 text-muted-foreground" /> : <Unlock className="size-3 text-muted-foreground" />}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Timeline area */}
+        <div
+          ref={timelineRef}
+          className={cn(
+            "flex-1 overflow-x-auto overflow-y-hidden relative select-none",
+            (isDraggingPlayhead || dragClipId || resizingClip) && "cursor-grabbing"
+          )}
+          onWheel={handleWheel}
+          onClick={handleTimelineClick}
+        >
+          <div className="relative" style={{ width: `${totalWidth}px` }}>
+            {/* Time ruler */}
+            <TimeRuler timeMarkers={timeMarkers} timeToX={timeToX} scrollLeft={scrollLeft} />
+
+            {/* Tracks & Clips */}
+            {tracks.map((track) => (
+              <div
+                key={track.id}
+                className="relative border-b bg-muted/5"
+                style={{ height: `${track.height}px` }}
+              >
+                {/* Render clips for this track */}
+                {track.type === "video" && videoClips.filter(c => c.trackId === track.id).map(clip => (
+                  <TimelineClipItem
+                    key={clip.id}
+                    clip={clip}
+                    type="video"
+                    isSelected={selectedClipId === clip.id}
+                    left={timeToX(clip.startTime) - scrollLeft}
+                    width={timeToX(clip.duration)}
+                    isDragging={dragClipId === clip.id}
+                    onSelect={selectClip}
+                    onDragStart={handleClipDragStart}
+                    onResizeStart={handleResizeStart}
+                  />
+                ))}
+                {track.type === "audio" && (
+                  <>
+                    {track.id === "audio-bgm" && bgmTrack && (
+                      <TimelineClipItem
+                        clip={bgmTrack}
+                        type="audio"
+                        isSelected={selectedClipId === bgmTrack.id}
+                        left={timeToX(bgmTrack.startTime) - scrollLeft}
+                        width={timeToX(bgmTrack.duration)}
+                        isDragging={dragClipId === bgmTrack.id}
+                        onSelect={selectClip}
+                        onDragStart={handleClipDragStart}
+                        onResizeStart={handleResizeStart}
+                      />
+                    )}
+                    {audioClips.filter(c => c.trackId === track.id).map(clip => (
+                      <TimelineClipItem
+                        key={clip.id}
+                        clip={clip}
+                        type="audio"
+                        isSelected={selectedClipId === clip.id}
+                        left={timeToX(clip.startTime) - scrollLeft}
+                        width={timeToX(clip.duration)}
+                        isDragging={dragClipId === clip.id}
+                        onSelect={selectClip}
+                        onDragStart={handleClipDragStart}
+                        onResizeStart={handleResizeStart}
+                      />
+                    ))}
+                  </>
+                )}
+                {track.type === "subtitle" && subtitleClips.filter(c => c.trackId === track.id).map(clip => (
+                  <TimelineClipItem
+                    key={clip.id}
+                    clip={clip}
+                    type="subtitle"
+                    isSelected={selectedClipId === clip.id}
+                    left={timeToX(clip.startTime) - scrollLeft}
+                    width={timeToX(clip.duration)}
+                    isDragging={dragClipId === clip.id}
+                    onSelect={selectClip}
+                    onDragStart={handleClipDragStart}
+                    onResizeStart={handleResizeStart}
+                  />
+                ))}
+              </div>
+            ))}
+
+            {/* Playhead */}
+            <div
+              className="absolute top-0 bottom-0 w-px bg-red-500 z-30 pointer-events-none"
+              style={{ left: `${playheadX - scrollLeft}px` }}
+            >
+              <div
+                className="absolute -top-0 left-1/2 -translate-x-1/2 w-3 h-4 bg-red-500 rounded-b-sm cursor-col-resize pointer-events-auto"
+                onMouseDown={handlePlayheadMouseDown}
+                style={{ clipPath: "polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%)" }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
