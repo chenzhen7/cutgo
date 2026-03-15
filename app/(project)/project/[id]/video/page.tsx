@@ -37,6 +37,8 @@ export default function VideoPage() {
   const duration = useVideoEditorStore(s => s.duration)
   const initFromStoryboards = useVideoEditorStore(s => s.initFromStoryboards)
 
+  const activeEpisodeId = useVideoEditorStore(s => s.activeEpisodeId)
+
   useEffect(() => {
     const init = async () => {
       setLoading(true)
@@ -50,10 +52,12 @@ export default function VideoPage() {
   }, [projectId, fetchEpisodes, fetchStoryboards])
 
   useEffect(() => {
-    if (storyboards.length > 0 && episodes.length > 0) {
-      initFromStoryboards(storyboards, episodes)
+    if (storyboards.length > 0 && episodes.length > 0 && !activeEpisodeId) {
+      // 如果没有选择分集，且当前没有激活的分集，默认选择第一个分集
+      const defaultEpisodeId = episodes[0]?.id
+      initFromStoryboards(storyboards, episodes, defaultEpisodeId)
     }
-  }, [storyboards, episodes, initFromStoryboards])
+  }, [storyboards, episodes, activeEpisodeId, initFromStoryboards])
 
   useEffect(() => {
     if (selectedClipId) {

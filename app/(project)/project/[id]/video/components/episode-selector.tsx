@@ -33,20 +33,11 @@ export function EpisodeSelector() {
           <Film className="size-3.5" />
           {activeEpisode
             ? `第${activeEpisode.index + 1}集 · ${activeEpisode.title}`
-            : "全部分集"}
+            : "选择分集"}
           <ChevronDown className="size-3.5 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuItem
-          onClick={() => setActiveEpisodeId(null)}
-          className={cn(!activeEpisodeId && "bg-accent")}
-        >
-          <span className="flex-1">全部分集</span>
-          <span className="text-xs text-muted-foreground">
-            {storyboards.flatMap((sb) => sb.shots).filter((s) => s.videoUrl).length} 个视频
-          </span>
-        </DropdownMenuItem>
         {episodes.map((ep) => {
           const count = getEpisodeVideoCount(ep.id)
           return (
