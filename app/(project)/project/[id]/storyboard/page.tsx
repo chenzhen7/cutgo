@@ -481,7 +481,10 @@ export default function StoryboardPage() {
                 分集
               </Button>
               <div className="w-px h-4 bg-border shrink-0" />
+
+              <h2 className="text-xl font-semibold text-foreground">分镜生成</h2>
             </div>
+
             <StoryboardToolbar
               generateStatus={generateStatus}
               batchImageStatus={batchImageStatus}
