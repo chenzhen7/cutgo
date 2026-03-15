@@ -18,6 +18,7 @@ import { ClipPropertiesPanel } from "./components/clip-properties-panel"
 import { BgmPanel } from "./components/bgm-panel"
 import { ExportDialog } from "./components/export-dialog"
 import { EpisodeSelector } from "./components/episode-selector"
+import { AssetLibrary } from "./components/asset-library"
 
 export default function VideoPage() {
   const params = useParams()
@@ -149,20 +150,29 @@ export default function VideoPage() {
       {/* Main editor area */}
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup orientation="vertical">
-          {/* Top section: Preview + Properties */}
-          <ResizablePanel defaultSize={55} minSize={30}>
-            <ResizablePanelGroup orientation="horizontal">
+          {/* Top section: Asset Library + Preview + Properties */}
+          <ResizablePanel defaultSize={60} minSize={40}>
+            <ResizablePanelGroup orientation="horizontal" >
+              {/* Asset Library */}
+              <ResizablePanel defaultSize={18} minSize={14}>
+                <div className="h-full border-r bg-background overflow-hidden">
+                  <AssetLibrary />
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
               {/* Preview */}
-              <ResizablePanel defaultSize={65} minSize={40}>
-                <div className="h-full p-2">
+              <ResizablePanel defaultSize={52} minSize={25}>
+                <div className="h-full p-2 bg-muted/10">
                   <VideoPreview />
                 </div>
               </ResizablePanel>
 
               <ResizableHandle withHandle />
 
-              {/* Right panel: Properties / BGM */}
-              <ResizablePanel defaultSize={35} minSize={20}>
+              {/* Properties / BGM */}
+              <ResizablePanel defaultSize={30} minSize={18}>
                 <div className="h-full border-l">
                   <Tabs value={rightTab} onValueChange={setRightTab} className="h-full flex flex-col">
                     <TabsList className="shrink-0 w-full justify-start rounded-none border-b bg-transparent h-9 px-2">
