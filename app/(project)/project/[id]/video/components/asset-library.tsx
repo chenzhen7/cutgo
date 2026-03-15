@@ -150,8 +150,8 @@ export function AssetLibrary() {
                       {!hasVideo
                         ? "视频未生成，无法添加"
                         : isInTimeline
-                        ? "点击再次添加到时间轴末尾"
-                        : "点击添加到时间轴"}
+                          ? "点击再次添加到时间轴末尾"
+                          : "点击添加到时间轴"}
                     </p>
                   </TooltipContent>
                 </Tooltip>
