@@ -29,7 +29,19 @@ export function EpisodeSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs"
+          onKeyDown={(e) => {
+            // 如果按下的是空格，且当前焦点在按钮上，阻止默认行为
+            // 这样可以防止空格键在按钮聚焦时触发下拉菜单（由 Radix UI 默认处理）
+            // 之后事件会冒泡到 window 被 VideoPreview 捕获处理播放/暂停
+            if (e.code === "Space") {
+              e.preventDefault()
+            }
+          }}
+        >
           <Film className="size-3.5" />
           {activeEpisode
             ? `第${activeEpisode.index + 1}集 · ${activeEpisode.title}`
@@ -43,7 +55,15 @@ export function EpisodeSelector() {
           return (
             <DropdownMenuItem
               key={ep.id}
-              onClick={() => setActiveEpisodeId(ep.id)}
+              onClick={(e) => {
+                setActiveEpisodeId(ep.id)
+                // 延迟失焦，确保点击事件处理完成后焦点不再留在触发按钮上
+                setTimeout(() => {
+                  if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur()
+                  }
+                }, 0)
+              }}
               className={cn(activeEpisodeId === ep.id && "bg-accent")}
             >
               <span className="flex-1 truncate">

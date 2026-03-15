@@ -36,6 +36,7 @@ export default function VideoPage() {
   const selectedClipId = useVideoEditorStore(s => s.selectedClipId)
   const duration = useVideoEditorStore(s => s.duration)
   const initFromStoryboards = useVideoEditorStore(s => s.initFromStoryboards)
+  const setActiveEpisodeId = useVideoEditorStore(s => s.setActiveEpisodeId)
 
   const activeEpisodeId = useVideoEditorStore(s => s.activeEpisodeId)
 
@@ -57,7 +58,7 @@ export default function VideoPage() {
       const defaultEpisodeId = episodes[0]?.id
       initFromStoryboards(storyboards, episodes, defaultEpisodeId)
     }
-  }, [storyboards, episodes, activeEpisodeId, initFromStoryboards])
+  }, [storyboards, episodes, activeEpisodeId, initFromStoryboards, setActiveEpisodeId])
 
   useEffect(() => {
     if (selectedClipId) {
