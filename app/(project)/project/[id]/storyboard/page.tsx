@@ -226,9 +226,8 @@ export default function StoryboardPage() {
           next.delete(shotId)
           return next
         })
-        // Mock: update shot with a fake videoUrl
         updateShot(_storyboardId, shotId, {
-          videoUrl: `/mock-videos/${shotId}.mp4`,
+          videoUrl: `/testVideo.mp4`,
           videoStatus: "completed",
           videoDuration: "5s",
         } as Partial<ShotInput>)
@@ -272,7 +271,7 @@ export default function StoryboardPage() {
             return next
           })
           updateShot(target.storyboardId, target.shot.id, {
-            videoUrl: `/mock-videos/${target.shot.id}.mp4`,
+            videoUrl: `/testVideo.mp4`,
             videoStatus: "completed",
             videoDuration: "5s",
           } as Partial<ShotInput>)
@@ -311,7 +310,7 @@ export default function StoryboardPage() {
           return next
         })
         updateShot(target.storyboardId, target.shot.id, {
-          videoUrl: `/mock-videos/${target.shot.id}.mp4`,
+          videoUrl: `/testVideo.mp4`,
           videoStatus: "completed",
           videoDuration: "5s",
         } as Partial<ShotInput>)

@@ -13,7 +13,8 @@ export async function PATCH(
     "shotSize", "cameraMovement", "cameraAngle", "composition",
     "prompt", "negativePrompt", "duration", "imageUrl",
     "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
-    "scriptLineIds", "dialogueText", "actionNote", "videoPrompt",
+    "scriptLineIds", "dialogueText", "actionNote",
+    "videoUrl", "videoStatus", "videoPrompt", "videoDuration",
     "characterIds", "sceneId", "propIds",
   ]
 
