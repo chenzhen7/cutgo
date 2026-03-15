@@ -359,12 +359,23 @@ export function TimelineEditor() {
         e.preventDefault()
         const delta = e.deltaY > 0 ? -0.1 : 0.1
         setZoom(zoom + delta)
-      } else {
-        setScrollLeft(scrollLeft + e.deltaX + e.deltaY)
       }
     },
-    [zoom, scrollLeft, setZoom, setScrollLeft]
+    [zoom, setZoom]
   )
+
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      setScrollLeft(e.currentTarget.scrollLeft)
+    },
+    [setScrollLeft]
+  )
+
+  useEffect(() => {
+    if (timelineRef.current && Math.abs(timelineRef.current.scrollLeft - scrollLeft) > 1) {
+      timelineRef.current.scrollLeft = scrollLeft
+    }
+  }, [scrollLeft])
 
   // 播放头 X 位置：优先使用本地拖拽位置，否则使用 store 时间转换的位置
   const playheadX = localPlayheadX !== null ? localPlayheadX : timeToX(currentTime)
@@ -446,15 +457,16 @@ export function TimelineEditor() {
         <div
           ref={timelineRef}
           className={cn(
-            "flex-1 overflow-x-auto overflow-y-hidden relative select-none",
+            "flex-1 overflow-x-auto overflow-y-hidden relative select-none custom-scrollbar",
             (isDraggingPlayhead || dragClipId || resizingClip) && "cursor-grabbing"
           )}
           onWheel={handleWheel}
+          onScroll={handleScroll}
           onClick={handleTimelineClick}
         >
           <div className="relative" style={{ width: `${totalWidth}px` }}>
             {/* Time ruler */}
-            <TimeRuler timeMarkers={timeMarkers} timeToX={timeToX} scrollLeft={scrollLeft} />
+            <TimeRuler timeMarkers={timeMarkers} timeToX={timeToX} scrollLeft={0} />
 
             {/* Tracks & Clips */}
             {tracks.map((track) => (
@@ -470,7 +482,7 @@ export function TimelineEditor() {
                     clip={clip}
                     type="video"
                     isSelected={selectedClipId === clip.id}
-                    left={timeToX(clip.startTime) - scrollLeft}
+                    left={timeToX(clip.startTime)}
                     width={timeToX(clip.duration)}
                     isDragging={dragClipId === clip.id}
                     onSelect={selectClip}
@@ -485,7 +497,7 @@ export function TimelineEditor() {
                         clip={bgmTrack}
                         type="audio"
                         isSelected={selectedClipId === bgmTrack.id}
-                        left={timeToX(bgmTrack.startTime) - scrollLeft}
+                        left={timeToX(bgmTrack.startTime)}
                         width={timeToX(bgmTrack.duration)}
                         isDragging={dragClipId === bgmTrack.id}
                         onSelect={selectClip}
@@ -499,7 +511,7 @@ export function TimelineEditor() {
                         clip={clip}
                         type="audio"
                         isSelected={selectedClipId === clip.id}
-                        left={timeToX(clip.startTime) - scrollLeft}
+                        left={timeToX(clip.startTime)}
                         width={timeToX(clip.duration)}
                         isDragging={dragClipId === clip.id}
                         onSelect={selectClip}
@@ -515,7 +527,7 @@ export function TimelineEditor() {
                     clip={clip}
                     type="subtitle"
                     isSelected={selectedClipId === clip.id}
-                    left={timeToX(clip.startTime) - scrollLeft}
+                    left={timeToX(clip.startTime)}
                     width={timeToX(clip.duration)}
                     isDragging={dragClipId === clip.id}
                     onSelect={selectClip}
@@ -529,7 +541,7 @@ export function TimelineEditor() {
             {/* Playhead */}
             <div
               className="absolute top-0 bottom-0 w-px bg-red-500 z-30 pointer-events-none"
-              style={{ left: `${playheadX - scrollLeft}px` }}
+              style={{ left: `${playheadX}px` }}
             >
               <div
                 className="absolute -top-0 left-1/2 -translate-x-1/2 w-3 h-4 bg-red-500 rounded-b-sm cursor-col-resize pointer-events-auto"
@@ -541,5 +553,6 @@ export function TimelineEditor() {
         </div>
       </div>
     </div>
+
   )
 }
