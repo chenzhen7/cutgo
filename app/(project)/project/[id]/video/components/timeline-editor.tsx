@@ -19,12 +19,12 @@ import {
 } from "lucide-react"
 
 // 1. 优化：将片段渲染抽离为 memo 组件，减少重绘
-const TimelineClipItem = React.memo(({ 
-  clip, 
-  type, 
-  isSelected, 
-  left, 
-  width, 
+const TimelineClipItem = React.memo(({
+  clip,
+  type,
+  isSelected,
+  left,
+  width,
   isDragging,
   onSelect,
   onDragStart,
@@ -105,14 +105,14 @@ const TimelineClipItem = React.memo(({
 TimelineClipItem.displayName = "TimelineClipItem"
 
 // 2. 优化：将刻度尺抽离为 memo 组件
-const TimeRuler = React.memo(({ 
-  timeMarkers, 
-  timeToX, 
-  scrollLeft 
-}: { 
-  timeMarkers: any[], 
-  timeToX: (t: number) => number, 
-  scrollLeft: number 
+const TimeRuler = React.memo(({
+  timeMarkers,
+  timeToX,
+  scrollLeft
+}: {
+  timeMarkers: any[],
+  timeToX: (t: number) => number,
+  scrollLeft: number
 }) => {
   return (
     <div className="h-6 border-b bg-muted/30 relative overflow-hidden">
@@ -232,10 +232,10 @@ export function TimelineEditor() {
       if (!timeline) return
       const rect = timeline.getBoundingClientRect()
       const x = e.clientX - rect.left + scrollLeft
-      
+
       // 1. 立即更新本地状态，实现 0 延迟反馈
       setLocalPlayheadX(x)
-      
+
       // 2. 异步更新 store，避免阻塞 UI
       const newTime = xToTime(x)
       setCurrentTime(newTime)

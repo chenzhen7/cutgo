@@ -47,8 +47,8 @@ export function VideoPreview() {
     if (!video || !currentClip) return
 
     // 处理相对路径
-    const absoluteUrl = currentClip.videoUrl.startsWith('/') 
-      ? window.location.origin + currentClip.videoUrl 
+    const absoluteUrl = currentClip.videoUrl.startsWith('/')
+      ? window.location.origin + currentClip.videoUrl
       : currentClip.videoUrl
 
     if (video.src !== absoluteUrl) {
@@ -57,7 +57,7 @@ export function VideoPreview() {
     }
 
     const clipLocalTime = currentTime - currentClip.startTime + currentClip.trimStart
-    
+
     // 只有在非播放状态或偏差过大时才强制同步时间
     if (!isPlaying || Math.abs(video.currentTime - clipLocalTime) > 0.5) {
       video.currentTime = clipLocalTime

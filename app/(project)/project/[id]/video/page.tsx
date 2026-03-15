@@ -67,7 +67,7 @@ export default function VideoPage() {
     return `${m}:${sec.toString().padStart(2, "0")}`
   }
 
-  const hasVideoShots = useMemo(() => 
+  const hasVideoShots = useMemo(() =>
     storyboards.some((sb) => sb.shots.some((s) => s.videoUrl)),
     [storyboards]
   )
@@ -114,7 +114,7 @@ export default function VideoPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-0.5rem)]">
+    <div className="flex flex-col h-full">
       {/* Top toolbar */}
       <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b bg-background">
         <div className="flex items-center gap-3">
