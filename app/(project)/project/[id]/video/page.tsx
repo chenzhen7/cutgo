@@ -162,14 +162,14 @@ export default function VideoPage() {
           onLayoutChanged={verticalLayout.onLayoutChanged}
         >
           {/* Top section: Asset Library + Preview + Properties */}
-          <ResizablePanel defaultSize={60} minSize={40}>
+          <ResizablePanel defaultSize={60} minSize="40%">
             <ResizablePanelGroup
               orientation="horizontal"
               defaultLayout={horizontalLayout.defaultLayout}
               onLayoutChanged={horizontalLayout.onLayoutChanged}
             >
               {/* Asset Library */}
-              <ResizablePanel id="asset-library" defaultSize={18} minSize={14}>
+              <ResizablePanel id="asset-library" defaultSize={18} minSize="14%" maxSize="600px">
                 <div className="h-full border-r bg-background overflow-hidden">
                   <AssetLibrary />
                 </div>
@@ -178,7 +178,7 @@ export default function VideoPage() {
               <ResizableHandle withHandle />
 
               {/* Preview */}
-              <ResizablePanel id="preview" defaultSize={52} minSize={25}>
+              <ResizablePanel id="preview" defaultSize={52} minSize="25%">
                 <div className="h-full p-2 bg-muted/10">
                   <VideoPreview />
                 </div>
@@ -187,7 +187,7 @@ export default function VideoPage() {
               <ResizableHandle withHandle />
 
               {/* Properties / BGM */}
-              <ResizablePanel id="properties" defaultSize={30} minSize={18}>
+              <ResizablePanel id="properties" defaultSize={30} minSize="18%">
                 <div className="h-full border-l">
                   <Tabs value={rightTab} onValueChange={setRightTab} className="h-full flex flex-col">
                     <TabsList className="shrink-0 w-full justify-start rounded-none border-b bg-transparent h-9 px-2">
@@ -222,7 +222,7 @@ export default function VideoPage() {
           <ResizableHandle withHandle />
 
           {/* Bottom section: Timeline */}
-          <ResizablePanel defaultSize={45} minSize={20}>
+          <ResizablePanel defaultSize={45} minSize="20%">
             <div className="h-full p-2 pt-0">
               <TimelineEditor />
             </div>
