@@ -21,7 +21,9 @@ export function VideoPreview() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
-  const controlsTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastLoopTimeRef = useRef<number>(0)
+  const lastClipIdRef = useRef<string | null>(null)
 
   const {
     videoClips,
@@ -58,9 +60,25 @@ export function VideoPreview() {
 
     const clipLocalTime = currentTime - currentClip.startTime + currentClip.trimStart
 
-    // 只有在非播放状态或偏差过大时才强制同步时间
-    if (!isPlaying || Math.abs(video.currentTime - clipLocalTime) > 0.5) {
-      video.currentTime = clipLocalTime
+    // 判断是否为用户操作（点击跳转）：当前时间与上次循环更新的时间差异较大
+    // 如果是循环更新，currentTime 应该非常接近 lastLoopTimeRef.current
+    const isUserAction = Math.abs(currentTime - lastLoopTimeRef.current) > 0.05
+
+    // 检测片段是否发生变化
+    const isClipChanged = currentClip.id !== lastClipIdRef.current
+    if (currentClip) {
+      lastClipIdRef.current = currentClip.id
+    }
+
+    // 只有在以下情况才强制同步时间：
+    // 1. 非播放状态
+    // 2. 用户手动跳转（isUserAction）
+    // 3. 片段切换（isClipChanged）- 解决不连续片段播放时的跳变问题
+    if (!isPlaying || isUserAction || isClipChanged) {
+      // 只有当 video 时间与目标时间确实有偏差时才设置，避免微小抖动
+      if (Math.abs(video.currentTime - clipLocalTime) > 0.1) {
+        video.currentTime = clipLocalTime
+      }
     }
 
     if (isPlaying) {
@@ -70,7 +88,7 @@ export function VideoPreview() {
     } else {
       video.pause()
     }
-  }, [currentClip, isPlaying])
+  }, [currentClip, isPlaying, currentTime])
 
   // 3. 优化：由 video 驱动 currentTime 更新，更平滑
   useEffect(() => {
@@ -83,6 +101,7 @@ export function VideoPreview() {
         const newGlobalTime = video.currentTime - currentClip.trimStart + currentClip.startTime
         // 只有当时间真的有显著变化时才更新 store，减少重绘压力
         if (Math.abs(newGlobalTime - useVideoEditorStore.getState().currentTime) > 0.01) {
+          lastLoopTimeRef.current = newGlobalTime
           setCurrentTime(newGlobalTime)
         }
       }

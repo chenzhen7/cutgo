@@ -350,7 +350,7 @@ export function TimelineEditor() {
       if (!dragCtx) return
 
       // --- 磁吸效果 (Snapping) ---
-      const SNAP_THRESHOLD_PX = 10
+      const SNAP_THRESHOLD_PX = 15
       const snapThreshold = SNAP_THRESHOLD_PX / pps
 
       // 寻找最近的吸附点
