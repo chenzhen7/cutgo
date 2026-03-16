@@ -144,9 +144,9 @@ export function TimelineEditor() {
   const [dragPreviewStart, setDragPreviewStart] = useState<number | null>(null)
   const [resizingClip, setResizingClip] = useState<{ id: string; edge: "left" | "right"; type: "video" | "audio" | "subtitle" } | null>(null)
   const [resizeStartX, setResizeStartX] = useState(0)
-  const [resizeOriginal, setResizeOriginal] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number }>({ startTime: 0, duration: 0, trimStart: 0, trimEnd: 0 })
+  const [resizeOriginal, setResizeOriginal] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number; originalDuration: number }>({ startTime: 0, duration: 0, trimStart: 0, trimEnd: 0, originalDuration: 0 })
   // 修剪中的“预览几何信息”（仅用于渲染，不立即写入 store）
-  const [resizePreview, setResizePreview] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number } | null>(null)
+  const [resizePreview, setResizePreview] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number; originalDuration: number } | null>(null)
 
   // 本地播放头位置，用于拖动时的超平滑反馈
   const [localPlayheadX, setLocalPlayheadX] = useState<number | null>(null)
@@ -155,7 +155,7 @@ export function TimelineEditor() {
   // 用 requestAnimationFrame 节流 mousemove，最多每帧计算一次
   const dragRafRef = useRef<number | null>(null)
   const dragLatestClientXRef = useRef<number>(0)
-  const resizePreviewRef = useRef<{ startTime: number; duration: number; trimStart: number; trimEnd: number } | null>(null)
+  const resizePreviewRef = useRef<{ startTime: number; duration: number; trimStart: number; trimEnd: number; originalDuration: number } | null>(null)
   const resizeRafRef = useRef<number | null>(null)
   const resizeLatestClientXRef = useRef<number>(0)
   const playheadRafRef = useRef<number | null>(null)
@@ -507,17 +507,24 @@ export function TimelineEditor() {
 
       setResizingClip({ id: clipId, edge, type: clipType })
       setResizeStartX(e.clientX)
+      
+      const trimStart = "trimStart" in clip ? (clip as TimelineClip).trimStart : 0
+      const trimEnd = "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0
+      const originalDuration = clip.duration + trimStart + trimEnd
+
       setResizeOriginal({
         startTime: clip.startTime,
         duration: clip.duration,
-        trimStart: "trimStart" in clip ? (clip as TimelineClip).trimStart : 0,
-        trimEnd: "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0,
+        trimStart,
+        trimEnd,
+        originalDuration,
       })
       setResizePreview({
         startTime: clip.startTime,
         duration: clip.duration,
-        trimStart: "trimStart" in clip ? (clip as TimelineClip).trimStart : 0,
-        trimEnd: "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0,
+        trimStart,
+        trimEnd,
+        originalDuration,
       })
       resizeContextRef.current = {
         minLeftEdge: Math.max(0, prevClip ? prevClip.startTime + prevClip.duration : 0),
@@ -555,36 +562,60 @@ export function TimelineEditor() {
       }
 
       if (resizingClip.edge === "right") {
-        // 右手柄：右边界不能穿过后一个片段起点
+        // 右手柄：右边界不能穿过后一个片段起点，也不能超过素材原始长度
         const clipStart = resizeOriginal.startTime
         let rightEdge = resizeOriginal.startTime + resizeOriginal.duration + dt
         rightEdge = snapEdge(rightEdge)
+        
+        // 限制：不能超过后一个片段
         rightEdge = Math.min(resizeCtx.maxRightEdge, rightEdge)
+        // 限制：不能短于 0.5s
         rightEdge = Math.max(clipStart + 0.5, rightEdge)
-        const newDuration = rightEdge - clipStart
+        
+        let newDuration = rightEdge - clipStart
+        let newTrimEnd = resizeOriginal.trimEnd - (newDuration - resizeOriginal.duration)
+        
+        // 限制：trimEnd 不能小于 0 (即 duration 不能超过原始长度减去 trimStart)
+        if (newTrimEnd < 0) {
+          newTrimEnd = 0
+          newDuration = resizeOriginal.originalDuration - resizeOriginal.trimStart
+        }
 
         setResizePreview({
           startTime: resizeOriginal.startTime,
           duration: newDuration,
           trimStart: resizeOriginal.trimStart,
-          trimEnd: resizeOriginal.trimEnd,
+          trimEnd: newTrimEnd,
+          originalDuration: resizeOriginal.originalDuration,
         })
       } else {
-        // 左手柄：左边界不能穿过前一个片段结束点
+        // 左手柄：左边界不能穿过前一个片段结束点，也不能超过素材原始长度
         const originalEnd = resizeOriginal.startTime + resizeOriginal.duration
         const maxLeftEdge = originalEnd - 0.5
 
         let newStart = resizeOriginal.startTime + dt
         newStart = snapEdge(newStart)
+        
+        // 限制：不能超过前一个片段，不能让长度小于 0.5s
         newStart = Math.max(resizeCtx.minLeftEdge, Math.min(maxLeftEdge, newStart))
-        const newDuration = originalEnd - newStart
+        
+        let newDuration = originalEnd - newStart
         const shift = newStart - resizeOriginal.startTime
+        let newTrimStart = resizeOriginal.trimStart + shift
+        
+        // 限制：trimStart 不能小于 0
+        if (newTrimStart < 0) {
+          newTrimStart = 0
+          newDuration = resizeOriginal.originalDuration - resizeOriginal.trimEnd
+          newStart = originalEnd - newDuration
+        }
 
         setResizePreview({
           startTime: newStart,
           duration: newDuration,
-          trimStart: resizeOriginal.trimStart + shift,
+          trimStart: newTrimStart,
           trimEnd: resizeOriginal.trimEnd,
+          originalDuration: resizeOriginal.originalDuration,
         })
       }
     }
