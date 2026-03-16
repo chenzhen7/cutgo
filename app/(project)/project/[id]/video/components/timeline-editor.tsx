@@ -74,6 +74,7 @@ const TimelineClipItem = React.memo(({
       <div
         className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/30 z-20"
         onMouseDown={(e) => onResizeStart(e, clip.id, "left", type)}
+        onClick={(e) => e.stopPropagation()}
       />
 
       {type === "video" && (clip as TimelineClip).thumbnailUrl && (
@@ -97,6 +98,7 @@ const TimelineClipItem = React.memo(({
       <div
         className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/30 z-20"
         onMouseDown={(e) => onResizeStart(e, clip.id, "right", type)}
+        onClick={(e) => e.stopPropagation()}
       />
     </div>
   )
@@ -160,6 +162,7 @@ export function TimelineEditor() {
   const resizeLatestClientXRef = useRef<number>(0)
   const playheadRafRef = useRef<number | null>(null)
   const playheadLatestClientXRef = useRef<number>(0)
+  const lastDragEndTimeRef = useRef<number>(0)
 
   const tracks = useVideoEditorStore(s => s.tracks)
   const videoClips = useVideoEditorStore(s => s.videoClips)
@@ -219,6 +222,8 @@ export function TimelineEditor() {
 
   const handleTimelineClick = useCallback(
     (e: React.MouseEvent) => {
+      // 如果刚刚结束拖拽（100ms内），则不响应点击，避免误触跳转
+      if (Date.now() - lastDragEndTimeRef.current < 100) return
       if (isDraggingPlayhead || dragClipId || resizingClip) return
       const rect = e.currentTarget.getBoundingClientRect()
       const x = e.clientX - rect.left + scrollLeft
@@ -265,7 +270,10 @@ export function TimelineEditor() {
       })
     }
 
-    const handleUp = () => setIsDraggingPlayhead(false)
+    const handleUp = () => {
+      lastDragEndTimeRef.current = Date.now()
+      setIsDraggingPlayhead(false)
+    }
     window.addEventListener("mousemove", handleMove, { passive: true })
     window.addEventListener("mouseup", handleUp)
     return () => {
@@ -474,6 +482,7 @@ export function TimelineEditor() {
       setDragClipType(null)
       setDragPreviewStart(null)
       setDragClipId(null)
+      lastDragEndTimeRef.current = Date.now()
     }
 
     window.addEventListener("mousemove", handleMove, { passive: true })
@@ -507,7 +516,7 @@ export function TimelineEditor() {
 
       setResizingClip({ id: clipId, edge, type: clipType })
       setResizeStartX(e.clientX)
-      
+
       const trimStart = "trimStart" in clip ? (clip as TimelineClip).trimStart : 0
       const trimEnd = "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0
       const originalDuration = clip.duration + trimStart + trimEnd
@@ -566,15 +575,15 @@ export function TimelineEditor() {
         const clipStart = resizeOriginal.startTime
         let rightEdge = resizeOriginal.startTime + resizeOriginal.duration + dt
         rightEdge = snapEdge(rightEdge)
-        
+
         // 限制：不能超过后一个片段
         rightEdge = Math.min(resizeCtx.maxRightEdge, rightEdge)
         // 限制：不能短于 0.5s
         rightEdge = Math.max(clipStart + 0.5, rightEdge)
-        
+
         let newDuration = rightEdge - clipStart
         let newTrimEnd = resizeOriginal.trimEnd - (newDuration - resizeOriginal.duration)
-        
+
         // 限制：trimEnd 不能小于 0 (即 duration 不能超过原始长度减去 trimStart)
         if (newTrimEnd < 0) {
           newTrimEnd = 0
@@ -595,14 +604,14 @@ export function TimelineEditor() {
 
         let newStart = resizeOriginal.startTime + dt
         newStart = snapEdge(newStart)
-        
+
         // 限制：不能超过前一个片段，不能让长度小于 0.5s
         newStart = Math.max(resizeCtx.minLeftEdge, Math.min(maxLeftEdge, newStart))
-        
+
         let newDuration = originalEnd - newStart
         const shift = newStart - resizeOriginal.startTime
         let newTrimStart = resizeOriginal.trimStart + shift
-        
+
         // 限制：trimStart 不能小于 0
         if (newTrimStart < 0) {
           newTrimStart = 0
@@ -657,6 +666,7 @@ export function TimelineEditor() {
       resizeContextRef.current = null
       setResizePreview(null)
       setResizingClip(null)
+      lastDragEndTimeRef.current = Date.now()
     }
 
     window.addEventListener("mousemove", handleMove, { passive: true })
@@ -725,6 +735,8 @@ export function TimelineEditor() {
     },
     [resizingClip, resizePreview]
   )
+
+  const isInteracting = isDraggingPlayhead || dragClipId !== null || resizingClip !== null
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -804,13 +816,17 @@ export function TimelineEditor() {
           ref={timelineRef}
           className={cn(
             "flex-1 overflow-x-auto overflow-y-hidden relative select-none custom-scrollbar",
-            (isDraggingPlayhead || dragClipId || resizingClip) && "cursor-grabbing"
+            (isDraggingPlayhead || dragClipId) && "cursor-grabbing",
+            resizingClip && "cursor-col-resize"
           )}
           onWheel={handleWheel}
           onScroll={handleScroll}
           onClick={handleTimelineClick}
         >
-          <div className="relative" style={{ width: `${totalWidth}px` }}>
+          <div
+            className={cn("relative", isInteracting && "pointer-events-none")}
+            style={{ width: `${totalWidth}px` }}
+          >
             {/* Time ruler */}
             <TimeRuler timeMarkers={timeMarkers} timeToX={timeToX} scrollLeft={0} />
 
@@ -890,7 +906,10 @@ export function TimelineEditor() {
               style={{ left: `${playheadX}px` }}
             >
               <div
-                className="absolute -top-0 left-1/2 -translate-x-1/2 w-3 h-4 bg-red-500 rounded-b-sm cursor-col-resize pointer-events-auto"
+                className={cn(
+                  "absolute -top-0 left-1/2 -translate-x-1/2 w-3 h-4 bg-red-500 rounded-b-sm cursor-col-resize",
+                  !isInteracting && "pointer-events-auto"
+                )}
                 onMouseDown={handlePlayheadMouseDown}
                 style={{ clipPath: "polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%)" }}
               />
