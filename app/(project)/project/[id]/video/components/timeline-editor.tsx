@@ -250,6 +250,12 @@ export function TimelineEditor() {
     }
   }, [isDraggingPlayhead, scrollLeft, xToTime, setCurrentTime])
 
+  // 引用最新的 clips 数据，避免在 effect 中产生闭包陷阱或频繁重绑
+  const clipsRef = useRef({ video: videoClips, audio: audioClips, subtitle: subtitleClips })
+  useEffect(() => {
+    clipsRef.current = { video: videoClips, audio: audioClips, subtitle: subtitleClips }
+  }, [videoClips, audioClips, subtitleClips])
+
   const handleClipDragStart = useCallback(
     (e: React.MouseEvent, clipId: string, clipType: "video" | "audio" | "subtitle") => {
       e.stopPropagation()
@@ -266,22 +272,158 @@ export function TimelineEditor() {
 
   useEffect(() => {
     if (!dragClipId) return
+    
     const handleMove = (e: MouseEvent) => {
       const dx = e.clientX - dragStartX
       const dt = dx / pps
-      const newStart = Math.max(0, dragOriginalStart + dt)
+      let newStart = Math.max(0, dragOriginalStart + dt)
+
+      // --- 磁吸效果 (Snapping) ---
+      const SNAP_THRESHOLD_PX = 10
+      const snapThreshold = SNAP_THRESHOLD_PX / pps
+      
+      const currentClips = selectedClipType === "video" ? clipsRef.current.video 
+        : selectedClipType === "audio" ? clipsRef.current.audio 
+        : clipsRef.current.subtitle
+      
+      // 获取当前拖拽的 clip 对象
+      const draggingClip = currentClips.find(c => c.id === dragClipId)
+      if (!draggingClip) return
+
+      // 收集吸附点：0, 播放头, 其他片段的头尾
+      const snapPoints = [0, currentTime]
+      currentClips.forEach(c => {
+        if (c.id === dragClipId || c.trackId !== draggingClip.trackId) return
+        snapPoints.push(c.startTime)
+        snapPoints.push(c.startTime + c.duration)
+      })
+
+      // 寻找最近的吸附点
+      let minDiff = Infinity
+      let snapTarget = newStart
+
+      // 检查头部吸附
+      for (const point of snapPoints) {
+        const diff = Math.abs(newStart - point)
+        if (diff < snapThreshold && diff < minDiff) {
+          minDiff = diff
+          snapTarget = point
+        }
+      }
+
+      // 检查尾部吸附 (可选，如果需要尾部对齐)
+      const newEnd = newStart + draggingClip.duration
+      for (const point of snapPoints) {
+        const diff = Math.abs(newEnd - point)
+        if (diff < snapThreshold && diff < minDiff) {
+          minDiff = diff
+          snapTarget = point - draggingClip.duration
+        }
+      }
+
+      // 应用吸附
+      if (minDiff < Infinity) {
+        newStart = snapTarget
+      }
+
+      // 实时更新位置 (允许重叠)
       if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: newStart })
       else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: newStart })
       else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: newStart })
     }
-    const handleUp = () => setDragClipId(null)
+
+    const handleUp = () => {
+      // --- 松手后的处理：重叠检测与自动寻找最近空位 ---
+      const currentClips = selectedClipType === "video" ? clipsRef.current.video 
+        : selectedClipType === "audio" ? clipsRef.current.audio 
+        : clipsRef.current.subtitle
+      
+      const draggingClip = currentClips.find(c => c.id === dragClipId)
+      
+      if (draggingClip) {
+        const myStart = draggingClip.startTime
+        const myDuration = draggingClip.duration
+        const myEnd = myStart + myDuration
+
+        // 1. 获取同轨道其他片段（排除自己），按时间排序
+        const otherClips = currentClips
+          .filter(c => c.trackId === draggingClip.trackId && c.id !== dragClipId)
+          .sort((a, b) => a.startTime - b.startTime)
+
+        // 2. 检测是否发生重叠
+        const isOverlapping = otherClips.some(c => {
+          const start = c.startTime
+          const end = c.startTime + c.duration
+          // 简单的 AABB 碰撞检测 (使用小容差避免浮点数问题)
+          return !(end <= myStart + 0.001 || start >= myEnd - 0.001)
+        })
+
+        if (isOverlapping) {
+          // 3. 如果重叠，寻找最近的有效空位
+          let bestStart = -1
+          let minDistance = Infinity
+
+          const checkCandidate = (t: number) => {
+            const dist = Math.abs(t - myStart)
+            if (dist < minDistance) {
+              minDistance = dist
+              bestStart = t
+            }
+          }
+
+          // 遍历所有空隙
+          let currentPos = 0
+          for (const clip of otherClips) {
+            const gapStart = currentPos
+            const gapEnd = clip.startTime
+            const gapLen = gapEnd - gapStart
+
+            if (gapLen >= myDuration) {
+              // 这个空隙够大，寻找空隙内离 myStart 最近的合法位置
+              // 合法起始范围: [gapStart, gapEnd - myDuration]
+              const validRangeStart = gapStart
+              const validRangeEnd = gapEnd - myDuration
+              const clamped = Math.max(validRangeStart, Math.min(validRangeEnd, myStart))
+              checkCandidate(clamped)
+            }
+            currentPos = clip.startTime + clip.duration
+          }
+
+          // 检查最后一个空隙 (无限长)
+          const lastGapStart = currentPos
+          // 合法起始范围: [lastGapStart, Infinity]
+          // 离 myStart 最近的点就是 max(lastGapStart, myStart)
+          checkCandidate(Math.max(lastGapStart, myStart))
+
+          // 4. 应用位置或回弹
+          // 如果找到了位置 (bestStart !== -1)，移动过去
+          // 如果 bestStart 离得太远（比如用户想放弃），通常 draggingOriginalStart 也会作为一个候选（如果是从有效位置拖过来的）
+          // 但这里我们严格执行 "最近空位" 逻辑
+          
+          if (bestStart !== -1) {
+             if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: bestStart })
+             else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: bestStart })
+             else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: bestStart })
+          } else {
+             // 理论上不会进这里，因为末尾总有空位，但作为防御性编程，回弹
+             if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: dragOriginalStart })
+             else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: dragOriginalStart })
+             else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: dragOriginalStart })
+          }
+        }
+        // 如果没有重叠，保持当前位置 (mousemove 已经更新过了)
+      }
+
+      setDragClipId(null)
+    }
+    
     window.addEventListener("mousemove", handleMove, { passive: true })
     window.addEventListener("mouseup", handleUp)
     return () => {
       window.removeEventListener("mousemove", handleMove)
       window.removeEventListener("mouseup", handleUp)
     }
-  }, [dragClipId, dragStartX, dragOriginalStart, pps, selectedClipType, updateVideoClip, updateAudioClip, updateSubtitleClip])
+  }, [dragClipId, dragStartX, dragOriginalStart, pps, selectedClipType, updateVideoClip, updateAudioClip, updateSubtitleClip, currentTime])
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent, clipId: string, edge: "left" | "right", clipType: "video" | "audio" | "subtitle") => {
