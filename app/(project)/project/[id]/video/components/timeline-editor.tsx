@@ -137,14 +137,22 @@ export function TimelineEditor() {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false)
   const [dragClipId, setDragClipId] = useState<string | null>(null)
+  const [dragClipType, setDragClipType] = useState<"video" | "audio" | "subtitle" | null>(null)
   const [dragStartX, setDragStartX] = useState(0)
   const [dragOriginalStart, setDragOriginalStart] = useState(0)
+  // 拖拽中的“预览位置”（仅用于渲染，不立即写入 store）
+  const [dragPreviewStart, setDragPreviewStart] = useState<number | null>(null)
   const [resizingClip, setResizingClip] = useState<{ id: string; edge: "left" | "right"; type: "video" | "audio" | "subtitle" } | null>(null)
   const [resizeStartX, setResizeStartX] = useState(0)
   const [resizeOriginal, setResizeOriginal] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number }>({ startTime: 0, duration: 0, trimStart: 0, trimEnd: 0 })
 
   // 本地播放头位置，用于拖动时的超平滑反馈
   const [localPlayheadX, setLocalPlayheadX] = useState<number | null>(null)
+  // 用 ref 保存最新值，避免事件回调拿到旧状态
+  const dragPreviewStartRef = useRef<number | null>(null)
+  // 用 requestAnimationFrame 节流 mousemove，最多每帧计算一次
+  const dragRafRef = useRef<number | null>(null)
+  const dragLatestClientXRef = useRef<number>(0)
 
   const tracks = useVideoEditorStore(s => s.tracks)
   const videoClips = useVideoEditorStore(s => s.videoClips)
@@ -250,11 +258,20 @@ export function TimelineEditor() {
     }
   }, [isDraggingPlayhead, scrollLeft, xToTime, setCurrentTime])
 
-  // 引用最新的 clips 数据，避免在 effect 中产生闭包陷阱或频繁重绑
+  // 引用最新的 clips 数据，避免闭包拿到旧数据
   const clipsRef = useRef({ video: videoClips, audio: audioClips, subtitle: subtitleClips })
+  const dragSnapContextRef = useRef<{
+    duration: number
+    trackId: string
+    snapPoints: number[]
+  } | null>(null)
   useEffect(() => {
     clipsRef.current = { video: videoClips, audio: audioClips, subtitle: subtitleClips }
   }, [videoClips, audioClips, subtitleClips])
+
+  useEffect(() => {
+    dragPreviewStartRef.current = dragPreviewStart
+  }, [dragPreviewStart])
 
   const handleClipDragStart = useCallback(
     (e: React.MouseEvent, clipId: string, clipType: "video" | "audio" | "subtitle") => {
@@ -262,48 +279,49 @@ export function TimelineEditor() {
       const clips = clipType === "video" ? videoClips : clipType === "audio" ? audioClips : subtitleClips
       const clip = clips.find((c) => c.id === clipId)
       if (!clip) return
+      // 开始拖拽时预先计算同轨道吸附点，减少 move 阶段开销
+      const sameTrackClips = clips.filter((c) => c.trackId === clip.trackId && c.id !== clip.id)
+      const snapPoints = [0, currentTime]
+      sameTrackClips.forEach((c) => {
+        snapPoints.push(c.startTime, c.startTime + c.duration)
+      })
+
       setDragClipId(clipId)
+      setDragClipType(clipType)
       setDragStartX(e.clientX)
       setDragOriginalStart(clip.startTime)
+      setDragPreviewStart(clip.startTime)
+      dragSnapContextRef.current = {
+        duration: clip.duration,
+        trackId: clip.trackId,
+        snapPoints,
+      }
       selectClip(clipId, clipType)
     },
-    [videoClips, audioClips, subtitleClips, selectClip]
+    [videoClips, audioClips, subtitleClips, currentTime, selectClip]
   )
 
   useEffect(() => {
-    if (!dragClipId) return
-    
-    const handleMove = (e: MouseEvent) => {
-      const dx = e.clientX - dragStartX
+    if (!dragClipId || !dragClipType) return
+
+    // 每次鼠标移动只做位置计算，不写 store
+    const runDragCalc = (clientX: number) => {
+      const dx = clientX - dragStartX
       const dt = dx / pps
       let newStart = Math.max(0, dragOriginalStart + dt)
+      const dragCtx = dragSnapContextRef.current
+      if (!dragCtx) return
 
       // --- 磁吸效果 (Snapping) ---
       const SNAP_THRESHOLD_PX = 10
       const snapThreshold = SNAP_THRESHOLD_PX / pps
-      
-      const currentClips = selectedClipType === "video" ? clipsRef.current.video 
-        : selectedClipType === "audio" ? clipsRef.current.audio 
-        : clipsRef.current.subtitle
-      
-      // 获取当前拖拽的 clip 对象
-      const draggingClip = currentClips.find(c => c.id === dragClipId)
-      if (!draggingClip) return
-
-      // 收集吸附点：0, 播放头, 其他片段的头尾
-      const snapPoints = [0, currentTime]
-      currentClips.forEach(c => {
-        if (c.id === dragClipId || c.trackId !== draggingClip.trackId) return
-        snapPoints.push(c.startTime)
-        snapPoints.push(c.startTime + c.duration)
-      })
 
       // 寻找最近的吸附点
       let minDiff = Infinity
       let snapTarget = newStart
 
       // 检查头部吸附
-      for (const point of snapPoints) {
+      for (const point of dragCtx.snapPoints) {
         const diff = Math.abs(newStart - point)
         if (diff < snapThreshold && diff < minDiff) {
           minDiff = diff
@@ -312,12 +330,12 @@ export function TimelineEditor() {
       }
 
       // 检查尾部吸附 (可选，如果需要尾部对齐)
-      const newEnd = newStart + draggingClip.duration
-      for (const point of snapPoints) {
+      const newEnd = newStart + dragCtx.duration
+      for (const point of dragCtx.snapPoints) {
         const diff = Math.abs(newEnd - point)
         if (diff < snapThreshold && diff < minDiff) {
           minDiff = diff
-          snapTarget = point - draggingClip.duration
+          snapTarget = point - dragCtx.duration
         }
       }
 
@@ -326,22 +344,31 @@ export function TimelineEditor() {
         newStart = snapTarget
       }
 
-      // 实时更新位置 (允许重叠)
-      if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: newStart })
-      else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: newStart })
-      else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: newStart })
+      // 只更新本地预览位置，保证拖拽流畅
+      setDragPreviewStart(newStart)
+    }
+
+    const handleMove = (e: MouseEvent) => {
+      dragLatestClientXRef.current = e.clientX
+      if (dragRafRef.current !== null) return
+      dragRafRef.current = window.requestAnimationFrame(() => {
+        dragRafRef.current = null
+        runDragCalc(dragLatestClientXRef.current)
+      })
     }
 
     const handleUp = () => {
+      // 只有松手时才真正提交到 store，减少频繁全局更新
       // --- 松手后的处理：重叠检测与自动寻找最近空位 ---
-      const currentClips = selectedClipType === "video" ? clipsRef.current.video 
-        : selectedClipType === "audio" ? clipsRef.current.audio 
+      const currentClips = dragClipType === "video" ? clipsRef.current.video
+        : dragClipType === "audio" ? clipsRef.current.audio
         : clipsRef.current.subtitle
-      
+
       const draggingClip = currentClips.find(c => c.id === dragClipId)
-      
+      const droppedStart = dragPreviewStartRef.current ?? dragOriginalStart
+
       if (draggingClip) {
-        const myStart = draggingClip.startTime
+        const myStart = droppedStart
         const myDuration = draggingClip.duration
         const myEnd = myStart + myDuration
 
@@ -354,7 +381,7 @@ export function TimelineEditor() {
         const isOverlapping = otherClips.some(c => {
           const start = c.startTime
           const end = c.startTime + c.duration
-          // 简单的 AABB 碰撞检测 (使用小容差避免浮点数问题)
+          // AABB 碰撞检测（加一点容差，避免浮点误差）
           return !(end <= myStart + 0.001 || start >= myEnd - 0.001)
         })
 
@@ -364,6 +391,7 @@ export function TimelineEditor() {
           let minDistance = Infinity
 
           const checkCandidate = (t: number) => {
+            // 选离当前落点最近的可放置位置
             const dist = Math.abs(t - myStart)
             if (dist < minDistance) {
               minDistance = dist
@@ -396,34 +424,40 @@ export function TimelineEditor() {
           checkCandidate(Math.max(lastGapStart, myStart))
 
           // 4. 应用位置或回弹
-          // 如果找到了位置 (bestStart !== -1)，移动过去
-          // 如果 bestStart 离得太远（比如用户想放弃），通常 draggingOriginalStart 也会作为一个候选（如果是从有效位置拖过来的）
-          // 但这里我们严格执行 "最近空位" 逻辑
-          
-          if (bestStart !== -1) {
-             if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: bestStart })
-             else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: bestStart })
-             else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: bestStart })
-          } else {
-             // 理论上不会进这里，因为末尾总有空位，但作为防御性编程，回弹
-             if (selectedClipType === "video") updateVideoClip(dragClipId, { startTime: dragOriginalStart })
-             else if (selectedClipType === "audio") updateAudioClip(dragClipId, { startTime: dragOriginalStart })
-             else if (selectedClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: dragOriginalStart })
-          }
+          // 有可用空位就放过去，否则回到原位
+          const finalStart = bestStart !== -1 ? bestStart : dragOriginalStart
+          if (dragClipType === "video") updateVideoClip(dragClipId, { startTime: finalStart })
+          else if (dragClipType === "audio") updateAudioClip(dragClipId, { startTime: finalStart })
+          else if (dragClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: finalStart })
+        } else {
+          // 没重叠则直接提交预览位置
+          if (dragClipType === "video") updateVideoClip(dragClipId, { startTime: myStart })
+          else if (dragClipType === "audio") updateAudioClip(dragClipId, { startTime: myStart })
+          else if (dragClipType === "subtitle") updateSubtitleClip(dragClipId, { startTime: myStart })
         }
-        // 如果没有重叠，保持当前位置 (mousemove 已经更新过了)
       }
 
+      if (dragRafRef.current !== null) {
+        window.cancelAnimationFrame(dragRafRef.current)
+        dragRafRef.current = null
+      }
+      dragSnapContextRef.current = null
+      setDragClipType(null)
+      setDragPreviewStart(null)
       setDragClipId(null)
     }
     
     window.addEventListener("mousemove", handleMove, { passive: true })
     window.addEventListener("mouseup", handleUp)
     return () => {
+      if (dragRafRef.current !== null) {
+        window.cancelAnimationFrame(dragRafRef.current)
+        dragRafRef.current = null
+      }
       window.removeEventListener("mousemove", handleMove)
       window.removeEventListener("mouseup", handleUp)
     }
-  }, [dragClipId, dragStartX, dragOriginalStart, pps, selectedClipType, updateVideoClip, updateAudioClip, updateSubtitleClip, currentTime])
+  }, [dragClipId, dragClipType, dragStartX, dragOriginalStart, pps, updateVideoClip, updateAudioClip, updateSubtitleClip])
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent, clipId: string, edge: "left" | "right", clipType: "video" | "audio" | "subtitle") => {
@@ -521,6 +555,10 @@ export function TimelineEditor() {
 
   // 播放头 X 位置：优先使用本地拖拽位置，否则使用 store 时间转换的位置
   const playheadX = localPlayheadX !== null ? localPlayheadX : timeToX(currentTime)
+  const getRenderStartTime = useCallback(
+    (clipId: string, clipStartTime: number) => (dragClipId === clipId && dragPreviewStart !== null ? dragPreviewStart : clipStartTime),
+    [dragClipId, dragPreviewStart]
+  )
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -624,7 +662,7 @@ export function TimelineEditor() {
                     clip={clip}
                     type="video"
                     isSelected={selectedClipId === clip.id}
-                    left={timeToX(clip.startTime)}
+                    left={timeToX(getRenderStartTime(clip.id, clip.startTime))}
                     width={timeToX(clip.duration)}
                     isDragging={dragClipId === clip.id}
                     onSelect={selectClip}
@@ -639,7 +677,7 @@ export function TimelineEditor() {
                         clip={bgmTrack}
                         type="audio"
                         isSelected={selectedClipId === bgmTrack.id}
-                        left={timeToX(bgmTrack.startTime)}
+                        left={timeToX(getRenderStartTime(bgmTrack.id, bgmTrack.startTime))}
                         width={timeToX(bgmTrack.duration)}
                         isDragging={dragClipId === bgmTrack.id}
                         onSelect={selectClip}
@@ -653,7 +691,7 @@ export function TimelineEditor() {
                         clip={clip}
                         type="audio"
                         isSelected={selectedClipId === clip.id}
-                        left={timeToX(clip.startTime)}
+                        left={timeToX(getRenderStartTime(clip.id, clip.startTime))}
                         width={timeToX(clip.duration)}
                         isDragging={dragClipId === clip.id}
                         onSelect={selectClip}
@@ -669,7 +707,7 @@ export function TimelineEditor() {
                     clip={clip}
                     type="subtitle"
                     isSelected={selectedClipId === clip.id}
-                    left={timeToX(clip.startTime)}
+                    left={timeToX(getRenderStartTime(clip.id, clip.startTime))}
                     width={timeToX(clip.duration)}
                     isDragging={dragClipId === clip.id}
                     onSelect={selectClip}
