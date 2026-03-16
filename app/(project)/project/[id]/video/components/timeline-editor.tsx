@@ -41,7 +41,7 @@ const TimelineClipItem = React.memo(({
   onResizeStart: (e: React.MouseEvent, id: string, edge: "left" | "right", type: "video" | "audio" | "subtitle") => void
 }) => {
   const colorMap = {
-    video: "bg-blue-500/80 border-blue-400",
+    video: "bg-gray-500/80 border-zinc-400",
     audio: "bg-green-500/80 border-green-400",
     subtitle: "bg-amber-500/80 border-amber-400",
   }
@@ -57,7 +57,7 @@ const TimelineClipItem = React.memo(({
       className={cn(
         "absolute top-1 rounded-md border cursor-pointer select-none flex items-center gap-1 px-1.5 overflow-hidden transition-shadow",
         colorMap[type],
-        isSelected && "ring-2 ring-white shadow-lg z-10",
+        isSelected && "ring-2 ring-blue-500 shadow-lg z-10",
         isDragging && "opacity-70"
       )}
       style={{
