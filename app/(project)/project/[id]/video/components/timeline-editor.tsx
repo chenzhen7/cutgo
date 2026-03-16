@@ -145,6 +145,8 @@ export function TimelineEditor() {
   const [resizingClip, setResizingClip] = useState<{ id: string; edge: "left" | "right"; type: "video" | "audio" | "subtitle" } | null>(null)
   const [resizeStartX, setResizeStartX] = useState(0)
   const [resizeOriginal, setResizeOriginal] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number }>({ startTime: 0, duration: 0, trimStart: 0, trimEnd: 0 })
+  // 修剪中的“预览几何信息”（仅用于渲染，不立即写入 store）
+  const [resizePreview, setResizePreview] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number } | null>(null)
 
   // 本地播放头位置，用于拖动时的超平滑反馈
   const [localPlayheadX, setLocalPlayheadX] = useState<number | null>(null)
@@ -153,6 +155,9 @@ export function TimelineEditor() {
   // 用 requestAnimationFrame 节流 mousemove，最多每帧计算一次
   const dragRafRef = useRef<number | null>(null)
   const dragLatestClientXRef = useRef<number>(0)
+  const resizePreviewRef = useRef<{ startTime: number; duration: number; trimStart: number; trimEnd: number } | null>(null)
+  const resizeRafRef = useRef<number | null>(null)
+  const resizeLatestClientXRef = useRef<number>(0)
 
   const tracks = useVideoEditorStore(s => s.tracks)
   const videoClips = useVideoEditorStore(s => s.videoClips)
@@ -265,6 +270,11 @@ export function TimelineEditor() {
     trackId: string
     snapPoints: number[]
   } | null>(null)
+  const resizeContextRef = useRef<{
+    minLeftEdge: number
+    maxRightEdge: number
+    snapPoints: number[]
+  } | null>(null)
   useEffect(() => {
     clipsRef.current = { video: videoClips, audio: audioClips, subtitle: subtitleClips }
   }, [videoClips, audioClips, subtitleClips])
@@ -272,6 +282,10 @@ export function TimelineEditor() {
   useEffect(() => {
     dragPreviewStartRef.current = dragPreviewStart
   }, [dragPreviewStart])
+
+  useEffect(() => {
+    resizePreviewRef.current = resizePreview
+  }, [resizePreview])
 
   const handleClipDragStart = useCallback(
     (e: React.MouseEvent, clipId: string, clipType: "video" | "audio" | "subtitle") => {
@@ -465,6 +479,17 @@ export function TimelineEditor() {
       const clips = clipType === "video" ? videoClips : clipType === "audio" ? audioClips : subtitleClips
       const clip = clips.find((c) => c.id === clipId)
       if (!clip) return
+      // 开始修剪时一次性准备好边界和吸附点，避免 move 时重复全量扫描
+      const sameTrackClips = clips
+        .filter((c) => c.trackId === clip.trackId && c.id !== clip.id)
+        .sort((a, b) => a.startTime - b.startTime)
+      const prevClip = [...sameTrackClips].reverse().find((c) => c.startTime < clip.startTime)
+      const nextClip = sameTrackClips.find((c) => c.startTime >= clip.startTime)
+      const snapPoints = [0, currentTime]
+      sameTrackClips.forEach((c) => {
+        snapPoints.push(c.startTime, c.startTime + c.duration)
+      })
+
       setResizingClip({ id: clipId, edge, type: clipType })
       setResizeStartX(e.clientX)
       setResizeOriginal({
@@ -473,44 +498,128 @@ export function TimelineEditor() {
         trimStart: "trimStart" in clip ? (clip as TimelineClip).trimStart : 0,
         trimEnd: "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0,
       })
+      setResizePreview({
+        startTime: clip.startTime,
+        duration: clip.duration,
+        trimStart: "trimStart" in clip ? (clip as TimelineClip).trimStart : 0,
+        trimEnd: "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0,
+      })
+      resizeContextRef.current = {
+        minLeftEdge: Math.max(0, prevClip ? prevClip.startTime + prevClip.duration : 0),
+        maxRightEdge: nextClip ? nextClip.startTime : Number.POSITIVE_INFINITY,
+        snapPoints,
+      }
       selectClip(clipId, clipType)
     },
-    [videoClips, audioClips, subtitleClips, selectClip]
+    [videoClips, audioClips, subtitleClips, currentTime, selectClip]
   )
 
   useEffect(() => {
     if (!resizingClip) return
-    const handleMove = (e: MouseEvent) => {
-      const dx = e.clientX - resizeStartX
+    const runResizeCalc = (clientX: number) => {
+      const dx = clientX - resizeStartX
       const dt = dx / pps
+      const resizeCtx = resizeContextRef.current
+      if (!resizeCtx) return
+
+      // 修剪手柄磁吸：吸附到时间线起点、播放头、其他片段头尾
+      const SNAP_THRESHOLD_PX = 10
+      const snapThreshold = SNAP_THRESHOLD_PX / pps
+
+      const snapEdge = (edgeTime: number) => {
+        let best = edgeTime
+        let minDiff = Infinity
+        for (const point of resizeCtx.snapPoints) {
+          const diff = Math.abs(edgeTime - point)
+          if (diff < snapThreshold && diff < minDiff) {
+            minDiff = diff
+            best = point
+          }
+        }
+        return best
+      }
 
       if (resizingClip.edge === "right") {
-        const newDuration = Math.max(0.5, resizeOriginal.duration + dt)
-        if (resizingClip.type === "video") updateVideoClip(resizingClip.id, { duration: newDuration })
-        else if (resizingClip.type === "audio") updateAudioClip(resizingClip.id, { duration: newDuration })
-        else updateSubtitleClip(resizingClip.id, { duration: newDuration })
+        // 右手柄：右边界不能穿过后一个片段起点
+        const clipStart = resizeOriginal.startTime
+        let rightEdge = resizeOriginal.startTime + resizeOriginal.duration + dt
+        rightEdge = snapEdge(rightEdge)
+        rightEdge = Math.min(resizeCtx.maxRightEdge, rightEdge)
+        rightEdge = Math.max(clipStart + 0.5, rightEdge)
+        const newDuration = rightEdge - clipStart
+
+        setResizePreview({
+          startTime: resizeOriginal.startTime,
+          duration: newDuration,
+          trimStart: resizeOriginal.trimStart,
+          trimEnd: resizeOriginal.trimEnd,
+        })
       } else {
-        const maxShift = resizeOriginal.duration - 0.5
-        const shift = Math.max(-resizeOriginal.startTime, Math.min(maxShift, dt))
-        const newStart = resizeOriginal.startTime + shift
-        const newDuration = resizeOriginal.duration - shift
-        if (resizingClip.type === "video") {
-          updateVideoClip(resizingClip.id, {
-            startTime: newStart,
-            duration: newDuration,
-            trimStart: resizeOriginal.trimStart + shift,
-          })
-        } else if (resizingClip.type === "audio") {
-          updateAudioClip(resizingClip.id, { startTime: newStart, duration: newDuration })
-        } else {
-          updateSubtitleClip(resizingClip.id, { startTime: newStart, duration: newDuration })
-        }
+        // 左手柄：左边界不能穿过前一个片段结束点
+        const originalEnd = resizeOriginal.startTime + resizeOriginal.duration
+        const maxLeftEdge = originalEnd - 0.5
+
+        let newStart = resizeOriginal.startTime + dt
+        newStart = snapEdge(newStart)
+        newStart = Math.max(resizeCtx.minLeftEdge, Math.min(maxLeftEdge, newStart))
+        const newDuration = originalEnd - newStart
+        const shift = newStart - resizeOriginal.startTime
+
+        setResizePreview({
+          startTime: newStart,
+          duration: newDuration,
+          trimStart: resizeOriginal.trimStart + shift,
+          trimEnd: resizeOriginal.trimEnd,
+        })
       }
     }
-    const handleUp = () => setResizingClip(null)
+
+    const handleMove = (e: MouseEvent) => {
+      resizeLatestClientXRef.current = e.clientX
+      if (resizeRafRef.current !== null) return
+      resizeRafRef.current = window.requestAnimationFrame(() => {
+        resizeRafRef.current = null
+        runResizeCalc(resizeLatestClientXRef.current)
+      })
+    }
+
+    const handleUp = () => {
+      const finalResize = resizePreviewRef.current ?? resizeOriginal
+      if (resizingClip.type === "video") {
+        updateVideoClip(resizingClip.id, {
+          startTime: finalResize.startTime,
+          duration: finalResize.duration,
+          trimStart: finalResize.trimStart,
+          trimEnd: finalResize.trimEnd,
+        })
+      } else if (resizingClip.type === "audio") {
+        updateAudioClip(resizingClip.id, {
+          startTime: finalResize.startTime,
+          duration: finalResize.duration,
+        })
+      } else {
+        updateSubtitleClip(resizingClip.id, {
+          startTime: finalResize.startTime,
+          duration: finalResize.duration,
+        })
+      }
+
+      if (resizeRafRef.current !== null) {
+        window.cancelAnimationFrame(resizeRafRef.current)
+        resizeRafRef.current = null
+      }
+      resizeContextRef.current = null
+      setResizePreview(null)
+      setResizingClip(null)
+    }
+
     window.addEventListener("mousemove", handleMove, { passive: true })
     window.addEventListener("mouseup", handleUp)
     return () => {
+      if (resizeRafRef.current !== null) {
+        window.cancelAnimationFrame(resizeRafRef.current)
+        resizeRafRef.current = null
+      }
       window.removeEventListener("mousemove", handleMove)
       window.removeEventListener("mouseup", handleUp)
     }
@@ -556,8 +665,19 @@ export function TimelineEditor() {
   // 播放头 X 位置：优先使用本地拖拽位置，否则使用 store 时间转换的位置
   const playheadX = localPlayheadX !== null ? localPlayheadX : timeToX(currentTime)
   const getRenderStartTime = useCallback(
-    (clipId: string, clipStartTime: number) => (dragClipId === clipId && dragPreviewStart !== null ? dragPreviewStart : clipStartTime),
-    [dragClipId, dragPreviewStart]
+    (clipId: string, clipStartTime: number) => {
+      if (resizingClip?.id === clipId && resizePreview !== null) return resizePreview.startTime
+      if (dragClipId === clipId && dragPreviewStart !== null) return dragPreviewStart
+      return clipStartTime
+    },
+    [resizingClip, resizePreview, dragClipId, dragPreviewStart]
+  )
+  const getRenderDuration = useCallback(
+    (clipId: string, clipDuration: number) => {
+      if (resizingClip?.id === clipId && resizePreview !== null) return resizePreview.duration
+      return clipDuration
+    },
+    [resizingClip, resizePreview]
   )
 
   return (
@@ -663,7 +783,7 @@ export function TimelineEditor() {
                     type="video"
                     isSelected={selectedClipId === clip.id}
                     left={timeToX(getRenderStartTime(clip.id, clip.startTime))}
-                    width={timeToX(clip.duration)}
+                    width={timeToX(getRenderDuration(clip.id, clip.duration))}
                     isDragging={dragClipId === clip.id}
                     onSelect={selectClip}
                     onDragStart={handleClipDragStart}
@@ -678,7 +798,7 @@ export function TimelineEditor() {
                         type="audio"
                         isSelected={selectedClipId === bgmTrack.id}
                         left={timeToX(getRenderStartTime(bgmTrack.id, bgmTrack.startTime))}
-                        width={timeToX(bgmTrack.duration)}
+                        width={timeToX(getRenderDuration(bgmTrack.id, bgmTrack.duration))}
                         isDragging={dragClipId === bgmTrack.id}
                         onSelect={selectClip}
                         onDragStart={handleClipDragStart}
@@ -692,7 +812,7 @@ export function TimelineEditor() {
                         type="audio"
                         isSelected={selectedClipId === clip.id}
                         left={timeToX(getRenderStartTime(clip.id, clip.startTime))}
-                        width={timeToX(clip.duration)}
+                        width={timeToX(getRenderDuration(clip.id, clip.duration))}
                         isDragging={dragClipId === clip.id}
                         onSelect={selectClip}
                         onDragStart={handleClipDragStart}
@@ -708,7 +828,7 @@ export function TimelineEditor() {
                     type="subtitle"
                     isSelected={selectedClipId === clip.id}
                     left={timeToX(getRenderStartTime(clip.id, clip.startTime))}
-                    width={timeToX(clip.duration)}
+                    width={timeToX(getRenderDuration(clip.id, clip.duration))}
                     isDragging={dragClipId === clip.id}
                     onSelect={selectClip}
                     onDragStart={handleClipDragStart}
