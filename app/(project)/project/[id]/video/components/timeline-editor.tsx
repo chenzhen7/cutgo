@@ -158,6 +158,8 @@ export function TimelineEditor() {
   const resizePreviewRef = useRef<{ startTime: number; duration: number; trimStart: number; trimEnd: number } | null>(null)
   const resizeRafRef = useRef<number | null>(null)
   const resizeLatestClientXRef = useRef<number>(0)
+  const playheadRafRef = useRef<number | null>(null)
+  const playheadLatestClientXRef = useRef<number>(0)
 
   const tracks = useVideoEditorStore(s => s.tracks)
   const videoClips = useVideoEditorStore(s => s.videoClips)
@@ -240,11 +242,11 @@ export function TimelineEditor() {
       return
     }
 
-    const handleMove = (e: MouseEvent) => {
+    const updatePlayheadByClientX = (clientX: number) => {
       const timeline = timelineRef.current
       if (!timeline) return
       const rect = timeline.getBoundingClientRect()
-      const x = e.clientX - rect.left + scrollLeft
+      const x = clientX - rect.left + scrollLeft
 
       // 1. 立即更新本地状态，实现 0 延迟反馈
       setLocalPlayheadX(x)
@@ -254,10 +256,23 @@ export function TimelineEditor() {
       setCurrentTime(newTime)
     }
 
+    const handleMove = (e: MouseEvent) => {
+      playheadLatestClientXRef.current = e.clientX
+      if (playheadRafRef.current !== null) return
+      playheadRafRef.current = window.requestAnimationFrame(() => {
+        playheadRafRef.current = null
+        updatePlayheadByClientX(playheadLatestClientXRef.current)
+      })
+    }
+
     const handleUp = () => setIsDraggingPlayhead(false)
     window.addEventListener("mousemove", handleMove, { passive: true })
     window.addEventListener("mouseup", handleUp)
     return () => {
+      if (playheadRafRef.current !== null) {
+        window.cancelAnimationFrame(playheadRafRef.current)
+        playheadRafRef.current = null
+      }
       window.removeEventListener("mousemove", handleMove)
       window.removeEventListener("mouseup", handleUp)
     }
@@ -376,7 +391,7 @@ export function TimelineEditor() {
       // --- 松手后的处理：重叠检测与自动寻找最近空位 ---
       const currentClips = dragClipType === "video" ? clipsRef.current.video
         : dragClipType === "audio" ? clipsRef.current.audio
-        : clipsRef.current.subtitle
+          : clipsRef.current.subtitle
 
       const draggingClip = currentClips.find(c => c.id === dragClipId)
       const droppedStart = dragPreviewStartRef.current ?? dragOriginalStart
@@ -460,7 +475,7 @@ export function TimelineEditor() {
       setDragPreviewStart(null)
       setDragClipId(null)
     }
-    
+
     window.addEventListener("mousemove", handleMove, { passive: true })
     window.addEventListener("mouseup", handleUp)
     return () => {
