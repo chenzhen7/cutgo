@@ -381,7 +381,7 @@ export function TimelineEditor() {
   const playheadX = localPlayheadX !== null ? localPlayheadX : timeToX(currentTime)
 
   return (
-    <div className="flex flex-col h-full bg-background border rounded-lg overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Toolbar */}
       <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
         <div className="flex items-center gap-1">

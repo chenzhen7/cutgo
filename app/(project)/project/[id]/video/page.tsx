@@ -170,7 +170,7 @@ export default function VideoPage() {
             >
               {/* Asset Library */}
               <ResizablePanel id="asset-library" defaultSize={18} minSize="14%" maxSize="600px">
-                <div className="h-full border-r bg-background overflow-hidden">
+                <div className="h-full bg-background overflow-hidden">
                   <AssetLibrary />
                 </div>
               </ResizablePanel>
@@ -188,7 +188,7 @@ export default function VideoPage() {
 
               {/* Properties / BGM */}
               <ResizablePanel id="properties" defaultSize={30} minSize="18%">
-                <div className="h-full border-l">
+                <div className="h-full ">
                   <Tabs value={rightTab} onValueChange={setRightTab} className="h-full flex flex-col">
                     <TabsList className="shrink-0 w-full justify-start rounded-none border-b bg-transparent h-9 px-2">
                       <TabsTrigger value="properties" className="text-xs h-7 gap-1 data-[state=active]:bg-muted">
@@ -223,7 +223,7 @@ export default function VideoPage() {
 
           {/* Bottom section: Timeline */}
           <ResizablePanel defaultSize={45} minSize="20%">
-            <div className="h-full p-2 pt-0">
+            <div className="h-full pt-0">
               <TimelineEditor />
             </div>
           </ResizablePanel>
