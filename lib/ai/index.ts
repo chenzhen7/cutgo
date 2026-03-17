@@ -20,8 +20,8 @@ export type {
 } from "./types"
 
 // 导出配置获取相关
-export { getLLMConfig, getImageConfig, getVideoConfig, getTTSConfig } from "./config"
-export type { LLMConfig, ImageConfig, VideoConfig, TTSConfig } from "./config"
+export { getLLMConfig, getImageConfig, getVideoConfig, getTTSConfig, getActiveConfig } from "./config"
+export type { AIModelConfig } from "./types"
 
 // 导出各能力的 Provider 获取函数和缓存清除函数
 export { getLLMProvider, clearLLMProviderCache } from "./llm"

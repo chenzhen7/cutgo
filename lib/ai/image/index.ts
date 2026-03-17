@@ -15,12 +15,12 @@ export async function getImageProvider(): Promise<ImageProvider> {
   const config = await getImageConfig()
   
   // 根据配置选择不同的 Provider
-  if (config.provider === "openai" && config.apiKey) {
+  if (config?.provider === "openai" && config.apiKey) {
     // 待实现：OpenAI DALL-E 3
     // const { createOpenAIImageProvider } = await import("./openai")
     // cachedProvider = createOpenAIImageProvider(config)
     cachedProvider = createPlaceholderImageProvider()
-  } else if (config.provider === "comfyui" && config.baseUrl) {
+  } else if (config?.provider === "comfyui" && config.baseUrl) {
     // 待实现：ComfyUI 接口
     // const { createComfyUIImageProvider } = await import("./comfyui")
     // cachedProvider = createComfyUIImageProvider(config)

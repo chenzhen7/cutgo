@@ -27,7 +27,7 @@ export async function getVideoProvider(): Promise<VideoProvider> {
   
   const config = await getVideoConfig()
   
-  if (config.provider === "runway" && config.apiKey) {
+  if (config?.provider === "runway" && config.apiKey) {
     // 待实现：Runway Gen-2/Gen-3 接口
     // const { createRunwayVideoProvider } = await import("./runway")
     // cachedProvider = createRunwayVideoProvider(config)
