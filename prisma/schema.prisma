@@ -332,33 +332,25 @@ model Shot {
 
 // ── AI 配置（全局单条记录，id 固定为 "global"）──
 
+model AIConfig {
+  id          String   @id @default(cuid())
+  name        String   // 配置名称，如 "我的 GPT-4o"
+  type        String   // "llm" | "image" | "video" | "tts"
+  provider    String   // "openai" | "deepseek" | "comfyui" 等
+  model       String   // 模型标识符
+  apiKey      String   @default("")
+  baseUrl     String   @default("")
+  otherConfig String?  // JSON 存储额外参数
+  isActive    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type, isActive])
+}
+
 model Settings {
   id String @id @default("global")
-
-  // 文本大模型
-  textProvider String  @default("deepseek")  // "openai" | "anthropic" | "deepseek" | "qwen"
-  textModel    String  @default("deepseek-v3")
-  textApiKey   String  @default("")
-  textBaseUrl  String  @default("")
-
-  // 图像生成
-  imageProvider String  @default("placeholder") // "openai" | "comfyui" | "placeholder"
-  imageModel    String  @default("dall-e-3")
-  imageApiKey   String  @default("")
-  imageBaseUrl  String  @default("")
-  comfyuiUrl    String  @default("http://127.0.0.1:8188")
-
-  // 视频生成
-  videoProvider String  @default("placeholder") // "runway" | "placeholder"
-  videoModel    String  @default("")
-  videoApiKey   String  @default("")
-  videoBaseUrl  String  @default("")
-
-  // TTS 语音合成
-  ttsProvider String  @default("edge-tts")   // "openai" | "elevenlabs" | "edge-tts" | "minimax"
-  ttsModel    String  @default("")
-  ttsApiKey   String  @default("")
-  ttsBaseUrl  String  @default("")
-
+  // 保持 Settings 表用于其他非模型相关的全局设置
   updatedAt DateTime @updatedAt
 }

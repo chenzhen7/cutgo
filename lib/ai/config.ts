@@ -5,7 +5,20 @@
 
 import { prisma } from "@/lib/db"
 
-/** 语言模型配置接口 */
+/** 通用 AI 配置接口 */
+export interface AIConfig {
+  id: string
+  name: string
+  type: "llm" | "image" | "video" | "tts"
+  provider: string
+  model: string
+  apiKey: string
+  baseUrl?: string
+  otherConfig?: string // JSON string for extra params
+  isActive: boolean
+}
+
+/** 语言模型配置接口 (从 AIConfig 映射) */
 export interface LLMConfig {
   provider: "openai" | "anthropic" | "deepseek" | "qwen"
   apiKey: string
@@ -49,52 +62,67 @@ async function loadSettings() {
   })
 }
 
+/** 获取指定类型的当前激活配置 */
+export async function getActiveConfig(type: AIConfig["type"]): Promise<AIConfig | null> {
+  const config = await prisma.aIConfig.findFirst({
+    where: { type, isActive: true },
+  })
+  return config as AIConfig | null
+}
+
 /** 获取当前配置的语言模型参数 */
 export async function getLLMConfig(): Promise<LLMConfig | null> {
-  const s = await loadSettings()
-  if (!s.textApiKey) return null
+  const config = await getActiveConfig("llm")
+  if (!config || !config.apiKey) return null
+  
   return {
-    provider: s.textProvider as LLMConfig["provider"],
-    apiKey: s.textApiKey,
-    baseUrl: s.textBaseUrl || defaultTextBaseUrl(s.textProvider),
-    model: s.textModel,
+    provider: config.provider as LLMConfig["provider"],
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl || defaultTextBaseUrl(config.provider),
+    model: config.model,
   }
 }
 
 /** 获取当前配置的图像生成参数 */
-export async function getImageConfig(): Promise<ImageConfig> {
-  const s = await loadSettings()
-  const provider = s.imageProvider as ImageConfig["provider"]
+export async function getImageConfig(): Promise<ImageConfig | null> {
+  const config = await getActiveConfig("image")
+  if (!config) return null
+
+  const provider = config.provider as ImageConfig["provider"]
   return {
     provider,
-    apiKey: s.imageApiKey || undefined,
+    apiKey: config.apiKey || undefined,
     baseUrl:
       provider === "comfyui"
-        ? s.comfyuiUrl
-        : s.imageBaseUrl || "https://api.openai.com/v1",
-    model: s.imageModel || undefined,
+        ? (config.otherConfig ? JSON.parse(config.otherConfig).comfyuiUrl : "")
+        : config.baseUrl || "https://api.openai.com/v1",
+    model: config.model || undefined,
   }
 }
 
 /** 获取当前配置的视频生成参数 */
-export async function getVideoConfig(): Promise<VideoConfig> {
-  const s = await loadSettings()
+export async function getVideoConfig(): Promise<VideoConfig | null> {
+  const config = await getActiveConfig("video")
+  if (!config) return null
+
   return {
-    provider: s.videoProvider as VideoConfig["provider"],
-    apiKey: s.videoApiKey || undefined,
-    baseUrl: s.videoBaseUrl || "https://api.runwayml.com/v1",
-    model: s.videoModel || undefined,
+    provider: config.provider as VideoConfig["provider"],
+    apiKey: config.apiKey || undefined,
+    baseUrl: config.baseUrl || "https://api.runwayml.com/v1",
+    model: config.model || undefined,
   }
 }
 
 /** 获取当前配置的语音合成参数 */
-export async function getTTSConfig(): Promise<TTSConfig> {
-  const s = await loadSettings()
+export async function getTTSConfig(): Promise<TTSConfig | null> {
+  const config = await getActiveConfig("tts")
+  if (!config) return null
+
   return {
-    provider: s.ttsProvider as TTSConfig["provider"],
-    apiKey: s.ttsApiKey || undefined,
-    baseUrl: s.ttsBaseUrl || undefined,
-    model: s.ttsModel || undefined,
+    provider: config.provider as TTSConfig["provider"],
+    apiKey: config.apiKey || undefined,
+    baseUrl: config.baseUrl || undefined,
+    model: config.model || undefined,
   }
 }
 
