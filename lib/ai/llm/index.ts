@@ -2,17 +2,21 @@ import { getLLMConfig } from "../config"
 import { createOpenAILLMProvider } from "./openai"
 import type { LLMProvider } from "../types"
 
+// 缓存 Provider 实例，避免重复创建
 let cachedProvider: LLMProvider | null = null
 
 /**
- * 获取当前配置的 LLM Provider。
- * 无配置时返回一个“占位”实现：直接抛错或返回固定文案，由业务层决定是否降级（如你现有的 generateLocalAnalysis）。
+ * 获取当前配置的 LLM Provider（异步，从数据库读取配置）。
+ * 无配置时返回 null，由业务层决定是否降级（例如提示用户配置 API Key）。
  */
-export function getLLMProvider(): LLMProvider | null {
+export async function getLLMProvider(): Promise<LLMProvider | null> {
   if (cachedProvider) return cachedProvider
-  const config = getLLMConfig()
+  
+  const config = await getLLMConfig()
   if (!config) return null
-  if (config.provider === "openai") {
+
+  // 目前主流国产模型（DeepSeek、Qwen）均兼容 OpenAI 接口协议
+  if (config.provider === "openai" || config.provider === "deepseek" || config.provider === "qwen") {
     cachedProvider = createOpenAILLMProvider({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
@@ -20,12 +24,16 @@ export function getLLMProvider(): LLMProvider | null {
     })
     return cachedProvider
   }
-  // 后续可加：if (config.provider === "anthropic") { ... }
+  
+  // 待扩展：支持 Anthropic 等非 OpenAI 兼容接口
+  // if (config.provider === "anthropic") { ... }
+  
   return null
 }
 
 /**
- * 清除缓存（例如设置页切换了 provider 或 key 时调用）
+ * 清除 Provider 缓存。
+ * 当用户在设置页面更改了模型厂商或 API Key 时，应调用此函数以确保下次获取的是最新配置。
  */
 export function clearLLMProviderCache(): void {
   cachedProvider = null

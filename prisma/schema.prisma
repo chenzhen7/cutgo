@@ -329,3 +329,36 @@ model Shot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ── AI 配置（全局单条记录，id 固定为 "global"）──
+
+model Settings {
+  id String @id @default("global")
+
+  // 文本大模型
+  textProvider String  @default("deepseek")  // "openai" | "anthropic" | "deepseek" | "qwen"
+  textModel    String  @default("deepseek-v3")
+  textApiKey   String  @default("")
+  textBaseUrl  String  @default("")
+
+  // 图像生成
+  imageProvider String  @default("placeholder") // "openai" | "comfyui" | "placeholder"
+  imageModel    String  @default("dall-e-3")
+  imageApiKey   String  @default("")
+  imageBaseUrl  String  @default("")
+  comfyuiUrl    String  @default("http://127.0.0.1:8188")
+
+  // 视频生成
+  videoProvider String  @default("placeholder") // "runway" | "placeholder"
+  videoModel    String  @default("")
+  videoApiKey   String  @default("")
+  videoBaseUrl  String  @default("")
+
+  // TTS 语音合成
+  ttsProvider String  @default("edge-tts")   // "openai" | "elevenlabs" | "edge-tts" | "minimax"
+  ttsModel    String  @default("")
+  ttsApiKey   String  @default("")
+  ttsBaseUrl  String  @default("")
+
+  updatedAt DateTime @updatedAt
+}

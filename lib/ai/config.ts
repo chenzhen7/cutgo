@@ -1,15 +1,19 @@
 /**
- * 多模型配置：从环境变量（及可选 DB）读取当前使用的 provider、key、url、model
- * 未配置时返回空或默认值，由各 getXxxProvider() 决定降级策略
+ * 多模型配置：从数据库（Settings 表）读取用户配置
+ * Settings 表只有一条全局记录（id = "global"），不存在时自动创建并返回默认值
  */
 
+import { prisma } from "@/lib/db"
+
+/** 语言模型配置接口 */
 export interface LLMConfig {
-  provider: "openai" | "anthropic"
+  provider: "openai" | "anthropic" | "deepseek" | "qwen"
   apiKey: string
   baseUrl: string
   model: string
 }
 
+/** 图像生成配置接口 */
 export interface ImageConfig {
   provider: "openai" | "comfyui" | "placeholder"
   apiKey?: string
@@ -17,48 +21,97 @@ export interface ImageConfig {
   model?: string
 }
 
+/** 视频生成配置接口 */
 export interface VideoConfig {
   provider: "runway" | "placeholder"
   apiKey?: string
   baseUrl?: string
+  model?: string
 }
 
-function getEnv(key: string, fallback = ""): string {
-  if (typeof process === "undefined" || !process.env) return fallback
-  return (process.env[key] ?? fallback).trim()
+/** 语音合成 (TTS) 配置接口 */
+export interface TTSConfig {
+  provider: "openai" | "elevenlabs" | "edge-tts" | "minimax"
+  apiKey?: string
+  baseUrl?: string
+  model?: string
 }
 
-export function getLLMConfig(): LLMConfig | null {
-  const apiKey = getEnv("OPENAI_API_KEY")
-  if (!apiKey) return null
+/** 
+ * 加载全局设置
+ * 采用 upsert 确保数据库中始终有一条 ID 为 "global" 的记录
+ */
+async function loadSettings() {
+  return prisma.settings.upsert({
+    where: { id: "global" },
+    create: { id: "global" },
+    update: {},
+  })
+}
+
+/** 获取当前配置的语言模型参数 */
+export async function getLLMConfig(): Promise<LLMConfig | null> {
+  const s = await loadSettings()
+  if (!s.textApiKey) return null
   return {
-    provider: (getEnv("LLM_PROVIDER") || "openai") as LLMConfig["provider"],
-    apiKey,
-    baseUrl: getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-    model: getEnv("OPENAI_MODEL", "gpt-4o-mini"),
+    provider: s.textProvider as LLMConfig["provider"],
+    apiKey: s.textApiKey,
+    baseUrl: s.textBaseUrl || defaultTextBaseUrl(s.textProvider),
+    model: s.textModel,
   }
 }
 
-export function getImageConfig(): ImageConfig {
-  const providerRaw = getEnv("IMAGE_PROVIDER", "").toLowerCase()
-  const apiKey = getEnv("IMAGE_OPENAI_API_KEY") || getEnv("OPENAI_API_KEY")
-  const comfyUrl = getEnv("COMFYUI_BASE_URL", "http://127.0.0.1:8188")
-  const openaiUrl = getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-  const provider: ImageConfig["provider"] =
-    providerRaw === "comfyui" ? "comfyui" : apiKey ? "openai" : "placeholder"
+/** 获取当前配置的图像生成参数 */
+export async function getImageConfig(): Promise<ImageConfig> {
+  const s = await loadSettings()
+  const provider = s.imageProvider as ImageConfig["provider"]
   return {
     provider,
-    apiKey: apiKey || undefined,
-    baseUrl: provider === "comfyui" ? comfyUrl : openaiUrl,
-    model: getEnv("IMAGE_MODEL", "dall-e-3"),
+    apiKey: s.imageApiKey || undefined,
+    baseUrl:
+      provider === "comfyui"
+        ? s.comfyuiUrl
+        : s.imageBaseUrl || "https://api.openai.com/v1",
+    model: s.imageModel || undefined,
   }
 }
 
-export function getVideoConfig(): VideoConfig {
-  const apiKey = getEnv("RUNWAY_API_KEY")
+/** 获取当前配置的视频生成参数 */
+export async function getVideoConfig(): Promise<VideoConfig> {
+  const s = await loadSettings()
   return {
-    provider: apiKey ? "runway" : "placeholder",
-    apiKey: apiKey || undefined,
-    baseUrl: getEnv("RUNWAY_BASE_URL", "https://api.runwayml.com/v1"),
+    provider: s.videoProvider as VideoConfig["provider"],
+    apiKey: s.videoApiKey || undefined,
+    baseUrl: s.videoBaseUrl || "https://api.runwayml.com/v1",
+    model: s.videoModel || undefined,
+  }
+}
+
+/** 获取当前配置的语音合成参数 */
+export async function getTTSConfig(): Promise<TTSConfig> {
+  const s = await loadSettings()
+  return {
+    provider: s.ttsProvider as TTSConfig["provider"],
+    apiKey: s.ttsApiKey || undefined,
+    baseUrl: s.ttsBaseUrl || undefined,
+    model: s.ttsModel || undefined,
+  }
+}
+
+/** 
+ * 各厂商默认的 API 基础地址
+ */
+function defaultTextBaseUrl(provider: string): string {
+  switch (provider) {
+    case "openai":
+      return "https://api.openai.com/v1"
+    case "anthropic":
+      return "https://api.anthropic.com"
+    case "deepseek":
+      return "https://api.deepseek.com/v1"
+    case "qwen":
+      return "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    default:
+      return ""
   }
 }
