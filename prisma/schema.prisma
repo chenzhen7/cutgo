@@ -332,25 +332,57 @@ model Shot {
 
 // ── AI 配置（全局单条记录，id 固定为 "global"）──
 
-model AIConfig {
+model AIModelConfig {
   id          String   @id @default(cuid())
   name        String   // 配置名称，如 "我的 GPT-4o"
-  type        String   // "llm" | "image" | "video" | "tts"
-  provider    String   // "openai" | "deepseek" | "comfyui" 等
-  model       String   // 模型标识符
+  type        String   // 模型类型: "llm" | "image" | "video" | "tts"
+  provider    String   // 提供商: "openai" | "deepseek" | "comfyui" 等
+  model       String   // 模型标识: "gpt-4o" | "flux-1" 等
   apiKey      String   @default("")
   baseUrl     String   @default("")
-  otherConfig String?  // JSON 存储额外参数
-  isActive    Boolean  @default(false)
-
+  config      String   @default("{}") // JSON 字符串，存储额外参数（如 ComfyUI URL）
+  
+  isDefault   Boolean  @default(false) // 是否为该类型的默认配置
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([type, isActive])
+  @@index([type])
 }
 
 model Settings {
   id String @id @default("global")
-  // 保持 Settings 表用于其他非模型相关的全局设置
+
+  // 当前选中的各类型模型配置 ID
+  activeLLMConfigId   String?
+  activeImageConfigId String?
+  activeVideoConfigId String?
+  activeTTSConfigId   String?
+
+  // 文本大模型 (旧字段，保留以防迁移需要，或在 UI 层面逐步弃用)
+  textProvider String  @default("deepseek")
+  textModel    String  @default("deepseek-v3")
+  textApiKey   String  @default("")
+  textBaseUrl  String  @default("")
+
+  // 图像生成 (旧字段)
+  imageProvider String  @default("placeholder")
+  imageModel    String  @default("dall-e-3")
+  imageApiKey   String  @default("")
+  imageBaseUrl  String  @default("")
+  comfyuiUrl    String  @default("http://127.0.0.1:8188")
+
+  // 视频生成 (旧字段)
+  videoProvider String  @default("placeholder")
+  videoModel    String  @default("")
+  videoApiKey   String  @default("")
+  videoBaseUrl  String  @default("")
+
+  // TTS 语音合成 (旧字段)
+  ttsProvider String  @default("edge-tts")
+  ttsModel    String  @default("")
+  ttsApiKey   String  @default("")
+  ttsBaseUrl  String  @default("")
+
   updatedAt DateTime @updatedAt
 }

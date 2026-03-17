@@ -5,6 +5,19 @@
 
 // ── 语言模型 (LLM) 相关类型 ──
 
+/** 统一的模型配置结构 */
+export interface AIModelConfig {
+  id: string
+  name: string
+  type: "llm" | "image" | "video" | "tts"
+  provider: string
+  model: string
+  apiKey: string
+  baseUrl: string
+  config?: Record<string, any>
+  isDefault: boolean
+}
+
 /** 消息角色：系统提示词、用户输入、AI 回复 */
 export type LLMMessageRole = "system" | "user" | "assistant"
 
