@@ -258,11 +258,8 @@ export default function HomePage() {
         {!loading && filteredProjects.length > 0 && viewMode === "grid" && (
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredProjects.map((project) => (
-              <Card
-                key={project.id}
-                className="cursor-pointer transition-colors hover:border-foreground/20"
-              >
-                <Link href={`/project/${project.id}`}>
+              <Link key={project.id} href={`/project/${project.id}`}>
+                <Card className="cursor-pointer transition-colors hover:border-foreground/20">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-base line-clamp-1">
@@ -336,8 +333,8 @@ export default function HomePage() {
                       />
                     </div>
                   </CardContent>
-                </Link>
-              </Card>
+                </Card>
+              </Link>
             ))}
 
             {/* New Project Card */}
