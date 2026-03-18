@@ -1,5 +1,5 @@
 import { getImageConfig } from "../config"
-import { createPlaceholderImageProvider } from "./placeholder"
+import { PlaceholderImageProvider } from "./placeholder"
 import type { ImageProvider } from "../types"
 
 // 缓存 Provider 实例
@@ -17,17 +17,17 @@ export async function getImageProvider(): Promise<ImageProvider> {
   // 根据配置选择不同的 Provider
   if (config?.provider === "openai" && config.apiKey) {
     // 待实现：OpenAI DALL-E 3
-    // const { createOpenAIImageProvider } = await import("./openai")
-    // cachedProvider = createOpenAIImageProvider(config)
-    cachedProvider = createPlaceholderImageProvider()
+    // const { OpenAIImageProvider } = await import("./openai")
+    // cachedProvider = new OpenAIImageProvider(config)
+    cachedProvider = new PlaceholderImageProvider()
   } else if (config?.provider === "comfyui" && config.baseUrl) {
     // 待实现：ComfyUI 接口
-    // const { createComfyUIImageProvider } = await import("./comfyui")
-    // cachedProvider = createComfyUIImageProvider(config)
-    cachedProvider = createPlaceholderImageProvider()
+    // const { ComfyUIImageProvider } = await import("./comfyui")
+    // cachedProvider = new ComfyUIImageProvider(config)
+    cachedProvider = new PlaceholderImageProvider()
   } else {
     // 默认返回占位图 Provider
-    cachedProvider = createPlaceholderImageProvider()
+    cachedProvider = new PlaceholderImageProvider()
   }
   
   return cachedProvider

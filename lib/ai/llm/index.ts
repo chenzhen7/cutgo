@@ -1,5 +1,5 @@
 import { getLLMConfig } from "../config"
-import { createOpenAILLMProvider } from "./openai"
+import { OpenAILLMProvider } from "./openai"
 import type { LLMProvider } from "../types"
 
 // 缓存 Provider 实例，避免重复创建
@@ -19,7 +19,7 @@ export async function getLLMProvider(): Promise<LLMProvider | null> {
   if (config.provider === "openai" || config.provider === "deepseek" || config.provider === "qwen" || config.provider === "anthropic") {
     // 注意：Anthropic 即使 provider 叫 anthropic，如果用户填的是兼容 OpenAI 的中转地址，这里也能跑通
     // 如果是原生 Anthropic SDK，则需要另外实现
-    cachedProvider = createOpenAILLMProvider({
+    cachedProvider = new OpenAILLMProvider({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
       model: config.model,
