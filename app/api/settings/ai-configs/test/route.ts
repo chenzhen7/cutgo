@@ -56,7 +56,6 @@ async function testLLM({
 }) {
   const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
 
-  console.log("[ai-configs/test][llm] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model)
   
   if (!resolvedBaseUrl) {
     return NextResponse.json({ error: "缺少 Base URL" }, { status: 400 })
@@ -78,6 +77,8 @@ async function testLLM({
       { status: 400 }
     )
   }
+  
+  console.log("[ai-configs/test][llm] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model , "llmProvider:", llmProvider.id)
 
   try {
     await Promise.race([

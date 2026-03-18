@@ -97,6 +97,9 @@ export default function SettingsPage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
+  // 是否使用自定义模型
+  const [useCustomModel, setUseCustomModel] = useState(false)
+
   // 测试连接状态
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; msg: string }>>({})
@@ -128,17 +131,18 @@ export default function SettingsPage() {
   // 当前激活的配置 ID
   const activeConfigId = settings
     ? {
-        llm: settings.activeLLMConfigId,
-        image: settings.activeImageConfigId,
-        video: settings.activeVideoConfigId,
-        tts: settings.activeTTSConfigId,
-      }[activeTab]
+      llm: settings.activeLLMConfigId,
+      image: settings.activeImageConfigId,
+      video: settings.activeVideoConfigId,
+      tts: settings.activeTTSConfigId,
+    }[activeTab]
     : null
 
   // 打开新增对话框
   function openAddDialog() {
     setEditingConfig(null)
     setForm({ ...emptyForm, type: activeTab })
+    setUseCustomModel(false)
     setDialogOpen(true)
   }
 
@@ -154,6 +158,12 @@ export default function SettingsPage() {
       baseUrl: cfg.baseUrl,
       isDefault: cfg.isDefault,
     })
+
+    // 判断是否是自定义模型：如果当前提供商的模型列表中不包含该模型，则认为是自定义
+    const providerInfo = AI_PROVIDER_OPTIONS_BY_TYPE[cfg.type]?.[cfg.provider]
+    const isKnownModel = providerInfo?.models.some((m) => m.value === cfg.model)
+    setUseCustomModel(!isKnownModel)
+
     setDialogOpen(true)
   }
 
@@ -269,6 +279,7 @@ export default function SettingsPage() {
       model: providerInfo?.models[0]?.value ?? "",
       baseUrl: providerInfo?.defaultBaseUrl ?? "",
     }))
+    setUseCustomModel(false)
   }
 
   const currentProviderOptions = AI_PROVIDER_OPTIONS_BY_TYPE[form.type] ?? {}
@@ -321,9 +332,8 @@ export default function SettingsPage() {
                     return (
                       <div
                         key={cfg.id}
-                        className={`flex items-start justify-between rounded-lg border p-4 transition-colors ${
-                          isActive ? "border-green-500 bg-green-50 dark:bg-green-950/20" : ""
-                        }`}
+                        className={`flex items-start justify-between rounded-lg border p-4 transition-colors ${isActive ? "border-green-500 bg-green-50 dark:bg-green-950/20" : ""
+                          }`}
                       >
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center gap-2">
@@ -347,9 +357,8 @@ export default function SettingsPage() {
                           </p>
                           {result && (
                             <p
-                              className={`flex items-center gap-1 text-xs ${
-                                result.ok ? "text-green-600" : "text-red-500"
-                              }`}
+                              className={`flex items-center gap-1 text-xs ${result.ok ? "text-green-600" : "text-red-500"
+                                }`}
                             >
                               {result.ok ? (
                                 <CheckCircle2 className="h-3 w-3" />
@@ -472,24 +481,48 @@ export default function SettingsPage() {
             </div>
 
             {/* 模型 */}
-            {form.provider && currentModelOptions.length > 0 && (
+            {form.provider && (
               <div className="space-y-1.5">
-                <Label>模型</Label>
-                <Select
-                  value={form.model}
-                  onValueChange={(v) => setForm((p) => ({ ...p, model: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择模型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currentModelOptions.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center justify-between">
+                  <Label>模型</Label>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setUseCustomModel(!useCustomModel)}
+                  >
+                    {useCustomModel ? "选择已有模型" : "手动输入型号"}
+                  </Button>
+                </div>
+                {useCustomModel ? (
+                  <Input
+                    placeholder="请输入模型型号，如：gpt-4o"
+                    value={form.model}
+                    onChange={(e) => setForm((p) => ({ ...p, model: e.target.value }))}
+                  />
+                ) : currentModelOptions.length > 0 ? (
+                  <Select
+                    value={form.model}
+                    onValueChange={(v) => setForm((p) => ({ ...p, model: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择模型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentModelOptions.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    placeholder="请输入模型型号"
+                    value={form.model}
+                    onChange={(e) => setForm((p) => ({ ...p, model: e.target.value }))}
+                  />
+                )}
               </div>
             )}
 
