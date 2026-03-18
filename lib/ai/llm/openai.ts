@@ -28,29 +28,19 @@ export class OpenAILLMProvider implements LLMProvider {
    * 调用对话补全接口
    */
   async chat(options: LLMGenerateOptions): Promise<LLMGenerateResult> {
-    const { messages, model, temperature = 0.3, maxTokens, responseFormat } = options
+    const { messages, model } = options
     const result = await generateText({
       model: this.openai(model || this.config.model),
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      temperature,
-      maxOutputTokens: maxTokens,
-      providerOptions:
-        responseFormat === "json_object"
-          ? {
-              openai: {
-                responseFormat: { type: "json_object" },
-              },
-            }
-          : undefined,
+      messages: messages.map((m) => ({ role: m.role, content: m.content }))
     })
 
     return {
       content: result.text,
       usage: result.usage
         ? {
-            promptTokens: result.usage.inputTokens,
-            completionTokens: result.usage.outputTokens,
-          }
+          promptTokens: result.usage.inputTokens,
+          completionTokens: result.usage.outputTokens,
+        }
         : undefined,
     }
   }

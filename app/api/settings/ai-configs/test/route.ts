@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
+import { createLLMProviderFromConfig } from "@/lib/ai/llm"
 
 /**
  * POST /api/settings/ai-configs/test
@@ -54,6 +55,9 @@ async function testLLM({
   baseUrl: string
 }) {
   const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
+
+  console.log("[ai-configs/test][llm] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model)
+  
   if (!resolvedBaseUrl) {
     return NextResponse.json({ error: "缺少 Base URL" }, { status: 400 })
   }
@@ -61,31 +65,43 @@ async function testLLM({
     return NextResponse.json({ error: "缺少 API Key" }, { status: 400 })
   }
 
-  const endpoint = `${resolvedBaseUrl.replace(/\/$/, "")}/chat/completions`
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: "hi" }],
-      max_tokens: 1,
-    }),
-    signal: AbortSignal.timeout(10_000),
+  const llmProvider = createLLMProviderFromConfig({
+    provider,
+    model,
+    apiKey,
+    baseUrl: resolvedBaseUrl,
   })
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
+  if (!llmProvider) {
     return NextResponse.json(
-      { error: `API 返回错误 ${res.status}: ${text.slice(0, 200)}` },
+      { error: `当前暂不支持该 LLM Provider 的在线测试：${provider}` },
       { status: 400 }
     )
   }
 
-  return NextResponse.json({ success: true, message: "连接成功" })
+  try {
+    await Promise.race([
+      llmProvider.chat({
+        model,
+        messages: [{ role: "user", content: "hi" }]
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 100_000)
+      ),
+    ])
+
+    return NextResponse.json({ success: true, message: "连接成功" })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message === "timeout") {
+      return NextResponse.json({ error: "连接超时，请检查网络或 Base URL" }, { status: 400 })
+    }
+
+    return NextResponse.json(
+      { error: `API 调用失败: ${message.slice(0, 200)}` },
+      { status: 400 }
+    )
+  }
 }
 
 /** 测试图像生成接口连通性（仅验证 API Key 有效性） */

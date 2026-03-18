@@ -31,10 +31,9 @@ export interface LLMMessage {
 export interface LLMGenerateOptions {
   messages: LLMMessage[]
   model?: string
-  temperature?: number
-  maxTokens?: number
-  /** 响应格式：普通文本或 JSON 对象 */
-  responseFormat?: "text" | "json_object"
+
+  // /** 响应格式：普通文本或 JSON 对象 */
+  // responseFormat?: "text" | "json_object"
 }
 
 /** Token 使用情况统计 */
