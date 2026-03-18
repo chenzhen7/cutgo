@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import { AI_PROVIDER_OPTIONS_BY_TYPE } from "@/lib/ai/providers"
 
 // ── 类型定义 ──
 
@@ -69,116 +70,6 @@ const MODEL_TYPE_LABELS: Record<string, string> = {
   image: "图像生成",
   video: "视频生成",
   tts: "语音合成",
-}
-
-const PROVIDER_OPTIONS: Record<string, { label: string; models: { value: string; label: string }[]; defaultBaseUrl: string }> = {
-  openai: {
-    label: "OpenAI",
-    models: [
-      { value: "gpt-4o", label: "GPT-4o" },
-      { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-      { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-    ],
-    defaultBaseUrl: "https://api.openai.com/v1",
-  },
-  deepseek: {
-    label: "DeepSeek",
-    models: [
-      { value: "deepseek-chat", label: "DeepSeek-V3 (deepseek-chat)" },
-      { value: "deepseek-reasoner", label: "DeepSeek-R1 (deepseek-reasoner)" },
-    ],
-    defaultBaseUrl: "https://api.deepseek.com/v1",
-  },
-  anthropic: {
-    label: "Anthropic (Claude)",
-    models: [
-      { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
-      { value: "claude-3-opus-20240229", label: "Claude 3 Opus" },
-    ],
-    defaultBaseUrl: "https://api.anthropic.com/v1",
-  },
-  qwen: {
-    label: "阿里通义千问",
-    models: [
-      { value: "qwen-max", label: "Qwen-Max" },
-      { value: "qwen-plus", label: "Qwen-Plus" },
-      { value: "qwen-turbo", label: "Qwen-Turbo" },
-    ],
-    defaultBaseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  },
-}
-
-const IMAGE_PROVIDER_OPTIONS: Record<string, { label: string; models: { value: string; label: string }[]; defaultBaseUrl: string }> = {
-  openai: {
-    label: "OpenAI (DALL-E)",
-    models: [{ value: "dall-e-3", label: "DALL-E 3" }],
-    defaultBaseUrl: "https://api.openai.com/v1",
-  },
-  comfyui: {
-    label: "ComfyUI (本地)",
-    models: [{ value: "comfyui", label: "ComfyUI 工作流" }],
-    defaultBaseUrl: "http://127.0.0.1:8188",
-  },
-  stability: {
-    label: "Stability AI (SDXL)",
-    models: [{ value: "stable-diffusion-xl-1024-v1-0", label: "SDXL 1.0" }],
-    defaultBaseUrl: "https://api.stability.ai/v1",
-  },
-}
-
-const VIDEO_PROVIDER_OPTIONS: Record<string, { label: string; models: { value: string; label: string }[]; defaultBaseUrl: string }> = {
-  runway: {
-    label: "Runway",
-    models: [{ value: "gen3a_turbo", label: "Gen-3 Alpha Turbo" }],
-    defaultBaseUrl: "https://api.dev.runwayml.com/v1",
-  },
-  kling: {
-    label: "快手可灵",
-    models: [{ value: "kling-v1", label: "可灵 v1" }],
-    defaultBaseUrl: "https://api.klingai.com/v1",
-  },
-  minimax: {
-    label: "MiniMax 海螺",
-    models: [{ value: "video-01", label: "海螺视频 01" }],
-    defaultBaseUrl: "https://api.minimax.chat/v1",
-  },
-}
-
-const TTS_PROVIDER_OPTIONS: Record<string, { label: string; models: { value: string; label: string }[]; defaultBaseUrl: string }> = {
-  "edge-tts": {
-    label: "Microsoft Edge TTS（免费）",
-    models: [
-      { value: "zh-CN-XiaoxiaoNeural", label: "晓晓（普通话女声）" },
-      { value: "zh-CN-YunxiNeural", label: "云希（普通话男声）" },
-      { value: "zh-CN-XiaoyiNeural", label: "晓伊（普通话女声）" },
-    ],
-    defaultBaseUrl: "",
-  },
-  openai: {
-    label: "OpenAI TTS",
-    models: [
-      { value: "tts-1", label: "TTS-1" },
-      { value: "tts-1-hd", label: "TTS-1 HD" },
-    ],
-    defaultBaseUrl: "https://api.openai.com/v1",
-  },
-  elevenlabs: {
-    label: "ElevenLabs",
-    models: [{ value: "eleven_multilingual_v2", label: "Multilingual v2" }],
-    defaultBaseUrl: "https://api.elevenlabs.io/v1",
-  },
-  minimax: {
-    label: "MiniMax 语音合成",
-    models: [{ value: "speech-01-turbo", label: "Speech-01 Turbo" }],
-    defaultBaseUrl: "https://api.minimax.chat/v1",
-  },
-}
-
-const PROVIDER_OPTIONS_BY_TYPE: Record<string, Record<string, { label: string; models: { value: string; label: string }[]; defaultBaseUrl: string }>> = {
-  llm: PROVIDER_OPTIONS,
-  image: IMAGE_PROVIDER_OPTIONS,
-  video: VIDEO_PROVIDER_OPTIONS,
-  tts: TTS_PROVIDER_OPTIONS,
 }
 
 // ── 空表单初始值 ──
@@ -371,7 +262,7 @@ export default function SettingsPage() {
 
   // 当提供商变化时，自动填充 baseUrl 和第一个模型
   function handleProviderChange(provider: string) {
-    const providerInfo = PROVIDER_OPTIONS_BY_TYPE[form.type]?.[provider]
+    const providerInfo = AI_PROVIDER_OPTIONS_BY_TYPE[form.type]?.[provider]
     setForm((prev) => ({
       ...prev,
       provider,
@@ -380,7 +271,7 @@ export default function SettingsPage() {
     }))
   }
 
-  const currentProviderOptions = PROVIDER_OPTIONS_BY_TYPE[form.type] ?? {}
+  const currentProviderOptions = AI_PROVIDER_OPTIONS_BY_TYPE[form.type] ?? {}
   const currentModelOptions = currentProviderOptions[form.provider]?.models ?? []
 
   return (
@@ -449,7 +340,7 @@ export default function SettingsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {PROVIDER_OPTIONS_BY_TYPE[cfg.type]?.[cfg.provider]?.label ?? cfg.provider}
+                            {AI_PROVIDER_OPTIONS_BY_TYPE[cfg.type]?.[cfg.provider]?.label ?? cfg.provider}
                             {" · "}
                             {cfg.model}
                             {cfg.baseUrl && ` · ${cfg.baseUrl}`}

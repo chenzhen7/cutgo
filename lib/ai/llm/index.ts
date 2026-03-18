@@ -1,6 +1,7 @@
 import { getLLMConfig } from "../config"
 import { OpenAILLMProvider } from "./openai"
 import type { LLMProvider } from "../types"
+import { isOpenAICompatibleLLMProvider } from "../providers"
 
 // 缓存 Provider 实例，避免重复创建
 let cachedProvider: LLMProvider | null = null
@@ -16,7 +17,7 @@ export async function getLLMProvider(): Promise<LLMProvider | null> {
   if (!config) return null
 
   // 目前主流国产模型（DeepSeek、Qwen）均兼容 OpenAI 接口协议
-  if (config.provider === "openai" || config.provider === "deepseek" || config.provider === "qwen" || config.provider === "anthropic") {
+  if (isOpenAICompatibleLLMProvider(config.provider)) {
     // 注意：Anthropic 即使 provider 叫 anthropic，如果用户填的是兼容 OpenAI 的中转地址，这里也能跑通
     // 如果是原生 Anthropic SDK，则需要另外实现
     cachedProvider = new OpenAILLMProvider({

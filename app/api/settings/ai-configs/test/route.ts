@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
 
 /**
  * POST /api/settings/ai-configs/test
@@ -52,7 +53,7 @@ async function testLLM({
   apiKey: string
   baseUrl: string
 }) {
-  const resolvedBaseUrl = baseUrl || defaultBaseUrl(provider)
+  const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
   if (!resolvedBaseUrl) {
     return NextResponse.json({ error: "缺少 Base URL" }, { status: 400 })
   }
@@ -114,7 +115,7 @@ async function testImage({
   }
 
   // OpenAI / 其他兼容接口：尝试获取模型列表
-  const resolvedBaseUrl = baseUrl || defaultBaseUrl(provider)
+  const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
   if (!resolvedBaseUrl || !apiKey) {
     return NextResponse.json({ error: "缺少 API Key 或 Base URL" }, { status: 400 })
   }
@@ -149,7 +150,7 @@ async function testTTS({
     return NextResponse.json({ success: true, message: "Edge TTS 无需 API Key，可直接使用" })
   }
 
-  const resolvedBaseUrl = baseUrl || defaultBaseUrl(provider)
+  const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
   if (!resolvedBaseUrl || !apiKey) {
     return NextResponse.json({ error: "缺少 API Key 或 Base URL" }, { status: 400 })
   }
@@ -169,21 +170,3 @@ async function testTTS({
   return NextResponse.json({ success: true, message: "连接成功" })
 }
 
-function defaultBaseUrl(provider: string): string {
-  switch (provider) {
-    case "openai":
-      return "https://api.openai.com/v1"
-    case "anthropic":
-      return "https://api.anthropic.com/v1"
-    case "deepseek":
-      return "https://api.deepseek.com/v1"
-    case "qwen":
-      return "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    case "minimax":
-      return "https://api.minimax.chat/v1"
-    case "elevenlabs":
-      return "https://api.elevenlabs.io/v1"
-    default:
-      return ""
-  }
-}
