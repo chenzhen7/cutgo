@@ -19,9 +19,10 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     openai: {
       label: "OpenAI",
       models: [
-        { value: "gpt-4o", label: "GPT-4o" },
-        { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-        { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
+        { value: "gpt-5.4", label: "GPT-5.4（旗舰）" },
+        { value: "gpt-5.4-mini", label: "GPT-5.4 Mini（高性价比）" },
+        { value: "gpt-5.4-nano", label: "GPT-5.4 Nano（低延迟）" },
+        { value: "chatgpt-4o-latest", label: "ChatGPT-4o Latest（兼容）" },
       ],
       defaultBaseUrl: "https://api.openai.com/v1",
     },
@@ -36,17 +37,18 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     anthropic: {
       label: "Anthropic (Claude)",
       models: [
-        { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
-        { value: "claude-3-opus-20240229", label: "Claude 3 Opus" },
+        { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
+        { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+        { value: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
       ],
       defaultBaseUrl: "https://api.anthropic.com/v1",
     },
     qwen: {
       label: "阿里通义千问",
       models: [
-        { value: "qwen-max", label: "Qwen-Max" },
-        { value: "qwen-plus", label: "Qwen-Plus" },
-        { value: "qwen-turbo", label: "Qwen-Turbo" },
+        { value: "qwen-max-latest", label: "Qwen-Max Latest" },
+        { value: "qwen-plus-latest", label: "Qwen-Plus Latest" },
+        { value: "qwen-turbo-latest", label: "Qwen-Turbo Latest" },
       ],
       defaultBaseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     },
