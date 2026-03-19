@@ -61,6 +61,33 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       ],
       defaultBaseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     },
+    /**
+     * 字节豆包 · 火山方舟（OpenAI SDK 兼容）
+     */
+    doubao: {
+      label: "字节豆包（火山方舟）",
+      logo: "/logos/doubao.svg",
+      models: [
+        {
+          value: "doubao-seed-2-0-pro-260215",
+          label: "Doubao-Seed-2.0 Pro（旗舰）",
+        },
+        {
+          value: "doubao-seed-2-0-lite-260215",
+          label: "Doubao-Seed-2.0 Lite（均衡）",
+        },
+        {
+          value: "doubao-seed-2-0-mini-260215",
+          label: "Doubao-Seed-2.0 Mini（低延迟）",
+        },
+        {
+          value: "doubao-seed-1-8-251228",
+          label: "Doubao-Seed-1.8（兼容）",
+        }
+        
+      ],
+      defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+    },
     /** Google Gemini（官方模型 ID 参考 ai.google.dev/gemini-api/docs/models） */
     google: {
       label: "Google (Gemini)",

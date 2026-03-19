@@ -12,7 +12,7 @@ export interface OpenAICompatibleConfig {
 /**
  * OpenAI 兼容的 LLM Provider
  * 使用 @ai-sdk/openai 并指定 compatibility: "compatible"，强制走 /chat/completions 接口
- * 适用于 OpenAI、DeepSeek、月之暗面、智谱等遵循 OpenAI API 标准的服务商
+ * 适用于 OpenAI、DeepSeek、字节豆包（火山方舟）、智谱等遵循 OpenAI API 标准的服务商
  */
 export class OpenAILLMProvider implements LLMProvider {
   readonly id = "openai"

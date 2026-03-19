@@ -41,8 +41,13 @@ export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): L
   }
 
   // OpenAI 兼容 /chat/completions（含中转填写的 Base URL）
-  if (config.provider === "openai" || config.provider === "deepseek" 
-    || config.provider === "anthropic" || config.provider === "qwen") {
+  if (
+    config.provider === "openai" ||
+    config.provider === "deepseek" ||
+    config.provider === "anthropic" ||
+    config.provider === "qwen" ||
+    config.provider === "doubao"
+  ) {
     return new OpenAILLMProvider({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
