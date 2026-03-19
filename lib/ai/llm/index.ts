@@ -47,7 +47,8 @@ export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): L
     config.provider === "anthropic" ||
     config.provider === "qwen" ||
     config.provider === "doubao" ||
-    config.provider === "zhipu"
+    config.provider === "zhipu" ||
+    config.provider === "custom-openai"
   ) {
     return new OpenAILLMProvider({
       apiKey: config.apiKey,

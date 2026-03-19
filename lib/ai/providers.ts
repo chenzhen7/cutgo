@@ -122,6 +122,14 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       ],
       defaultBaseUrl: "https://open.bigmodel.cn/api/paas/v4",
     },
+    "custom-openai": {
+      label: "其他",
+      logo: "/logos/OpenAi.svg",
+      models: [
+       
+      ],
+      defaultBaseUrl: "https://api.openai.com/v1",
+    },
   },
   image: {
     openai: {

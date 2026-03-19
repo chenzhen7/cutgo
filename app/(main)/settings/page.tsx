@@ -512,22 +512,24 @@ export default function SettingsPage() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label>模型</Label>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs"
-                    onClick={() => setUseCustomModel(!useCustomModel)}
-                  >
-                    {useCustomModel ? "选择已有模型" : "手动输入型号"}
-                  </Button>
+                  {currentModelOptions.length > 0 && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setUseCustomModel(!useCustomModel)}
+                    >
+                      {useCustomModel ? "选择已有模型" : "手动输入型号"}
+                    </Button>
+                  )}
                 </div>
-                {useCustomModel ? (
+                {useCustomModel || currentModelOptions.length === 0 ? (
                   <Input
                     placeholder="请输入模型型号，如：gpt-4o"
                     value={form.model}
                     onChange={(e) => setForm((p) => ({ ...p, model: e.target.value }))}
                   />
-                ) : currentModelOptions.length > 0 ? (
+                ) : (
                   <Select
                     value={form.model}
                     onValueChange={(v) => setForm((p) => ({ ...p, model: v }))}
@@ -543,12 +545,6 @@ export default function SettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
-                  <Input
-                    placeholder="请输入模型型号"
-                    value={form.model}
-                    onChange={(e) => setForm((p) => ({ ...p, model: e.target.value }))}
-                  />
                 )}
               </div>
             )}
