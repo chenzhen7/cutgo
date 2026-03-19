@@ -9,6 +9,7 @@ export type ProviderOption = {
   label: string
   models: ProviderModelOption[]
   defaultBaseUrl: string
+  logo?: string
 }
 
 export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
@@ -18,6 +19,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
   llm: {
     openai: {
       label: "OpenAI",
+      logo: "/logos/OpenAi.svg",
       models: [
         { value: "gpt-5.4", label: "GPT-5.4（旗舰）" },
         { value: "gpt-5.4-mini", label: "GPT-5.4 Mini（高性价比）" },
@@ -32,6 +34,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
     deepseek: {
       label: "DeepSeek",
+      logo: "/logos/deepseek.svg",
       models: [
         { value: "deepseek-chat", label: "DeepSeek-V3 (deepseek-chat)" },
         { value: "deepseek-reasoner", label: "DeepSeek-R1 (deepseek-reasoner)" },
@@ -40,6 +43,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
     anthropic: {
       label: "Anthropic (Claude)",
+      logo: "/logos/Anthropic.ico",
       models: [
         { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
         { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
@@ -49,6 +53,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
     qwen: {
       label: "阿里通义千问",
+      logo: "/logos/qwen.svg",
       models: [
         { value: "qwen-max-latest", label: "Qwen-Max Latest" },
         { value: "qwen-plus-latest", label: "Qwen-Plus Latest" },
@@ -60,6 +65,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
   image: {
     openai: {
       label: "OpenAI (DALL-E)",
+      logo: "/logos/OpenAi.svg",
       models: [{ value: "dall-e-3", label: "DALL-E 3" }],
       defaultBaseUrl: "https://api.openai.com/v1",
     },
@@ -103,6 +109,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
     openai: {
       label: "OpenAI TTS",
+      logo: "/logos/OpenAi.svg",
       models: [
         { value: "tts-1", label: "TTS-1" },
         { value: "tts-1-hd", label: "TTS-1 HD" },

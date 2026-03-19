@@ -11,6 +11,7 @@ import {
   Pencil,
   FlaskConical,
 } from "lucide-react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -329,45 +330,60 @@ export default function SettingsPage() {
                   tabConfigs.map((cfg) => {
                     const isActive = cfg.id === activeConfigId
                     const result = testResult[cfg.id]
+                    const providerInfo = AI_PROVIDER_OPTIONS_BY_TYPE[cfg.type]?.[cfg.provider]
+                    const logo = providerInfo?.logo
+
                     return (
                       <div
                         key={cfg.id}
                         className={`flex items-start justify-between rounded-lg border p-4 transition-colors ${isActive ? "border-green-500 bg-green-50 dark:bg-green-950/20" : ""
                           }`}
                       >
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{cfg.name}</span>
-                            {isActive && (
-                              <Badge variant="default" className="bg-green-600 text-xs">
-                                使用中
-                              </Badge>
-                            )}
-                            {cfg.isDefault && !isActive && (
-                              <Badge variant="outline" className="text-xs">
-                                默认
-                              </Badge>
+                        <div className="flex min-w-0 flex-1 gap-3">
+                          {logo && (
+                            <div className="relative mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-md border bg-background p-1">
+                              <Image
+                                src={logo}
+                                alt={providerInfo?.label || cfg.provider}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{cfg.name}</span>
+                              {isActive && (
+                                <Badge variant="default" className="bg-green-600 text-xs">
+                                  使用中
+                                </Badge>
+                              )}
+                              {cfg.isDefault && !isActive && (
+                                <Badge variant="outline" className="text-xs">
+                                  默认
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {providerInfo?.label ?? cfg.provider}
+                              {" · "}
+                              {cfg.model}
+                              {cfg.baseUrl && ` · ${cfg.baseUrl}`}
+                            </p>
+                            {result && (
+                              <p
+                                className={`flex items-center gap-1 text-xs ${result.ok ? "text-green-600" : "text-red-500"
+                                  }`}
+                              >
+                                {result.ok ? (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                ) : (
+                                  <XCircle className="h-3 w-3" />
+                                )}
+                                {result.msg}
+                              </p>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {AI_PROVIDER_OPTIONS_BY_TYPE[cfg.type]?.[cfg.provider]?.label ?? cfg.provider}
-                            {" · "}
-                            {cfg.model}
-                            {cfg.baseUrl && ` · ${cfg.baseUrl}`}
-                          </p>
-                          {result && (
-                            <p
-                              className={`flex items-center gap-1 text-xs ${result.ok ? "text-green-600" : "text-red-500"
-                                }`}
-                            >
-                              {result.ok ? (
-                                <CheckCircle2 className="h-3 w-3" />
-                              ) : (
-                                <XCircle className="h-3 w-3" />
-                              )}
-                              {result.msg}
-                            </p>
-                          )}
                         </div>
 
                         <div className="ml-3 flex shrink-0 items-center gap-1">
@@ -473,7 +489,19 @@ export default function SettingsPage() {
                 <SelectContent>
                   {Object.entries(currentProviderOptions).map(([key, info]) => (
                     <SelectItem key={key} value={key}>
-                      {info.label}
+                      <div className="flex items-center gap-2">
+                        {info.logo && (
+                          <div className="relative h-4 w-4 shrink-0 overflow-hidden rounded-sm">
+                            <Image
+                              src={info.logo}
+                              alt={info.label}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                        )}
+                        <span>{info.label}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
