@@ -68,21 +68,3 @@ export async function getVideoConfig(): Promise<AIModelConfig | null> {
 export async function getTTSConfig(): Promise<AIModelConfig | null> {
   return getActiveConfig("tts")
 }
-
-/** 
- * 各厂商默认的 API 基础地址
- */
-function defaultTextBaseUrl(provider: string): string {
-  switch (provider) {
-    case "openai":
-      return "https://api.openai.com/v1"
-    case "anthropic":
-      return "https://api.anthropic.com"
-    case "deepseek":
-      return "https://api.deepseek.com/v1"
-    case "qwen":
-      return "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    default:
-      return ""
-  }
-}

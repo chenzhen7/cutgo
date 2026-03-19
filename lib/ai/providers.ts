@@ -43,7 +43,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
     anthropic: {
       label: "Anthropic (Claude)",
-      logo: "/logos/Anthropic.ico",
+      logo: "/logos/claude.svg",
       models: [
         { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
         { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
@@ -60,6 +60,22 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
         { value: "qwen-turbo-latest", label: "Qwen-Turbo Latest" },
       ],
       defaultBaseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    },
+    /** Google Gemini（官方模型 ID 参考 ai.google.dev/gemini-api/docs/models） */
+    google: {
+      label: "Google (Gemini)",
+      logo: "/logos/gemini.svg",
+      models: [
+        { value: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro（预览，高智能）" },
+        { value: "gemini-3-flash-preview", label: "Gemini 3 Flash（预览）" },
+        { value: "gemini-3.1-flash-lite-preview", label: "Gemini 3.1 Flash-Lite（预览）" },
+        { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+        { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+        { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+        { value: "gemini-pro-latest", label: "Gemini Pro（latest 别名）" },
+        { value: "gemini-flash-latest", label: "Gemini Flash（latest 别名）" },
+      ],
+      defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta",
     },
   },
   image: {
@@ -127,14 +143,6 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       defaultBaseUrl: "https://api.minimax.chat/v1",
     },
   },
-}
-
-export const OPENAI_COMPATIBLE_LLM_PROVIDERS = new Set(
-  Object.keys(AI_PROVIDER_OPTIONS_BY_TYPE.llm)
-)
-
-export function isOpenAICompatibleLLMProvider(provider: string): boolean {
-  return OPENAI_COMPATIBLE_LLM_PROVIDERS.has(provider)
 }
 
 export function getProviderDefaultBaseUrl(provider: string): string {

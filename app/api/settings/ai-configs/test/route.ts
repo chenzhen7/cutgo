@@ -56,7 +56,6 @@ async function testLLM({
 }) {
   const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
 
-  
   if (!resolvedBaseUrl) {
     return NextResponse.json({ error: "缺少 Base URL" }, { status: 400 })
   }

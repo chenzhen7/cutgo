@@ -1,7 +1,7 @@
 import { getLLMConfig } from "../config"
+import { GoogleLLMProvider } from "./google"
 import { OpenAILLMProvider } from "./openai"
 import type { LLMProvider } from "../types"
-import { isOpenAICompatibleLLMProvider } from "../providers"
 
 // 缓存 Provider 实例，避免重复创建
 let cachedProvider: LLMProvider | null = null
@@ -30,13 +30,19 @@ export async function getLLMProvider(): Promise<LLMProvider | null> {
  * 根据运行时传入的配置创建 LLM Provider。
  * 该函数不读取数据库，也不写入全局缓存，适合“测试连接”等场景。
  */
-export function createLLMProviderFromConfig(
-  config: LLMProviderRuntimeConfig
-): LLMProvider | null {
-  // 目前主流国产模型（DeepSeek、Qwen）均兼容 OpenAI 接口协议
-  if (isOpenAICompatibleLLMProvider(config.provider)) {
-    // 注意：Anthropic 即使 provider 叫 anthropic，如果用户填的是兼容 OpenAI 的中转地址，这里也能跑通
-    // 如果是原生 Anthropic SDK，则需要另外实现
+export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): LLMProvider | null {
+  
+  if (config.provider === "google") {
+    return new GoogleLLMProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model,
+    })
+  }
+
+  // OpenAI 兼容 /chat/completions（含中转填写的 Base URL）
+  if (config.provider === "openai" || config.provider === "deepseek" 
+    || config.provider === "anthropic" || config.provider === "qwen") {
     return new OpenAILLMProvider({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
@@ -44,8 +50,6 @@ export function createLLMProviderFromConfig(
     })
   }
 
-  // 待扩展：支持 Anthropic 等非 OpenAI 兼容接口
-  // if (config.provider === "anthropic") { ... }
   return null
 }
 
