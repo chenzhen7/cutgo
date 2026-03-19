@@ -104,6 +104,24 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       ],
       defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta",
     },
+    /**
+     * 智谱 AI · 开放平台（OpenAI 兼容 /chat/completions）
+     * 文档：https://docs.bigmodel.cn/cn/guide/start/quick-start
+     * 模型一览：https://docs.bigmodel.cn/cn/guide/start/model-overview
+     */
+    zhipu: {
+      label: "智谱 AI（GLM）",
+      logo: "/logos/zhipu.svg",
+      models: [
+        { value: "glm-5", label: "GLM-5（最新旗舰）" },
+        { value: "glm-5-turbo", label: "GLM-5-Turbo（龙虾 / Agent 增强）" },
+        { value: "glm-4.7", label: "GLM-4.7（高智能）" },
+        { value: "glm-4.7-flashx", label: "GLM-4.7-FlashX（轻量高速）" },
+        { value: "glm-4.7-flash", label: "GLM-4.7-Flash（免费普惠）" },
+        { value: "glm-4.6", label: "GLM-4.6（超强性能）" },
+      ],
+      defaultBaseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    },
   },
   image: {
     openai: {

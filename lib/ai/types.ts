@@ -31,6 +31,8 @@ export interface LLMMessage {
 export interface LLMGenerateOptions {
   messages: LLMMessage[]
   model?: string
+  /** 本次回复最多生成的 token 数（未传则由各厂商/SDK 默认） */
+  maxTokens?: number
 
   // /** 响应格式：普通文本或 JSON 对象 */
   // responseFormat?: "text" | "json_object"

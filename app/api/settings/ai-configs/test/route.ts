@@ -83,7 +83,8 @@ async function testLLM({
     await Promise.race([
       llmProvider.chat({
         model,
-        messages: [{ role: "user", content: "hi" }]
+        messages: [{ role: "user", content: "hi" }],
+        maxTokens: 10,
       }),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), 100_000)

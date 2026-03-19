@@ -46,7 +46,8 @@ export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): L
     config.provider === "deepseek" ||
     config.provider === "anthropic" ||
     config.provider === "qwen" ||
-    config.provider === "doubao"
+    config.provider === "doubao" ||
+    config.provider === "zhipu"
   ) {
     return new OpenAILLMProvider({
       apiKey: config.apiKey,
