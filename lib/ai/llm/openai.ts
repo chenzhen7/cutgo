@@ -29,6 +29,7 @@ export class OpenAILLMProvider implements LLMProvider {
    */
   async chat(options: LLMGenerateOptions): Promise<LLMGenerateResult> {
     const { messages, model } = options
+   
     const result = await generateText({
       model: this.openai(model || this.config.model),
       messages: messages.map((m) => ({ role: m.role, content: m.content }))

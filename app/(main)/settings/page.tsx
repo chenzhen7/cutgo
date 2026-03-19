@@ -271,14 +271,13 @@ export default function SettingsPage() {
     }
   }
 
-  // 当提供商变化时，自动填充 baseUrl 和第一个模型
+  // 当提供商变化时，自动填充第一个模型
   function handleProviderChange(provider: string) {
     const providerInfo = AI_PROVIDER_OPTIONS_BY_TYPE[form.type]?.[provider]
     setForm((prev) => ({
       ...prev,
       provider,
       model: providerInfo?.models[0]?.value ?? "",
-      baseUrl: providerInfo?.defaultBaseUrl ?? "",
     }))
     setUseCustomModel(false)
   }
