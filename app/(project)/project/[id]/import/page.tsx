@@ -5,9 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import { useNovelStore } from "@/store/novel-store"
 import { ImportNovelDialog } from "./components/import-novel-dialog"
 import { TabChapters } from "./components/tab-chapters"
-import { ConfirmImportDialog } from "./components/confirm-import-dialog"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Upload } from "lucide-react"
+import { BookOpen, Upload, ArrowRight } from "lucide-react"
 
 const ANALYSIS_STAGES = [
   "正在拆分文本结构...",
@@ -32,6 +31,7 @@ export default function ImportPage() {
     addChapter,
     updateChapter,
     deleteChapter,
+    reset,
   } = useNovelStore()
 
   const [showImportDialog, setShowImportDialog] = useState(false)
@@ -93,6 +93,7 @@ export default function ImportPage() {
 
   const isImported = !!novel
   const isConfirmed = novel?.status === "confirmed"
+  const isEmpty = chapters.length === 0
 
   return (
     <div className="flex flex-col h-full">
@@ -108,18 +109,17 @@ export default function ImportPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {!isImported && (
+          {isEmpty && (
             <Button size="sm" onClick={() => setShowImportDialog(true)}>
               <Upload className="size-4" />
               导入小说
             </Button>
           )}
-          {isImported && !isConfirmed && (
-            <ConfirmImportDialog
-              wordCount={novel.wordCount}
-              chapters={chapters}
-              onConfirm={handleConfirm}
-            />
+          {isImported && !isConfirmed && !isEmpty && (
+            <Button size="sm" onClick={handleConfirm}>
+              确认导入，进入分集大纲
+              <ArrowRight className="size-4" />
+            </Button>
           )}
           {isConfirmed && (
             <Button size="sm" variant="outline" onClick={() => router.push(`/project/${projectId}/outline`)}>
@@ -130,13 +130,6 @@ export default function ImportPage() {
       </div>
 
       {/* 通知条 */}
-      {isConfirmed && (
-        <div className="px-6 py-2 border-b bg-emerald-50 dark:bg-emerald-950/30 shrink-0">
-          <p className="text-xs text-emerald-700 dark:text-emerald-400">
-            小说已确认导入，章节内容已锁定。如需修改，可添加新章节或编辑现有章节。
-          </p>
-        </div>
-      )}
       {analysisStatus === "error" && (
         <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
           <p className="text-xs text-destructive">{analysisError || "分析失败，请重试"}</p>
@@ -145,7 +138,7 @@ export default function ImportPage() {
 
       {/* 主体内容区 */}
       <div className="flex-1 overflow-hidden">
-        {!isImported ? (
+        {isEmpty ? (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <BookOpen className="size-10 text-muted-foreground/40" />
             <div className="text-center">
