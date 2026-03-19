@@ -341,7 +341,7 @@ export default function SettingsPage() {
                       >
                         <div className="flex min-w-0 flex-1 gap-3">
                           {logo && (
-                            <div className="relative mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-md border bg-background p-1">
+                            <div className="relative mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-md p-1">
                               <Image
                                 src={logo}
                                 alt={providerInfo?.label || cfg.provider}
@@ -491,7 +491,7 @@ export default function SettingsPage() {
                     <SelectItem key={key} value={key}>
                       <div className="flex items-center gap-2">
                         {info.logo && (
-                          <div className="relative h-4 w-4 shrink-0 overflow-hidden rounded-sm">
+                          <div className="relative h-4 w-4 shrink-0 overflow-hidden">
                             <Image
                               src={info.logo}
                               alt={info.label}
