@@ -92,7 +92,6 @@ export default function ImportPage() {
   }, [novel, confirmImport, router, projectId])
 
   const isImported = !!novel
-  const isConfirmed = novel?.status === "confirmed"
   const isEmpty = chapters.length === 0
 
   return (
@@ -101,11 +100,6 @@ export default function ImportPage() {
       <div className="flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold text-foreground">小说导入</h2>
-          {isImported && (
-            <span className="text-xs text-muted-foreground">
-              {isConfirmed ? "已确认导入" : "管理章节段落，确认后进入分集大纲"}
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -115,15 +109,10 @@ export default function ImportPage() {
               导入小说
             </Button>
           )}
-          {isImported && !isConfirmed && !isEmpty && (
+          {!isEmpty && (
             <Button size="sm" onClick={handleConfirm}>
               确认导入，进入分集大纲
               <ArrowRight className="size-4" />
-            </Button>
-          )}
-          {isConfirmed && (
-            <Button size="sm" variant="outline" onClick={() => router.push(`/project/${projectId}/outline`)}>
-              进入分集大纲
             </Button>
           )}
         </div>
