@@ -1,20 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,13 +15,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ChevronDown, ChevronRight, Trash2, Plus, Pencil } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Trash2, Plus, Check, X, BookOpen } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { countWords } from "@/lib/novel-utils"
 import type { Chapter } from "@/lib/types"
-
-interface ChapterFormData {
-  title: string
-  content: string
-}
 
 interface TabChaptersProps {
   chapters: Chapter[]
@@ -40,98 +36,220 @@ interface TabChaptersProps {
   onDelete: (chapterId: string) => Promise<void>
 }
 
-function ChapterItem({
+function AddChapterDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: { title: string; content: string }) => Promise<void>
+}) {
+  const [title, setTitle] = useState("")
+  const [content, setContent] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) { setTitle(""); setContent("") }
+    onOpenChange(v)
+  }
+
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    try {
+      await onSubmit({ title: title.trim(), content: content.trim() })
+      setTitle(""); setContent("")
+      onOpenChange(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>添加章节</DialogTitle>
+          <DialogDescription>输入章节标题和内容来创建新章节</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="add-title">章节标题</Label>
+            <Input
+              id="add-title"
+              placeholder="如：第一章 重生"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="add-content">章节内容</Label>
+              {content.length > 0 && (
+                <span className="text-xs text-muted-foreground">{content.length.toLocaleString()} 字</span>
+              )}
+            </div>
+            <Textarea
+              id="add-content"
+              placeholder="输入章节正文内容（可选）"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={8}
+              className="resize-y overflow-y-auto max-h-[320px]"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>取消</Button>
+          <Button onClick={handleSubmit} disabled={submitting || !title.trim()}>
+            {submitting ? "添加中..." : "添加"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ChapterEditor({
   chapter,
-  onEdit,
+  onUpdate,
   onDelete,
 }: {
   chapter: Chapter
-  onEdit: (chapter: Chapter) => void
-  onDelete: (chapterId: string) => void
+  onUpdate: (chapterId: string, data: { title?: string; content?: string }) => Promise<void>
+  onDelete: (chapterId: string) => Promise<void>
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [title, setTitle] = useState(chapter.title ?? "")
+  const [content, setContent] = useState(chapter.content ?? "")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isDirty = title !== (chapter.title ?? "") || content !== (chapter.content ?? "")
+
+  useEffect(() => {
+    setTitle(chapter.title ?? "")
+    setContent(chapter.content ?? "")
+    setSaved(false)
+  }, [chapter.id, chapter.title, chapter.content])
+
+  const triggerAutoSave = useCallback(
+    (newTitle: string, newContent: string) => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(async () => {
+        setSaving(true)
+        try {
+          await onUpdate(chapter.id, {
+            title: newTitle.trim() || undefined,
+            content: newContent.trim() || undefined,
+          })
+          setSaved(true)
+          setTimeout(() => setSaved(false), 2000)
+        } finally {
+          setSaving(false)
+        }
+      }, 800)
+    },
+    [chapter.id, onUpdate]
+  )
+
+  const handleTitleChange = (v: string) => {
+    setTitle(v)
+    triggerAutoSave(v, content)
+  }
+
+  const handleContentChange = (v: string) => {
+    setContent(v)
+    triggerAutoSave(title, v)
+  }
+
+  const handleSaveNow = async () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    setSaving(true)
+    try {
+      await onUpdate(chapter.id, {
+        title: title.trim() || undefined,
+        content: content.trim() || undefined,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDiscard = () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    setTitle(chapter.title ?? "")
+    setContent(chapter.content ?? "")
+    setSaved(false)
+  }
+
+  const wordCount = countWords(content)
 
   return (
-    <div className="border rounded-lg">
-      <div
-        className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50"
-        onClick={() => setExpanded(!expanded)}
-      >
-        {expanded ? (
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-        )}
-        <span className="flex-1 text-sm font-medium">
-          {chapter.title || `段落组 ${chapter.index + 1}`}
-        </span>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px]">
-            {chapter.paragraphs.length} 段
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {chapter.wordCount.toLocaleString()} 字
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground hover:text-primary"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit(chapter)
-            }}
-          >
-            <Pencil className="size-3.5" />
-          </Button>
+    <div className="flex flex-col h-full">
+      {/* 编辑区顶栏 */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+        <Input
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="章节标题"
+          className="flex-1 border-0 bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0 placeholder:font-normal placeholder:text-muted-foreground/60"
+        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {saving && (
+            <span className="text-xs text-muted-foreground">保存中...</span>
+          )}
+          {saved && !saving && (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <Check className="size-3" />已保存
+            </span>
+          )}
+          {isDirty && !saving && !saved && (
+            <>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleSaveNow}>
+                <Check className="size-3 mr-1" />保存
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={handleDiscard}>
+                <X className="size-3 mr-1" />放弃
+              </Button>
+            </>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="size-7 text-muted-foreground hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowDeleteConfirm(true)
-            }}
+            onClick={() => setShowDelete(true)}
           >
             <Trash2 className="size-3.5" />
           </Button>
         </div>
       </div>
 
-      {expanded && chapter.paragraphs.length > 0 && (
-        <div className="border-t px-3 py-2 bg-muted/20">
-          <div className="flex flex-col gap-1.5">
-            {chapter.paragraphs.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-start gap-2 text-xs py-1.5 px-2 rounded hover:bg-muted/50"
-              >
-                <span className="text-muted-foreground shrink-0 w-6 text-right">
-                  {p.index + 1}.
-                </span>
-                <span className="flex-1 text-muted-foreground line-clamp-2">
-                  {p.content.slice(0, 80)}
-                  {p.content.length > 80 && "..."}
-                </span>
-                <span className="text-muted-foreground/60 shrink-0">
-                  {p.wordCount} 字
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 正文编辑区 */}
+      <div className="flex-1 relative overflow-hidden">
+        <Textarea
+          value={content}
+          onChange={(e) => handleContentChange(e.target.value)}
+          placeholder="在此编辑章节正文内容..."
+          className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent px-4 py-3 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
+        />
+      </div>
 
-      {expanded && chapter.paragraphs.length === 0 && chapter.content && (
-        <div className="border-t px-3 py-2 bg-muted/20">
-          <p className="text-xs text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-            {chapter.content.slice(0, 200)}
-            {chapter.content.length > 200 && "..."}
-          </p>
-        </div>
-      )}
+      {/* 底部状态栏 */}
+      <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/20 shrink-0">
+        <span className="text-xs text-muted-foreground">
+          {chapter.paragraphs.length > 0
+            ? `${chapter.paragraphs.length} 个段落`
+            : "无段落数据"}
+        </span>
+        <span className="text-xs text-muted-foreground">{wordCount.toLocaleString()} 字</span>
+      </div>
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>删除章节</AlertDialogTitle>
@@ -154,188 +272,115 @@ function ChapterItem({
   )
 }
 
-function ChapterDialog({
-  open,
-  onOpenChange,
-  mode,
-  initialData,
-  onSubmit,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  mode: "add" | "edit"
-  initialData?: ChapterFormData
-  onSubmit: (data: ChapterFormData) => Promise<void>
-}) {
-  const [title, setTitle] = useState(initialData?.title ?? "")
-  const [content, setContent] = useState(initialData?.content ?? "")
-  const [submitting, setSubmitting] = useState(false)
-
-  const handleOpenChange = (v: boolean) => {
-    if (!v) {
-      setTitle("")
-      setContent("")
-    }
-    onOpenChange(v)
-  }
-
-  const handleSubmit = async () => {
-    setSubmitting(true)
-    try {
-      await onSubmit({ title: title.trim(), content: content.trim() })
-      setTitle("")
-      setContent("")
-      onOpenChange(false)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const isAdd = mode === "add"
-  const canSubmit = isAdd ? title.trim().length > 0 : true
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isAdd ? "添加章节" : "编辑章节"}</DialogTitle>
-          <DialogDescription>
-            {isAdd ? "输入章节标题和内容来创建新章节" : "修改章节的标题和内容"}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="chapter-title">章节标题</Label>
-            <Input
-              id="chapter-title"
-              placeholder="如：第一章 重生"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="chapter-content">章节内容</Label>
-              {content.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {content.length.toLocaleString()} 字
-                </span>
-              )}
-            </div>
-            <Textarea
-              id="chapter-content"
-              placeholder="输入章节正文内容（可选）"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={8}
-              className="resize-y overflow-y-auto max-h-[350px]"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            取消
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !canSubmit}>
-            {submitting ? "保存中..." : isAdd ? "添加" : "保存"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChaptersProps) {
-  const [showDialog, setShowDialog] = useState(false)
-  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showAddDialog, setShowAddDialog] = useState(false)
 
-  const handleEdit = (chapter: Chapter) => {
-    setEditingChapter(chapter)
-  }
+  const selectedChapter = chapters.find((ch) => ch.id === selectedId) ?? chapters[0] ?? null
 
-  const handleAddSubmit = async (data: ChapterFormData) => {
-    await onAdd({
-      title: data.title || undefined,
-      content: data.content || undefined,
-    })
-  }
+  useEffect(() => {
+    if (!selectedId && chapters.length > 0) {
+      setSelectedId(chapters[0].id)
+    }
+    if (selectedId && !chapters.find((ch) => ch.id === selectedId)) {
+      setSelectedId(chapters[0]?.id ?? null)
+    }
+  }, [chapters, selectedId])
 
-  const handleEditSubmit = async (data: ChapterFormData) => {
-    if (!editingChapter) return
-    await onUpdate(editingChapter.id, {
-      title: data.title || undefined,
-      content: data.content || undefined,
-    })
-  }
+  const totalWords = chapters.reduce((sum, ch) => sum + ch.wordCount, 0)
 
   if (chapters.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-12">
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <BookOpen className="size-8 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">暂无章节数据</p>
-        <Button variant="outline" size="sm" onClick={() => setShowDialog(true)}>
+        <Button variant="outline" size="sm" onClick={() => setShowAddDialog(true)}>
           <Plus className="size-4 mr-1" />
           添加章节
         </Button>
-        <ChapterDialog
-          open={showDialog}
-          onOpenChange={setShowDialog}
-          mode="add"
-          onSubmit={handleAddSubmit}
+        <AddChapterDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+          onSubmit={async (data) => {
+            await onAdd({ title: data.title || undefined, content: data.content || undefined })
+          }}
         />
       </div>
     )
   }
 
-  const totalParagraphs = chapters.reduce((sum, ch) => sum + ch.paragraphs.length, 0)
-  const totalWords = chapters.reduce((sum, ch) => sum + ch.wordCount, 0)
-
   return (
-    <>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>{chapters.length} 个章节</span>
-          <span>{totalParagraphs} 个段落</span>
-          <span>{totalWords.toLocaleString()} 字</span>
+    <div className="flex h-full overflow-hidden">
+      {/* 左侧章节导航 */}
+      <div className="w-56 shrink-0 flex flex-col border-r">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b bg-background">
+          <span className="text-xs font-medium text-muted-foreground">
+            {chapters.length} 章节 · {totalWords.toLocaleString()} 字
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowAddDialog(true)}
+            title="添加章节"
+          >
+            <Plus className="size-3.5" />
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowDialog(true)}>
-          <Plus className="size-4 mr-1" />
-          添加章节
-        </Button>
+
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col py-1">
+            {chapters.map((ch) => (
+              <button
+                key={ch.id}
+                onClick={() => setSelectedId(ch.id)}
+                className={cn(
+                  "flex flex-col gap-0.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
+                  selectedChapter?.id === ch.id
+                    ? "bg-primary/8 border-r-2 border-r-primary text-foreground"
+                    : "text-muted-foreground"
+                )}
+              >
+                <span className={cn(
+                  "text-xs font-medium leading-snug line-clamp-2",
+                  selectedChapter?.id === ch.id && "text-foreground"
+                )}>
+                  {ch.title || `段落组 ${ch.index + 1}`}
+                </span>
+                <span className="text-[10px] text-muted-foreground/70">
+                  {ch.wordCount.toLocaleString()} 字
+                </span>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
 
-      <ScrollArea className="max-h-[400px] overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          {chapters.map((ch) => (
-            <ChapterItem
-              key={ch.id}
-              chapter={ch}
-              onEdit={handleEdit}
-              onDelete={onDelete}
-            />
-          ))}
-        </div>
-      </ScrollArea>
+      {/* 右侧编辑区 */}
+      <div className="flex-1 overflow-hidden">
+        {selectedChapter ? (
+          <ChapterEditor
+            key={selectedChapter.id}
+            chapter={selectedChapter}
+            onUpdate={onUpdate}
+            onDelete={async (id) => {
+              await onDelete(id)
+            }}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            选择左侧章节开始编辑
+          </div>
+        )}
+      </div>
 
-      <ChapterDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
-        mode="add"
-        onSubmit={handleAddSubmit}
+      <AddChapterDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSubmit={async (data) => {
+          await onAdd({ title: data.title || undefined, content: data.content || undefined })
+        }}
       />
-
-      <ChapterDialog
-        key={editingChapter?.id}
-        open={!!editingChapter}
-        onOpenChange={(open) => { if (!open) setEditingChapter(null) }}
-        mode="edit"
-        initialData={
-          editingChapter
-            ? { title: editingChapter.title ?? "", content: editingChapter.content ?? "" }
-            : undefined
-        }
-        onSubmit={handleEditSubmit}
-      />
-    </>
+    </div>
   )
 }

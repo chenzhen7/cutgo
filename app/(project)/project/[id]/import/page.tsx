@@ -1,21 +1,19 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useNovelStore } from "@/store/novel-store"
-import { TextInputPanel } from "./components/text-input-panel"
-import { AnalysisProgress } from "./components/analysis-progress"
-import { AnalysisResultPanel } from "./components/analysis-result-panel"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { ImportNovelDialog } from "./components/import-novel-dialog"
+import { TabChapters } from "./components/tab-chapters"
+import { ConfirmImportDialog } from "./components/confirm-import-dialog"
+import { Button } from "@/components/ui/button"
+import { BookOpen, Upload } from "lucide-react"
+
+const ANALYSIS_STAGES = [
+  "正在拆分文本结构...",
+  "正在分析章节段落...",
+  "正在整理分析结果...",
+]
 
 export default function ImportPage() {
   const params = useParams()
@@ -25,148 +23,160 @@ export default function ImportPage() {
   const {
     novel,
     chapters,
-    characters,
-    events,
     analysisStatus,
     analysisError,
     fetchNovel,
     importNovel,
     analyzeNovel,
     confirmImport,
-    updateSynopsis,
-    addCharacter,
-    updateCharacter,
-    deleteCharacter,
-    addEvent,
-    updateEvent,
-    deleteEvent,
     addChapter,
     updateChapter,
     deleteChapter,
   } = useNovelStore()
 
-  const [text, setText] = useState("")
-  const [fileName, setFileName] = useState<string | null>(null)
-  const [showReanalyze, setShowReanalyze] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [stageIndex, setStageIndex] = useState(0)
+  const [progress, setProgress] = useState(0)
+
+  const stageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     fetchNovel(projectId)
   }, [projectId, fetchNovel])
 
-  useEffect(() => {
-    if (novel?.rawText) {
-      setText(novel.rawText)
-      setFileName(novel.fileName ?? null)
-    }
-  }, [novel?.rawText, novel?.fileName])
-
-  const handleStartAnalysis = useCallback(async () => {
-    if (novel && (novel.status === "analyzed" || novel.status === "confirmed")) {
-      setShowReanalyze(true)
-      return
-    }
-    await doAnalysis()
-  }, [novel, text, projectId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const doAnalysis = useCallback(async () => {
-    const imported = await importNovel({
-      projectId,
-      title: fileName || undefined,
-      rawText: text,
-      source: fileName ? "file" : "paste",
-      fileName: fileName || undefined,
-    })
-    await analyzeNovel(imported.id)
-  }, [projectId, text, fileName, importNovel, analyzeNovel])
-
-  const isAnalyzed = analysisStatus === "completed"
   const isAnalyzing = analysisStatus === "analyzing"
 
+  const startProgressAnimation = useCallback(() => {
+    setStageIndex(0)
+    setProgress(0)
+    stageIntervalRef.current = setInterval(() => {
+      setStageIndex((i) => (i < ANALYSIS_STAGES.length - 1 ? i + 1 : i))
+    }, 2000)
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((p) => Math.min(p + 3, 90))
+    }, 300)
+  }, [])
+
+  const stopProgressAnimation = useCallback(() => {
+    if (stageIntervalRef.current) clearInterval(stageIntervalRef.current)
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+    setProgress(100)
+  }, [])
+
+  const handleImport = useCallback(
+    async (text: string, fileName: string | null) => {
+      startProgressAnimation()
+      try {
+        const imported = await importNovel({
+          projectId,
+          title: fileName || undefined,
+          rawText: text,
+          source: fileName ? "file" : "paste",
+          fileName: fileName || undefined,
+        })
+        await analyzeNovel(imported.id)
+        stopProgressAnimation()
+        setShowImportDialog(false)
+      } catch {
+        stopProgressAnimation()
+      }
+    },
+    [projectId, importNovel, analyzeNovel, startProgressAnimation, stopProgressAnimation]
+  )
+
+  const handleConfirm = useCallback(async () => {
+    if (!novel) return
+    await confirmImport(novel.id)
+    router.push(`/project/${projectId}/outline`)
+  }, [novel, confirmImport, router, projectId])
+
+  const isImported = !!novel
+  const isConfirmed = novel?.status === "confirmed"
+
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground">小说导入</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          粘贴小说文本或上传 txt 文件，系统将自动分析剧情结构
-        </p>
+    <div className="flex flex-col h-full">
+      {/* 顶部 header */}
+      <div className="flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0">
+        <div className="flex items-center gap-3">
+          <h2 className="text-base font-semibold text-foreground">小说导入</h2>
+          {isImported && (
+            <span className="text-xs text-muted-foreground">
+              {isConfirmed ? "已确认导入" : "管理章节段落，确认后进入分集大纲"}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {!isImported && (
+            <Button size="sm" onClick={() => setShowImportDialog(true)}>
+              <Upload className="size-4" />
+              导入小说
+            </Button>
+          )}
+          {isImported && !isConfirmed && (
+            <ConfirmImportDialog
+              wordCount={novel.wordCount}
+              chapters={chapters}
+              onConfirm={handleConfirm}
+            />
+          )}
+          {isConfirmed && (
+            <Button size="sm" variant="outline" onClick={() => router.push(`/project/${projectId}/outline`)}>
+              进入分集大纲
+            </Button>
+          )}
+        </div>
       </div>
 
-      <TextInputPanel
-        text={text}
-        onTextChange={setText}
-        onStartAnalysis={handleStartAnalysis}
-        analyzing={isAnalyzing}
-        fileName={fileName}
-        onFileNameChange={setFileName}
-      />
-
-      {isAnalyzing && <AnalysisProgress />}
-
+      {/* 通知条 */}
+      {isConfirmed && (
+        <div className="px-6 py-2 border-b bg-emerald-50 dark:bg-emerald-950/30 shrink-0">
+          <p className="text-xs text-emerald-700 dark:text-emerald-400">
+            小说已确认导入，章节内容已锁定。如需修改，可添加新章节或编辑现有章节。
+          </p>
+        </div>
+      )}
       {analysisStatus === "error" && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-          <p className="text-sm text-destructive">
-            {analysisError || "分析失败，请重试"}
-          </p>
-          <button
-            onClick={doAnalysis}
-            className="mt-2 text-sm text-destructive underline hover:no-underline"
-          >
-            重新分析
-          </button>
+        <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
+          <p className="text-xs text-destructive">{analysisError || "分析失败，请重试"}</p>
         </div>
       )}
 
-      {isAnalyzed && novel && (
-        <AnalysisResultPanel
-          novel={novel}
-          chapters={chapters}
-          characters={characters}
-          events={events}
-          onUpdateSynopsis={(synopsis) => updateSynopsis(novel.id, synopsis)}
-          onAddCharacter={(data) => addCharacter(novel.id, data)}
-          onUpdateCharacter={updateCharacter}
-          onDeleteCharacter={(id) => deleteCharacter(novel.id, id)}
-          onAddEvent={(data) => addEvent(novel.id, data)}
-          onUpdateEvent={updateEvent}
-          onDeleteEvent={(id) => deleteEvent(novel.id, id)}
-          onAddChapter={(data) => addChapter(novel.id, data)}
-          onUpdateChapter={updateChapter}
-          onDeleteChapter={(id) => deleteChapter(novel.id, id)}
-        />
-      )}
+      {/* 主体内容区 */}
+      <div className="flex-1 overflow-hidden">
+        {!isImported ? (
+          <div className="flex h-full flex-col items-center justify-center gap-4">
+            <BookOpen className="size-10 text-muted-foreground/40" />
+            <div className="text-center">
+              <p className="text-sm font-medium">还没有导入小说</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                支持粘贴文本或上传 .txt 文件，导入后可管理章节
+              </p>
+            </div>
+            <Button onClick={() => setShowImportDialog(true)}>
+              <Upload className="size-4" />
+              导入小说
+            </Button>
+          </div>
+        ) : (
+          <TabChapters
+            chapters={chapters}
+            onAdd={(data) => addChapter(novel!.id, data)}
+            onUpdate={updateChapter}
+            onDelete={(id) => deleteChapter(novel!.id, id)}
+          />
+        )}
+      </div>
 
-
-      {/* 空状态 */}
-      {!isAnalyzing && !isAnalyzed && analysisStatus !== "error" && !novel && (
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            粘贴或上传小说文本后，点击"开始分析"，分析结果将在这里展示
-          </p>
-        </div>
-      )}
-
-      {/* 重新分析确认 */}
-      <AlertDialog open={showReanalyze} onOpenChange={setShowReanalyze}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>重新分析</AlertDialogTitle>
-            <AlertDialogDescription>
-              当前项目已有分析数据，重新分析将覆盖原有内容。是否继续？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                setShowReanalyze(false)
-                await doAnalysis()
-              }}
-            >
-              确认重新分析
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ImportNovelDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onImport={handleImport}
+        analyzing={isAnalyzing}
+        analysisStageIndex={stageIndex}
+        analysisProgress={progress}
+      />
     </div>
   )
 }

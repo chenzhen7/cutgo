@@ -12,14 +12,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, BookOpen, Users, Zap, FileText } from "lucide-react"
-import type { Chapter, NovelCharacter, PlotEvent } from "@/lib/types"
+import { ArrowRight, BookOpen, FileText } from "lucide-react"
+import type { Chapter } from "@/lib/types"
 
 interface ConfirmImportDialogProps {
   wordCount: number
   chapters: Chapter[]
-  characters: NovelCharacter[]
-  events: PlotEvent[]
   onConfirm: () => Promise<void>
   disabled?: boolean
 }
@@ -27,15 +25,13 @@ interface ConfirmImportDialogProps {
 export function ConfirmImportDialog({
   wordCount,
   chapters,
-  characters,
-  events,
   onConfirm,
   disabled,
 }: ConfirmImportDialogProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button size="lg" className="w-full" disabled={disabled}>
+        <Button size="sm" disabled={disabled}>
           确认导入，进入分集大纲
           <ArrowRight className="size-4" />
         </Button>
@@ -44,11 +40,11 @@ export function ConfirmImportDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>确认导入</AlertDialogTitle>
           <AlertDialogDescription>
-            确认后将保存所有分析结果，并进入分集大纲阶段。
+            确认后将保存所有章节内容，并进入分集大纲阶段。确认后将无法重新导入原文。
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="grid grid-cols-2 gap-3 py-2">
+        <div className="flex items-center gap-6 py-2">
           <div className="flex items-center gap-2 text-sm">
             <FileText className="size-4 text-muted-foreground" />
             <span>{wordCount.toLocaleString()} 字</span>
@@ -56,14 +52,6 @@ export function ConfirmImportDialog({
           <div className="flex items-center gap-2 text-sm">
             <BookOpen className="size-4 text-muted-foreground" />
             <span>{chapters.length} 个章节</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Users className="size-4 text-muted-foreground" />
-            <span>{characters.length} 个角色</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Zap className="size-4 text-muted-foreground" />
-            <span>{events.length} 个事件</span>
           </div>
         </div>
 
