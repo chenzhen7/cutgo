@@ -89,7 +89,7 @@ export interface PlotEvent {
   updatedAt: string
 }
 
-// ── Episode Outline Types ──
+// ── Episode（确认导入时按所选章节生成）──
 
 export interface Episode {
   id: string

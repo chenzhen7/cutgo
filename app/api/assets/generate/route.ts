@@ -50,7 +50,7 @@ async function callAIExtractAssets(
     .map((c) => `${c.name}(${c.role}): ${c.description || "无描述"}`)
     .join("\n")
 
-  const prompt = `你是一位专业的短剧制作资产管理专家。请根据以下分集大纲信息，提取并整理出该项目所需的全部资产。
+  const prompt = `你是一位专业的短剧制作资产管理专家。请根据以下分集与场景信息，提取并整理出该项目所需的全部资产。
 
 ## 故事大纲
 ${synopsis || "无"}
@@ -58,7 +58,7 @@ ${synopsis || "无"}
 ## 小说原始角色列表
 ${novelCharsText || "无"}
 
-## 分集大纲
+## 分集与场景
 ${episodesText}
 
 ## 任务
@@ -212,7 +212,10 @@ export async function POST(request: NextRequest) {
   })
 
   if (episodes.length === 0) {
-    return NextResponse.json({ error: "请先生成分集大纲" }, { status: 400 })
+    return NextResponse.json(
+      { error: "暂无分集数据，请先在小说导入中确认导入" },
+      { status: 400 }
+    )
   }
 
   const novel = await prisma.novel.findUnique({

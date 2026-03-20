@@ -37,6 +37,7 @@ export default function ImportPage() {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [stageIndex, setStageIndex] = useState(0)
   const [progress, setProgress] = useState(0)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
 
   const stageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -87,8 +88,13 @@ export default function ImportPage() {
 
   const handleConfirm = useCallback(async () => {
     if (!novel) return
-    await confirmImport(novel.id)
-    router.push(`/project/${projectId}/outline`)
+    setConfirmError(null)
+    try {
+      await confirmImport(novel.id)
+      router.push(`/project/${projectId}/script`)
+    } catch (e) {
+      setConfirmError((e as Error).message)
+    }
   }, [novel, confirmImport, router, projectId])
 
   const isImported = !!novel
@@ -111,7 +117,7 @@ export default function ImportPage() {
           )}
           {!isEmpty && (
             <Button size="sm" onClick={handleConfirm}>
-              确认导入，进入分集大纲
+              确认导入，进入剧本生成
               <ArrowRight className="size-4" />
             </Button>
           )}
@@ -122,6 +128,11 @@ export default function ImportPage() {
       {analysisStatus === "error" && (
         <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
           <p className="text-xs text-destructive">{analysisError || "分析失败，请重试"}</p>
+        </div>
+      )}
+      {confirmError && (
+        <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
+          <p className="text-xs text-destructive">{confirmError}</p>
         </div>
       )}
 

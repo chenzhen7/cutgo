@@ -89,7 +89,7 @@ export default function ScriptPage() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">剧本生成</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            基于分集大纲，AI 为每一集生成剧本文本
+            基于导入章节对应的分集，AI 为每一集生成剧本文本
           </p>
         </div>
         {hasScripts && (
@@ -134,7 +134,7 @@ export default function ScriptPage() {
             episodes={episodes}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
             onSelectEpisodes={() => setShowEpisodeSelect(true)}
-            onGoToOutline={() => router.push(`/project/${projectId}/outline`)}
+            onGoToImport={() => router.push(`/project/${projectId}/import`)}
           />
         </div>
       )}

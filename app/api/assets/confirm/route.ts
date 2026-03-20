@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   const project = await prisma.project.update({
     where: { id: projectId },
-    data: { step: 3, stepLabel: "剧本生成" },
+    data: { step: 2, stepLabel: "剧本生成" },
   })
 
   return NextResponse.json(project)

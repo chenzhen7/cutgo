@@ -194,9 +194,9 @@ export default function AssetsPage() {
         <div className="mt-4 rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
           <Loader2 className="size-5 animate-spin text-primary" />
           <div>
-            <p className="text-sm font-medium">正在从大纲中提取资产...</p>
+            <p className="text-sm font-medium">正在从分集中提取资产...</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              AI 正在分析分集大纲，提取角色、场景和道具信息
+              AI 正在分析分集与场景信息，提取角色、场景和道具
             </p>
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function AssetsPage() {
             <FolderOpen className="h-12 w-12 text-muted-foreground/30" />
             <h3 className="mt-4 text-sm font-medium">暂无资产数据</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              请先生成分集大纲，然后点击「AI 提取资产」自动提取角色、场景和道具
+              请先在小说导入中确认导入以生成分集，再点击「AI 提取资产」
             </p>
             <Button
               className="mt-4"

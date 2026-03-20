@@ -93,7 +93,10 @@ export const useNovelStore = create<NovelState>((set, get) => ({
 
   confirmImport: async (novelId) => {
     const res = await fetch(`/api/novels/${novelId}/confirm`, { method: "POST" })
-    if (!res.ok) throw new Error("确认导入失败")
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || "确认导入失败")
+    }
     const updated = await res.json()
     set({ novel: { ...get().novel!, ...updated, status: "confirmed" } })
   },

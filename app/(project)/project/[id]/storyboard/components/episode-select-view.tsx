@@ -67,7 +67,7 @@ export function EpisodeSelectView({
           <Film className="size-12 text-muted-foreground mb-4" />
           <h3 className="text-base font-medium mb-2">暂无分集</h3>
           <p className="text-sm text-muted-foreground">
-            请先在大纲页面生成分集内容
+            请先在小说导入中确认导入以生成分集
           </p>
         </div>
       ) : (

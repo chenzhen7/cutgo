@@ -10,26 +10,26 @@ interface ScriptEmptyStateProps {
   episodes: Episode[]
   onGenerateAll: () => void
   onSelectEpisodes: () => void
-  onGoToOutline: () => void
+  onGoToImport: () => void
 }
 
 export function ScriptEmptyState({
   episodes,
   onGenerateAll,
   onSelectEpisodes,
-  onGoToOutline,
+  onGoToImport,
 }: ScriptEmptyStateProps) {
   if (episodes.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-12 text-center">
         <AlertTriangle className="size-10 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-base font-medium mb-2">暂无分集大纲数据</h3>
+        <h3 className="text-base font-medium mb-2">暂无分集数据</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          请先生成分集大纲，再进行剧本生成
+          请在小说导入中确认导入，系统会按所选章节自动生成分集
         </p>
-        <Button onClick={onGoToOutline}>
+        <Button onClick={onGoToImport}>
           <ArrowLeft className="size-4" />
-          前往分集大纲
+          返回小说导入
         </Button>
       </div>
     )
@@ -40,7 +40,7 @@ export function ScriptEmptyState({
       <Sparkles className="size-10 text-muted-foreground mx-auto mb-4" />
       <h3 className="text-base font-medium mb-2">尚未生成剧本</h3>
       <p className="text-sm text-muted-foreground mb-6">
-        基于已确认的 {episodes.length} 个分集大纲，AI 将为每集生成结构化剧本
+        基于当前 {episodes.length} 个分集，AI 将为每集生成结构化剧本
       </p>
 
       <Card className="mb-6 mx-auto max-w-lg">
