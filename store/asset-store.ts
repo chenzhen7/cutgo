@@ -73,7 +73,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       })
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || "资产生成失败")
+        throw new Error(err.error || "资产提取失败")
       }
       const data = await res.json()
       set({

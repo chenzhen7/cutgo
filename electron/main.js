@@ -6,7 +6,7 @@ const path = require('path');
 const isDev = process.env.NODE_ENV !== 'production' || process.defaultApp;
 
 // 开发环境的前端网址，Next.js 默认端口
-const DEV_URL = 'http://localhost:3000';
+const DEV_URL = 'http://localhost:4000';
 const PROD_URL = 'http://localhost:38888';
 
 // 创建主窗口的函数

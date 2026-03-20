@@ -327,7 +327,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Asset generation failed:", err)
     return NextResponse.json(
-      { error: "资产生成失败: " + (err as Error).message },
+      { error: "资产提取失败: " + (err as Error).message },
       { status: 500 }
     )
   }

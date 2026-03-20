@@ -153,7 +153,7 @@ export default function AssetsPage() {
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground">资产库</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              项目内所有角色、场景、道具的集中管理，支持 AI 自动提取和手动编辑
+              项目全局共享的角色、场景与道具库，剧本与分镜等环节均可引用；支持从大纲 AI 提取与手动维护
             </p>
           </div>
         </div>

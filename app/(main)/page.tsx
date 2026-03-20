@@ -45,7 +45,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectStore } from "@/store/project-store"
 import { PLATFORM_PRESETS } from "@/lib/types"
 
-const STEP_TOTAL = 7
+const STEP_TOTAL = 6
 
 type ViewMode = "grid" | "list"
 type SortField = "updatedAt" | "createdAt" | "name"
