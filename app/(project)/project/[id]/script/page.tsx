@@ -28,7 +28,7 @@ export default function ScriptPage() {
     updateScript,
     setActiveScriptId,
     confirmScripts,
-  } = useScriptStore()
+  } = useScriptStore()  
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
   const [loading, setLoading] = useState(true)

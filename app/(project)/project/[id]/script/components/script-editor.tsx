@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Pencil, Save, X, FolderOpen, Users, Box, MapPin } from "lucide-react"
+import { Check, X, FolderOpen, Users, Box, MapPin } from "lucide-react"
 import type { Script } from "@/lib/types"
+import { countWords } from "@/lib/novel-utils"
 import { ScriptAssetDialog } from "./script-asset-dialog"
 
 function parseJsonArray(val: string | null | undefined): string[] {
@@ -27,7 +27,7 @@ interface ScriptEditorProps {
     characters?: string
     props?: string
     location?: string
-  }) => void
+  }) => Promise<void>
 }
 
 export function ScriptEditor({
@@ -35,90 +35,168 @@ export function ScriptEditor({
   projectId,
   onUpdateScript,
 }: ScriptEditorProps) {
-  const [editing, setEditing] = useState(false)
-  const [editContent, setEditContent] = useState("")
+  const [content, setContent] = useState(script.content ?? "")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [showAssetDialog, setShowAssetDialog] = useState(false)
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const gutterRef = useRef<HTMLDivElement>(null)
+  const isDirty = content !== (script.content ?? "")
 
   const charNames = parseJsonArray(script.characters)
   const propNames = parseJsonArray(script.props)
 
-  const startEditing = useCallback(() => {
-    setEditContent(script.content)
-    setEditing(true)
-    setTimeout(() => textareaRef.current?.focus(), 50)
-  }, [script.content])
+  useEffect(() => {
+    setContent(script.content ?? "")
+    setSaved(false)
+  }, [script.id, script.content])
 
-  const saveContent = useCallback(() => {
-    onUpdateScript({ content: editContent })
-    setEditing(false)
-  }, [editContent, onUpdateScript])
-
-  const cancelEditing = useCallback(() => {
-    setEditing(false)
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
   }, [])
+
+  const triggerAutoSave = useCallback(
+    (newContent: string) => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+      const server = script.content ?? ""
+      if (newContent === server) return
+      saveTimerRef.current = setTimeout(async () => {
+        setSaving(true)
+        try {
+          await onUpdateScript({ content: newContent.trim() || undefined })
+          setSaved(true)
+          setTimeout(() => setSaved(false), 2000)
+        } finally {
+          setSaving(false)
+        }
+      }, 800)
+    },
+    [script.content, onUpdateScript]
+  )
+
+  const handleContentChange = (v: string) => {
+    setContent(v)
+    triggerAutoSave(v)
+  }
+
+  const handleSaveNow = async () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = null
+    setSaving(true)
+    try {
+      await onUpdateScript({ content: content.trim() || undefined })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDiscard = () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    setContent(script.content ?? "")
+    setSaved(false)
+  }
+
+  const wordCount = countWords(content)
+  const lineCount = content ? content.split("\n").length : 0
+  const lineNumbers = content.split("\n").map((_, i) => i + 1)
+
+  const syncGutterScroll = () => {
+    const ta = textareaRef.current
+    const g = gutterRef.current
+    if (ta && g) g.scrollTop = ta.scrollTop
+  }
 
   return (
     <>
       <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5">
+        {/* 顶栏：与小说导入章节编辑区一致的信息与保存状态 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5 shrink-0">
               第{script.episode.index}集
             </span>
-            <h3 className="text-sm font-semibold">{script.title}</h3>
-            <span className="text-xs text-muted-foreground">
-              {script.content.length} 字
-            </span>
+            <h3 className="text-sm font-semibold truncate">{script.title}</h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {saving && (
+              <span className="text-xs text-muted-foreground">保存中...</span>
+            )}
+            {saved && !saving && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <Check className="size-3" />
+                已保存
+              </span>
+            )}
+            {isDirty && !saving && !saved && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={handleSaveNow}
+                >
+                  <Check className="size-3 mr-1" />
+                  保存
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                  onClick={handleDiscard}
+                >
+                  <X className="size-3 mr-1" />
+                  放弃
+                </Button>
+              </>
+            )}
             <Button
               variant="outline"
               size="sm"
+              className="h-7"
               onClick={() => setShowAssetDialog(true)}
             >
               <FolderOpen className="size-3.5" />
               关联资产
             </Button>
-            {!editing && (
-              <Button variant="outline" size="sm" onClick={startEditing}>
-                <Pencil className="size-3.5" />
-                编辑
-              </Button>
-            )}
-            {editing && (
-              <>
-                <Button variant="ghost" size="sm" onClick={cancelEditing}>
-                  <X className="size-3.5" />
-                  取消
-                </Button>
-                <Button size="sm" onClick={saveContent}>
-                  <Save className="size-3.5" />
-                  保存
-                </Button>
-              </>
-            )}
           </div>
         </div>
 
-        {/* Asset tags */}
         {(charNames.length > 0 || propNames.length > 0 || script.location) && (
-          <div className="flex items-center gap-1.5 flex-wrap px-4 py-2 border-b bg-muted/20">
+          <div className="flex items-center gap-1.5 flex-wrap px-4 py-2 border-b bg-muted/20 shrink-0">
             {charNames.map((name) => (
-              <Badge key={name} variant="default" className="gap-1 text-[10px] px-1.5 py-0">
+              <Badge
+                key={name}
+                variant="default"
+                className="gap-1 text-[10px] px-1.5 py-0"
+              >
                 <Users className="size-2.5" />
                 {name}
               </Badge>
             ))}
             {script.location && (
-              <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
+              <Badge
+                variant="secondary"
+                className="gap-1 text-[10px] px-1.5 py-0"
+              >
                 <MapPin className="size-2.5" />
                 {script.location}
               </Badge>
             )}
             {propNames.map((name) => (
-              <Badge key={name} variant="outline" className="gap-1 text-[10px] px-1.5 py-0">
+              <Badge
+                key={name}
+                variant="outline"
+                className="gap-1 text-[10px] px-1.5 py-0"
+              >
                 <Box className="size-2.5" />
                 {name}
               </Badge>
@@ -126,48 +204,39 @@ export function ScriptEditor({
           </div>
         )}
 
-        {/* Content */}
-        {editing ? (
-          <div className="flex-1 min-h-0 mx-3 my-3 rounded-sm overflow-hidden border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/40 dark:bg-amber-950/20">
+        <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/60 bg-background">
+          <div
+            ref={gutterRef}
+            className="pointer-events-none shrink-0 w-11 select-none overflow-y-auto overflow-x-hidden border-r border-border/60 bg-muted/25 py-3 pl-2 pr-1.5 text-right font-mono text-sm leading-relaxed text-muted-foreground/80 tabular-nums [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-hidden
+          >
+            {lineNumbers.map((n) => (
+              <div key={n} className="min-h-[1.625em] leading-relaxed">
+                {n}
+              </div>
+            ))}
+          </div>
+          <div className="flex-1 relative min-w-0 min-h-0">
             <Textarea
               ref={textareaRef}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="flex-1 min-h-0 rounded-none border-0 resize-none p-4 text-sm leading-relaxed font-mono focus-visible:ring-0 bg-transparent"
-              placeholder="输入剧本内容..."
+              value={content}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onScroll={syncGutterScroll}
+              placeholder="在此编辑剧本内容..."
+              spellCheck={false}
+              className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent py-3 pl-2 pr-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 whitespace-pre overflow-x-auto overflow-y-auto"
             />
           </div>
-        ) : (
-          <ScrollArea className="flex-1 min-h-0">
-            {script.content ? (
-              <div className="min-h-full bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-sm mx-3 my-3">
-                <div className="flex font-mono text-sm leading-relaxed">
-                  <div className="flex-shrink-0 select-none text-right text-muted-foreground/70 border-r border-amber-200/60 dark:border-amber-700/40 bg-amber-100/30 dark:bg-amber-900/20 py-4 pl-3 pr-4 min-w-[2.5rem]">
-                    {script.content.split("\n").map((_, i) => (
-                      <div key={i} className="leading-relaxed">
-                        {i + 1}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex-1 py-4 px-4 whitespace-pre-wrap break-words">
-                    {script.content}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <h3 className="text-base font-medium mb-2">暂无剧本内容</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  点击编辑按钮手动编写，或使用 AI 生成
-                </p>
-                <Button onClick={startEditing}>
-                  <Pencil className="size-4" />
-                  开始编写
-                </Button>
-              </div>
-            )}
-          </ScrollArea>
-        )}
+        </div>
+
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/20 shrink-0">
+          <span className="text-xs text-muted-foreground">
+            {lineCount > 0 ? `${lineCount} 行` : "空内容"}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {wordCount.toLocaleString()} 字
+          </span>
+        </div>
       </div>
 
       <ScriptAssetDialog
@@ -175,8 +244,8 @@ export function ScriptEditor({
         onOpenChange={setShowAssetDialog}
         script={script}
         projectId={projectId}
-        onSave={(data) => {
-          onUpdateScript({
+        onSave={async (data) => {
+          await onUpdateScript({
             characters: data.characters,
             location: data.location,
             props: data.props,
