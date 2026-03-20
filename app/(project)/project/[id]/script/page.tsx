@@ -144,8 +144,9 @@ export default function ScriptPage() {
         <>
           <div className="flex flex-1 min-h-0 overflow-hidden">
             {/* Left: Episode navigation */}
-            <div className="w-64 shrink-0 border-r overflow-y-auto">
+            <div className="w-64 shrink-0 min-h-0 border-r bg-background overflow-hidden">
               <EpisodeNavList
+                projectId={projectId}
                 episodes={episodes}
                 scripts={scripts}
                 activeScriptId={activeScriptId}
