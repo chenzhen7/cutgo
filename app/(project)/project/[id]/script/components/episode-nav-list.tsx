@@ -2,22 +2,47 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  CheckCircle2,
   Circle,
   Loader2,
   Sparkles,
   BookOpen,
   ChevronRight,
+  User,
+  MapPin,
+  Package,
 } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import type { Episode, Script, ScriptGenerateStatus } from "@/lib/types"
+import { countWords } from "@/lib/novel-utils"
+import type {
+  AssetCharacter,
+  AssetProp,
+  AssetScene,
+  Episode,
+  Script,
+  ScriptGenerateStatus,
+} from "@/lib/types"
+
+function parseJsonArray(val: string | null | undefined): string[] {
+  if (!val) return []
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
 
 const SCRIPT_NAV_OPEN_CHAPTERS_KEY = "cutgo:script-episode-nav:open-chapters"
 
@@ -31,8 +56,101 @@ interface EpisodeNavListProps {
   scripts: Script[]
   activeScriptId: string | null
   generateStatus: ScriptGenerateStatus
+  assetCharacters: AssetCharacter[]
+  assetScenes: AssetScene[]
+  assetProps: AssetProp[]
   onSelectScript: (scriptId: string) => void
   onGenerateEpisode: (episodeId: string) => void
+}
+
+function ScriptEpisodeAssetStrip({
+  script,
+  charByName,
+  propByName,
+  assetScenes,
+}: {
+  script: Script
+  charByName: Map<string, AssetCharacter>
+  propByName: Map<string, AssetProp>
+  assetScenes: AssetScene[]
+}) {
+  const charNames = parseJsonArray(script.characters)
+  const propNames = parseJsonArray(script.props)
+  const loc = script.location?.trim() || ""
+
+  const boundProps = propNames
+    .map((n) => propByName.get(n))
+    .filter((p): p is AssetProp => !!p)
+
+  const boundScene = loc ? assetScenes.find((s) => s.name === loc) : null
+  const sceneLabel = loc
+
+  const hasAny =
+    charNames.length > 0 || !!sceneLabel || propNames.length > 0
+  if (!hasAny) return null
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap pt-0.5">
+      {charNames.length > 0 && (
+        <TooltipProvider delayDuration={200}>
+          <div className="flex items-center -space-x-1.5">
+            {charNames.slice(0, 5).map((name) => {
+              const c = charByName.get(name)
+              return (
+                <Tooltip key={name}>
+                  <TooltipTrigger asChild>
+                    <div className="size-5 rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0">
+                      {c?.imageUrl ? (
+                        <img
+                          src={c.imageUrl}
+                          alt={name}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <User className="size-2.5 text-muted-foreground" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {name}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
+            {charNames.length > 5 && (
+              <div className="size-5 rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0">
+                +{charNames.length - 5}
+              </div>
+            )}
+          </div>
+        </TooltipProvider>
+      )}
+
+      {sceneLabel && (
+        <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-2 py-0.5 font-medium max-w-[140px]">
+          <MapPin className="size-2.5 shrink-0" />
+          <span className="truncate">
+            {boundScene?.name ?? sceneLabel}
+          </span>
+        </span>
+      )}
+
+      {propNames.length > 0 && (
+        <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium max-w-[140px]">
+          <Package className="size-2.5 shrink-0" />
+          <span className="truncate">
+            {boundProps.length === propNames.length && boundProps.length > 0
+              ? boundProps.length === 1
+                ? boundProps[0].name
+                : `${boundProps[0].name} +${boundProps.length - 1}`
+              : propNames.length === 1
+                ? propNames[0]
+                : `${propNames[0]} +${propNames.length - 1}`}
+          </span>
+        </span>
+      )}
+    </div>
+  )
 }
 
 export function EpisodeNavList({
@@ -41,6 +159,9 @@ export function EpisodeNavList({
   scripts,
   activeScriptId,
   generateStatus,
+  assetCharacters,
+  assetScenes,
+  assetProps,
   onSelectScript,
   onGenerateEpisode,
 }: EpisodeNavListProps) {
@@ -58,6 +179,15 @@ export function EpisodeNavList({
     for (const s of scriptsForProject) map.set(s.episodeId, s)
     return map
   }, [scriptsForProject])
+
+  const charByName = useMemo(
+    () => new Map(assetCharacters.map((c) => [c.name, c])),
+    [assetCharacters]
+  )
+  const propByName = useMemo(
+    () => new Map(assetProps.map((p) => [p.name, p])),
+    [assetProps]
+  )
 
   const chapterGroups = useMemo(() => {
     const groups = new Map<string, { chapter: Episode["chapter"]; episodes: Episode[] }>()
@@ -220,27 +350,33 @@ export function EpisodeNavList({
                       <div className="flex items-center gap-2 min-w-0">
                         {isGenerating ? (
                           <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
-                        ) : hasScript ? (
-                          <CheckCircle2 className="size-3.5 shrink-0 text-green-500" />
-                        ) : (
+                        ) : !hasScript ? (
                           <Circle className="size-3.5 shrink-0 text-muted-foreground" />
-                        )}
+                        ) : null}
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           第{ep.index}集
                         </span>
-                        <span className="text-sm font-medium truncate">
+                        <span className="text-sm font-medium truncate min-w-0 flex-1">
                           {ep.title}
                         </span>
+                        {hasScript && (
+                          <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                            {countWords(script.content).toLocaleString()} 字
+                          </span>
+                        )}
                       </div>
 
                       {hasScript ? (
-                        <div className="flex items-center gap-2 ml-5.5">
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-                            {script.content.length}字
-                          </Badge>
+                        <div className="flex flex-col gap-1">
+                          <ScriptEpisodeAssetStrip
+                            script={script}
+                            charByName={charByName}
+                            propByName={propByName}
+                            assetScenes={assetScenes}
+                          />
                         </div>
                       ) : (
-                        <div className="ml-5.5">
+                        <div>
                           <Button
                             variant="ghost"
                             size="sm"

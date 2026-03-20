@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
+import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
@@ -28,16 +29,32 @@ export default function ScriptPage() {
     updateScript,
     setActiveScriptId,
     confirmScripts,
-  } = useScriptStore()  
+  } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
+  const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
+  const [assetProps, setAssetProps] = useState<AssetProp[]>([])
 
   useEffect(() => {
     const init = async () => {
       setLoading(true)
       await fetchEpisodes(projectId)
       await fetchScripts(projectId)
+      try {
+        const res = await fetch(`/api/assets?projectId=${projectId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setAssetCharacters(data.characters ?? [])
+          setAssetScenes(data.scenes ?? [])
+          setAssetProps(data.props ?? [])
+        }
+      } catch {
+        setAssetCharacters([])
+        setAssetScenes([])
+        setAssetProps([])
+      }
       setLoading(false)
     }
     init()
@@ -83,7 +100,7 @@ export default function ScriptPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0">
         <div className="flex items-center gap-4">
@@ -151,6 +168,9 @@ export default function ScriptPage() {
                 scripts={scripts}
                 activeScriptId={activeScriptId}
                 generateStatus={generateStatus}
+                assetCharacters={assetCharacters}
+                assetScenes={assetScenes}
+                assetProps={assetProps}
                 onSelectScript={setActiveScriptId}
                 onGenerateEpisode={handleGenerateEpisode}
               />

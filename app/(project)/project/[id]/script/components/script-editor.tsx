@@ -204,7 +204,7 @@ export function ScriptEditor({
           </div>
         )}
 
-        <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/60 bg-background">
+        <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
           <div
             ref={gutterRef}
             className="pointer-events-none shrink-0 w-11 select-none overflow-y-auto overflow-x-hidden border-r border-border/60 bg-muted/25 py-3 pl-2 pr-1.5 text-right font-mono text-sm leading-relaxed text-muted-foreground/80 tabular-nums [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -229,11 +229,12 @@ export function ScriptEditor({
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/20 shrink-0">
-          <span className="text-xs text-muted-foreground">
-            {lineCount > 0 ? `${lineCount} 行` : "空内容"}
+        <div className="flex items-center justify-end gap-2 px-4 py-1.5 shrink-0 text-[11px] tabular-nums text-muted-foreground">
+          <span>{lineCount > 0 ? `${lineCount} 行` : "空内容"}</span>
+          <span className="text-border select-none" aria-hidden>
+            ·
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/75">
             {wordCount.toLocaleString()} 字
           </span>
         </div>
