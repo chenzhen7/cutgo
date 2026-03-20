@@ -11,6 +11,11 @@ import { GenerateScriptDropdown } from "./components/generate-script-dropdown"
 import { EpisodeSelectDialog } from "./components/episode-select-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 
 export default function ScriptPage() {
   const params = useParams()
@@ -160,42 +165,60 @@ export default function ScriptPage() {
       {hasScripts && (
         <>
           <div className="flex flex-1 min-h-0 overflow-hidden">
-            {/* Left: Episode navigation */}
-            <div className="w-64 shrink-0 min-h-0 border-r bg-background overflow-hidden">
-              <EpisodeNavList
-                projectId={projectId}
-                episodes={episodes}
-                scripts={scripts}
-                activeScriptId={activeScriptId}
-                generateStatus={generateStatus}
-                assetCharacters={assetCharacters}
-                assetScenes={assetScenes}
-                assetProps={assetProps}
-                onSelectScript={setActiveScriptId}
-                onGenerateEpisode={handleGenerateEpisode}
-              />
-            </div>
-
-            {/* Right: Script editor */}
-            <div className="flex-1 min-w-0 overflow-hidden">
-              {activeScript ? (
-                <ScriptEditor
-                  script={activeScript}
-                  projectId={projectId}
-                  assetCharacters={assetCharacters}
-                  assetScenes={assetScenes}
-                  assetProps={assetProps}
-                  onUpdateScript={(data) => updateScript(activeScript.id, data)}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <h3 className="text-base font-medium mb-2">选择一个分集</h3>
-                  <p className="text-sm text-muted-foreground">
-                    从左侧列表中选择一个已生成剧本的分集进行查看和编辑
-                  </p>
+            <ResizablePanelGroup
+              orientation="horizontal"
+              className="h-full min-h-0 w-full"
+            >
+              {/* Left: Episode navigation */}
+              <ResizablePanel
+                defaultSize={300}
+                minSize={240}
+                maxSize={440}
+                className="min-w-0"
+              >
+                <div className="h-full min-h-0 border-r bg-background overflow-hidden">
+                  <EpisodeNavList
+                    projectId={projectId}
+                    episodes={episodes}
+                    scripts={scripts}
+                    activeScriptId={activeScriptId}
+                    generateStatus={generateStatus}
+                    assetCharacters={assetCharacters}
+                    assetScenes={assetScenes}
+                    assetProps={assetProps}
+                    onSelectScript={setActiveScriptId}
+                    onGenerateEpisode={handleGenerateEpisode}
+                  />
                 </div>
-              )}
-            </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              {/* Right: Script editor */}
+              <ResizablePanel className="min-w-0">
+                <div className="h-full min-w-0 overflow-hidden">
+                  {activeScript ? (
+                    <ScriptEditor
+                      script={activeScript}
+                      projectId={projectId}
+                      assetCharacters={assetCharacters}
+                      assetScenes={assetScenes}
+                      assetProps={assetProps}
+                      onUpdateScript={(data) =>
+                        updateScript(activeScript.id, data)
+                      }
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <h3 className="text-base font-medium mb-2">选择一个分集</h3>
+                      <p className="text-sm text-muted-foreground">
+                        从左侧列表中选择一个已生成剧本的分集进行查看和编辑
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
         </>
       )}
