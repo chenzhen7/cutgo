@@ -1,6 +1,5 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
 import { Film, BarChart3, FileText } from "lucide-react"
 import type { Script, Episode } from "@/lib/types"
 
@@ -19,19 +18,14 @@ export function ScriptStatsPanel({ scripts, episodes }: ScriptStatsPanelProps) {
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {stats.map((stat) => (
-        <Card key={stat.label}>
-          <CardContent className="flex items-center gap-3 py-3 px-4">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <stat.icon className="size-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-lg font-bold leading-none">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="flex items-center gap-4">
+      {stats.map((stat, i) => (
+        <div key={stat.label} className="flex items-center gap-1.5">
+          {i > 0 && <span className="mr-2.5 h-3 w-px bg-border" />}
+          <stat.icon className="size-3.5 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">{stat.label}</span>
+          <span className="text-xs font-medium">{stat.value}</span>
+        </div>
       ))}
     </div>
   )

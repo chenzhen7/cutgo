@@ -83,14 +83,14 @@ export default function ScriptPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-start justify-between px-6 pt-6 pb-4">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">剧本生成</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            基于导入章节对应的分集，AI 为每一集生成剧本文本
-          </p>
+      <div className="flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0">
+        <div className="flex items-center gap-4">
+          <h2 className="text-base font-semibold text-foreground">剧本生成</h2>
+          {hasScripts && (
+            <ScriptStatsPanel scripts={scripts} episodes={episodes} />
+          )}
         </div>
         {hasScripts && (
           <GenerateScriptDropdown
@@ -103,11 +103,11 @@ export default function ScriptPage() {
 
       {/* Generate error */}
       {generateStatus === "error" && generateError && (
-        <div className="mx-6 mb-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-          <p className="text-sm text-destructive">{generateError}</p>
+        <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
+          <p className="text-xs text-destructive">{generateError}</p>
           <button
             onClick={() => handleGenerateAll("skip_existing")}
-            className="mt-2 text-sm text-destructive underline hover:no-underline"
+            className="text-xs text-destructive underline hover:no-underline"
           >
             重试
           </button>
@@ -116,11 +116,11 @@ export default function ScriptPage() {
 
       {/* Generating progress */}
       {isGenerating && (
-        <div className="mx-6 mb-4 rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
-          <Loader2 className="size-5 animate-spin text-primary" />
+        <div className="px-6 py-2 border-b bg-muted/30 shrink-0 flex items-center gap-3">
+          <Loader2 className="size-4 animate-spin text-primary" />
           <div>
-            <p className="text-sm font-medium">正在生成剧本...</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs font-medium">正在生成剧本...</p>
+            <p className="text-xs text-muted-foreground">
               AI 正在为每个分集生成剧本，请稍候
             </p>
           </div>
@@ -129,7 +129,7 @@ export default function ScriptPage() {
 
       {/* Empty state */}
       {!hasScripts && !isGenerating && (
-        <div className="px-6">
+        <div className="flex-1 overflow-hidden">
           <ScriptEmptyState
             episodes={episodes}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
@@ -142,13 +142,9 @@ export default function ScriptPage() {
       {/* Main content */}
       {hasScripts && (
         <>
-          <div className="px-6 mb-4">
-            <ScriptStatsPanel scripts={scripts} episodes={episodes} />
-          </div>
-
-          <div className="flex flex-1 min-h-0 px-6 gap-4">
+          <div className="flex flex-1 min-h-0 overflow-hidden">
             {/* Left: Episode navigation */}
-            <div className="w-64 shrink-0 rounded-lg border bg-card">
+            <div className="w-64 shrink-0 border-r overflow-y-auto">
               <EpisodeNavList
                 episodes={episodes}
                 scripts={scripts}
@@ -160,7 +156,7 @@ export default function ScriptPage() {
             </div>
 
             {/* Right: Script editor */}
-            <div className="flex-1 min-w-0 rounded-lg border bg-card">
+            <div className="flex-1 min-w-0 overflow-hidden">
               {activeScript ? (
                 <ScriptEditor
                   script={activeScript}
@@ -177,7 +173,6 @@ export default function ScriptPage() {
               )}
             </div>
           </div>
-
         </>
       )}
 

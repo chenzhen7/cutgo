@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, ListChecks, AlertTriangle, ArrowLeft } from "lucide-react"
 import type { Episode } from "@/lib/types"
@@ -21,12 +20,14 @@ export function ScriptEmptyState({
 }: ScriptEmptyStateProps) {
   if (episodes.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <AlertTriangle className="size-10 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-base font-medium mb-2">暂无分集数据</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          请在小说导入中确认导入，系统会按所选章节自动生成分集
-        </p>
+      <div className="flex h-full flex-col items-center justify-center gap-4">
+        <AlertTriangle className="size-10 text-muted-foreground/40" />
+        <div className="text-center">
+          <p className="text-sm font-medium">暂无分集数据</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            请在小说导入中确认导入，系统会按所选章节自动生成分集
+          </p>
+        </div>
         <Button onClick={onGoToImport}>
           <ArrowLeft className="size-4" />
           返回小说导入
@@ -36,33 +37,30 @@ export function ScriptEmptyState({
   }
 
   return (
-    <div className="rounded-lg border border-dashed p-8 text-center">
-      <Sparkles className="size-10 text-muted-foreground mx-auto mb-4" />
-      <h3 className="text-base font-medium mb-2">尚未生成剧本</h3>
-      <p className="text-sm text-muted-foreground mb-6">
-        基于当前 {episodes.length} 个分集，AI 将为每集生成结构化剧本
-      </p>
+    <div className="flex h-full flex-col items-center justify-center gap-4">
+      <Sparkles className="size-10 text-muted-foreground/40" />
+      <div className="text-center">
+        <p className="text-sm font-medium">尚未生成剧本</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          基于当前 {episodes.length} 个分集，AI 将为每集生成结构化剧本
+        </p>
+      </div>
 
-      <Card className="mb-6 mx-auto max-w-lg">
-        <CardContent className="py-3">
-          <p className="text-xs text-muted-foreground mb-2">可用分集：</p>
-          <div className="flex flex-wrap gap-1.5 justify-center">
-            {episodes.slice(0, 10).map((ep) => (
-              <Badge key={ep.id} variant="secondary" className="text-xs">
-                {ep.title}
-                <span className="ml-1 opacity-60">({ep.scenes.length}场)</span>
-              </Badge>
-            ))}
-            {episodes.length > 10 && (
-              <Badge variant="outline" className="text-xs">
-                +{episodes.length - 10} 更多
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
+        {episodes.slice(0, 10).map((ep) => (
+          <Badge key={ep.id} variant="secondary" className="text-xs">
+            {ep.title}
+            <span className="ml-1 opacity-60">({ep.scenes.length}场)</span>
+          </Badge>
+        ))}
+        {episodes.length > 10 && (
+          <Badge variant="outline" className="text-xs">
+            +{episodes.length - 10} 更多
+          </Badge>
+        )}
+      </div>
 
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center gap-3">
         <Button onClick={onGenerateAll}>
           <Sparkles className="size-4" />
           AI 生成全部剧本
