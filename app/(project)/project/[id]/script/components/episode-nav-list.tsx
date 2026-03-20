@@ -13,18 +13,10 @@ import {
   Sparkles,
   BookOpen,
   ChevronRight,
-  User,
-  MapPin,
-  Package,
 } from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { countWords } from "@/lib/novel-utils"
+import { ScriptAssetStrip } from "./script-asset-strip"
 import type {
   AssetCharacter,
   AssetProp,
@@ -33,16 +25,6 @@ import type {
   Script,
   ScriptGenerateStatus,
 } from "@/lib/types"
-
-function parseJsonArray(val: string | null | undefined): string[] {
-  if (!val) return []
-  try {
-    const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
 
 const SCRIPT_NAV_OPEN_CHAPTERS_KEY = "cutgo:script-episode-nav:open-chapters"
 
@@ -61,96 +43,6 @@ interface EpisodeNavListProps {
   assetProps: AssetProp[]
   onSelectScript: (scriptId: string) => void
   onGenerateEpisode: (episodeId: string) => void
-}
-
-function ScriptEpisodeAssetStrip({
-  script,
-  charByName,
-  propByName,
-  assetScenes,
-}: {
-  script: Script
-  charByName: Map<string, AssetCharacter>
-  propByName: Map<string, AssetProp>
-  assetScenes: AssetScene[]
-}) {
-  const charNames = parseJsonArray(script.characters)
-  const propNames = parseJsonArray(script.props)
-  const loc = script.location?.trim() || ""
-
-  const boundProps = propNames
-    .map((n) => propByName.get(n))
-    .filter((p): p is AssetProp => !!p)
-
-  const boundScene = loc ? assetScenes.find((s) => s.name === loc) : null
-  const sceneLabel = loc
-
-  const hasAny =
-    charNames.length > 0 || !!sceneLabel || propNames.length > 0
-  if (!hasAny) return null
-
-  return (
-    <div className="flex items-center gap-2 flex-wrap pt-0.5">
-      {charNames.length > 0 && (
-        <TooltipProvider delayDuration={200}>
-          <div className="flex items-center -space-x-1.5">
-            {charNames.slice(0, 5).map((name) => {
-              const c = charByName.get(name)
-              return (
-                <Tooltip key={name}>
-                  <TooltipTrigger asChild>
-                    <div className="size-5 rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0">
-                      {c?.imageUrl ? (
-                        <img
-                          src={c.imageUrl}
-                          alt={name}
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <User className="size-2.5 text-muted-foreground" />
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    {name}
-                  </TooltipContent>
-                </Tooltip>
-              )
-            })}
-            {charNames.length > 5 && (
-              <div className="size-5 rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0">
-                +{charNames.length - 5}
-              </div>
-            )}
-          </div>
-        </TooltipProvider>
-      )}
-
-      {sceneLabel && (
-        <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-2 py-0.5 font-medium max-w-[140px]">
-          <MapPin className="size-2.5 shrink-0" />
-          <span className="truncate">
-            {boundScene?.name ?? sceneLabel}
-          </span>
-        </span>
-      )}
-
-      {propNames.length > 0 && (
-        <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium max-w-[140px]">
-          <Package className="size-2.5 shrink-0" />
-          <span className="truncate">
-            {boundProps.length === propNames.length && boundProps.length > 0
-              ? boundProps.length === 1
-                ? boundProps[0].name
-                : `${boundProps[0].name} +${boundProps.length - 1}`
-              : propNames.length === 1
-                ? propNames[0]
-                : `${propNames[0]} +${propNames.length - 1}`}
-          </span>
-        </span>
-      )}
-    </div>
-  )
 }
 
 export function EpisodeNavList({
@@ -179,15 +71,6 @@ export function EpisodeNavList({
     for (const s of scriptsForProject) map.set(s.episodeId, s)
     return map
   }, [scriptsForProject])
-
-  const charByName = useMemo(
-    () => new Map(assetCharacters.map((c) => [c.name, c])),
-    [assetCharacters]
-  )
-  const propByName = useMemo(
-    () => new Map(assetProps.map((p) => [p.name, p])),
-    [assetProps]
-  )
 
   const chapterGroups = useMemo(() => {
     const groups = new Map<string, { chapter: Episode["chapter"]; episodes: Episode[] }>()
@@ -368,11 +251,12 @@ export function EpisodeNavList({
 
                       {hasScript ? (
                         <div className="flex flex-col gap-1">
-                          <ScriptEpisodeAssetStrip
+                          <ScriptAssetStrip
                             script={script}
-                            charByName={charByName}
-                            propByName={propByName}
+                            assetCharacters={assetCharacters}
                             assetScenes={assetScenes}
+                            assetProps={assetProps}
+                            mode="nav"
                           />
                         </div>
                       ) : (

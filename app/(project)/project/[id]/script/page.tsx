@@ -182,6 +182,9 @@ export default function ScriptPage() {
                 <ScriptEditor
                   script={activeScript}
                   projectId={projectId}
+                  assetCharacters={assetCharacters}
+                  assetScenes={assetScenes}
+                  assetProps={assetProps}
                   onUpdateScript={(data) => updateScript(activeScript.id, data)}
                 />
               ) : (

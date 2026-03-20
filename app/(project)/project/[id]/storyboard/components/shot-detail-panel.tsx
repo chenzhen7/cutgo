@@ -245,9 +245,9 @@ export function ShotDetailPanel({
 
           {/* === Image Generation Tab === */}
           <TabsContent value="image" className="space-y-4">
-          
 
-            
+
+
 
             {/* Image Type + Preview */}
             <div className="flex gap-3">
@@ -588,7 +588,7 @@ export function ShotDetailPanel({
             {/* Composition */}
             <div>
               <div className="flex items-center gap-1.5 mb-1">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面描述</Label>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面描述</Label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
