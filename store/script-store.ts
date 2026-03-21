@@ -21,6 +21,8 @@ interface ScriptState {
   fetchScripts: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<void>
   fetchChapters: (projectId: string) => Promise<void>
+  deleteEpisode: (projectId: string, episodeId: string) => Promise<void>
+  reorderEpisodes: (projectId: string, orderedIds: string[]) => Promise<void>
 
   generateScripts: (
     projectId: string,
@@ -145,6 +147,41 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     const res = await fetch(`/api/scripts/${scriptId}`, { method: "DELETE" })
     if (!res.ok) throw new Error("删除剧本失败")
     set({ scripts: get().scripts.filter((s) => s.id !== scriptId) })
+  },
+
+  deleteEpisode: async (projectId, episodeId) => {
+    const res = await fetch(`/api/episodes/${episodeId}`, { method: "DELETE" })
+    if (!res.ok) throw new Error("删除分集失败")
+    const remaining = await res.json()
+    set({
+      episodes: remaining,
+      scripts: get().scripts.filter((s) => s.episodeId !== episodeId),
+    })
+    const { activeScriptId, scripts } = get()
+    if (activeScriptId && !scripts.find((s) => s.id === activeScriptId)) {
+      set({ activeScriptId: scripts[0]?.id ?? null })
+    }
+  },
+
+  reorderEpisodes: async (projectId, orderedIds) => {
+    const prevEpisodes = get().episodes
+    const reordered = orderedIds.map((id, i) => {
+      const ep = prevEpisodes.find((e) => e.id === id)!
+      return { ...ep, index: i + 1 }
+    })
+    set({ episodes: reordered })
+    try {
+      const res = await fetch("/api/episodes/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, orderedIds }),
+      })
+      if (!res.ok) throw new Error("排序失败")
+      const updated = await res.json()
+      set({ episodes: updated })
+    } catch {
+      set({ episodes: prevEpisodes })
+    }
   },
 
   setActiveScriptId: (scriptId) => set({ activeScriptId: scriptId }),

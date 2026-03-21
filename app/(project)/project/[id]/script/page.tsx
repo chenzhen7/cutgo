@@ -34,6 +34,8 @@ export default function ScriptPage() {
     updateScript,
     setActiveScriptId,
     confirmScripts,
+    deleteEpisode,
+    reorderEpisodes,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
@@ -188,6 +190,8 @@ export default function ScriptPage() {
                     assetProps={assetProps}
                     onSelectScript={setActiveScriptId}
                     onGenerateEpisode={handleGenerateEpisode}
+                    onDeleteEpisode={deleteEpisode}
+                    onReorderEpisodes={reorderEpisodes}
                   />
                 </div>
               </ResizablePanel>
