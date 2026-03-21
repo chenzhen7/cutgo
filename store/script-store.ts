@@ -196,11 +196,12 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
 
   reorderEpisodes: async (projectId, orderedIds) => {
     const prevEpisodes = get().episodes
-    const reordered = orderedIds.map((id, i) => {
-      const ep = prevEpisodes.find((e) => e.id === id)!
-      return { ...ep, index: i + 1 }
+    const newIndexById = new Map(orderedIds.map((id, i) => [id, i + 1]))
+    const merged = prevEpisodes.map((ep) => {
+      const ni = newIndexById.get(ep.id)
+      return ni !== undefined ? { ...ep, index: ni } : ep
     })
-    set({ episodes: reordered })
+    set({ episodes: merged })
     try {
       const res = await fetch("/api/episodes/reorder", {
         method: "PUT",

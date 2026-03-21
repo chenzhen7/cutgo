@@ -131,7 +131,7 @@ function SortableEpisodeItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex flex-col gap-1 w-full cursor-pointer transition-colors border-l-[3px] border-transparent",
+        "flex flex-col gap-1 w-full cursor-pointer transition-colors border-l-[3px] border-l-transparent border-b border-b-border/60",
         isActive
           ? "bg-primary/10 border-l-primary"
           : "hover:bg-muted/50",
@@ -508,7 +508,7 @@ export function EpisodeNavList({
                     </Button>
                   )}
                 </div>
-                <CollapsibleContent className="divide-y divide-border">
+                <CollapsibleContent>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
