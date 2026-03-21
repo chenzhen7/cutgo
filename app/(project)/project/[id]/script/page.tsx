@@ -39,6 +39,7 @@ export default function ScriptPage() {
     deleteEpisode,
     reorderEpisodes,
     createEpisodeWithScript,
+    updateEpisode,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
@@ -228,6 +229,7 @@ export default function ScriptPage() {
                   {activeScript ? (
                     <ScriptEditor
                       script={activeScript}
+                      episode={episodes.find((e) => e.id === activeScript.episodeId)!}
                       episodeDisplayNumber={
                         episodeDisplayMap.get(activeScript.episodeId) ?? 1
                       }
@@ -237,6 +239,9 @@ export default function ScriptPage() {
                       assetProps={assetProps}
                       onUpdateScript={(data) =>
                         updateScript(activeScript.id, data)
+                      }
+                      onUpdateEpisode={(data) =>
+                        updateEpisode(activeScript.episodeId, data)
                       }
                     />
                   ) : (

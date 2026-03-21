@@ -24,6 +24,7 @@ interface ScriptState {
   deleteEpisode: (projectId: string, episodeId: string) => Promise<void>
   reorderEpisodes: (projectId: string, orderedIds: string[]) => Promise<void>
   createEpisodeWithScript: (projectId: string, chapterId: string) => Promise<void>
+  updateEpisode: (episodeId: string, data: { title?: string }) => Promise<void>
 
   generateScripts: (
     projectId: string,
@@ -148,6 +149,17 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     const res = await fetch(`/api/scripts/${scriptId}`, { method: "DELETE" })
     if (!res.ok) throw new Error("删除剧本失败")
     set({ scripts: get().scripts.filter((s) => s.id !== scriptId) })
+  },
+
+  updateEpisode: async (episodeId, data) => {
+    const res = await fetch(`/api/episodes/${episodeId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error("更新分集失败")
+    const updated = await res.json()
+    set({ episodes: get().episodes.map((ep) => (ep.id === episodeId ? updated : ep)) })
   },
 
   deleteEpisode: async (projectId, episodeId) => {

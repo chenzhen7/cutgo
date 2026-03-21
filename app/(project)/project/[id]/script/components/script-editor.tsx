@@ -3,11 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Check, X, FolderOpen } from "lucide-react"
+import { Check, X, FolderOpen, Pencil } from "lucide-react"
 import type {
   AssetCharacter,
   AssetProp,
   AssetScene,
+  Episode,
   Script,
 } from "@/lib/types"
 import { countWords } from "@/lib/novel-utils"
@@ -26,6 +27,7 @@ function parseJsonArray(val: string | null | undefined): string[] {
 
 interface ScriptEditorProps {
   script: Script
+  episode: Episode
   /** 全项目分集排序后的展示集序号（第 1、2… 集），非数据库 index 字段 */
   episodeDisplayNumber: number
   projectId: string
@@ -38,21 +40,28 @@ interface ScriptEditorProps {
     props?: string
     location?: string
   }) => Promise<void>
+  onUpdateEpisode?: (data: { title?: string }) => Promise<void>
 }
 
 export function ScriptEditor({
   script,
+  episode,
   episodeDisplayNumber,
   projectId,
   assetCharacters,
   assetScenes,
   assetProps,
   onUpdateScript,
+  onUpdateEpisode,
 }: ScriptEditorProps) {
   const [content, setContent] = useState(script.content ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showAssetDialog, setShowAssetDialog] = useState(false)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState(episode.title)
+  const [savingTitle, setSavingTitle] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -66,6 +75,10 @@ export function ScriptEditor({
     setContent(script.content ?? "")
     setSaved(false)
   }, [script.id, script.content])
+
+  useEffect(() => {
+    setTitleValue(episode.title)
+  }, [episode.id, episode.title])
 
   useEffect(() => {
     return () => {
@@ -119,6 +132,36 @@ export function ScriptEditor({
     setSaved(false)
   }
 
+  const handleTitleEdit = () => {
+    if (!onUpdateEpisode) return
+    setEditingTitle(true)
+    setTimeout(() => titleInputRef.current?.select(), 0)
+  }
+
+  const handleTitleSave = async () => {
+    const trimmed = titleValue.trim()
+    if (!trimmed || trimmed === episode.title) {
+      setEditingTitle(false)
+      setTitleValue(episode.title)
+      return
+    }
+    setSavingTitle(true)
+    try {
+      await onUpdateEpisode?.({ title: trimmed })
+    } finally {
+      setSavingTitle(false)
+      setEditingTitle(false)
+    }
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleTitleSave()
+    if (e.key === "Escape") {
+      setEditingTitle(false)
+      setTitleValue(episode.title)
+    }
+  }
+
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
   const lineNumbers = content.split("\n").map((_, i) => i + 1)
@@ -138,7 +181,31 @@ export function ScriptEditor({
             <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5 shrink-0">
               第{episodeDisplayNumber}集
             </span>
-            <h3 className="text-sm font-semibold truncate">{script.title}</h3>
+            {editingTitle ? (
+              <input
+                ref={titleInputRef}
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleTitleSave}
+                onKeyDown={handleTitleKeyDown}
+                disabled={savingTitle}
+                className="flex-1 min-w-0 text-sm font-semibold bg-transparent border-b border-primary outline-none px-0.5 py-0 truncate"
+                autoFocus
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={handleTitleEdit}
+                disabled={!onUpdateEpisode}
+                className="group flex items-center gap-1 min-w-0 text-left"
+                title={onUpdateEpisode ? "点击修改标题" : undefined}
+              >
+                <h3 className="text-sm font-semibold truncate">{episode.title}</h3>
+                {onUpdateEpisode && (
+                  <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {saving && (
