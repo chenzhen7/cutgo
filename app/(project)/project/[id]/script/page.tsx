@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
@@ -17,6 +17,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 export default function ScriptPage() {
   const params = useParams()
@@ -109,6 +110,15 @@ export default function ScriptPage() {
 
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
   const hasScripts = scripts.length > 0
+
+  const episodesForProject = useMemo(
+    () => episodes.filter((e) => e.projectId === projectId),
+    [episodes, projectId]
+  )
+  const episodeDisplayMap = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodesForProject),
+    [episodesForProject]
+  )
   const isGenerating = generateStatus === "generating"
 
   if (loading) {
@@ -218,6 +228,9 @@ export default function ScriptPage() {
                   {activeScript ? (
                     <ScriptEditor
                       script={activeScript}
+                      episodeDisplayNumber={
+                        episodeDisplayMap.get(activeScript.episodeId) ?? 1
+                      }
                       projectId={projectId}
                       assetCharacters={assetCharacters}
                       assetScenes={assetScenes}

@@ -1,8 +1,13 @@
 "use client"
 
+import { useMemo } from "react"
 import { CheckCircle2, Circle, Clock, ChevronRight, Film } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Episode, Script, Storyboard } from "@/lib/types"
+import {
+  buildEpisodeDisplayNumberMap,
+  sortEpisodesByChapterAndIndex,
+} from "@/lib/episode-display"
 
 interface EpisodeSelectViewProps {
   episodes: Episode[]
@@ -17,6 +22,15 @@ export function EpisodeSelectView({
   storyboards,
   onSelectEpisode,
 }: EpisodeSelectViewProps) {
+  const orderedEpisodes = useMemo(
+    () => sortEpisodesByChapterAndIndex(episodes),
+    [episodes]
+  )
+  const displayNumberById = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodes),
+    [episodes]
+  )
+
   const getEpisodeInfo = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
     const scriptIds = epScripts.map((s) => s.id)
@@ -72,10 +86,11 @@ export function EpisodeSelectView({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {episodes.map((ep) => {
+          {orderedEpisodes.map((ep) => {
             const info = getEpisodeInfo(ep.id)
             const config = statusConfig[info.status]
             const StatusIcon = config.icon
+            const displayN = displayNumberById.get(ep.id) ?? 1
 
             return (
               <button
@@ -101,9 +116,9 @@ export function EpisodeSelectView({
 
                 {/* Episode title */}
                 <div className="mb-2">
-                  <p className="text-xs text-muted-foreground mb-0.5">第 {ep.index + 1} 集</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">第 {displayN} 集</p>
                   <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">
-                    {ep.title || `第${ep.index + 1}集`}
+                    {ep.title || `第${displayN}集`}
                   </h3>
                 </div>
 

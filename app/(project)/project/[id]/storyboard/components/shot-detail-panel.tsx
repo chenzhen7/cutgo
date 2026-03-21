@@ -49,6 +49,7 @@ import type { Shot, Storyboard, ShotInput, AssetCharacter, AssetScene, AssetProp
 interface ShotDetailPanelProps {
   shot: Shot
   storyboard: Storyboard
+  episodeDisplayNumber: number
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
   assetCharacters: AssetCharacter[]
@@ -73,6 +74,7 @@ function parseJsonArray(value: string | null): string[] {
 export function ShotDetailPanel({
   shot,
   storyboard,
+  episodeDisplayNumber,
   isGeneratingImage,
   isGeneratingVideo,
   assetCharacters,
@@ -767,7 +769,7 @@ export function ShotDetailPanel({
           <div>
             <Label className="text-xs">关联剧本</Label>
             <div className="mt-1 text-xs rounded bg-muted/50 px-2 py-1.5 text-muted-foreground">
-              {script.title} · 第{script.episode.index}集
+              {script.title} · 第{episodeDisplayNumber}集
             </div>
           </div>
         )}

@@ -19,6 +19,7 @@ import { ClipPropertiesPanel } from "./components/clip-properties-panel"
 import { BgmPanel } from "./components/bgm-panel"
 import { ExportDialog } from "./components/export-dialog"
 import { EpisodeSelector } from "./components/episode-selector"
+import { sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { AssetLibrary } from "./components/asset-library"
 
 export default function VideoPage() {
@@ -56,8 +57,8 @@ export default function VideoPage() {
 
   useEffect(() => {
     if (storyboards.length > 0 && episodes.length > 0 && !activeEpisodeId) {
-      // 如果没有选择分集，且当前没有激活的分集，默认选择第一个分集
-      const defaultEpisodeId = episodes[0]?.id
+      const sorted = sortEpisodesByChapterAndIndex(episodes)
+      const defaultEpisodeId = sorted[0]?.id
       initFromStoryboards(storyboards, episodes, defaultEpisodeId)
     }
   }, [storyboards, episodes, activeEpisodeId, initFromStoryboards, setActiveEpisodeId])

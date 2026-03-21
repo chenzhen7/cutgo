@@ -30,6 +30,7 @@ import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import type { ShotCardDisplayMode } from "./components/shot-card"
 import type { Storyboard, ShotInput, Shot } from "@/lib/types"
+import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 
 export default function StoryboardPage() {
   const params = useParams()
@@ -98,7 +99,8 @@ export default function StoryboardPage() {
 
       // 如果没有选中的分集，且有分集数据，默认选中第一个
       if (!activeEpisodeId && eps && eps.length > 0) {
-        setActiveEpisodeId(eps[0].id)
+        const sorted = sortEpisodesByChapterAndIndex(eps)
+        setActiveEpisodeId(sorted[0].id)
       }
 
       setLoading(false)
@@ -391,6 +393,15 @@ export default function StoryboardPage() {
     }
   }, [storyboards])
 
+  const episodesForProject = useMemo(
+    () => episodes.filter((e) => e.projectId === projectId),
+    [episodes, projectId]
+  )
+  const episodeDisplayMap = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodesForProject),
+    [episodesForProject]
+  )
+
   if (loading) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center">
@@ -524,6 +535,9 @@ export default function StoryboardPage() {
                         <SceneSwimlane
                           key={sb.id}
                           storyboard={sb}
+                          episodeDisplayNumber={
+                            episodeDisplayMap.get(sb.script.episodeId) ?? 1
+                          }
                           activeShotId={activeShotId}
                           selectedShotIds={selectedShotIds}
                           imageGeneratingIds={imageGeneratingIds}
@@ -579,6 +593,11 @@ export default function StoryboardPage() {
                       <ShotDetailPanel
                         shot={currentActiveShot.shot}
                         storyboard={currentActiveShot.storyboard}
+                        episodeDisplayNumber={
+                          episodeDisplayMap.get(
+                            currentActiveShot.storyboard.script.episodeId
+                          ) ?? 1
+                        }
                         isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
                         isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
                         assetCharacters={assetCharacters}

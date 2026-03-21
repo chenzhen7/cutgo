@@ -26,6 +26,8 @@ function parseJsonArray(val: string | null | undefined): string[] {
 
 interface ScriptEditorProps {
   script: Script
+  /** 全项目分集排序后的展示集序号（第 1、2… 集），非数据库 index 字段 */
+  episodeDisplayNumber: number
   projectId: string
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
@@ -40,6 +42,7 @@ interface ScriptEditorProps {
 
 export function ScriptEditor({
   script,
+  episodeDisplayNumber,
   projectId,
   assetCharacters,
   assetScenes,
@@ -133,7 +136,7 @@ export function ScriptEditor({
         <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5 shrink-0">
-              第{script.episode.index}集
+              第{episodeDisplayNumber}集
             </span>
             <h3 className="text-sm font-semibold truncate">{script.title}</h3>
           </div>

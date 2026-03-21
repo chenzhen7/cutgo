@@ -16,6 +16,8 @@ import type { Storyboard, AssetCharacter, AssetScene, AssetProp } from "@/lib/ty
 
 interface SceneSwimlaneProps {
   storyboard: Storyboard
+  /** 全项目分集排序后的展示集序号 */
+  episodeDisplayNumber: number
   activeShotId: string | null
   selectedShotIds: Set<string>
   imageGeneratingIds: Set<string>
@@ -38,6 +40,7 @@ interface SceneSwimlaneProps {
 
 export function SceneSwimlane({
   storyboard,
+  episodeDisplayNumber,
   activeShotId,
   selectedShotIds,
   imageGeneratingIds,
@@ -74,7 +77,7 @@ export function SceneSwimlane({
               {script.title}
             </span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              第{script.episode.index}集
+              第{episodeDisplayNumber}集
             </Badge>
           </div>
           <div className="flex items-center gap-2 mt-0.5">

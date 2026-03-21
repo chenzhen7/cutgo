@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -13,6 +13,10 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import type { Episode, Storyboard, Script } from "@/lib/types"
+import {
+  buildEpisodeDisplayNumberMap,
+  sortEpisodesByChapterAndIndex,
+} from "@/lib/episode-display"
 
 interface EpisodeSelectDialogProps {
   open: boolean
@@ -32,6 +36,15 @@ export function EpisodeSelectDialog({
   onGenerate,
 }: EpisodeSelectDialogProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const orderedEpisodes = useMemo(
+    () => sortEpisodesByChapterAndIndex(episodes),
+    [episodes]
+  )
+  const displayNumberById = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodes),
+    [episodes]
+  )
 
   const toggle = (id: string) => {
     setSelectedIds((prev) =>
@@ -94,8 +107,9 @@ export function EpisodeSelectDialog({
         </div>
 
         <div className="max-h-64 overflow-y-auto space-y-2">
-          {episodes.map((ep) => {
+          {orderedEpisodes.map((ep) => {
             const info = getEpisodeStatus(ep.id)
+            const displayN = displayNumberById.get(ep.id) ?? 1
             return (
               <label
                 key={ep.id}
@@ -107,7 +121,7 @@ export function EpisodeSelectDialog({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    第{ep.index + 1}集 · {ep.title}
+                    第{displayN}集 · {ep.title}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {info.scriptCount} 集剧本

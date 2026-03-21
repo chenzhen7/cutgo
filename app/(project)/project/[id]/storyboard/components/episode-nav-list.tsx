@@ -1,8 +1,10 @@
 "use client"
 
+import { useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { CheckCircle2, Circle, Clock } from "lucide-react"
 import type { Episode, Script, Storyboard } from "@/lib/types"
+import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 interface EpisodeNavListProps {
   episodes: Episode[]
@@ -19,6 +21,11 @@ export function EpisodeNavList({
   activeEpisodeId,
   onSelectEpisode,
 }: EpisodeNavListProps) {
+  const displayNumberById = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodes),
+    [episodes]
+  )
+
   const getEpisodeInfo = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
     const scriptIds = epScripts.map((s) => s.id)
@@ -43,6 +50,7 @@ export function EpisodeNavList({
         {episodes.map((ep) => {
           const info = getEpisodeInfo(ep.id)
           const isActive = activeEpisodeId === ep.id
+          const displayN = displayNumberById.get(ep.id) ?? 1
 
           return (
             <button
@@ -64,7 +72,7 @@ export function EpisodeNavList({
                   <Circle className="size-3.5 text-muted-foreground shrink-0" />
                 )}
                 <span className="text-sm font-medium truncate">
-                  第{ep.index + 1}集
+                  第{displayN}集
                 </span>
               </div>
               <p className="text-xs text-muted-foreground truncate mt-0.5 ml-5">

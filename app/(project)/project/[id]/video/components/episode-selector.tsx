@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useVideoEditorStore } from "@/store/video-editor-store"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -10,11 +11,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  buildEpisodeDisplayNumberMap,
+  sortEpisodesByChapterAndIndex,
+} from "@/lib/episode-display"
 
 export function EpisodeSelector() {
   const { episodes, activeEpisodeId, setActiveEpisodeId, storyboards } = useVideoEditorStore()
 
+  const orderedEpisodes = useMemo(
+    () => sortEpisodesByChapterAndIndex(episodes),
+    [episodes]
+  )
+  const displayNumberById = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodes),
+    [episodes]
+  )
+
   const activeEpisode = episodes.find((e) => e.id === activeEpisodeId)
+  const activeDisplayN = activeEpisode
+    ? displayNumberById.get(activeEpisode.id)
+    : undefined
 
   const getEpisodeVideoCount = (episodeId: string) => {
     return storyboards
@@ -44,14 +61,15 @@ export function EpisodeSelector() {
         >
           <Film className="size-3.5" />
           {activeEpisode
-            ? `第${activeEpisode.index + 1}集 · ${activeEpisode.title}`
+            ? `第${activeDisplayN ?? 1}集 · ${activeEpisode.title}`
             : "选择分集"}
           <ChevronDown className="size-3.5 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        {episodes.map((ep) => {
+        {orderedEpisodes.map((ep) => {
           const count = getEpisodeVideoCount(ep.id)
+          const displayN = displayNumberById.get(ep.id) ?? 1
           return (
             <DropdownMenuItem
               key={ep.id}
@@ -67,7 +85,7 @@ export function EpisodeSelector() {
               className={cn(activeEpisodeId === ep.id && "bg-accent")}
             >
               <span className="flex-1 truncate">
-                第{ep.index + 1}集 · {ep.title}
+                第{displayN}集 · {ep.title}
               </span>
               <span className="text-xs text-muted-foreground shrink-0">
                 {count} 个视频

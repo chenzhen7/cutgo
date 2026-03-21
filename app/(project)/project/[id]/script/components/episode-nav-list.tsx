@@ -55,6 +55,7 @@ import type {
   Script,
   ScriptGenerateStatus,
 } from "@/lib/types"
+import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 const SCRIPT_NAV_OPEN_CHAPTERS_KEY = "cutgo:script-episode-nav:open-chapters"
 
@@ -80,6 +81,7 @@ interface EpisodeNavListProps {
 
 interface SortableEpisodeItemProps {
   ep: Episode
+  displayEpisodeNumber: number
   script: Script | undefined
   hasScript: boolean
   isActive: boolean
@@ -95,6 +97,7 @@ interface SortableEpisodeItemProps {
 
 function SortableEpisodeItem({
   ep,
+  displayEpisodeNumber,
   script,
   hasScript,
   isActive,
@@ -163,7 +166,7 @@ function SortableEpisodeItem({
               <Circle className="size-3.5 shrink-0 text-muted-foreground" />
             ) : null}
             <span className="text-[10px] text-muted-foreground shrink-0">
-              第{ep.index}集
+              第{displayEpisodeNumber}集
             </span>
             <span className="text-sm font-medium truncate min-w-0 flex-1">
               {ep.title}
@@ -254,6 +257,11 @@ export function EpisodeNavList({
     for (const s of scriptsForProject) map.set(s.episodeId, s)
     return map
   }, [scriptsForProject])
+
+  const episodeDisplayMap = useMemo(
+    () => buildEpisodeDisplayNumberMap(episodesForProject),
+    [episodesForProject]
+  )
 
   const chapterGroups = useMemo(() => {
     const groups = new Map<string, { chapter: Episode["chapter"]; episodes: Episode[] }>()
@@ -433,6 +441,8 @@ export function EpisodeNavList({
   const isGenerating = generateStatus === "generating"
 
   const deletingEpisode = episodesForProject.find((ep) => ep.id === deletingEpisodeId)
+  const deletingDisplayNumber =
+    deletingEpisodeId != null ? episodeDisplayMap.get(deletingEpisodeId) : undefined
 
   return (
     <>
@@ -517,6 +527,7 @@ export function EpisodeNavList({
                           <SortableEpisodeItem
                             key={ep.id}
                             ep={ep}
+                            displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
                             script={script}
                             hasScript={hasScript}
                             isActive={isActive}
@@ -548,7 +559,7 @@ export function EpisodeNavList({
           <AlertDialogHeader>
             <AlertDialogTitle>删除分集</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除「{deletingEpisode?.title || `第${(deletingEpisode?.index ?? 0)}集`}」吗？
+              确定要删除「{deletingEpisode?.title || `第${deletingDisplayNumber ?? "?"}集`}」吗？
               删除后该分集的剧本数据也将一并删除，此操作无法撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
