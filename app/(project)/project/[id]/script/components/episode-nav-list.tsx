@@ -123,7 +123,6 @@ function SortableEpisodeItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   }
 
   return (
@@ -135,7 +134,8 @@ function SortableEpisodeItem({
         isActive
           ? "bg-primary/10 border-l-primary"
           : "hover:bg-muted/50",
-        isDragging && "z-50 shadow-md rounded"
+        isDragging && "z-50 cursor-grabbing shadow-sm",
+        isDragging && (isActive ? "bg-primary/10" : "bg-background")
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
