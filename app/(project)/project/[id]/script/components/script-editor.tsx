@@ -3,7 +3,10 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Check, X, FolderOpen, Pencil } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Check, X, FolderOpen, Pencil, MapPin, User, Package } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type {
   AssetCharacter,
   AssetProp,
@@ -13,7 +16,6 @@ import type {
 } from "@/lib/types"
 import { countWords } from "@/lib/novel-utils"
 import { ScriptAssetDialog } from "./script-asset-dialog"
-import { ScriptAssetStrip } from "./script-asset-strip"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -79,6 +81,10 @@ export function ScriptEditor({
 
   const charNames = parseJsonArray(script.characters)
   const propNames = parseJsonArray(script.props)
+  const loc = script.location?.trim() || ""
+  const boundScene = loc ? assetScenes.find((s) => s.name === loc) : null
+  const boundCharacters = assetCharacters.filter((c) => charNames.includes(c.name))
+  const boundProps = assetProps.filter((p) => propNames.includes(p.name))
 
   useEffect(() => {
     setContent(script.content ?? "")
@@ -308,10 +314,10 @@ export function ScriptEditor({
             <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
               {/* 大纲区块 */}
               <div className="shrink-0 border-b bg-muted/10">
-                <div className="px-4 py-1.5">
-                  <span className="text-[11px] font-medium text-muted-foreground tracking-wide">大纲</span>
+                <div className="px-4 py-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">大纲</Label>
                 </div>
-                <div className="px-4 pb-2.5 pt-0.5 group/outline relative">
+                <div className="px-4 pb-3 pt-0 group/outline relative">
                     {editingOutline ? (
                       <div className="flex flex-col gap-1.5">
                         <Textarea
@@ -368,20 +374,106 @@ export function ScriptEditor({
               </div>
 
               {/* 资产区 */}
-              {(charNames.length > 0 ||
-                propNames.length > 0 ||
-                !!(script.location?.trim())) && (
-                  <div className="px-4 py-3 border-b bg-muted/10">
-                    <p className="text-[11px] font-medium text-muted-foreground tracking-wide mb-2">关联资产</p>
-                    <ScriptAssetStrip
-                      script={script}
-                      assetCharacters={assetCharacters}
-                      assetScenes={assetScenes}
-                      assetProps={assetProps}
-                      mode="editor"
-                    />
+              <div className="px-4 py-3 border-b bg-muted/10 space-y-2.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Scene */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="size-3 text-muted-foreground" />
+                      <span className="text-[11px] font-medium">场景</span>
+                    </div>
+                    {boundScene ? (
+                      <div className="rounded-lg overflow-hidden border bg-muted/30">
+                        {boundScene.imageUrl ? (
+                          <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-16 object-cover" />
+                        ) : (
+                          <div className="w-full h-12 flex items-center justify-center bg-muted/50">
+                            <MapPin className="size-4 text-muted-foreground/20" />
+                          </div>
+                        )}
+                        <div className="px-1.5 py-1 border-t bg-card">
+                          <p className="text-[10px] font-medium truncate">{boundScene.name}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
+                        <p className="text-[10px] text-muted-foreground/40 italic">{loc || "未绑定"}</p>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* Characters */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <User className="size-3 text-muted-foreground" />
+                      <span className="text-[11px] font-medium">角色</span>
+                      {charNames.length > 0 && (
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{charNames.length}</Badge>
+                      )}
+                    </div>
+                    {boundCharacters.length > 0 ? (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {boundCharacters.map((c) => (
+                          <div key={c.id} className="flex flex-col items-center gap-0.5">
+                            <div className="size-9 rounded-md overflow-hidden bg-muted border">
+                              {c.imageUrl ? (
+                                <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                              ) : (
+                                <div className="size-full flex items-center justify-center">
+                                  <User className="size-4 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground truncate max-w-[36px]">{c.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : charNames.length > 0 ? (
+                      <div className="flex gap-1 flex-wrap">
+                        {charNames.map(name => (
+                          <Badge key={name} variant="outline" className="text-[9px] px-1.5">{name}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
+                        <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Props */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <Package className="size-3 text-muted-foreground" />
+                      <span className="text-[11px] font-medium">道具</span>
+                      {propNames.length > 0 && (
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{propNames.length}</Badge>
+                      )}
+                    </div>
+                    {boundProps.length > 0 ? (
+                      <div className="flex gap-1 flex-wrap">
+                        {boundProps.map((p) => (
+                          <Badge key={p.id} variant="outline" className="text-[9px] px-1.5">
+                            {p.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : propNames.length > 0 ? (
+                      <div className="flex gap-1 flex-wrap">
+                        {propNames.map(name => (
+                          <Badge key={name} variant="outline" className="text-[9px] px-1.5">{name}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
+                        <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </ResizablePanel>
 
