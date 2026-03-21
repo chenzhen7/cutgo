@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Collapsible,
@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Trash2,
   GripVertical,
+  Plus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { countWords } from "@/lib/novel-utils"
@@ -74,6 +75,7 @@ interface EpisodeNavListProps {
   onGenerateEpisode: (episodeId: string) => void
   onDeleteEpisode?: (projectId: string, episodeId: string) => Promise<void>
   onReorderEpisodes?: (projectId: string, orderedIds: string[]) => Promise<void>
+  onCreateEpisodeScript?: (chapterId: string) => Promise<void>
 }
 
 interface SortableEpisodeItemProps {
@@ -236,6 +238,7 @@ export function EpisodeNavList({
   onGenerateEpisode,
   onDeleteEpisode,
   onReorderEpisodes,
+  onCreateEpisodeScript,
 }: EpisodeNavListProps) {
   const episodesForProject = useMemo(
     () => episodes.filter((ep) => ep.projectId === projectId),
@@ -285,6 +288,7 @@ export function EpisodeNavList({
   // Delete confirmation state
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [creatingChapterId, setCreatingChapterId] = useState<string | null>(null)
 
   useEffect(() => {
     if (prevProjectIdRef.current !== projectId) {
@@ -386,6 +390,28 @@ export function EpisodeNavList({
     onReorderEpisodes?.(projectId, newOrder)
   }
 
+  const handleCreateEpisodeScript = async (e: MouseEvent<HTMLButtonElement>, chapterId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!onCreateEpisodeScript || creatingChapterId) return
+    setCreatingChapterId(chapterId)
+    try {
+      await onCreateEpisodeScript(chapterId)
+      setLocalEpisodeOrder((prev) => {
+        const next = new Map(prev)
+        next.delete(chapterId)
+        return next
+      })
+      setOpenChapterIds((prev) => {
+        const next = new Set(prev)
+        next.add(chapterId)
+        return next
+      })
+    } finally {
+      setCreatingChapterId(null)
+    }
+  }
+
   const handleDeleteConfirm = async () => {
     if (!deletingEpisodeId) return
     setDeleting(true)
@@ -435,23 +461,43 @@ export function EpisodeNavList({
                 }}
                 className="border-b-1 border-border/90 last:border-b-0"
               >
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 min-w-0 w-full bg-muted/55 border-b border-border py-2.5 pl-3 pr-2 text-left"
-                  >
-                    <ChevronRight
-                      className={cn(
-                        "size-3 shrink-0 text-muted-foreground transition-transform",
-                        openChapterIds.has(group.chapter.id) && "rotate-90"
+                <div className="flex items-center gap-0 min-w-0 bg-muted/55 border-b border-border">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex flex-1 min-w-0 items-center gap-1.5 py-2.5 pl-3 pr-1 text-left"
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "size-3 shrink-0 text-muted-foreground transition-transform",
+                          openChapterIds.has(group.chapter.id) && "rotate-90"
+                        )}
+                      />
+                      <BookOpen className="size-3 shrink-0 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-foreground/80 truncate tracking-tight">
+                        {group.chapter.title || `第${group.chapter.index + 1}章`}
+                      </span>
+                    </button>
+                  </CollapsibleTrigger>
+                  {onCreateEpisodeScript && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 shrink-0 px-2 mr-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      disabled={!!creatingChapterId || isGenerating}
+                      aria-label="在此章节下新增分集与空剧本"
+                      title="在此章节下新增分集与空剧本"
+                      onClick={(e) => handleCreateEpisodeScript(e, group.chapter.id)}
+                    >
+                      {creatingChapterId === group.chapter.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="size-3.5" />
                       )}
-                    />
-                    <BookOpen className="size-3 shrink-0 text-muted-foreground" />
-                    <span className="text-xs font-semibold text-foreground/80 truncate tracking-tight">
-                      {group.chapter.title || `第${group.chapter.index + 1}章`}
-                    </span>
-                  </button>
-                </CollapsibleTrigger>
+                    </Button>
+                  )}
+                </div>
                 <CollapsibleContent className="divide-y divide-border">
                   <DndContext
                     sensors={sensors}

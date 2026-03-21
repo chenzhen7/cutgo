@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
 import { GenerateScriptDropdown } from "./components/generate-script-dropdown"
@@ -36,6 +37,7 @@ export default function ScriptPage() {
     confirmScripts,
     deleteEpisode,
     reorderEpisodes,
+    createEpisodeWithScript,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
@@ -92,6 +94,17 @@ export default function ScriptPage() {
       await generateScripts(projectId, [episodeId], "overwrite")
     },
     [projectId, generateScripts]
+  )
+
+  const handleCreateEpisodeScript = useCallback(
+    async (chapterId: string) => {
+      try {
+        await createEpisodeWithScript(projectId, chapterId)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "新增分集失败")
+      }
+    },
+    [projectId, createEpisodeWithScript]
   )
 
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
@@ -192,6 +205,7 @@ export default function ScriptPage() {
                     onGenerateEpisode={handleGenerateEpisode}
                     onDeleteEpisode={deleteEpisode}
                     onReorderEpisodes={reorderEpisodes}
+                    onCreateEpisodeScript={handleCreateEpisodeScript}
                   />
                 </div>
               </ResizablePanel>

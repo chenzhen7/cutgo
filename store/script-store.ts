@@ -23,6 +23,7 @@ interface ScriptState {
   fetchChapters: (projectId: string) => Promise<void>
   deleteEpisode: (projectId: string, episodeId: string) => Promise<void>
   reorderEpisodes: (projectId: string, orderedIds: string[]) => Promise<void>
+  createEpisodeWithScript: (projectId: string, chapterId: string) => Promise<void>
 
   generateScripts: (
     projectId: string,
@@ -161,6 +162,36 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     if (activeScriptId && !scripts.find((s) => s.id === activeScriptId)) {
       set({ activeScriptId: scripts[0]?.id ?? null })
     }
+  },
+
+  createEpisodeWithScript: async (projectId, chapterId) => {
+    const epRes = await fetch("/api/episodes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId, chapterId }),
+    })
+    if (!epRes.ok) {
+      const err = await epRes.json().catch(() => ({}))
+      throw new Error((err as { error?: string }).error || "创建分集失败")
+    }
+    const episode = await epRes.json()
+    const scriptRes = await fetch("/api/scripts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId,
+        episodeId: episode.id,
+        title: episode.title,
+      }),
+    })
+    if (!scriptRes.ok) {
+      const err = await scriptRes.json().catch(() => ({}))
+      throw new Error((err as { error?: string }).error || "创建剧本失败")
+    }
+    const script = await scriptRes.json()
+    await get().fetchEpisodes(projectId)
+    await get().fetchScripts(projectId)
+    set({ activeScriptId: script.id })
   },
 
   reorderEpisodes: async (projectId, orderedIds) => {
