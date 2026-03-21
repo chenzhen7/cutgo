@@ -91,9 +91,7 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     const res = await fetch(`/api/novels?projectId=${projectId}`)
     if (!res.ok) return
     const data = await res.json()
-    if (data?.chapters) {
-      set({ chapters: data.chapters })
-    }
+    set({ chapters: data?.chapters ?? [] })
   },
 
   generateScripts: async (projectId, episodeIds, mode = "skip_existing") => {

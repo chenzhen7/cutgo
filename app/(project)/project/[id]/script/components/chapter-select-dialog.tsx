@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertTriangle, Film, BookMarked } from "lucide-react"
-import type { Episode, Script } from "@/lib/types"
+import type { Chapter, Episode, Script } from "@/lib/types"
 
 interface ChapterRow {
   chapterId: string
@@ -23,18 +23,29 @@ interface ChapterRow {
   hasAnyScript: boolean
 }
 
+function chapterHasUngeneratedScript(
+  episodes: Episode[],
+  scriptEpisodeIds: Set<string>
+): boolean {
+  if (episodes.length === 0) return false
+  return episodes.some((ep) => !scriptEpisodeIds.has(ep.id))
+}
+
 interface ChapterSelectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** 小说章节（含尚无分集的章节）；为空时仅按分集数据推导章节 */
+  chapters?: Chapter[]
   episodes: Episode[]
   scripts: Script[]
-  /** 根据所选章节，展开为该章节下全部分集 ID（章节顺序 → 集顺序） */
-  onGenerate: (episodeIds: string[]) => void
+  /** 按列表顺序传递所选章节 ID；无分集章节由页面先创建分集再生成 */
+  onGenerate: (chapterIdsOrdered: string[]) => void | Promise<void>
 }
 
 export function ChapterSelectDialog({
   open,
   onOpenChange,
+  chapters = [],
   episodes,
   scripts,
   onGenerate,
@@ -47,44 +58,55 @@ export function ChapterSelectDialog({
   )
 
   const rows = useMemo(() => {
-    const groups = new Map<
-      string,
-      { chapter: Episode["chapter"]; episodes: Episode[] }
-    >()
+    const byChapter = new Map<string, Episode[]>()
     for (const ep of episodes) {
-      const key = ep.chapterId
-      if (!groups.has(key)) {
-        groups.set(key, { chapter: ep.chapter, episodes: [] })
-      }
-      groups.get(key)!.episodes.push(ep)
+      if (!byChapter.has(ep.chapterId)) byChapter.set(ep.chapterId, [])
+      byChapter.get(ep.chapterId)!.push(ep)
     }
-    for (const g of groups.values()) {
-      g.episodes.sort((a, b) => a.index - b.index)
+    for (const list of byChapter.values()) {
+      list.sort((a, b) => a.index - b.index)
     }
-    const sorted = Array.from(groups.values()).sort(
-      (a, b) => a.chapter.index - b.chapter.index
-    )
 
-    return sorted.map((g): ChapterRow => {
-      const chapterLabel =
-        g.chapter.title?.trim() || `第 ${g.chapter.index} 章`
+    const toRow = (chapter: Episode["chapter"], eps: Episode[]): ChapterRow => {
+      const label = chapter.title?.trim() || `第 ${chapter.index} 章`
       let hasAnyScript = false
-      for (const ep of g.episodes) {
+      for (const ep of eps) {
         if (scriptEpisodeIds.has(ep.id)) {
           hasAnyScript = true
           break
         }
       }
       return {
-        chapterId: g.chapter.id,
-        chapter: g.chapter,
-        label: chapterLabel,
-        episodes: g.episodes,
-        episodeCount: g.episodes.length,
+        chapterId: chapter.id,
+        chapter,
+        label,
+        episodes: eps,
+        episodeCount: eps.length,
         hasAnyScript,
       }
-    })
-  }, [episodes, scriptEpisodeIds])
+    }
+
+    if (!chapters.length) {
+      return Array.from(byChapter.values())
+        .map((eps) => toRow(eps[0].chapter, eps))
+        .sort((a, b) => a.chapter.index - b.chapter.index)
+    }
+
+    const novelIds = new Set(chapters.map((c) => c.id))
+    const ordered: ChapterRow[] = []
+    for (const ch of [...chapters].sort((a, b) => a.index - b.index)) {
+      const eps = byChapter.get(ch.id) ?? []
+      ordered.push(
+        toRow({ id: ch.id, index: ch.index, title: ch.title }, eps)
+      )
+    }
+    for (const [cid, eps] of byChapter) {
+      if (!novelIds.has(cid) && eps.length > 0) {
+        ordered.push(toRow(eps[0].chapter, eps))
+      }
+    }
+    return ordered
+  }, [chapters, episodes, scriptEpisodeIds])
 
   const episodeCountSelected = useMemo(() => {
     const set = new Set(selectedChapterIds)
@@ -119,23 +141,22 @@ export function ChapterSelectDialog({
   const selectChaptersWithUngenerated = () =>
     setSelectedChapterIds(
       rows
-        .filter((r) => {
-          if (r.episodeCount === 0) return false
-          return r.episodes.some((ep) => !scriptEpisodeIds.has(ep.id))
-        })
+        .filter((r) => chapterHasUngeneratedScript(r.episodes, scriptEpisodeIds))
         .map((r) => r.chapterId)
     )
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const idSet = new Set(selectedChapterIds)
-    const episodeIds: string[] = []
-    for (const r of rows) {
-      if (!idSet.has(r.chapterId)) continue
-      for (const ep of r.episodes) episodeIds.push(ep.id)
+    const orderedChapterIds = rows
+      .filter((r) => idSet.has(r.chapterId))
+      .map((r) => r.chapterId)
+    try {
+      await onGenerate(orderedChapterIds)
+      setSelectedChapterIds([])
+      onOpenChange(false)
+    } catch {
+      /* 创建分集等失败由页面 toast，保持弹窗 */
     }
-    onGenerate(episodeIds)
-    setSelectedChapterIds([])
-    onOpenChange(false)
   }
 
   return (
@@ -157,7 +178,7 @@ export function ChapterSelectDialog({
             size="sm"
             onClick={selectChaptersWithUngenerated}
           >
-            仅选有未生成集
+            仅选未生成剧本的章节
           </Button>
         </div>
 
@@ -212,7 +233,7 @@ export function ChapterSelectDialog({
             取消
           </Button>
           <Button
-            onClick={handleGenerate}
+            onClick={() => void handleGenerate()}
             disabled={selectedChapterIds.length === 0}
           >
             <Film className="size-4" />

@@ -32,6 +32,8 @@ export default function ScriptPage() {
     activeScriptId,
     fetchScripts,
     fetchEpisodes,
+    fetchChapters,
+    chapters,
     generateScripts,
     updateScript,
     setActiveScriptId,
@@ -52,6 +54,7 @@ export default function ScriptPage() {
     const init = async () => {
       setLoading(true)
       await fetchEpisodes(projectId)
+      await fetchChapters(projectId)
       await fetchScripts(projectId)
       try {
         const res = await fetch(`/api/assets?projectId=${projectId}`)
@@ -69,7 +72,7 @@ export default function ScriptPage() {
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, fetchScripts])
+  }, [projectId, fetchEpisodes, fetchChapters, fetchScripts])
 
   useEffect(() => {
     if (scripts.length > 0 && !activeScriptId) {
@@ -77,11 +80,36 @@ export default function ScriptPage() {
     }
   }, [scripts, activeScriptId, setActiveScriptId])
 
-  const handleGenerateSelected = useCallback(
-    async (episodeIds: string[]) => {
-      await generateScripts(projectId, episodeIds, "overwrite")
+  const handleGenerateChapters = useCallback(
+    async (chapterIdsOrdered: string[]) => {
+      const episodeIds: string[] = []
+      try {
+        for (const chapterId of chapterIdsOrdered) {
+          let eps = useScriptStore
+            .getState()
+            .episodes.filter(
+              (e) => e.projectId === projectId && e.chapterId === chapterId
+            )
+            .sort((a, b) => a.index - b.index)
+          if (eps.length === 0) {
+            await createEpisodeWithScript(projectId, chapterId)
+            eps = useScriptStore
+              .getState()
+              .episodes.filter(
+                (e) => e.projectId === projectId && e.chapterId === chapterId
+              )
+              .sort((a, b) => a.index - b.index)
+          }
+          episodeIds.push(...eps.map((e) => e.id))
+        }
+        if (episodeIds.length === 0) return
+        await generateScripts(projectId, episodeIds, "overwrite")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "生成失败")
+        throw err
+      }
     },
-    [projectId, generateScripts]
+    [projectId, createEpisodeWithScript, generateScripts]
   )
 
   const handleGenerateEpisode = useCallback(
@@ -133,7 +161,7 @@ export default function ScriptPage() {
             <ScriptStatsPanel scripts={scripts} episodes={episodes} />
           )}
         </div>
-        {episodesForProject.length > 0 && (
+        {(episodesForProject.length > 0 || chapters.length > 0) && (
           <GenerateScriptButton
             generateStatus={generateStatus}
             onClick={() => setShowEpisodeSelect(true)}
@@ -195,6 +223,7 @@ export default function ScriptPage() {
                 <div className="h-full min-h-0 border-r bg-background overflow-hidden">
                   <EpisodeNavList
                     projectId={projectId}
+                    chapters={chapters}
                     episodes={episodes}
                     scripts={scripts}
                     activeScriptId={activeScriptId}
@@ -253,9 +282,10 @@ export default function ScriptPage() {
       <ChapterSelectDialog
         open={showEpisodeSelect}
         onOpenChange={setShowEpisodeSelect}
+        chapters={chapters}
         episodes={episodesForProject}
         scripts={scripts}
-        onGenerate={handleGenerateSelected}
+        onGenerate={handleGenerateChapters}
       />
     </div>
   )

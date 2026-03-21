@@ -51,6 +51,7 @@ import type {
   AssetCharacter,
   AssetProp,
   AssetScene,
+  Chapter,
   Episode,
   Script,
   ScriptGenerateStatus,
@@ -65,6 +66,8 @@ function openChaptersStorageKey(projectId: string) {
 
 interface EpisodeNavListProps {
   projectId: string
+  /** 小说章节（含尚无分集的章节）；为空时仅按分集数据推导章节 */
+  chapters?: Chapter[]
   episodes: Episode[]
   scripts: Script[]
   activeScriptId: string | null
@@ -230,6 +233,7 @@ function SortableEpisodeItem({
 
 export function EpisodeNavList({
   projectId,
+  chapters = [],
   episodes,
   scripts,
   activeScriptId,
@@ -264,18 +268,39 @@ export function EpisodeNavList({
   )
 
   const chapterGroups = useMemo(() => {
-    const groups = new Map<string, { chapter: Episode["chapter"]; episodes: Episode[] }>()
+    const byChapter = new Map<string, Episode[]>()
     for (const ep of episodesForProject) {
-      const key = ep.chapterId
-      if (!groups.has(key)) {
-        groups.set(key, { chapter: ep.chapter, episodes: [] })
-      }
-      groups.get(key)!.episodes.push(ep)
+      if (!byChapter.has(ep.chapterId)) byChapter.set(ep.chapterId, [])
+      byChapter.get(ep.chapterId)!.push(ep)
     }
-    return Array.from(groups.values()).sort(
-      (a, b) => a.chapter.index - b.chapter.index
-    )
-  }, [episodesForProject])
+    for (const list of byChapter.values()) {
+      list.sort((a, b) => a.index - b.index)
+    }
+
+    if (!chapters.length) {
+      return Array.from(byChapter.entries())
+        .map(([_, eps]) => ({
+          chapter: eps[0].chapter,
+          episodes: eps,
+        }))
+        .sort((a, b) => a.chapter.index - b.chapter.index)
+    }
+
+    const novelChapterIds = new Set(chapters.map((c) => c.id))
+    const ordered: { chapter: Episode["chapter"]; episodes: Episode[] }[] = []
+    for (const ch of [...chapters].sort((a, b) => a.index - b.index)) {
+      ordered.push({
+        chapter: { id: ch.id, index: ch.index, title: ch.title },
+        episodes: byChapter.get(ch.id) ?? [],
+      })
+    }
+    for (const [cid, eps] of byChapter) {
+      if (!novelChapterIds.has(cid) && eps.length > 0) {
+        ordered.push({ chapter: eps[0].chapter, episodes: eps })
+      }
+    }
+    return ordered
+  }, [chapters, episodesForProject])
 
   const allChapterIds = useMemo(
     () => chapterGroups.map((g) => g.chapter.id),
@@ -509,41 +534,47 @@ export function EpisodeNavList({
                   )}
                 </div>
                 <CollapsibleContent>
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(event) => handleDragEnd(group.chapter.id, event)}
-                  >
-                    <SortableContext
-                      items={orderedIds}
-                      strategy={verticalListSortingStrategy}
+                  {orderedEpisodes.length === 0 ? (
+                    <div className="px-4 py-2.5 pl-8 text-xs text-muted-foreground border-b border-border/60">
+                      暂无分集
+                    </div>
+                  ) : (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={(event) => handleDragEnd(group.chapter.id, event)}
                     >
-                      {orderedEpisodes.map((ep) => {
-                        const script = scriptMap.get(ep.id)
-                        const hasScript = !!script
-                        const isActive = script?.id === activeScriptId
+                      <SortableContext
+                        items={orderedIds}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {orderedEpisodes.map((ep) => {
+                          const script = scriptMap.get(ep.id)
+                          const hasScript = !!script
+                          const isActive = script?.id === activeScriptId
 
-                        return (
-                          <SortableEpisodeItem
-                            key={ep.id}
-                            ep={ep}
-                            displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
-                            script={script}
-                            hasScript={hasScript}
-                            isActive={isActive}
-                            isGenerating={isGenerating}
-                            assetCharacters={assetCharacters}
-                            assetScenes={assetScenes}
-                            assetProps={assetProps}
-                            onSelectScript={onSelectScript}
-                            onGenerateEpisode={onGenerateEpisode}
-                            onDeleteEpisode={onDeleteEpisode ? (id) => setDeletingEpisodeId(id) : undefined}
-                            canDelete={!!onDeleteEpisode}
-                          />
-                        )
-                      })}
-                    </SortableContext>
-                  </DndContext>
+                          return (
+                            <SortableEpisodeItem
+                              key={ep.id}
+                              ep={ep}
+                              displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
+                              script={script}
+                              hasScript={hasScript}
+                              isActive={isActive}
+                              isGenerating={isGenerating}
+                              assetCharacters={assetCharacters}
+                              assetScenes={assetScenes}
+                              assetProps={assetProps}
+                              onSelectScript={onSelectScript}
+                              onGenerateEpisode={onGenerateEpisode}
+                              onDeleteEpisode={onDeleteEpisode ? (id) => setDeletingEpisodeId(id) : undefined}
+                              canDelete={!!onDeleteEpisode}
+                            />
+                          )
+                        })}
+                      </SortableContext>
+                    </DndContext>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
             )
