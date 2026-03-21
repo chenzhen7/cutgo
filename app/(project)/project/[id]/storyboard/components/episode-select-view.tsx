@@ -54,7 +54,7 @@ export function EpisodeSelectView({
   }
 
   return (
-    <div className="flex flex-col h-full px-6 py-4">
+    <div className="flex h-full flex-col px-2.5 py-4 sm:px-3">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-foreground">分镜设置</h2>
         <p className="mt-1 text-sm text-muted-foreground">

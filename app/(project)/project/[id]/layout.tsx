@@ -12,7 +12,7 @@ export default function ProjectLayout({
 
         <SidebarProvider>
             <ProjectSidebar />
-            <SidebarInset>
+            <SidebarInset className="min-h-0">
                 {children}
             </SidebarInset>
         </SidebarProvider>

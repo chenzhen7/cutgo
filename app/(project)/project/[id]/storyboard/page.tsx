@@ -393,7 +393,7 @@ export default function StoryboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     )
@@ -402,7 +402,7 @@ export default function StoryboardPage() {
   // 分集选择视图
   if (view === "episode-select") {
     return (
-      <div className="flex flex-col h-[calc(100vh-0.5rem)] overflow-y-auto custom-scrollbar">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto custom-scrollbar">
         <EpisodeSelectView
           episodes={episodes}
           scripts={scripts}
@@ -414,27 +414,29 @@ export default function StoryboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-0.5rem)]">
-      {/* Generate error */}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Generate error — 全宽贴边条 */}
       {generateStatus === "error" && generateError && (
-        <div className="mx-6 mb-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4 shrink-0">
-          <p className="text-sm text-destructive">{generateError}</p>
-          <button
-            onClick={() => handleGenerateAll("skip_existing")}
-            className="mt-2 text-sm text-destructive underline hover:no-underline"
-          >
-            重试
-          </button>
+        <div className="shrink-0 border-b border-destructive/30 bg-destructive/5">
+          <div className="px-2.5 py-2.5 sm:px-3">
+            <p className="text-sm text-destructive">{generateError}</p>
+            <button
+              onClick={() => handleGenerateAll("skip_existing")}
+              className="mt-2 text-sm text-destructive underline hover:no-underline"
+            >
+              重试
+            </button>
+          </div>
         </div>
       )}
 
       {/* Generating progress */}
       {isGenerating && (
-        <div className="mx-6 mb-4 rounded-lg border bg-muted/30 p-4 flex items-center gap-3 shrink-0">
-          <Loader2 className="size-5 animate-spin text-primary" />
-          <div>
+        <div className="flex shrink-0 items-center gap-3 border-b bg-muted/30 px-2.5 py-2.5 sm:px-3">
+          <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
+          <div className="min-w-0">
             <p className="text-sm font-medium">正在生成分镜...</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               AI 正在为每个场景生成分镜设计，请稍候
             </p>
           </div>
@@ -443,13 +445,13 @@ export default function StoryboardPage() {
 
       {/* Empty state */}
       {!hasStoryboards && !isGenerating && (
-        <div className="px-6 pt-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pt-3 pb-6 sm:px-3">
           <div className="mb-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBackToEpisodeSelect}
-              className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+              className="-ml-1.5 gap-1.5 text-muted-foreground hover:text-foreground sm:-ml-2"
             >
               <ArrowLeft className="size-4" />
               分集
@@ -467,21 +469,23 @@ export default function StoryboardPage() {
       {/* Main content */}
       {(hasStoryboards || isGenerating) && (
         <>
-          {/* Toolbar */}
-          <div className="px-6 pt-4 mb-2 shrink-0 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+          {/* Toolbar — 顶栏全宽贴边 */}
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
+            <div className="flex min-w-0 items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleBackToEpisodeSelect}
-                className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 -ml-2"
+                className="-ml-1.5 shrink-0 gap-1.5 text-muted-foreground hover:text-foreground sm:-ml-2"
               >
                 <ArrowLeft className="size-4" />
                 分集
               </Button>
-              <div className="w-px h-4 bg-border shrink-0" />
+              <div className="h-4 w-px shrink-0 bg-border" />
 
-              <h2 className="text-xl font-semibold text-foreground">分镜生成</h2>
+              <h2 className="truncate text-xl font-semibold text-foreground">
+                分镜生成
+              </h2>
             </div>
 
             <StoryboardToolbar
@@ -498,15 +502,19 @@ export default function StoryboardPage() {
             />
           </div>
 
-          {/* Two-column layout with Resizable */}
-          <div className="flex-1 min-h-0 px-6">
+          {/* Two-column layout — 主区水平贴边 */}
+          <div className="min-h-0 flex-1">
             <ResizablePanelGroup orientation="horizontal" className="h-full">
               {/* Center: Timeline editor */}
               <ResizablePanel defaultSize={60} minSize={30}>
-                <div className={cn(
-                  "h-full min-w-0 overflow-y-auto space-y-3 px-2 pb-12 custom-scrollbar",
-                  detailPanelOpen ? "border-y border-l bg-background/50 rounded-l-lg" : "border rounded-lg"
-                )}>
+                <div
+                  className={cn(
+                    "custom-scrollbar h-full min-w-0 space-y-3 overflow-y-auto  pb-12 ",
+                    detailPanelOpen
+                      ? "bg-muted/10"
+                      : "border-border border-b bg-background"
+                  )}
+                >
                   {currentStoryboards.length > 0 ? (
                     <div className={cn(
                       "space-y-3",
@@ -567,7 +575,7 @@ export default function StoryboardPage() {
                 <>
                   <ResizableHandle withHandle />
                   <ResizablePanel defaultSize={40} minSize={20}>
-                    <div className="h-full shrink-0 border-y border-r rounded-r-lg bg-card overflow-hidden">
+                    <div className="h-full shrink-0 overflow-hidden border-r border-border bg-card">
                       <ShotDetailPanel
                         shot={currentActiveShot.shot}
                         storyboard={currentActiveShot.storyboard}

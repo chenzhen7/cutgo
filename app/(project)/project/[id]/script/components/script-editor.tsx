@@ -184,16 +184,16 @@ export function ScriptEditor({
         {(charNames.length > 0 ||
           propNames.length > 0 ||
           !!(script.location?.trim())) && (
-          <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b bg-muted/20 shrink-0">
-            <ScriptAssetStrip
-              script={script}
-              assetCharacters={assetCharacters}
-              assetScenes={assetScenes}
-              assetProps={assetProps}
-              mode="editor"
-            />
-          </div>
-        )}
+            <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b bg-muted/20 shrink-0">
+              <ScriptAssetStrip
+                script={script}
+                assetCharacters={assetCharacters}
+                assetScenes={assetScenes}
+                assetProps={assetProps}
+                mode="editor"
+              />
+            </div>
+          )}
 
         <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
           <div
