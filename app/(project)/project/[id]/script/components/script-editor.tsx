@@ -151,7 +151,7 @@ export function ScriptEditor({
     setContent(script.content ?? "")
     setSaved(false)
   }
-  
+
   const handleToggleCharacter = async (name: string) => {
     const next = charNames.includes(name)
       ? charNames.filter((n) => n !== name)
@@ -325,69 +325,8 @@ export function ScriptEditor({
             className="min-w-0 flex flex-col"
           >
             <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
-              {/* 大纲区块 */}
-              <div className="shrink-0 border-b bg-muted/10">
-                <div className="px-4 py-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">大纲</Label>
-                </div>
-                <div className="px-4 pb-3 pt-0 group/outline relative">
-                    {editingOutline ? (
-                      <div className="flex flex-col gap-1.5">
-                        <Textarea
-                          ref={outlineRef}
-                          value={outlineValue}
-                          onChange={(e) => setOutlineValue(e.target.value)}
-                          onKeyDown={handleOutlineKeyDown}
-                          disabled={savingOutline}
-                          placeholder="在此输入分集大纲..."
-                          className="min-h-[120px] resize-none text-xs leading-relaxed border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/40"
-                        />
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs text-muted-foreground"
-                            disabled={savingOutline}
-                            onClick={() => { setEditingOutline(false); setOutlineValue(episode.outline ?? "") }}
-                          >
-                            <X className="size-3 mr-1" />
-                            取消
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-6 px-2 text-xs"
-                            disabled={savingOutline}
-                            onClick={handleOutlineSave}
-                          >
-                            <Check className="size-3 mr-1" />
-                            {savingOutline ? "保存中..." : "保存"}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className="relative min-h-[1.5rem] cursor-text"
-                        onClick={onUpdateEpisode ? handleOutlineEdit : undefined}
-                      >
-                        {episode.outline?.trim() ? (
-                          <p className="text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap pr-5">
-                            {episode.outline}
-                          </p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground/60 italic">
-                            暂无大纲{onUpdateEpisode ? "，点击添加" : ""}
-                          </p>
-                        )}
-                        {onUpdateEpisode && (
-                          <Pencil className="absolute top-0 right-0 size-3 text-muted-foreground opacity-0 group-hover/outline:opacity-100 transition-opacity" />
-                        )}
-                      </div>
-                    )}
-                </div>
-              </div>
-
               {/* 资产区 */}
-              <div className="px-4 py-3 border-b bg-muted/10 space-y-2.5">
+              <div className="px-4 py-3 mb-1 space-y-2.5">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
 
                 <div className="grid grid-cols-3 gap-3">
@@ -587,6 +526,67 @@ export function ScriptEditor({
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* 大纲区块 */}
+              <div className="shrink-0">
+                <div className="px-4 py-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">大纲</Label>
+                </div>
+                <div className="px-4 pb-3 pt-0 group/outline relative">
+                  {editingOutline ? (
+                    <div className="flex flex-col gap-1.5">
+                      <Textarea
+                        ref={outlineRef}
+                        value={outlineValue}
+                        onChange={(e) => setOutlineValue(e.target.value)}
+                        onKeyDown={handleOutlineKeyDown}
+                        disabled={savingOutline}
+                        placeholder="在此输入分集大纲..."
+                        className="min-h-[120px] resize-none text-xs leading-relaxed border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/40"
+                      />
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-muted-foreground"
+                          disabled={savingOutline}
+                          onClick={() => { setEditingOutline(false); setOutlineValue(episode.outline ?? "") }}
+                        >
+                          <X className="size-3 mr-1" />
+                          取消
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          disabled={savingOutline}
+                          onClick={handleOutlineSave}
+                        >
+                          <Check className="size-3 mr-1" />
+                          {savingOutline ? "保存中..." : "保存"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="relative min-h-[1.5rem] cursor-text"
+                      onClick={onUpdateEpisode ? handleOutlineEdit : undefined}
+                    >
+                      {episode.outline?.trim() ? (
+                        <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap pr-5">
+                          {episode.outline}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/60 italic">
+                          暂无大纲{onUpdateEpisode ? "，点击添加" : ""}
+                        </p>
+                      )}
+                      {onUpdateEpisode && (
+                        <Pencil className="absolute top-0 right-0 size-3 text-muted-foreground opacity-0 group-hover/outline:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
