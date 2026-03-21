@@ -65,22 +65,9 @@ export function ScriptAssetStrip({
 
   const hasAny =
     charNames.length > 0 || !!sceneLabel || propNames.length > 0
-  const isEditor = mode === "editor"
+  if (!hasAny) return null
 
-  if (!hasAny) {
-    if (isEditor) return null
-    return (
-      <div
-        className={cn(
-          "flex min-h-[22px] items-center flex-wrap gap-2 pt-0.5",
-          "shrink-0"
-        )}
-        aria-hidden
-      >
-        <div className="pointer-events-none size-5 shrink-0 rounded-full border-2 border-transparent opacity-0" />
-      </div>
-    )
-  }
+  const isEditor = mode === "editor"
 
   const navPropPillClass =
     "inline-flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium"
