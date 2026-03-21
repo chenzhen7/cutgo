@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Check, X, FolderOpen, Pencil, ChevronDown, ChevronRight } from "lucide-react"
+import { Check, X, FolderOpen, Pencil } from "lucide-react"
 import type {
   AssetCharacter,
   AssetProp,
@@ -66,7 +66,6 @@ export function ScriptEditor({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(episode.title)
   const [savingTitle, setSavingTitle] = useState(false)
-  const [outlineOpen, setOutlineOpen] = useState(true)
   const [editingOutline, setEditingOutline] = useState(false)
   const [outlineValue, setOutlineValue] = useState(episode.outline ?? "")
   const [savingOutline, setSavingOutline] = useState(false)
@@ -176,7 +175,6 @@ export function ScriptEditor({
   const handleOutlineEdit = () => {
     if (!onUpdateEpisode) return
     setEditingOutline(true)
-    setOutlineOpen(true)
     setTimeout(() => {
       const el = outlineRef.current
       if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) }
@@ -310,25 +308,10 @@ export function ScriptEditor({
             <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
               {/* 大纲区块 */}
               <div className="shrink-0 border-b bg-muted/10">
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-1.5 px-4 py-1.5 text-left hover:bg-muted/30 transition-colors"
-                  onClick={() => setOutlineOpen((v) => !v)}
-                >
-                  {outlineOpen ? (
-                    <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
-                  )}
+                <div className="px-4 py-1.5">
                   <span className="text-[11px] font-medium text-muted-foreground tracking-wide">大纲</span>
-                  {!outlineOpen && (episode.outline?.trim()) && (
-                    <span className="ml-1 text-[11px] text-muted-foreground truncate flex-1">
-                      {episode.outline}
-                    </span>
-                  )}
-                </button>
-                {outlineOpen && (
-                  <div className="px-4 pb-2.5 pt-0.5 group/outline relative">
+                </div>
+                <div className="px-4 pb-2.5 pt-0.5 group/outline relative">
                     {editingOutline ? (
                       <div className="flex flex-col gap-1.5">
                         <Textarea
@@ -381,8 +364,7 @@ export function ScriptEditor({
                         )}
                       </div>
                     )}
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* 资产区 */}
