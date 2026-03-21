@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, FolderOpen, Pencil, MapPin, User, Package } from "lucide-react"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Check, X, Pencil, MapPin, User, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   AssetCharacter,
@@ -15,7 +21,6 @@ import type {
   Script,
 } from "@/lib/types"
 import { countWords } from "@/lib/novel-utils"
-import { ScriptAssetDialog } from "./script-asset-dialog"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -64,7 +69,6 @@ export function ScriptEditor({
   const [content, setContent] = useState(script.content ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [showAssetDialog, setShowAssetDialog] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(episode.title)
   const [savingTitle, setSavingTitle] = useState(false)
@@ -146,6 +150,24 @@ export function ScriptEditor({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     setContent(script.content ?? "")
     setSaved(false)
+  }
+  
+  const handleToggleCharacter = async (name: string) => {
+    const next = charNames.includes(name)
+      ? charNames.filter((n) => n !== name)
+      : [...charNames, name]
+    await onUpdateScript({ characters: JSON.stringify(next) })
+  }
+
+  const handleChangeScene = async (name: string) => {
+    await onUpdateScript({ location: name === "__none__" ? undefined : name })
+  }
+
+  const handleToggleProp = async (name: string) => {
+    const next = propNames.includes(name)
+      ? propNames.filter((n) => n !== name)
+      : [...propNames, name]
+    await onUpdateScript({ props: JSON.stringify(next) })
   }
 
   const handleTitleEdit = () => {
@@ -287,15 +309,6 @@ export function ScriptEditor({
                 </Button>
               </>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7"
-              onClick={() => setShowAssetDialog(true)}
-            >
-              <FolderOpen className="size-3.5" />
-              关联资产
-            </Button>
           </div>
         </div>
 
@@ -380,9 +393,54 @@ export function ScriptEditor({
                 <div className="grid grid-cols-3 gap-3">
                   {/* Scene */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="size-3 text-muted-foreground" />
-                      <span className="text-[11px] font-medium">场景</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="size-3 text-muted-foreground" />
+                        <span className="text-[11px] font-medium">场景</span>
+                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="start">
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            <button
+                              onClick={() => handleChangeScene("__none__")}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors",
+                                !script.location && "bg-muted font-medium"
+                              )}
+                            >
+                              无
+                            </button>
+                            {assetScenes.length === 0 ? (
+                              <p className="text-xs text-muted-foreground py-2 text-center">暂无场景资产</p>
+                            ) : (
+                              assetScenes.map((s) => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => handleChangeScene(s.name)}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs text-left transition-colors",
+                                    script.location === s.name && "bg-muted font-medium text-primary"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0 text-[11px]">
+                                    {s.imageUrl ? (
+                                      <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                                    ) : (
+                                      <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                        <MapPin className="size-3 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                    <span className="truncate">{s.name}</span>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     {boundScene ? (
                       <div className="rounded-lg overflow-hidden border bg-muted/30">
@@ -406,12 +464,45 @@ export function ScriptEditor({
 
                   {/* Characters */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1">
-                      <User className="size-3 text-muted-foreground" />
-                      <span className="text-[11px] font-medium">角色</span>
-                      {charNames.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{charNames.length}</Badge>
-                      )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <User className="size-3 text-muted-foreground" />
+                        <span className="text-[11px] font-medium">角色</span>
+                        {charNames.length > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{charNames.length}</Badge>
+                        )}
+                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="start">
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {assetCharacters.length === 0 ? (
+                              <p className="text-xs text-muted-foreground py-2 text-center">暂无角色资产</p>
+                            ) : (
+                              assetCharacters.map((c) => (
+                                <label key={c.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer transition-colors">
+                                  <Checkbox
+                                    checked={charNames.includes(c.name)}
+                                    onCheckedChange={() => handleToggleCharacter(c.name)}
+                                  />
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {c.imageUrl ? (
+                                      <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                                    ) : (
+                                      <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                        <User className="size-3 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                    <span className="text-[11px] truncate">{c.name}</span>
+                                  </div>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     {boundCharacters.length > 0 ? (
                       <div className="flex gap-1.5 flex-wrap">
@@ -445,12 +536,36 @@ export function ScriptEditor({
 
                   {/* Props */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1">
-                      <Package className="size-3 text-muted-foreground" />
-                      <span className="text-[11px] font-medium">道具</span>
-                      {propNames.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{propNames.length}</Badge>
-                      )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Package className="size-3 text-muted-foreground" />
+                        <span className="text-[11px] font-medium">道具</span>
+                        {propNames.length > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{propNames.length}</Badge>
+                        )}
+                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5">编辑</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="start">
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {assetProps.length === 0 ? (
+                              <p className="text-xs text-muted-foreground py-2 text-center">暂无道具资产</p>
+                            ) : (
+                              assetProps.map((p) => (
+                                <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer transition-colors">
+                                  <Checkbox
+                                    checked={propNames.includes(p.name)}
+                                    onCheckedChange={() => handleToggleProp(p.name)}
+                                  />
+                                  <span className="text-[11px] truncate">{p.name}</span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     {boundProps.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
@@ -518,20 +633,6 @@ export function ScriptEditor({
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-
-      <ScriptAssetDialog
-        open={showAssetDialog}
-        onOpenChange={setShowAssetDialog}
-        script={script}
-        projectId={projectId}
-        onSave={async (data) => {
-          await onUpdateScript({
-            characters: data.characters,
-            location: data.location,
-            props: data.props,
-          })
-        }}
-      />
     </>
   )
 }
