@@ -126,6 +126,13 @@ export function ChapterSelectDialog({
     return false
   }, [rows, selectedChapterIds])
 
+  const allRowsSelected = useMemo(() => {
+    const allIds = rows.map((r) => r.chapterId)
+    if (allIds.length === 0) return false
+    const set = new Set(selectedChapterIds)
+    return allIds.every((id) => set.has(id))
+  }, [rows, selectedChapterIds])
+
   const toggleChapter = (chapterId: string) => {
     setSelectedChapterIds((prev) =>
       prev.includes(chapterId)
@@ -134,8 +141,15 @@ export function ChapterSelectDialog({
     )
   }
 
-  const selectAllChapters = () =>
-    setSelectedChapterIds(rows.map((r) => r.chapterId))
+  const toggleSelectAllChapters = () => {
+    setSelectedChapterIds((prev) => {
+      const allIds = rows.map((r) => r.chapterId)
+      if (allIds.length === 0) return []
+      const prevSet = new Set(prev)
+      const everySelected = allIds.every((id) => prevSet.has(id))
+      return everySelected ? [] : [...allIds]
+    })
+  }
 
   /** 至少有一集尚未生成剧本的章节 */
   const selectChaptersWithUngenerated = () =>
@@ -170,8 +184,8 @@ export function ChapterSelectDialog({
         </DialogHeader>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <Button variant="outline" size="sm" onClick={selectAllChapters}>
-            全选章节
+          <Button variant="outline" size="sm" onClick={toggleSelectAllChapters}>
+            {allRowsSelected ? "取消全选" : "全选章节"}
           </Button>
           <Button
             variant="outline"

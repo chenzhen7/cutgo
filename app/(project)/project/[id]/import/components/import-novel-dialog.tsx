@@ -41,6 +41,8 @@ export function ImportNovelDialog({
   analysisProgress,
 }: ImportNovelDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const gutterRef = useRef<HTMLDivElement>(null)
   const [text, setText] = useState("")
   const [fileName, setFileName] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -49,6 +51,13 @@ export function ImportNovelDialog({
   const isOverLimit = wordCount > WARN_THRESHOLD
   const isTooShort = wordCount > 0 && wordCount < 100
   const hasChapters = text.length > 0 && hasChapterStructure(text)
+  const lineNumbers = text.split("\n").map((_, i) => i + 1)
+
+  const syncGutterScroll = () => {
+    const ta = textareaRef.current
+    const g = gutterRef.current
+    if (ta && g) g.scrollTop = ta.scrollTop
+  }
 
   const handleFileRead = useCallback(
     (file: File) => {
@@ -143,7 +152,7 @@ export function ImportNovelDialog({
             )}
 
             <div
-              className={`relative ${dragOver ? "ring-2 ring-primary ring-offset-2 rounded-lg" : ""}`}
+              className={`relative flex h-[360px] max-h-[360px] overflow-hidden rounded-lg ${dragOver ? "ring-2 ring-primary ring-offset-2" : ""}`}
               onDragOver={(e) => {
                 e.preventDefault()
                 setDragOver(true)
@@ -151,13 +160,28 @@ export function ImportNovelDialog({
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
             >
-              <Textarea
-                placeholder="将小说内容粘贴到这里，或拖拽 txt 文件上传..."
-                rows={12}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="max-h-[360px] resize-none overflow-y-auto font-mono text-sm leading-relaxed"
-              />
+              <div
+                ref={gutterRef}
+                className="pointer-events-none shrink-0 w-11 select-none overflow-y-auto overflow-x-hidden border-r border-border/60 bg-muted/25 py-3 pl-2 pr-1.5 text-right font-mono text-sm leading-relaxed text-muted-foreground/80 tabular-nums [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                aria-hidden
+              >
+                {lineNumbers.map((n) => (
+                  <div key={n} className="min-h-[1.625em] leading-relaxed">
+                    {n}
+                  </div>
+                ))}
+              </div>
+              <div className="flex-1 relative min-w-0 min-h-0">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder="将小说内容粘贴到这里，或拖拽 txt 文件上传..."
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onScroll={syncGutterScroll}
+                  spellCheck={false}
+                  className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent py-3 pl-2 pr-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 whitespace-pre overflow-x-auto overflow-y-auto"
+                />
+              </div>
               {dragOver && (
                 <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-primary/5 border-2 border-dashed border-primary">
                   <div className="flex flex-col items-center gap-2 text-primary">

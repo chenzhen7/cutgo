@@ -127,6 +127,8 @@ function ChapterEditor({
   const [showDelete, setShowDelete] = useState(false)
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const gutterRef = useRef<HTMLDivElement>(null)
   const isDirty = title !== (chapter.title ?? "") || content !== (chapter.content ?? "")
 
   useEffect(() => {
@@ -188,6 +190,14 @@ function ChapterEditor({
   }
 
   const wordCount = countWords(content)
+  const lineCount = content ? content.split("\n").length : 0
+  const lineNumbers = content.split("\n").map((_, i) => i + 1)
+
+  const syncGutterScroll = () => {
+    const ta = textareaRef.current
+    const g = gutterRef.current
+    if (ta && g) g.scrollTop = ta.scrollTop
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -229,14 +239,30 @@ function ChapterEditor({
         </div>
       </div>
 
-      {/* 正文编辑区 */}
-      <div className="flex-1 relative overflow-hidden">
-        <Textarea
-          value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
-          placeholder="在此编辑章节正文内容..."
-          className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent px-4 py-3 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
-        />
+      {/* 正文编辑区（与剧本编辑区一致：行号栏 + 文本） */}
+      <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
+        <div
+          ref={gutterRef}
+          className="pointer-events-none shrink-0 w-11 select-none overflow-y-auto overflow-x-hidden border-r border-border/60 bg-muted/25 py-3 pl-2 pr-1.5 text-right font-mono text-sm leading-relaxed text-muted-foreground/80 tabular-nums [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          aria-hidden
+        >
+          {lineNumbers.map((n) => (
+            <div key={n} className="min-h-[1.625em] leading-relaxed">
+              {n}
+            </div>
+          ))}
+        </div>
+        <div className="flex-1 relative min-w-0 min-h-0">
+          <Textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => handleContentChange(e.target.value)}
+            onScroll={syncGutterScroll}
+            placeholder="在此编辑章节正文内容..."
+            spellCheck={false}
+            className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent py-3 pl-2 pr-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 whitespace-pre overflow-x-auto overflow-y-auto"
+          />
+        </div>
       </div>
 
       {/* 底部状态栏 */}
@@ -246,7 +272,15 @@ function ChapterEditor({
             ? `${chapter.paragraphs.length} 个段落`
             : "无段落数据"}
         </span>
-        <span className="text-xs text-muted-foreground">{wordCount.toLocaleString()} 字</span>
+        <div className="flex items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
+          <span>{lineCount > 0 ? `${lineCount} 行` : "空内容"}</span>
+          <span className="text-border select-none" aria-hidden>
+            ·
+          </span>
+          <span className="font-medium text-foreground/75">
+            {wordCount.toLocaleString()} 字
+          </span>
+        </div>
       </div>
 
       <AlertDialog open={showDelete} onOpenChange={setShowDelete}>

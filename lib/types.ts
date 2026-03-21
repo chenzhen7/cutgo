@@ -99,6 +99,7 @@ export interface Episode {
   index: number
   title: string
   synopsis: string
+  outline: string | null
   keyConflict: string | null
   cliffhanger: string | null
   duration: string

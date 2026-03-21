@@ -24,7 +24,7 @@ interface ScriptState {
   deleteEpisode: (projectId: string, episodeId: string) => Promise<void>
   reorderEpisodes: (projectId: string, orderedIds: string[]) => Promise<void>
   createEpisodeWithScript: (projectId: string, chapterId: string) => Promise<void>
-  updateEpisode: (episodeId: string, data: { title?: string }) => Promise<void>
+  updateEpisode: (episodeId: string, data: { title?: string; synopsis?: string; outline?: string | null }) => Promise<void>
 
   generateScripts: (
     projectId: string,

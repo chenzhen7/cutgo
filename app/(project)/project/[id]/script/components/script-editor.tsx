@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Check, X, FolderOpen, Pencil } from "lucide-react"
+import { Check, X, FolderOpen, Pencil, ChevronDown, ChevronRight } from "lucide-react"
 import type {
   AssetCharacter,
   AssetProp,
@@ -14,6 +14,11 @@ import type {
 import { countWords } from "@/lib/novel-utils"
 import { ScriptAssetDialog } from "./script-asset-dialog"
 import { ScriptAssetStrip } from "./script-asset-strip"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 
 function parseJsonArray(val: string | null | undefined): string[] {
   if (!val) return []
@@ -40,7 +45,7 @@ interface ScriptEditorProps {
     props?: string
     location?: string
   }) => Promise<void>
-  onUpdateEpisode?: (data: { title?: string }) => Promise<void>
+  onUpdateEpisode?: (data: { title?: string; outline?: string | null }) => Promise<void>
 }
 
 export function ScriptEditor({
@@ -61,7 +66,12 @@ export function ScriptEditor({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(episode.title)
   const [savingTitle, setSavingTitle] = useState(false)
+  const [outlineOpen, setOutlineOpen] = useState(true)
+  const [editingOutline, setEditingOutline] = useState(false)
+  const [outlineValue, setOutlineValue] = useState(episode.outline ?? "")
+  const [savingOutline, setSavingOutline] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const outlineRef = useRef<HTMLTextAreaElement>(null)
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -78,7 +88,8 @@ export function ScriptEditor({
 
   useEffect(() => {
     setTitleValue(episode.title)
-  }, [episode.id, episode.title])
+    setOutlineValue(episode.outline ?? "")
+  }, [episode.id, episode.title, episode.outline])
 
   useEffect(() => {
     return () => {
@@ -159,6 +170,39 @@ export function ScriptEditor({
     if (e.key === "Escape") {
       setEditingTitle(false)
       setTitleValue(episode.title)
+    }
+  }
+
+  const handleOutlineEdit = () => {
+    if (!onUpdateEpisode) return
+    setEditingOutline(true)
+    setOutlineOpen(true)
+    setTimeout(() => {
+      const el = outlineRef.current
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) }
+    }, 0)
+  }
+
+  const handleOutlineSave = async () => {
+    const trimmed = outlineValue.trim()
+    const prev = episode.outline ?? ""
+    if (trimmed === prev.trim()) {
+      setEditingOutline(false)
+      return
+    }
+    setSavingOutline(true)
+    try {
+      await onUpdateEpisode?.({ outline: trimmed || null })
+    } finally {
+      setSavingOutline(false)
+      setEditingOutline(false)
+    }
+  }
+
+  const handleOutlineKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      setEditingOutline(false)
+      setOutlineValue(episode.outline ?? "")
     }
   }
 
@@ -249,6 +293,83 @@ export function ScriptEditor({
               关联资产
             </Button>
           </div>
+        </div>
+
+        {/* 大纲区块 */}
+        <div className="shrink-0 border-b bg-muted/10">
+          <button
+            type="button"
+            className="flex w-full items-center gap-1.5 px-4 py-1.5 text-left hover:bg-muted/30 transition-colors"
+            onClick={() => setOutlineOpen((v) => !v)}
+          >
+            {outlineOpen ? (
+              <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
+            )}
+            <span className="text-[11px] font-medium text-muted-foreground tracking-wide">大纲</span>
+            {!outlineOpen && (episode.outline?.trim()) && (
+              <span className="ml-1 text-[11px] text-muted-foreground truncate flex-1">
+                {episode.outline}
+              </span>
+            )}
+          </button>
+          {outlineOpen && (
+            <div className="px-4 pb-2.5 pt-0.5 group/outline relative">
+              {editingOutline ? (
+                <div className="flex flex-col gap-1.5">
+                  <Textarea
+                    ref={outlineRef}
+                    value={outlineValue}
+                    onChange={(e) => setOutlineValue(e.target.value)}
+                    onKeyDown={handleOutlineKeyDown}
+                    disabled={savingOutline}
+                    placeholder="在此输入分集大纲..."
+                    className="min-h-[72px] resize-none text-xs leading-relaxed border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/40"
+                  />
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground"
+                      disabled={savingOutline}
+                      onClick={() => { setEditingOutline(false); setOutlineValue(episode.outline ?? "") }}
+                    >
+                      <X className="size-3 mr-1" />
+                      取消
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={savingOutline}
+                      onClick={handleOutlineSave}
+                    >
+                      <Check className="size-3 mr-1" />
+                      {savingOutline ? "保存中..." : "保存"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="relative min-h-[1.5rem] cursor-text"
+                  onClick={onUpdateEpisode ? handleOutlineEdit : undefined}
+                >
+                  {episode.outline?.trim() ? (
+                    <p className="text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap pr-5">
+                      {episode.outline}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/60 italic">
+                      暂无大纲{onUpdateEpisode ? "，点击添加" : ""}
+                    </p>
+                  )}
+                  {onUpdateEpisode && (
+                    <Pencil className="absolute top-0 right-0 size-3 text-muted-foreground opacity-0 group-hover/outline:opacity-100 transition-opacity" />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {(charNames.length > 0 ||

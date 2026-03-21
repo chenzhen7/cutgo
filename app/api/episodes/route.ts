@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { projectId, chapterId, index, title, synopsis, keyConflict, cliffhanger, duration } = body
+  const { projectId, chapterId, index, title, synopsis, outline, keyConflict, cliffhanger, duration } = body
 
   if (!projectId || !chapterId) {
     return NextResponse.json({ error: "projectId and chapterId are required" }, { status: 400 })
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       index: episodeIndex,
       title: title || `第${episodeIndex}集`,
       synopsis: synopsis || "",
+      outline: outline || null,
       keyConflict: keyConflict || null,
       cliffhanger: cliffhanger || null,
       duration: duration || "60s",

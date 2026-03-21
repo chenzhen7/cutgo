@@ -140,6 +140,7 @@ model Episode {
   index       Int
   title       String
   synopsis    String
+  outline     String? // 分集大纲，纯文本
   keyConflict String?
   cliffhanger String?
   duration    String  @default("60s")
