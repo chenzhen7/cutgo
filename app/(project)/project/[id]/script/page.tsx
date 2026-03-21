@@ -220,7 +220,7 @@ export default function ScriptPage() {
                 maxSize={440}
                 className="min-w-0"
               >
-                <div className="h-full min-h-0 border-r bg-background overflow-hidden">
+                <div className="h-full min-h-0 bg-background overflow-hidden">
                   <EpisodeNavList
                     projectId={projectId}
                     chapters={chapters}

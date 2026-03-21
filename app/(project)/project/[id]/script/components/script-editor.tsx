@@ -219,7 +219,7 @@ export function ScriptEditor({
   return (
     <>
       <div className="flex flex-col h-full">
-        {/* 顶栏：与小说导入章节编辑区一致的信息与保存状态 */}
+        {/* 顶栏 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5 shrink-0">
@@ -295,131 +295,154 @@ export function ScriptEditor({
           </div>
         </div>
 
-        {/* 大纲区块 */}
-        <div className="shrink-0 border-b bg-muted/10">
-          <button
-            type="button"
-            className="flex w-full items-center gap-1.5 px-4 py-1.5 text-left hover:bg-muted/30 transition-colors"
-            onClick={() => setOutlineOpen((v) => !v)}
+        {/* 左右可拖拽布局：左侧大纲+资产区，右侧剧本编辑区 */}
+        <ResizablePanelGroup
+          orientation="horizontal"
+          className="flex-1 min-h-0"
+        >
+          {/* 左侧：大纲 + 资产区 */}
+          <ResizablePanel
+            defaultSize={450}
+            minSize={450}
+            maxSize={650}
+            className="min-w-0 flex flex-col"
           >
-            {outlineOpen ? (
-              <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
-            )}
-            <span className="text-[11px] font-medium text-muted-foreground tracking-wide">大纲</span>
-            {!outlineOpen && (episode.outline?.trim()) && (
-              <span className="ml-1 text-[11px] text-muted-foreground truncate flex-1">
-                {episode.outline}
-              </span>
-            )}
-          </button>
-          {outlineOpen && (
-            <div className="px-4 pb-2.5 pt-0.5 group/outline relative">
-              {editingOutline ? (
-                <div className="flex flex-col gap-1.5">
-                  <Textarea
-                    ref={outlineRef}
-                    value={outlineValue}
-                    onChange={(e) => setOutlineValue(e.target.value)}
-                    onKeyDown={handleOutlineKeyDown}
-                    disabled={savingOutline}
-                    placeholder="在此输入分集大纲..."
-                    className="min-h-[72px] resize-none text-xs leading-relaxed border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/40"
-                  />
-                  <div className="flex items-center gap-1.5 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs text-muted-foreground"
-                      disabled={savingOutline}
-                      onClick={() => { setEditingOutline(false); setOutlineValue(episode.outline ?? "") }}
-                    >
-                      <X className="size-3 mr-1" />
-                      取消
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="h-6 px-2 text-xs"
-                      disabled={savingOutline}
-                      onClick={handleOutlineSave}
-                    >
-                      <Check className="size-3 mr-1" />
-                      {savingOutline ? "保存中..." : "保存"}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="relative min-h-[1.5rem] cursor-text"
-                  onClick={onUpdateEpisode ? handleOutlineEdit : undefined}
+            <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
+              {/* 大纲区块 */}
+              <div className="shrink-0 border-b bg-muted/10">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-1.5 px-4 py-1.5 text-left hover:bg-muted/30 transition-colors"
+                  onClick={() => setOutlineOpen((v) => !v)}
                 >
-                  {episode.outline?.trim() ? (
-                    <p className="text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap pr-5">
-                      {episode.outline}
-                    </p>
+                  {outlineOpen ? (
+                    <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
                   ) : (
-                    <p className="text-xs text-muted-foreground/60 italic">
-                      暂无大纲{onUpdateEpisode ? "，点击添加" : ""}
-                    </p>
+                    <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
                   )}
-                  {onUpdateEpisode && (
-                    <Pencil className="absolute top-0 right-0 size-3 text-muted-foreground opacity-0 group-hover/outline:opacity-100 transition-opacity" />
+                  <span className="text-[11px] font-medium text-muted-foreground tracking-wide">大纲</span>
+                  {!outlineOpen && (episode.outline?.trim()) && (
+                    <span className="ml-1 text-[11px] text-muted-foreground truncate flex-1">
+                      {episode.outline}
+                    </span>
                   )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {(charNames.length > 0 ||
-          propNames.length > 0 ||
-          !!(script.location?.trim())) && (
-            <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b bg-muted/20 shrink-0">
-              <ScriptAssetStrip
-                script={script}
-                assetCharacters={assetCharacters}
-                assetScenes={assetScenes}
-                assetProps={assetProps}
-                mode="editor"
-              />
-            </div>
-          )}
-
-        <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
-          <div
-            ref={gutterRef}
-            className="pointer-events-none shrink-0 w-11 select-none overflow-y-auto overflow-x-hidden border-r border-border/60 bg-muted/25 py-3 pl-2 pr-1.5 text-right font-mono text-sm leading-relaxed text-muted-foreground/80 tabular-nums [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-hidden
-          >
-            {lineNumbers.map((n) => (
-              <div key={n} className="min-h-[1.625em] leading-relaxed">
-                {n}
+                </button>
+                {outlineOpen && (
+                  <div className="px-4 pb-2.5 pt-0.5 group/outline relative">
+                    {editingOutline ? (
+                      <div className="flex flex-col gap-1.5">
+                        <Textarea
+                          ref={outlineRef}
+                          value={outlineValue}
+                          onChange={(e) => setOutlineValue(e.target.value)}
+                          onKeyDown={handleOutlineKeyDown}
+                          disabled={savingOutline}
+                          placeholder="在此输入分集大纲..."
+                          className="min-h-[120px] resize-none text-xs leading-relaxed border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/40"
+                        />
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-muted-foreground"
+                            disabled={savingOutline}
+                            onClick={() => { setEditingOutline(false); setOutlineValue(episode.outline ?? "") }}
+                          >
+                            <X className="size-3 mr-1" />
+                            取消
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            disabled={savingOutline}
+                            onClick={handleOutlineSave}
+                          >
+                            <Check className="size-3 mr-1" />
+                            {savingOutline ? "保存中..." : "保存"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="relative min-h-[1.5rem] cursor-text"
+                        onClick={onUpdateEpisode ? handleOutlineEdit : undefined}
+                      >
+                        {episode.outline?.trim() ? (
+                          <p className="text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap pr-5">
+                            {episode.outline}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground/60 italic">
+                            暂无大纲{onUpdateEpisode ? "，点击添加" : ""}
+                          </p>
+                        )}
+                        {onUpdateEpisode && (
+                          <Pencil className="absolute top-0 right-0 size-3 text-muted-foreground opacity-0 group-hover/outline:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-          <div className="flex-1 relative min-w-0 min-h-0">
-            <Textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              onScroll={syncGutterScroll}
-              placeholder="在此编辑剧本内容..."
-              spellCheck={false}
-              className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent py-3 pl-2 pr-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 whitespace-pre overflow-x-auto overflow-y-auto"
-            />
-          </div>
-        </div>
 
-        <div className="flex items-center justify-end gap-2 px-4 py-1.5 shrink-0 text-[11px] tabular-nums text-muted-foreground">
-          <span>{lineCount > 0 ? `${lineCount} 行` : "空内容"}</span>
-          <span className="text-border select-none" aria-hidden>
-            ·
-          </span>
-          <span className="font-medium text-foreground/75">
-            {wordCount.toLocaleString()} 字
-          </span>
-        </div>
+              {/* 资产区 */}
+              {(charNames.length > 0 ||
+                propNames.length > 0 ||
+                !!(script.location?.trim())) && (
+                  <div className="px-4 py-3 border-b bg-muted/10">
+                    <p className="text-[11px] font-medium text-muted-foreground tracking-wide mb-2">关联资产</p>
+                    <ScriptAssetStrip
+                      script={script}
+                      assetCharacters={assetCharacters}
+                      assetScenes={assetScenes}
+                      assetProps={assetProps}
+                      mode="editor"
+                    />
+                  </div>
+                )}
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* 右侧：剧本编辑区 */}
+          <ResizablePanel className="min-w-0 flex flex-col">
+            <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
+              <div
+                ref={gutterRef}
+                className="pointer-events-none shrink-0 w-11 select-none overflow-y-auto overflow-x-hidden border-r border-border/60 bg-muted/25 py-3 pl-2 pr-1.5 text-right font-mono text-sm leading-relaxed text-muted-foreground/80 tabular-nums [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                aria-hidden
+              >
+                {lineNumbers.map((n) => (
+                  <div key={n} className="min-h-[1.625em] leading-relaxed">
+                    {n}
+                  </div>
+                ))}
+              </div>
+              <div className="flex-1 relative min-w-0 min-h-0">
+                <Textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  onScroll={syncGutterScroll}
+                  placeholder="在此编辑剧本内容..."
+                  spellCheck={false}
+                  className="absolute inset-0 h-full w-full resize-none rounded-none border-0 bg-transparent py-3 pl-2 pr-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 whitespace-pre overflow-x-auto overflow-y-auto"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-1.5 shrink-0 text-[11px] tabular-nums text-muted-foreground border-t">
+              <span>{lineCount > 0 ? `${lineCount} 行` : "空内容"}</span>
+              <span className="text-border select-none" aria-hidden>
+                ·
+              </span>
+              <span className="font-medium text-foreground/75">
+                {wordCount.toLocaleString()} 字
+              </span>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       <ScriptAssetDialog
