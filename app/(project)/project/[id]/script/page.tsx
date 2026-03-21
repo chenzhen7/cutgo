@@ -8,8 +8,8 @@ import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
-import { GenerateScriptDropdown } from "./components/generate-script-dropdown"
-import { EpisodeSelectDialog } from "./components/episode-select-dialog"
+import { GenerateScriptButton } from "./components/generate-script-button"
+import { ChapterSelectDialog } from "./components/chapter-select-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
 import {
@@ -77,13 +77,6 @@ export default function ScriptPage() {
     }
   }, [scripts, activeScriptId, setActiveScriptId])
 
-  const handleGenerateAll = useCallback(
-    async (mode: "skip_existing" | "overwrite") => {
-      await generateScripts(projectId, undefined, mode)
-    },
-    [projectId, generateScripts]
-  )
-
   const handleGenerateSelected = useCallback(
     async (episodeIds: string[]) => {
       await generateScripts(projectId, episodeIds, "overwrite")
@@ -140,11 +133,10 @@ export default function ScriptPage() {
             <ScriptStatsPanel scripts={scripts} episodes={episodes} />
           )}
         </div>
-        {hasScripts && (
-          <GenerateScriptDropdown
+        {episodesForProject.length > 0 && (
+          <GenerateScriptButton
             generateStatus={generateStatus}
-            onGenerateAll={handleGenerateAll}
-            onSelectEpisodes={() => setShowEpisodeSelect(true)}
+            onClick={() => setShowEpisodeSelect(true)}
           />
         )}
       </div>
@@ -154,10 +146,10 @@ export default function ScriptPage() {
         <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
           <p className="text-xs text-destructive">{generateError}</p>
           <button
-            onClick={() => handleGenerateAll("skip_existing")}
+            onClick={() => setShowEpisodeSelect(true)}
             className="text-xs text-destructive underline hover:no-underline"
           >
-            重试
+            重新选择章节
           </button>
         </div>
       )}
@@ -169,7 +161,7 @@ export default function ScriptPage() {
           <div>
             <p className="text-xs font-medium">正在生成剧本...</p>
             <p className="text-xs text-muted-foreground">
-              AI 正在为每个分集生成剧本，请稍候
+              AI 正按章节顺序生成各集剧本，请稍候
             </p>
           </div>
         </div>
@@ -179,9 +171,7 @@ export default function ScriptPage() {
       {!hasScripts && !isGenerating && (
         <div className="flex-1 overflow-hidden">
           <ScriptEmptyState
-            episodes={episodes}
-            onGenerateAll={() => handleGenerateAll("skip_existing")}
-            onSelectEpisodes={() => setShowEpisodeSelect(true)}
+            episodes={episodesForProject}
             onGoToImport={() => router.push(`/project/${projectId}/import`)}
           />
         </div>
@@ -260,10 +250,10 @@ export default function ScriptPage() {
       )}
 
       {/* Episode select dialog */}
-      <EpisodeSelectDialog
+      <ChapterSelectDialog
         open={showEpisodeSelect}
         onOpenChange={setShowEpisodeSelect}
-        episodes={episodes}
+        episodes={episodesForProject}
         scripts={scripts}
         onGenerate={handleGenerateSelected}
       />

@@ -2,20 +2,16 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, ListChecks, AlertTriangle, ArrowLeft } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Sparkles } from "lucide-react"
 import type { Episode } from "@/lib/types"
 
 interface ScriptEmptyStateProps {
   episodes: Episode[]
-  onGenerateAll: () => void
-  onSelectEpisodes: () => void
   onGoToImport: () => void
 }
 
 export function ScriptEmptyState({
   episodes,
-  onGenerateAll,
-  onSelectEpisodes,
   onGoToImport,
 }: ScriptEmptyStateProps) {
   if (episodes.length === 0) {
@@ -42,7 +38,8 @@ export function ScriptEmptyState({
       <div className="text-center">
         <p className="text-sm font-medium">尚未生成剧本</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          基于当前 {episodes.length} 个分集，AI 将为每集生成结构化剧本
+          共 {episodes.length} 个分集（按小说章节划分）。请点击右上角「AI
+          生成剧本」，在对话框中勾选要生成的章节（将生成该章下全部分集）
         </p>
       </div>
 
@@ -58,17 +55,6 @@ export function ScriptEmptyState({
             +{episodes.length - 10} 更多
           </Badge>
         )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Button onClick={onGenerateAll}>
-          <Sparkles className="size-4" />
-          AI 生成全部剧本
-        </Button>
-        <Button variant="outline" onClick={onSelectEpisodes}>
-          <ListChecks className="size-4" />
-          选择分集生成
-        </Button>
       </div>
     </div>
   )
