@@ -200,7 +200,9 @@ export default function ScriptPage() {
         <div className="flex-1 overflow-hidden">
           <ScriptEmptyState
             episodes={episodesForProject}
+            chapters={chapters}
             onGoToImport={() => router.push(`/project/${projectId}/import`)}
+            onOpenGenerate={() => setShowEpisodeSelect(true)}
           />
         </div>
       )}

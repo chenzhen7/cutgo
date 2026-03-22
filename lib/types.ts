@@ -89,7 +89,7 @@ export interface PlotEvent {
   updatedAt: string
 }
 
-// ── Episode（确认导入时按所选章节生成）──
+// ── Episode（可按小说章节创建，或由剧本页按所选章节生成）──
 
 export interface Episode {
   id: string

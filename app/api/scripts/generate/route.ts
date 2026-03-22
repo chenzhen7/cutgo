@@ -183,7 +183,10 @@ export async function POST(request: NextRequest) {
   })
 
   if (!novel) {
-    return NextResponse.json({ error: "请先完成小说导入" }, { status: 400 })
+    return NextResponse.json(
+      { error: "请先导入小说并解析出章节" },
+      { status: 400 }
+    )
   }
 
   let targetEpisodes = await prisma.episode.findMany({

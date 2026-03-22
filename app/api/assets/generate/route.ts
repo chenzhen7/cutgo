@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
 
   if (episodes.length === 0) {
     return NextResponse.json(
-      { error: "暂无分集数据，请先在小说导入中确认导入" },
+      { error: "暂无分集数据，请先在「剧本生成」中按章节创建分集并生成剧本" },
       { status: 400 }
     )
   }

@@ -264,7 +264,7 @@ export default function AssetsPage() {
             <FolderOpen className="h-12 w-12 text-muted-foreground/30" />
             <h3 className="mt-4 text-sm font-medium">暂无资产数据</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              请先在小说导入中确认导入以生成分集，再点击「AI 提取资产」
+              请先在「剧本生成」中按章节创建分集并生成剧本后，再点击「AI 提取资产」
             </p>
             <Button
               className="mt-4"

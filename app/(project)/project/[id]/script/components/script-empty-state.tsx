@@ -3,31 +3,68 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, ArrowLeft, Sparkles } from "lucide-react"
-import type { Episode } from "@/lib/types"
+import type { Chapter, Episode } from "@/lib/types"
 
 interface ScriptEmptyStateProps {
   episodes: Episode[]
+  chapters: Chapter[]
   onGoToImport: () => void
+  onOpenGenerate?: () => void
 }
 
 export function ScriptEmptyState({
   episodes,
+  chapters,
   onGoToImport,
+  onOpenGenerate,
 }: ScriptEmptyStateProps) {
-  if (episodes.length === 0) {
+  if (episodes.length === 0 && chapters.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
         <AlertTriangle className="size-10 text-muted-foreground/40" />
         <div className="text-center">
-          <p className="text-sm font-medium">暂无分集数据</p>
+          <p className="text-sm font-medium">暂无章节数据</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            请在小说导入中确认导入，系统会按所选章节自动生成分集
+            请先在小说导入中上传并解析小说，识别章节后再生成剧本
           </p>
         </div>
         <Button onClick={onGoToImport}>
           <ArrowLeft className="size-4" />
           返回小说导入
         </Button>
+      </div>
+    )
+  }
+
+  if (episodes.length === 0 && chapters.length > 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4">
+        <Sparkles className="size-10 text-muted-foreground/40" />
+        <div className="text-center max-w-md">
+          <p className="text-sm font-medium">尚未创建分集</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            已识别 {chapters.length} 个章节。请点击右上角「AI
+            生成剧本」或下方按钮，勾选章节后将按章节自动创建分集并生成剧本
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
+          {chapters.slice(0, 12).map((ch) => (
+            <Badge key={ch.id} variant="secondary" className="text-xs">
+              {ch.title?.trim() || `第 ${ch.index} 章`}
+            </Badge>
+          ))}
+          {chapters.length > 12 && (
+            <Badge variant="outline" className="text-xs">
+              +{chapters.length - 12} 章
+            </Badge>
+          )}
+        </div>
+        {onOpenGenerate && (
+          <Button onClick={onOpenGenerate}>
+            <Sparkles className="size-4" />
+            选择章节生成剧本
+          </Button>
+        )}
       </div>
     )
   }

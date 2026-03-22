@@ -81,7 +81,7 @@ export function EpisodeSelectView({
           <Film className="size-12 text-muted-foreground mb-4" />
           <h3 className="text-base font-medium mb-2">暂无分集</h3>
           <p className="text-sm text-muted-foreground">
-            请先在小说导入中确认导入以生成分集
+            请先在「剧本生成」中按章节创建分集并生成剧本
           </p>
         </div>
       ) : (
