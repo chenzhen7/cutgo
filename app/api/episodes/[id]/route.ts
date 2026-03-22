@@ -19,6 +19,14 @@ export async function PATCH(
       ...(body.cliffhanger !== undefined && { cliffhanger: body.cliffhanger }),
       ...(body.duration !== undefined && { duration: body.duration }),
       ...(body.chapterId !== undefined && { chapterId: body.chapterId }),
+      ...(body.sourceChapterIds !== undefined && {
+        sourceChapterIds:
+          body.sourceChapterIds === null
+            ? null
+            : typeof body.sourceChapterIds === "string"
+              ? body.sourceChapterIds
+              : JSON.stringify(body.sourceChapterIds),
+      }),
     },
     include: {
       chapter: { select: { id: true, index: true, title: true } },

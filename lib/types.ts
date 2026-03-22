@@ -95,6 +95,8 @@ export interface Episode {
   id: string
   projectId: string
   chapterId: string
+  /** JSON 数组字符串，本集涵盖的章节 ID（有序）；空则仅 chapterId */
+  sourceChapterIds?: string | null
   chapter: { id: string; index: number; title: string | null }
   index: number
   title: string

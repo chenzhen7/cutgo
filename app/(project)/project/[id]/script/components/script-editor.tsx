@@ -21,6 +21,7 @@ import type {
   Script,
 } from "@/lib/types"
 import { countWords } from "@/lib/novel-utils"
+import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -234,6 +235,7 @@ export function ScriptEditor({
 
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
+  const sourceChapterCount = parseSourceChapterIds(episode).length
   const lineNumbers = content.split("\n").map((_, i) => i + 1)
 
   const syncGutterScroll = () => {
@@ -275,6 +277,11 @@ export function ScriptEditor({
                   <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 )}
               </button>
+            )}
+            {sourceChapterCount > 1 && (
+              <Badge variant="secondary" className="text-[9px] shrink-0 font-normal">
+                涵盖 {sourceChapterCount} 章
+              </Badge>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">

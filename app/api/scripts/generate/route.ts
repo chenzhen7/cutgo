@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -283,7 +284,14 @@ export async function POST(request: NextRequest) {
         }))
       )
 
-      const chapterContent = chapterMap.get(episode.chapterId) || ""
+      const sourceIds = parseSourceChapterIds(episode)
+      const chapterContent = sourceIds
+        .map((id) => {
+          const text = chapterMap.get(id) || ""
+          return text
+        })
+        .filter(Boolean)
+        .join("\n\n---\n\n")
 
       const scriptContent = await callAIGenerateScript(
         episode.title,

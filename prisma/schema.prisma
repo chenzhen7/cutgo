@@ -137,6 +137,9 @@ model Episode {
   chapterId String
   chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
+  /// JSON 字符串数组：本集涵盖的小说章节 ID（有序）。空则视为仅 chapterId 一章
+  sourceChapterIds String?
+
   index       Int
   title       String
   synopsis    String

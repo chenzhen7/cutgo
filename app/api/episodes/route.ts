@@ -27,10 +27,35 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { projectId, chapterId, index, title, synopsis, outline, keyConflict, cliffhanger, duration } = body
+  const {
+    projectId,
+    chapterId,
+    sourceChapterIds,
+    index,
+    title,
+    synopsis,
+    outline,
+    keyConflict,
+    cliffhanger,
+    duration,
+  } = body
 
   if (!projectId || !chapterId) {
     return NextResponse.json({ error: "projectId and chapterId are required" }, { status: 400 })
+  }
+
+  let sourceIdsJson: string | undefined
+  if (Array.isArray(sourceChapterIds) && sourceChapterIds.length > 0) {
+    const ids = sourceChapterIds.filter((x: unknown): x is string => typeof x === "string" && x.length > 0)
+    if (ids.length > 0) {
+      if (!ids.includes(chapterId)) {
+        return NextResponse.json(
+          { error: "sourceChapterIds 须包含 chapterId（锚点章节）" },
+          { status: 400 }
+        )
+      }
+      sourceIdsJson = JSON.stringify(ids)
+    }
   }
 
   let episodeIndex = index
@@ -46,6 +71,7 @@ export async function POST(request: NextRequest) {
     data: {
       projectId,
       chapterId,
+      ...(sourceIdsJson !== undefined ? { sourceChapterIds: sourceIdsJson } : {}),
       index: episodeIndex,
       title: title || `第${episodeIndex}集`,
       synopsis: synopsis || "",

@@ -20,6 +20,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
+import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 export default function ScriptPage() {
   const params = useParams()
@@ -113,9 +114,33 @@ export default function ScriptPage() {
     [projectId, createEpisodeWithScript]
   )
 
-  const handleGenerateOutlines = useCallback(
-    async (episodeIds: string[]) => {
+  const handleGenerateOutlinesFromChapters = useCallback(
+    async (chapterIdsOrdered: string[]) => {
       try {
+        for (const chapterId of chapterIdsOrdered) {
+          const state = useScriptStore.getState()
+          const eps = state.episodes.filter((e) => e.projectId === projectId)
+          const has = eps.some((e) => parseSourceChapterIds(e).includes(chapterId))
+          if (!has) {
+            await createEpisodeWithScript(projectId, chapterId)
+          }
+        }
+        const idSet = new Set(chapterIdsOrdered)
+        const state = useScriptStore.getState()
+        const eps = state.episodes
+          .filter((e) => e.projectId === projectId)
+          .sort((a, b) => a.index - b.index)
+        const episodeIds: string[] = []
+        const seen = new Set<string>()
+        for (const ep of eps) {
+          if (parseSourceChapterIds(ep).some((cid) => idSet.has(cid))) {
+            if (!seen.has(ep.id)) {
+              seen.add(ep.id)
+              episodeIds.push(ep.id)
+            }
+          }
+        }
+        if (episodeIds.length === 0) return
         await generateEpisodeOutlines(projectId, episodeIds)
         toast.success("分集大纲生成完成")
       } catch (err) {
@@ -123,7 +148,7 @@ export default function ScriptPage() {
         throw err
       }
     },
-    [projectId, generateEpisodeOutlines]
+    [projectId, createEpisodeWithScript, generateEpisodeOutlines]
   )
 
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
@@ -157,21 +182,25 @@ export default function ScriptPage() {
             <ScriptStatsPanel scripts={scripts} episodes={episodes} />
           )}
         </div>
-        {episodesForProject.length > 0 && (
+        {(episodesForProject.length > 0 || chapters.length > 0) && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowOutlineDialog(true)}
-              disabled={isGenerating}
-            >
-              <ListOrdered className="size-4" />
-              生成分集大纲
-            </Button>
-            <GenerateScriptButton
-              generateStatus={generateStatus}
-              onClick={() => setShowEpisodeSelect(true)}
-            />
+            {chapters.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowOutlineDialog(true)}
+                disabled={isGenerating}
+              >
+                <ListOrdered className="size-4" />
+                生成分集大纲
+              </Button>
+            )}
+            {episodesForProject.length > 0 && (
+              <GenerateScriptButton
+                generateStatus={generateStatus}
+                onClick={() => setShowEpisodeSelect(true)}
+              />
+            )}
           </div>
         )}
       </div>
@@ -299,9 +328,9 @@ export default function ScriptPage() {
       <EpisodeOutlineDialog
         open={showOutlineDialog}
         onOpenChange={setShowOutlineDialog}
+        chapters={chapters}
         episodes={episodesForProject}
-        scripts={scripts}
-        onGenerate={handleGenerateOutlines}
+        onGenerate={handleGenerateOutlinesFromChapters}
       />
     </div>
   )

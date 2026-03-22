@@ -12,88 +12,92 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Loader2, Sparkles } from "lucide-react"
-import type { Episode, Script } from "@/lib/types"
-import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
+import { BookMarked, Loader2, Sparkles } from "lucide-react"
+import type { Chapter, Episode } from "@/lib/types"
+import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 interface EpisodeOutlineDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  chapters?: Chapter[]
   episodes: Episode[]
-  scripts: Script[]
-  onGenerate: (episodeIds: string[]) => void | Promise<void>
+  onGenerate: (chapterIdsOrdered: string[]) => void | Promise<void>
 }
 
 export function EpisodeOutlineDialog({
   open,
   onOpenChange,
+  chapters = [],
   episodes,
-  scripts,
   onGenerate,
 }: EpisodeOutlineDialogProps) {
-  const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<string[]>([])
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([])
   const [generating, setGenerating] = useState(false)
 
-  const scriptEpisodeIds = useMemo(
-    () => new Set(scripts.map((s) => s.episodeId)),
-    [scripts]
-  )
+  interface ChapterRow {
+    chapterId: string
+    chapterIndex: number
+    chapterTitle: string | null
+    label: string
+    hasEpisode: boolean
+  }
 
-  const sortedEpisodes = useMemo(
-    () => [...episodes].sort((a, b) => a.index - b.index),
-    [episodes]
-  )
+  const rows = useMemo((): ChapterRow[] => {
+    const touchCount = new Map<string, Set<string>>()
+    for (const ep of episodes) {
+      for (const cid of parseSourceChapterIds(ep)) {
+        if (!touchCount.has(cid)) touchCount.set(cid, new Set())
+        touchCount.get(cid)!.add(ep.id)
+      }
+    }
 
-  const episodeDisplayMap = useMemo(
-    () => buildEpisodeDisplayNumberMap(sortedEpisodes),
-    [sortedEpisodes]
-  )
+    return [...chapters]
+      .sort((a, b) => a.index - b.index)
+      .map((ch) => {
+        const ids = touchCount.get(ch.id)
+        return {
+          chapterId: ch.id,
+          chapterIndex: ch.index,
+          chapterTitle: ch.title,
+          label: ch.title?.trim() || `第 ${ch.index} 章`,
+          hasEpisode: (ids?.size ?? 0) > 0,
+        }
+      })
+  }, [chapters, episodes])
 
   const allSelected = useMemo(() => {
-    if (!sortedEpisodes.length) return false
-    const set = new Set(selectedEpisodeIds)
-    return sortedEpisodes.every((ep) => set.has(ep.id))
-  }, [sortedEpisodes, selectedEpisodeIds])
+    const allIds = rows.map((r) => r.chapterId)
+    if (!allIds.length) return false
+    return allIds.every((id) => selectedChapterIds.includes(id))
+  }, [rows, selectedChapterIds])
 
-  const hasOverwriteRisk = useMemo(() => {
-    const set = new Set(selectedEpisodeIds)
-    return sortedEpisodes.some(
-      (ep) => set.has(ep.id) && !!ep.outline?.trim()
-    )
-  }, [sortedEpisodes, selectedEpisodeIds])
-
-  const toggleEpisode = (episodeId: string) => {
-    setSelectedEpisodeIds((prev) =>
-      prev.includes(episodeId)
-        ? prev.filter((id) => id !== episodeId)
-        : [...prev, episodeId]
+  const toggleChapter = (chapterId: string) => {
+    setSelectedChapterIds((prev) =>
+      prev.includes(chapterId)
+        ? prev.filter((id) => id !== chapterId)
+        : [...prev, chapterId]
     )
   }
 
   const toggleAll = () => {
-    const allIds = sortedEpisodes.map((ep) => ep.id)
-    setSelectedEpisodeIds(allSelected ? [] : allIds)
+    const allIds = rows.map((r) => r.chapterId)
+    setSelectedChapterIds(allSelected ? [] : allIds)
   }
 
-  const selectWithoutOutline = () => {
-    setSelectedEpisodeIds(
-      sortedEpisodes
-        .filter((ep) => !ep.outline?.trim())
-        .map((ep) => ep.id)
-    )
+  const selectChaptersWithoutEpisode = () => {
+    setSelectedChapterIds(rows.filter((r) => !r.hasEpisode).map((r) => r.chapterId))
   }
 
   const handleGenerate = async () => {
-    const set = new Set(selectedEpisodeIds)
-    const episodeIds = sortedEpisodes
-      .filter((ep) => set.has(ep.id))
-      .map((ep) => ep.id)
-
-    if (!episodeIds.length) return
+    const idSet = new Set(selectedChapterIds)
+    const orderedChapterIds = rows
+      .filter((r) => idSet.has(r.chapterId))
+      .map((r) => r.chapterId)
+    if (!orderedChapterIds.length) return
     setGenerating(true)
     try {
-      await onGenerate(episodeIds)
-      setSelectedEpisodeIds([])
+      await onGenerate(orderedChapterIds)
+      setSelectedChapterIds([])
       onOpenChange(false)
     } catch {
       // error handled by parent toast
@@ -111,62 +115,59 @@ export function EpisodeOutlineDialog({
             生成分集大纲
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
-            选择分集，AI 将为所选分集生成大纲内容
+            按章节选择：将为本集涵盖所选章节的分集生成大纲；一集可涵盖多章，已创建分集的章节会标记
           </p>
         </DialogHeader>
 
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={toggleAll} disabled={generating}>
-            {allSelected ? "取消全选" : "全选分集"}
+            {allSelected ? "取消全选" : "全选章节"}
           </Button>
-          <Button variant="outline" size="sm" onClick={selectWithoutOutline} disabled={generating}>
-            仅选未生成的分集
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={selectChaptersWithoutEpisode}
+            disabled={generating}
+          >
+            仅选尚无分集的章节
           </Button>
         </div>
 
         <ScrollArea className="max-h-[320px]">
           <div className="flex flex-col gap-1">
-            {sortedEpisodes.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">暂无分集</p>
+            {rows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">暂无可用章节</p>
             ) : (
-              sortedEpisodes.map((ep) => {
-                const checked = selectedEpisodeIds.includes(ep.id)
-                const hasOutline = !!ep.outline?.trim()
-                const displayNum = episodeDisplayMap.get(ep.id) ?? 1
+              rows.map((row) => {
+                const checked = selectedChapterIds.includes(row.chapterId)
                 return (
                   <label
-                    key={ep.id}
-                    className="flex items-start gap-3 rounded-md px-3 py-2.5 hover:bg-muted/50 cursor-pointer transition-colors border border-border/50"
+                    key={row.chapterId}
+                    className="flex items-start gap-3 rounded-md px-3 py-3 hover:bg-muted/50 cursor-pointer transition-colors border border-border/50"
                   >
                     <Checkbox
                       className="mt-0.5"
                       checked={checked}
                       disabled={generating}
-                      onCheckedChange={() => toggleEpisode(ep.id)}
+                      onCheckedChange={() => toggleChapter(row.chapterId)}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[11px] text-muted-foreground shrink-0">
-                          第{displayNum}集
-                        </span>
+                        <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
                         <span className="text-sm font-medium truncate min-w-0 flex-1">
-                          {ep.title}
+                          第{row.chapterIndex}章 {row.label}
                         </span>
-                        {hasOutline && (
-                          <Badge
-                            variant="secondary"
-                            className="text-[9px] px-1.5 py-0 h-4 gap-0.5 shrink-0"
-                          >
-                            <FileText className="size-2.5" />
-                            已有大纲
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {row.hasEpisode && (
+                            <Badge
+                              variant="default"
+                              className="text-[9px] px-1.5 py-0 h-4 gap-0.5 bg-primary/15 text-primary border-0"
+                            >
+                              已有分集
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      {hasOutline && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                          {ep.outline}
-                        </p>
-                      )}
                     </div>
                   </label>
                 )
@@ -176,13 +177,8 @@ export function EpisodeOutlineDialog({
         </ScrollArea>
 
         <div className="text-sm text-muted-foreground">
-          已选 {selectedEpisodeIds.length} 集将生成大纲
+          已选 {selectedChapterIds.length} 个章节
         </div>
-        {hasOverwriteRisk && (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            所选分集中已有大纲的将被覆盖
-          </p>
-        )}
 
         <DialogFooter>
           <Button
@@ -194,7 +190,7 @@ export function EpisodeOutlineDialog({
           </Button>
           <Button
             onClick={() => void handleGenerate()}
-            disabled={selectedEpisodeIds.length === 0 || generating}
+            disabled={selectedChapterIds.length === 0 || generating}
           >
             {generating ? (
               <>
