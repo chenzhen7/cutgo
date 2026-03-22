@@ -25,7 +25,7 @@ interface ScriptState {
   reorderEpisodes: (projectId: string, orderedIds: string[]) => Promise<void>
   createEpisodeWithScript: (projectId: string, chapterId: string) => Promise<void>
   updateEpisode: (episodeId: string, data: { title?: string; synopsis?: string; outline?: string | null }) => Promise<void>
-  generateEpisodeOutlines: (projectId: string, episodeIds: string[]) => Promise<void>
+  generateEpisodeOutlines: (projectId: string, chapterIds: string[]) => Promise<void>
 
   generateScripts: (
     projectId: string,
@@ -161,24 +161,20 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     set({ episodes: get().episodes.map((ep) => (ep.id === episodeId ? updated : ep)) })
   },
 
-  generateEpisodeOutlines: async (projectId, episodeIds) => {
+  generateEpisodeOutlines: async (projectId, chapterIds) => {
     const res = await fetch("/api/episodes/generate-outlines", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, episodeIds }),
+      body: JSON.stringify({ projectId, chapterIds }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error((err as { error?: string }).error || "生成大纲失败")
     }
     const data = await res.json()
-    const updatedMap = new Map<string, (typeof data.episodes)[number]>(
-      (data.episodes as Array<{ id: string }>).map((ep) => [ep.id, ep])
-    )
+    const newEpisodes: Episode[] = data.episodes ?? []
     set({
-      episodes: get().episodes.map((ep) =>
-        updatedMap.has(ep.id) ? (updatedMap.get(ep.id) as typeof ep) : ep
-      ),
+      episodes: [...get().episodes, ...newEpisodes],
     })
   },
 

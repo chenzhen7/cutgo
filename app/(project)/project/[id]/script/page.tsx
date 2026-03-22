@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
-import { Loader2, ListOrdered  } from "lucide-react"
+import { Loader2, ListOrdered } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ScriptEmptyState } from "./components/script-empty-state"
@@ -20,7 +20,6 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
-import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 export default function ScriptPage() {
   const params = useParams()
@@ -117,38 +116,14 @@ export default function ScriptPage() {
   const handleGenerateOutlinesFromChapters = useCallback(
     async (chapterIdsOrdered: string[]) => {
       try {
-        for (const chapterId of chapterIdsOrdered) {
-          const state = useScriptStore.getState()
-          const eps = state.episodes.filter((e) => e.projectId === projectId)
-          const has = eps.some((e) => parseSourceChapterIds(e).includes(chapterId))
-          if (!has) {
-            await createEpisodeWithScript(projectId, chapterId)
-          }
-        }
-        const idSet = new Set(chapterIdsOrdered)
-        const state = useScriptStore.getState()
-        const eps = state.episodes
-          .filter((e) => e.projectId === projectId)
-          .sort((a, b) => a.index - b.index)
-        const episodeIds: string[] = []
-        const seen = new Set<string>()
-        for (const ep of eps) {
-          if (parseSourceChapterIds(ep).some((cid) => idSet.has(cid))) {
-            if (!seen.has(ep.id)) {
-              seen.add(ep.id)
-              episodeIds.push(ep.id)
-            }
-          }
-        }
-        if (episodeIds.length === 0) return
-        await generateEpisodeOutlines(projectId, episodeIds)
+        await generateEpisodeOutlines(projectId, chapterIdsOrdered)
         toast.success("分集大纲生成完成")
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "生成大纲失败")
         throw err
       }
     },
-    [projectId, createEpisodeWithScript, generateEpisodeOutlines]
+    [projectId, generateEpisodeOutlines]
   )
 
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
