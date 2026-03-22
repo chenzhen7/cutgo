@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
-import { Loader2 } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
 import { GenerateScriptButton } from "./components/generate-script-button"
 import { ChapterSelectDialog } from "./components/chapter-select-dialog"
+import { EpisodeOutlineDialog } from "./components/episode-outline-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
 import {
@@ -42,9 +44,11 @@ export default function ScriptPage() {
     reorderEpisodes,
     createEpisodeWithScript,
     updateEpisode,
+    generateEpisodeOutlines,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
+  const [showOutlineDialog, setShowOutlineDialog] = useState(false)
   const [loading, setLoading] = useState(true)
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
   const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
@@ -130,6 +134,19 @@ export default function ScriptPage() {
     [projectId, createEpisodeWithScript]
   )
 
+  const handleGenerateOutlines = useCallback(
+    async (episodeIds: string[]) => {
+      try {
+        await generateEpisodeOutlines(projectId, episodeIds)
+        toast.success("分集大纲生成完成")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "生成大纲失败")
+        throw err
+      }
+    },
+    [projectId, generateEpisodeOutlines]
+  )
+
   const activeScript = scripts.find((s) => s.id === activeScriptId) || null
   const hasScripts = scripts.length > 0
 
@@ -162,10 +179,21 @@ export default function ScriptPage() {
           )}
         </div>
         {(episodesForProject.length > 0 || chapters.length > 0) && (
-          <GenerateScriptButton
-            generateStatus={generateStatus}
-            onClick={() => setShowEpisodeSelect(true)}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowOutlineDialog(true)}
+              disabled={isGenerating}
+            >
+              <Sparkles className="size-4" />
+              生成分集大纲
+            </Button>
+            <GenerateScriptButton
+              generateStatus={generateStatus}
+              onClick={() => setShowEpisodeSelect(true)}
+            />
+          </div>
         )}
       </div>
 
@@ -288,6 +316,16 @@ export default function ScriptPage() {
         episodes={episodesForProject}
         scripts={scripts}
         onGenerate={handleGenerateChapters}
+      />
+
+      {/* Episode outline dialog */}
+      <EpisodeOutlineDialog
+        open={showOutlineDialog}
+        onOpenChange={setShowOutlineDialog}
+        chapters={chapters}
+        episodes={episodesForProject}
+        scripts={scripts}
+        onGenerate={handleGenerateOutlines}
       />
     </div>
   )
