@@ -37,23 +37,19 @@ export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视
 ---
 
  ## 六、输出格式
+字段说明：\`title\` 为本集短标题（强吸引力）；\`summary\` 为本集核心剧情；\`chapters\` 为关联的小说章节序号（数字数组）。
+
 [
   {
-  	"episode":1,
-    //标题
-    "title":"",
-    //大纲内容
+    "episode": 1,
+    "title": "",
     "summary": "",
-    //核心冲突（可为空）
     "core_conflict": "",
-    //黄金钩子（可为空）
     "hook": "",
-    //结尾悬念（可为空）
     "cliffhanger": "",
-    //关联章节序号（数字数组，对应小说章节序号）
-    "chapters":[]
+    "chapters": []
   }
-]    
+]
 
 【小说原文】：
 ${EPISODE_OUTLINE_NOVEL_PLACEHOLDER}

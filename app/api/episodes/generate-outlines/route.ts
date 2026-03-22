@@ -6,6 +6,8 @@ import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 
 interface OutlineItem {
   episode: number
+  /** 分集标题（吸引力/悬念）；缺省时由服务端回退为「第N集」 */
+  title?: string
   summary: string
   core_conflict?: string
   hook?: string
@@ -126,7 +128,8 @@ export async function POST(request: NextRequest) {
     }
 
     const episodeIndex = nextIndex++
-    const title = `第${episodeIndex}集`
+    const generatedTitle = item.title?.trim()
+    const title = generatedTitle || `第${episodeIndex}集`
 
     const sourceIdsJson =
       sourceIds.length > 1
