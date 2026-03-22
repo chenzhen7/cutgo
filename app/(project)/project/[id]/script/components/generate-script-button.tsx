@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Sparkles, Loader2 } from "lucide-react"
+import { NotebookText, Loader2 } from "lucide-react"
 import type { ScriptGenerateStatus } from "@/lib/types"
 
 interface GenerateScriptButtonProps {
@@ -19,7 +19,7 @@ export function GenerateScriptButton({
 
   if (isGenerating) {
     return (
-      <Button disabled>
+      <Button variant="outline" size="sm" disabled>
         <Loader2 className="size-4 animate-spin" />
         生成中...
       </Button>
@@ -27,9 +27,14 @@ export function GenerateScriptButton({
   }
 
   return (
-    <Button disabled={disabled} onClick={onClick}>
-      <Sparkles className="size-4" />
-      AI 生成剧本
+    <Button
+   
+      size="sm"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <NotebookText className="size-4" />
+      生成剧本
     </Button>
   )
 }
