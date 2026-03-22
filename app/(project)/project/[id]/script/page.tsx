@@ -182,7 +182,7 @@ export default function ScriptPage() {
             <ScriptStatsPanel scripts={scripts} episodes={episodes} />
           )}
         </div>
-        {(episodesForProject.length > 0 || chapters.length > 0) && (
+        {episodesForProject.length > 0 && (
           <div className="flex items-center gap-2">
             {chapters.length > 0 && (
               <Button
@@ -195,12 +195,10 @@ export default function ScriptPage() {
                 生成分集大纲
               </Button>
             )}
-            {episodesForProject.length > 0 && (
-              <GenerateScriptButton
-                generateStatus={generateStatus}
-                onClick={() => setShowEpisodeSelect(true)}
-              />
-            )}
+            <GenerateScriptButton
+              generateStatus={generateStatus}
+              onClick={() => setShowEpisodeSelect(true)}
+            />
           </div>
         )}
       </div>
@@ -239,6 +237,7 @@ export default function ScriptPage() {
             chapters={chapters}
             onGoToImport={() => router.push(`/project/${projectId}/import`)}
             onOpenGenerate={() => setShowEpisodeSelect(true)}
+            onOpenOutlineDialog={() => setShowOutlineDialog(true)}
           />
         </div>
       )}

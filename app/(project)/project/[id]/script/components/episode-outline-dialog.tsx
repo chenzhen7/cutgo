@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { BookMarked, Loader2, Sparkles } from "lucide-react"
+import { BookMarked, Loader2, ListOrdered } from "lucide-react"
 import type { Chapter, Episode } from "@/lib/types"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
@@ -111,7 +111,7 @@ export function EpisodeOutlineDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="size-4 text-primary" />
+            <ListOrdered className="size-4 text-primary" />
             生成分集大纲
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
@@ -199,7 +199,7 @@ export function EpisodeOutlineDialog({
               </>
             ) : (
               <>
-                <Sparkles className="size-4" />
+                <ListOrdered className="size-4" />
                 生成大纲
               </>
             )}

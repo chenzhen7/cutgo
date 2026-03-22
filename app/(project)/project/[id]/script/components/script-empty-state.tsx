@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, ArrowLeft, Sparkles } from "lucide-react"
+import { AlertTriangle, ArrowLeft, ListOrdered, Sparkles } from "lucide-react"
 import type { Chapter, Episode } from "@/lib/types"
 
 interface ScriptEmptyStateProps {
@@ -10,6 +10,7 @@ interface ScriptEmptyStateProps {
   chapters: Chapter[]
   onGoToImport: () => void
   onOpenGenerate?: () => void
+  onOpenOutlineDialog?: () => void
 }
 
 export function ScriptEmptyState({
@@ -17,6 +18,7 @@ export function ScriptEmptyState({
   chapters,
   onGoToImport,
   onOpenGenerate,
+  onOpenOutlineDialog,
 }: ScriptEmptyStateProps) {
   if (episodes.length === 0 && chapters.length === 0) {
     return (
@@ -42,7 +44,8 @@ export function ScriptEmptyState({
         <Sparkles className="size-10 text-muted-foreground/40" />
         <div className="text-center max-w-md">
           <p className="text-sm font-medium">尚未创建分集</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          
+          <p className="mt-3 text-xs text-muted-foreground">
             已识别 {chapters.length} 个章节。请先在分集规划中创建分集，然后点击右上角「AI 生成剧本」为各分集生成剧本
           </p>
         </div>
@@ -58,6 +61,14 @@ export function ScriptEmptyState({
             </Badge>
           )}
         </div>
+        {onOpenOutlineDialog && (
+            <div className="mt-3 flex justify-center">
+              <Button size="sm" onClick={onOpenOutlineDialog}>
+                <ListOrdered className="size-4" />
+                生成分集大纲
+              </Button>
+            </div>
+          )}
       </div>
     )
   }
