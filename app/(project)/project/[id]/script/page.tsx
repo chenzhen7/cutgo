@@ -139,11 +139,22 @@ export default function ScriptPage() {
         await generateEpisodeOutlines(projectId, chapterIdsOrdered)
         toast.success("分集大纲生成完成")
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "生成大纲失败")
+        const code = (err as Error & { code?: string }).code
+        if (code === "LLM_NOT_CONFIGURED") {
+          toast.error("尚未配置语言模型，无法生成分集大纲", {
+            action: {
+              label: "去配置",
+              onClick: () => router.push("/settings"),
+            },
+            duration: 8000,
+          })
+        } else {
+          toast.error(err instanceof Error ? err.message : "生成大纲失败")
+        }
         throw err
       }
     },
-    [projectId, generateEpisodeOutlines]
+    [projectId, generateEpisodeOutlines, router]
   )
 
   const handleDeleteEpisode = useCallback(

@@ -169,7 +169,10 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      throw new Error((err as { error?: string }).error || "生成大纲失败")
+      const errData = err as { error?: string; message?: string }
+      const e = new Error(errData.message || errData.error || "生成大纲失败") as Error & { code?: string }
+      e.code = errData.error
+      throw e
     }
     const data = await res.json()
     const newEpisodes: Episode[] = data.episodes ?? []

@@ -77,25 +77,18 @@ export async function POST(request: NextRequest) {
   // 调用 LLM
   const llmProvider = await getLLMProvider()
 
-  let outlines: OutlineItem[]
-
   if (!llmProvider) {
-    // 降级：每个章节生成一个占位分集
-    outlines = selectedChapters.map((c, i) => ({
-      episode: i + 1,
-      summary: `本集以"${c.title?.trim() || formatChapterOrdinalLabel(c.index)}"内容展开。${c.content.slice(0, 80).replace(/\n/g, " ")}…（占位大纲，请配置 LLM API 后重新生成）`,
-      core_conflict: "",
-      hook: "",
-      cliffhanger: "",
-      chapters: [c.index],
-    }))
-  } else {
-    const prompt = buildEpisodeOutlinePrompt(novelText)
-    const result = await llmProvider.chat({
-      messages: [{ role: "user", content: prompt }]
-    })
-    outlines = parseOutlineJSON(result.content)
+    return NextResponse.json(
+      { error: "LLM_NOT_CONFIGURED", message: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
+      { status: 422 }
+    )
   }
+
+  const prompt = buildEpisodeOutlinePrompt(novelText)
+  const result = await llmProvider.chat({
+    messages: [{ role: "user", content: prompt }]
+  })
+  const outlines = parseOutlineJSON(result.content)
 
   if (outlines.length === 0) {
     return NextResponse.json({ error: "LLM 未返回有效的分集大纲" }, { status: 500 })
