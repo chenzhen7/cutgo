@@ -43,8 +43,7 @@ export function ScriptEmptyState({
         <div className="text-center max-w-md">
           <p className="text-sm font-medium">尚未创建分集</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            已识别 {chapters.length} 个章节。请点击右上角「AI
-            生成剧本」或下方按钮，勾选章节后将按章节自动创建分集并生成剧本
+            已识别 {chapters.length} 个章节。请先在分集规划中创建分集，然后点击右上角「AI 生成剧本」为各分集生成剧本
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
@@ -59,12 +58,6 @@ export function ScriptEmptyState({
             </Badge>
           )}
         </div>
-        {onOpenGenerate && (
-          <Button onClick={onOpenGenerate}>
-            <Sparkles className="size-4" />
-            选择章节生成剧本
-          </Button>
-        )}
       </div>
     )
   }
@@ -75,8 +68,7 @@ export function ScriptEmptyState({
       <div className="text-center">
         <p className="text-sm font-medium">尚未生成剧本</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          共 {episodes.length} 个分集（按小说章节划分）。请点击右上角「AI
-          生成剧本」，在对话框中勾选要生成的章节（将生成该章下全部分集）
+          共 {episodes.length} 个分集。请点击右上角「AI 生成剧本」，勾选要生成的分集后开始生成
         </p>
       </div>
 
@@ -93,6 +85,12 @@ export function ScriptEmptyState({
           </Badge>
         )}
       </div>
+      {onOpenGenerate && (
+        <Button onClick={onOpenGenerate}>
+          <Sparkles className="size-4" />
+          选择分集生成剧本
+        </Button>
+      )}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2, ListOrdered } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ScriptEmptyState } from "./components/script-empty-state"
@@ -39,7 +39,6 @@ export default function ScriptPage() {
     generateScripts,
     updateScript,
     setActiveScriptId,
-    confirmScripts,
     deleteEpisode,
     reorderEpisodes,
     createEpisodeWithScript,
@@ -84,36 +83,16 @@ export default function ScriptPage() {
     }
   }, [scripts, activeScriptId, setActiveScriptId])
 
-  const handleGenerateChapters = useCallback(
-    async (chapterIdsOrdered: string[]) => {
-      const episodeIds: string[] = []
+  const handleGenerateEpisodes = useCallback(
+    async (episodeIdsOrdered: string[]) => {
       try {
-        for (const chapterId of chapterIdsOrdered) {
-          let eps = useScriptStore
-            .getState()
-            .episodes.filter(
-              (e) => e.projectId === projectId && e.chapterId === chapterId
-            )
-            .sort((a, b) => a.index - b.index)
-          if (eps.length === 0) {
-            await createEpisodeWithScript(projectId, chapterId)
-            eps = useScriptStore
-              .getState()
-              .episodes.filter(
-                (e) => e.projectId === projectId && e.chapterId === chapterId
-              )
-              .sort((a, b) => a.index - b.index)
-          }
-          episodeIds.push(...eps.map((e) => e.id))
-        }
-        if (episodeIds.length === 0) return
-        await generateScripts(projectId, episodeIds, "overwrite")
+        await generateScripts(projectId, episodeIdsOrdered, "overwrite")
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "生成失败")
         throw err
       }
     },
-    [projectId, createEpisodeWithScript, generateScripts]
+    [projectId, generateScripts]
   )
 
   const handleGenerateEpisode = useCallback(
@@ -178,7 +157,7 @@ export default function ScriptPage() {
             <ScriptStatsPanel scripts={scripts} episodes={episodes} />
           )}
         </div>
-        {(episodesForProject.length > 0 || chapters.length > 0) && (
+        {episodesForProject.length > 0 && (
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -186,7 +165,7 @@ export default function ScriptPage() {
               onClick={() => setShowOutlineDialog(true)}
               disabled={isGenerating}
             >
-              <Sparkles className="size-4" />
+              <ListOrdered className="size-4" />
               生成分集大纲
             </Button>
             <GenerateScriptButton
@@ -205,7 +184,7 @@ export default function ScriptPage() {
             onClick={() => setShowEpisodeSelect(true)}
             className="text-xs text-destructive underline hover:no-underline"
           >
-            重新选择章节
+            重新选择分集
           </button>
         </div>
       )}
@@ -217,7 +196,7 @@ export default function ScriptPage() {
           <div>
             <p className="text-xs font-medium">正在生成剧本...</p>
             <p className="text-xs text-muted-foreground">
-              AI 正按章节顺序生成各集剧本，请稍候
+              AI 正按分集顺序依次生成剧本，请稍候
             </p>
           </div>
         </div>
@@ -253,7 +232,6 @@ export default function ScriptPage() {
                 <div className="h-full min-h-0 bg-background overflow-hidden">
                   <EpisodeNavList
                     projectId={projectId}
-                    chapters={chapters}
                     episodes={episodes}
                     scripts={scripts}
                     activeScriptId={activeScriptId}
@@ -312,17 +290,15 @@ export default function ScriptPage() {
       <ChapterSelectDialog
         open={showEpisodeSelect}
         onOpenChange={setShowEpisodeSelect}
-        chapters={chapters}
         episodes={episodesForProject}
         scripts={scripts}
-        onGenerate={handleGenerateChapters}
+        onGenerate={handleGenerateEpisodes}
       />
 
       {/* Episode outline dialog */}
       <EpisodeOutlineDialog
         open={showOutlineDialog}
         onOpenChange={setShowOutlineDialog}
-        chapters={chapters}
         episodes={episodesForProject}
         scripts={scripts}
         onGenerate={handleGenerateOutlines}

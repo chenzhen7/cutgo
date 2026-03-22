@@ -1,12 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +16,6 @@ import {
   Circle,
   Loader2,
   Sparkles,
-  BookOpen,
-  ChevronRight,
   Trash2,
   GripVertical,
   Plus,
@@ -51,23 +44,14 @@ import type {
   AssetCharacter,
   AssetProp,
   AssetScene,
-  Chapter,
   Episode,
   Script,
   ScriptGenerateStatus,
 } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
-const SCRIPT_NAV_OPEN_CHAPTERS_KEY = "cutgo:script-episode-nav:open-chapters"
-
-function openChaptersStorageKey(projectId: string) {
-  return `${SCRIPT_NAV_OPEN_CHAPTERS_KEY}:${projectId}`
-}
-
 interface EpisodeNavListProps {
   projectId: string
-  /** 小说章节（含尚无分集的章节）；为空时仅按分集数据推导章节 */
-  chapters?: Chapter[]
   episodes: Episode[]
   scripts: Script[]
   activeScriptId: string | null
@@ -238,7 +222,6 @@ function SortableEpisodeItem({
 
 export function EpisodeNavList({
   projectId,
-  chapters = [],
   episodes,
   scripts,
   activeScriptId,
@@ -253,9 +236,13 @@ export function EpisodeNavList({
   onCreateEpisodeScript,
 }: EpisodeNavListProps) {
   const episodesForProject = useMemo(
-    () => episodes.filter((ep) => ep.projectId === projectId),
+    () =>
+      episodes
+        .filter((ep) => ep.projectId === projectId)
+        .sort((a, b) => a.index - b.index),
     [episodes, projectId]
   )
+
   const scriptsForProject = useMemo(
     () => scripts.filter((s) => s.projectId === projectId),
     [scripts, projectId]
@@ -272,182 +259,33 @@ export function EpisodeNavList({
     [episodesForProject]
   )
 
-  const chapterGroups = useMemo(() => {
-    const byChapter = new Map<string, Episode[]>()
-    for (const ep of episodesForProject) {
-      if (!byChapter.has(ep.chapterId)) byChapter.set(ep.chapterId, [])
-      byChapter.get(ep.chapterId)!.push(ep)
-    }
-    for (const list of byChapter.values()) {
-      list.sort((a, b) => a.index - b.index)
-    }
-
-    if (!chapters.length) {
-      return Array.from(byChapter.entries())
-        .map(([_, eps]) => ({
-          chapter: eps[0].chapter,
-          episodes: eps,
-        }))
-        .sort((a, b) => a.chapter.index - b.chapter.index)
-    }
-
-    const novelChapterIds = new Set(chapters.map((c) => c.id))
-    const ordered: { chapter: Episode["chapter"]; episodes: Episode[] }[] = []
-    for (const ch of [...chapters].sort((a, b) => a.index - b.index)) {
-      ordered.push({
-        chapter: { id: ch.id, index: ch.index, title: ch.title },
-        episodes: byChapter.get(ch.id) ?? [],
-      })
-    }
-    for (const [cid, eps] of byChapter) {
-      if (!novelChapterIds.has(cid) && eps.length > 0) {
-        ordered.push({ chapter: eps[0].chapter, episodes: eps })
-      }
-    }
-    return ordered
-  }, [chapters, episodesForProject])
-
-  const allChapterIds = useMemo(
-    () => chapterGroups.map((g) => g.chapter.id),
-    [chapterGroups]
-  )
-  const chapterIdsFingerprint = useMemo(
-    () => [...allChapterIds].sort().join("\0"),
-    [allChapterIds]
-  )
-
-  const [openChapterIds, setOpenChapterIds] = useState<Set<string>>(new Set())
-  const [navHydrated, setNavHydrated] = useState(false)
-  const prevProjectIdRef = useRef<string | null>(null)
-
-  // Local episode order for optimistic drag reorder
-  const [localEpisodeOrder, setLocalEpisodeOrder] = useState<Map<string, string[]>>(new Map())
-
-  // Delete confirmation state
+  const [localOrder, setLocalOrder] = useState<string[] | null>(null)
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [creatingChapterId, setCreatingChapterId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
-  useEffect(() => {
-    if (prevProjectIdRef.current !== projectId) {
-      prevProjectIdRef.current = projectId
-      setNavHydrated(false)
-      setOpenChapterIds(new Set())
-      setLocalEpisodeOrder(new Map())
-    }
-  }, [projectId])
-
-  useEffect(() => {
-    if (chapterGroups.length === 0 || navHydrated) return
-
-    try {
-      const raw = localStorage.getItem(openChaptersStorageKey(projectId))
-      if (raw === null) {
-        setOpenChapterIds(new Set(allChapterIds))
-      } else {
-        const parsed = JSON.parse(raw) as unknown
-        const valid = new Set(allChapterIds)
-        if (!Array.isArray(parsed)) {
-          setOpenChapterIds(new Set(allChapterIds))
-        } else {
-          setOpenChapterIds(
-            new Set(parsed.filter((id): id is string => typeof id === "string" && valid.has(id)))
-          )
-        }
-      }
-    } catch {
-      setOpenChapterIds(new Set(allChapterIds))
-    }
-    setNavHydrated(true)
-  }, [projectId, navHydrated, chapterIdsFingerprint, allChapterIds, chapterGroups.length])
-
-  useEffect(() => {
-    if (!navHydrated || chapterGroups.length === 0) return
-    const valid = new Set(allChapterIds)
-    setOpenChapterIds((prev) => {
-      let changed = false
-      const next = new Set<string>()
-      for (const id of prev) {
-        if (valid.has(id)) next.add(id)
-        else changed = true
-      }
-      return changed ? next : prev
-    })
-  }, [navHydrated, chapterIdsFingerprint, allChapterIds, chapterGroups.length])
-
-  useEffect(() => {
-    if (!navHydrated || typeof window === "undefined") return
-    try {
-      localStorage.setItem(
-        openChaptersStorageKey(projectId),
-        JSON.stringify([...openChapterIds].sort())
-      )
-    } catch {
-      /* ignore quota / private mode */
-    }
-  }, [navHydrated, projectId, openChapterIds])
-
-  useEffect(() => {
-    if (!activeScriptId) return
-    const activeScript = scriptsForProject.find((s) => s.id === activeScriptId)
-    if (!activeScript) return
-    const activeEpisode = episodesForProject.find((ep) => ep.id === activeScript.episodeId)
-    if (!activeEpisode) return
-    setOpenChapterIds((prev) => {
-      if (prev.has(activeEpisode.chapterId)) return prev
-      const next = new Set(prev)
-      next.add(activeEpisode.chapterId)
-      return next
-    })
-  }, [activeScriptId, scriptsForProject, episodesForProject])
+  const orderedIds = localOrder ?? episodesForProject.map((e) => e.id)
+  const orderedEpisodes = orderedIds
+    .map((id) => episodesForProject.find((e) => e.id === id))
+    .filter(Boolean) as Episode[]
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const handleDragEnd = (chapterId: string, event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const group = chapterGroups.find((g) => g.chapter.id === chapterId)
-    if (!group) return
-
-    const currentOrder = localEpisodeOrder.get(chapterId) ?? group.episodes.map((e) => e.id)
-    const oldIndex = currentOrder.indexOf(active.id as string)
-    const newIndex = currentOrder.indexOf(over.id as string)
+    const currentIds = localOrder ?? episodesForProject.map((e) => e.id)
+    const oldIndex = currentIds.indexOf(active.id as string)
+    const newIndex = currentIds.indexOf(over.id as string)
     if (oldIndex === -1 || newIndex === -1) return
 
-    const newOrder = arrayMove(currentOrder, oldIndex, newIndex)
-    setLocalEpisodeOrder((prev) => new Map(prev).set(chapterId, newOrder))
-
+    const newOrder = arrayMove(currentIds, oldIndex, newIndex)
+    setLocalOrder(newOrder)
     onReorderEpisodes?.(projectId, newOrder)
-  }
-
-  const handleCreateEpisodeScript = async (e: MouseEvent<HTMLButtonElement>, chapterId: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!onCreateEpisodeScript || creatingChapterId) return
-    setCreatingChapterId(chapterId)
-    try {
-      await onCreateEpisodeScript(chapterId)
-      setLocalEpisodeOrder((prev) => {
-        const next = new Map(prev)
-        next.delete(chapterId)
-        return next
-      })
-      setOpenChapterIds((prev) => {
-        const next = new Set(prev)
-        next.add(chapterId)
-        return next
-      })
-    } finally {
-      setCreatingChapterId(null)
-    }
   }
 
   const handleDeleteConfirm = async () => {
@@ -455,16 +293,24 @@ export function EpisodeNavList({
     setDeleting(true)
     try {
       await onDeleteEpisode?.(projectId, deletingEpisodeId)
-      setLocalEpisodeOrder((prev) => {
-        const next = new Map(prev)
-        for (const [key, ids] of next) {
-          next.set(key, ids.filter((id) => id !== deletingEpisodeId))
-        }
-        return next
-      })
+      setLocalOrder((prev) =>
+        prev ? prev.filter((id) => id !== deletingEpisodeId) : null
+      )
     } finally {
       setDeleting(false)
       setDeletingEpisodeId(null)
+    }
+  }
+
+  const handleAddEpisode = async () => {
+    if (!onCreateEpisodeScript || creating || episodesForProject.length === 0) return
+    const lastEp = orderedEpisodes[orderedEpisodes.length - 1]
+    setCreating(true)
+    try {
+      await onCreateEpisodeScript(lastEp.chapterId)
+      setLocalOrder(null)
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -476,114 +322,77 @@ export function EpisodeNavList({
 
   return (
     <>
-      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden">
-        <div className="flex flex-col">
-          {chapterGroups.map((group) => {
-            const orderedIds = localEpisodeOrder.get(group.chapter.id) ?? group.episodes.map((e) => e.id)
-            const orderedEpisodes = orderedIds
-              .map((id) => group.episodes.find((e) => e.id === id))
-              .filter(Boolean) as Episode[]
+      <div className="h-full min-h-0 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
+          <span className="text-xs font-semibold text-muted-foreground">
+            全部分集 · {episodesForProject.length} 集
+          </span>
+          {onCreateEpisodeScript && episodesForProject.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              disabled={creating || isGenerating}
+              onClick={handleAddEpisode}
+              title="新增分集"
+            >
+              {creating ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Plus className="size-3.5" />
+              )}
+            </Button>
+          )}
+        </div>
 
-            return (
-              <Collapsible
-                key={group.chapter.id}
-                open={openChapterIds.has(group.chapter.id)}
-                onOpenChange={(open) => {
-                  setOpenChapterIds((prev) => {
-                    const next = new Set(prev)
-                    if (open) {
-                      next.add(group.chapter.id)
-                    } else {
-                      next.delete(group.chapter.id)
-                    }
-                    return next
-                  })
-                }}
-                className="border-b-1 border-border/90 last:border-b-0"
+        {/* Episode list */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          {orderedEpisodes.length === 0 ? (
+            <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+              暂无分集
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={orderedIds}
+                strategy={verticalListSortingStrategy}
               >
-                <div className="flex items-center gap-0 min-w-0 bg-muted/55 border-b border-border">
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex flex-1 min-w-0 items-center gap-1.5 py-2.5 pl-3 pr-1 text-left"
-                    >
-                      <ChevronRight
-                        className={cn(
-                          "size-3 shrink-0 text-muted-foreground transition-transform",
-                          openChapterIds.has(group.chapter.id) && "rotate-90"
-                        )}
-                      />
-                      <BookOpen className="size-3 shrink-0 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-foreground/80 truncate tracking-tight">
-                        {group.chapter.title || `第${group.chapter.index + 1}章`}
-                      </span>
-                    </button>
-                  </CollapsibleTrigger>
-                  {onCreateEpisodeScript && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 shrink-0 px-2 mr-1.5 text-xs text-muted-foreground hover:text-foreground"
-                      disabled={!!creatingChapterId || isGenerating}
-                      aria-label="在此章节下新增分集与空剧本"
-                      title="在此章节下新增分集与空剧本"
-                      onClick={(e) => handleCreateEpisodeScript(e, group.chapter.id)}
-                    >
-                      {creatingChapterId === group.chapter.id ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Plus className="size-3.5" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <CollapsibleContent>
-                  {orderedEpisodes.length === 0 ? (
-                    <div className="px-4 py-2.5 pl-8 text-xs text-muted-foreground border-b border-border/60">
-                      暂无分集
-                    </div>
-                  ) : (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={(event) => handleDragEnd(group.chapter.id, event)}
-                    >
-                      <SortableContext
-                        items={orderedIds}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {orderedEpisodes.map((ep) => {
-                          const script = scriptMap.get(ep.id)
-                          const hasScript = !!script
-                          const isActive = script?.id === activeScriptId
+                {orderedEpisodes.map((ep) => {
+                  const script = scriptMap.get(ep.id)
+                  const hasScript = !!script
+                  const isActive = script?.id === activeScriptId
 
-                          return (
-                            <SortableEpisodeItem
-                              key={ep.id}
-                              ep={ep}
-                              displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
-                              script={script}
-                              hasScript={hasScript}
-                              isActive={isActive}
-                              isGenerating={isGenerating}
-                              assetCharacters={assetCharacters}
-                              assetScenes={assetScenes}
-                              assetProps={assetProps}
-                              onSelectScript={onSelectScript}
-                              onGenerateEpisode={onGenerateEpisode}
-                              onDeleteEpisode={onDeleteEpisode ? (id) => setDeletingEpisodeId(id) : undefined}
-                              canDelete={!!onDeleteEpisode}
-                            />
-                          )
-                        })}
-                      </SortableContext>
-                    </DndContext>
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
-            )
-          })}
+                  return (
+                    <SortableEpisodeItem
+                      key={ep.id}
+                      ep={ep}
+                      displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
+                      script={script}
+                      hasScript={hasScript}
+                      isActive={isActive}
+                      isGenerating={isGenerating}
+                      assetCharacters={assetCharacters}
+                      assetScenes={assetScenes}
+                      assetProps={assetProps}
+                      onSelectScript={onSelectScript}
+                      onGenerateEpisode={onGenerateEpisode}
+                      onDeleteEpisode={
+                        onDeleteEpisode
+                          ? (id) => setDeletingEpisodeId(id)
+                          : undefined
+                      }
+                      canDelete={!!onDeleteEpisode}
+                    />
+                  )
+                })}
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       </div>
 

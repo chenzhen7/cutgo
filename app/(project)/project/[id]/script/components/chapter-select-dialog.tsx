@@ -11,165 +11,91 @@ import {
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { AlertTriangle, Film, BookMarked } from "lucide-react"
-import type { Chapter, Episode, Script } from "@/lib/types"
-
-interface ChapterRow {
-  chapterId: string
-  chapter: Episode["chapter"]
-  label: string
-  episodes: Episode[]
-  episodeCount: number
-  hasAnyScript: boolean
-}
-
-function chapterHasUngeneratedScript(
-  episodes: Episode[],
-  scriptEpisodeIds: Set<string>
-): boolean {
-  if (episodes.length === 0) return false
-  return episodes.some((ep) => !scriptEpisodeIds.has(ep.id))
-}
+import { AlertTriangle, Film, FileText } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import type { Episode, Script } from "@/lib/types"
+import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 interface ChapterSelectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** 小说章节（含尚无分集的章节）；为空时仅按分集数据推导章节 */
-  chapters?: Chapter[]
   episodes: Episode[]
   scripts: Script[]
-  /** 按列表顺序传递所选章节 ID；无分集章节由页面先创建分集再生成 */
-  onGenerate: (chapterIdsOrdered: string[]) => void | Promise<void>
+  /** 按列表顺序传递所选分集 ID */
+  onGenerate: (episodeIdsOrdered: string[]) => void | Promise<void>
 }
 
 export function ChapterSelectDialog({
   open,
   onOpenChange,
-  chapters = [],
   episodes,
   scripts,
   onGenerate,
 }: ChapterSelectDialogProps) {
-  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([])
+  const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<string[]>([])
 
   const scriptEpisodeIds = useMemo(
     () => new Set(scripts.map((s) => s.episodeId)),
     [scripts]
   )
 
-  const rows = useMemo(() => {
-    const byChapter = new Map<string, Episode[]>()
-    for (const ep of episodes) {
-      if (!byChapter.has(ep.chapterId)) byChapter.set(ep.chapterId, [])
-      byChapter.get(ep.chapterId)!.push(ep)
-    }
-    for (const list of byChapter.values()) {
-      list.sort((a, b) => a.index - b.index)
-    }
+  const sortedEpisodes = useMemo(
+    () => [...episodes].sort((a, b) => a.index - b.index),
+    [episodes]
+  )
 
-    const toRow = (chapter: Episode["chapter"], eps: Episode[]): ChapterRow => {
-      const label = chapter.title?.trim() || `第 ${chapter.index} 章`
-      let hasAnyScript = false
-      for (const ep of eps) {
-        if (scriptEpisodeIds.has(ep.id)) {
-          hasAnyScript = true
-          break
-        }
-      }
-      return {
-        chapterId: chapter.id,
-        chapter,
-        label,
-        episodes: eps,
-        episodeCount: eps.length,
-        hasAnyScript,
-      }
-    }
+  const episodeDisplayMap = useMemo(
+    () => buildEpisodeDisplayNumberMap(sortedEpisodes),
+    [sortedEpisodes]
+  )
 
-    if (!chapters.length) {
-      return Array.from(byChapter.values())
-        .map((eps) => toRow(eps[0].chapter, eps))
-        .sort((a, b) => a.chapter.index - b.chapter.index)
-    }
-
-    const novelIds = new Set(chapters.map((c) => c.id))
-    const ordered: ChapterRow[] = []
-    for (const ch of [...chapters].sort((a, b) => a.index - b.index)) {
-      const eps = byChapter.get(ch.id) ?? []
-      ordered.push(
-        toRow({ id: ch.id, index: ch.index, title: ch.title }, eps)
-      )
-    }
-    for (const [cid, eps] of byChapter) {
-      if (!novelIds.has(cid) && eps.length > 0) {
-        ordered.push(toRow(eps[0].chapter, eps))
-      }
-    }
-    return ordered
-  }, [chapters, episodes, scriptEpisodeIds])
-
-  const episodeCountSelected = useMemo(() => {
-    const set = new Set(selectedChapterIds)
-    let n = 0
-    for (const r of rows) {
-      if (set.has(r.chapterId)) n += r.episodeCount
-    }
-    return n
-  }, [rows, selectedChapterIds])
+  const allSelected = useMemo(() => {
+    if (!sortedEpisodes.length) return false
+    const set = new Set(selectedEpisodeIds)
+    return sortedEpisodes.every((ep) => set.has(ep.id))
+  }, [sortedEpisodes, selectedEpisodeIds])
 
   const hasOverwriteRisk = useMemo(() => {
-    const set = new Set(selectedChapterIds)
-    for (const r of rows) {
-      if (!set.has(r.chapterId)) continue
-      if (r.hasAnyScript) return true
-    }
-    return false
-  }, [rows, selectedChapterIds])
+    const set = new Set(selectedEpisodeIds)
+    return sortedEpisodes.some(
+      (ep) => set.has(ep.id) && scriptEpisodeIds.has(ep.id)
+    )
+  }, [sortedEpisodes, selectedEpisodeIds, scriptEpisodeIds])
 
-  const allRowsSelected = useMemo(() => {
-    const allIds = rows.map((r) => r.chapterId)
-    if (allIds.length === 0) return false
-    const set = new Set(selectedChapterIds)
-    return allIds.every((id) => set.has(id))
-  }, [rows, selectedChapterIds])
-
-  const toggleChapter = (chapterId: string) => {
-    setSelectedChapterIds((prev) =>
-      prev.includes(chapterId)
-        ? prev.filter((x) => x !== chapterId)
-        : [...prev, chapterId]
+  const toggleEpisode = (episodeId: string) => {
+    setSelectedEpisodeIds((prev) =>
+      prev.includes(episodeId)
+        ? prev.filter((x) => x !== episodeId)
+        : [...prev, episodeId]
     )
   }
 
-  const toggleSelectAllChapters = () => {
-    setSelectedChapterIds((prev) => {
-      const allIds = rows.map((r) => r.chapterId)
-      if (allIds.length === 0) return []
-      const prevSet = new Set(prev)
-      const everySelected = allIds.every((id) => prevSet.has(id))
-      return everySelected ? [] : [...allIds]
-    })
+  const toggleSelectAll = () => {
+    const allIds = sortedEpisodes.map((ep) => ep.id)
+    const set = new Set(selectedEpisodeIds)
+    const everySelected = allIds.every((id) => set.has(id))
+    setSelectedEpisodeIds(everySelected ? [] : allIds)
   }
 
-  /** 至少有一集尚未生成剧本的章节 */
-  const selectChaptersWithUngenerated = () =>
-    setSelectedChapterIds(
-      rows
-        .filter((r) => chapterHasUngeneratedScript(r.episodes, scriptEpisodeIds))
-        .map((r) => r.chapterId)
+  const selectUngenerated = () => {
+    setSelectedEpisodeIds(
+      sortedEpisodes
+        .filter((ep) => !scriptEpisodeIds.has(ep.id))
+        .map((ep) => ep.id)
     )
+  }
 
   const handleGenerate = async () => {
-    const idSet = new Set(selectedChapterIds)
-    const orderedChapterIds = rows
-      .filter((r) => idSet.has(r.chapterId))
-      .map((r) => r.chapterId)
+    const set = new Set(selectedEpisodeIds)
+    const orderedIds = sortedEpisodes
+      .filter((ep) => set.has(ep.id))
+      .map((ep) => ep.id)
     try {
-      await onGenerate(orderedChapterIds)
-      setSelectedChapterIds([])
+      await onGenerate(orderedIds)
+      setSelectedEpisodeIds([])
       onOpenChange(false)
     } catch {
-      /* 创建分集等失败由页面 toast，保持弹窗 */
+      /* 失败由页面 toast，保持弹窗 */
     }
   }
 
@@ -177,68 +103,78 @@ export function ChapterSelectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>选择要生成剧本的章节</DialogTitle>
+          <DialogTitle>选择要生成剧本的分集</DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
-            每个章节下的所有分集将依次生成；每集会使用该章节原文与对应分场信息
+            已选分集将依次生成剧本；每集会使用对应的大纲与原文内容
           </p>
         </DialogHeader>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <Button variant="outline" size="sm" onClick={toggleSelectAllChapters}>
-            {allRowsSelected ? "取消全选" : "全选章节"}
+          <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+            {allSelected ? "取消全选" : "全选分集"}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={selectChaptersWithUngenerated}
-          >
-            仅选未生成剧本的章节
+          <Button variant="outline" size="sm" onClick={selectUngenerated}>
+            仅选未生成剧本的分集
           </Button>
         </div>
 
         <ScrollArea className="max-h-[320px]">
           <div className="flex flex-col gap-1">
-            {rows.map((row) => {
-              const checked = selectedChapterIds.includes(row.chapterId)
-              return (
-                <label
-                  key={row.chapterId}
-                  className="flex items-start gap-3 rounded-md px-3 py-3 hover:bg-muted/50 cursor-pointer transition-colors border border-border/50"
-                >
-                  <Checkbox
-                    className="mt-0.5"
-                    checked={checked}
-                    onCheckedChange={() => toggleChapter(row.chapterId)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
-                      <span className="text-sm font-medium truncate min-w-0 flex-1">
-                        第{row.chapter.index}章 {row.label}
-                      </span>
-                      {row.episodeCount > 0 && (
-                        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                          {row.episodeCount} 集
+            {sortedEpisodes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">暂无分集</p>
+            ) : (
+              sortedEpisodes.map((ep) => {
+                const checked = selectedEpisodeIds.includes(ep.id)
+                const hasScript = scriptEpisodeIds.has(ep.id)
+                const displayNum = episodeDisplayMap.get(ep.id) ?? 1
+                return (
+                  <label
+                    key={ep.id}
+                    className="flex items-start gap-3 rounded-md px-3 py-2.5 hover:bg-muted/50 cursor-pointer transition-colors border border-border/50"
+                  >
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={checked}
+                      onCheckedChange={() => toggleEpisode(ep.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[11px] text-muted-foreground shrink-0">
+                          第{displayNum}集
                         </span>
+                        <span className="text-sm font-medium truncate min-w-0 flex-1">
+                          {ep.title}
+                        </span>
+                        {hasScript && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] px-1.5 py-0 h-4 gap-0.5 shrink-0"
+                          >
+                            <FileText className="size-2.5" />
+                            已生成
+                          </Badge>
+                        )}
+                      </div>
+                      {ep.outline?.trim() && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                          {ep.outline}
+                        </p>
                       )}
                     </div>
-                  </div>
-                </label>
-              )
-            })}
+                  </label>
+                )
+              })
+            )}
           </div>
         </ScrollArea>
 
         <div className="text-sm text-muted-foreground">
-          已选 {selectedChapterIds.length} 个章节
-          {episodeCountSelected > 0
-            ? `，共 ${episodeCountSelected} 集将生成`
-            : null}
+          已选 {selectedEpisodeIds.length} 集
         </div>
         {hasOverwriteRisk && (
           <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
             <AlertTriangle className="size-3.5 shrink-0" />
-            所选章节中已有剧本的分集将被覆盖
+            所选分集中已有剧本的将被覆盖
           </div>
         )}
 
@@ -248,7 +184,7 @@ export function ChapterSelectDialog({
           </Button>
           <Button
             onClick={() => void handleGenerate()}
-            disabled={selectedChapterIds.length === 0}
+            disabled={selectedEpisodeIds.length === 0}
           >
             <Film className="size-4" />
             生成剧本
