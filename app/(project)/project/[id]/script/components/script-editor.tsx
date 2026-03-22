@@ -246,7 +246,7 @@ export function ScriptEditor({
     <>
       <div className="flex flex-col h-full">
         {/* 顶栏 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+        <div className="flex items-center gap-2 px-4 h-[52px] border-b shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="text-xs font-bold text-primary bg-primary/10 rounded px-2 py-0.5 shrink-0">
               第{episodeDisplayNumber}集
