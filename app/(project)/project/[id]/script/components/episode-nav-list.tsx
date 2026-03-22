@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
-  Circle,
   Loader2,
   Sparkles,
   Trash2,
@@ -54,13 +53,12 @@ interface EpisodeNavListProps {
   projectId: string
   episodes: Episode[]
   scripts: Script[]
-  activeScriptId: string | null
+  activeEpisodeId: string | null
   generateStatus: ScriptGenerateStatus
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onSelectScript: (scriptId: string) => void
-  onGenerateEpisode: (episodeId: string) => void
+  onSelectEpisode: (ep: Episode, script: Script | undefined) => void
   onDeleteEpisode?: (projectId: string, episodeId: string) => Promise<void>
   onReorderEpisodes?: (projectId: string, orderedIds: string[]) => Promise<void>
   onCreateEpisodeScript?: (chapterId: string) => Promise<void>
@@ -76,8 +74,7 @@ interface SortableEpisodeItemProps {
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onSelectScript: (scriptId: string) => void
-  onGenerateEpisode: (episodeId: string) => void
+  onSelectEpisode: (ep: Episode, script: Script | undefined) => void
   onDeleteEpisode?: (episodeId: string) => void
   canDelete: boolean
 }
@@ -92,8 +89,7 @@ function SortableEpisodeItem({
   assetCharacters,
   assetScenes,
   assetProps,
-  onSelectScript,
-  onGenerateEpisode,
+  onSelectEpisode,
   onDeleteEpisode,
   canDelete,
 }: SortableEpisodeItemProps) {
@@ -127,7 +123,7 @@ function SortableEpisodeItem({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => {
-        if (script) onSelectScript(script.id)
+        onSelectEpisode(ep, script)
       }}
     >
       <div className="flex flex-col gap-1 py-2.5 pl-1 pr-2">
@@ -147,11 +143,9 @@ function SortableEpisodeItem({
           </button>
 
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {isGenerating ? (
+            {isGenerating && (
               <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
-            ) : !hasScript ? (
-              <Circle className="size-3.5 shrink-0 text-muted-foreground" />
-            ) : null}
+            )}
             <span className="text-[10px] text-muted-foreground shrink-0">
               第{displayEpisodeNumber}集
             </span>
@@ -198,23 +192,11 @@ function SortableEpisodeItem({
               mode="nav"
             />
           </div>
-        ) : (
-          <div className="pl-5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs px-2"
-              disabled={isGenerating}
-              onClick={(e) => {
-                e.stopPropagation()
-                onGenerateEpisode(ep.id)
-              }}
-            >
-              <Sparkles className="size-3" />
-              生成剧本
-            </Button>
-          </div>
-        )}
+        ) : ep.outline?.trim() ? (
+          <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2 pl-5">
+            {ep.outline}
+          </p>
+        ) : null}
       </div>
     </div>
   )
@@ -224,13 +206,12 @@ export function EpisodeNavList({
   projectId,
   episodes,
   scripts,
-  activeScriptId,
+  activeEpisodeId,
   generateStatus,
   assetCharacters,
   assetScenes,
   assetProps,
-  onSelectScript,
-  onGenerateEpisode,
+  onSelectEpisode,
   onDeleteEpisode,
   onReorderEpisodes,
   onCreateEpisodeScript,
@@ -365,7 +346,7 @@ export function EpisodeNavList({
                 {orderedEpisodes.map((ep) => {
                   const script = scriptMap.get(ep.id)
                   const hasScript = !!script
-                  const isActive = script?.id === activeScriptId
+                  const isActive = ep.id === activeEpisodeId
 
                   return (
                     <SortableEpisodeItem
@@ -379,8 +360,7 @@ export function EpisodeNavList({
                       assetCharacters={assetCharacters}
                       assetScenes={assetScenes}
                       assetProps={assetProps}
-                      onSelectScript={onSelectScript}
-                      onGenerateEpisode={onGenerateEpisode}
+                      onSelectEpisode={onSelectEpisode}
                       onDeleteEpisode={
                         onDeleteEpisode
                           ? (id) => setDeletingEpisodeId(id)

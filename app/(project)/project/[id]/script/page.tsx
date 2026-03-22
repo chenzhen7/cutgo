@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
-import type { AssetCharacter, AssetProp, AssetScene } from "@/lib/types"
+import type { AssetCharacter, AssetProp, AssetScene, Episode, Script } from "@/lib/types"
 import { Loader2, ListOrdered } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -31,14 +31,13 @@ export default function ScriptPage() {
     episodes,
     generateStatus,
     generateError,
-    activeScriptId,
     fetchScripts,
     fetchEpisodes,
     fetchChapters,
     chapters,
     generateScripts,
     updateScript,
-    setActiveScriptId,
+    createScript,
     deleteEpisode,
     reorderEpisodes,
     createEpisodeWithScript,
@@ -52,6 +51,9 @@ export default function ScriptPage() {
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
   const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
   const [assetProps, setAssetProps] = useState<AssetProp[]>([])
+  const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>(null)
+  const [activeScript, setActiveScript] = useState<Script | null>(null)
+  const [creatingScript, setCreatingScript] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -77,11 +79,36 @@ export default function ScriptPage() {
     init()
   }, [projectId, fetchEpisodes, fetchChapters, fetchScripts])
 
+  /** 脚本列表变动时，同步更新当前活跃的 script 对象（保持引用最新） */
   useEffect(() => {
-    if (scripts.length > 0 && !activeScriptId) {
-      setActiveScriptId(scripts[0].id)
-    }
-  }, [scripts, activeScriptId, setActiveScriptId])
+    if (!activeEpisodeId) return
+    const found = scripts.find((s) => s.episodeId === activeEpisodeId) ?? null
+    setActiveScript(found)
+  }, [scripts, activeEpisodeId])
+
+  const handleSelectEpisode = useCallback(
+    async (ep: Episode, script: Script | undefined) => {
+      setActiveEpisodeId(ep.id)
+      if (script) {
+        setActiveScript(script)
+        return
+      }
+      // 无剧本时，静默创建一条空剧本记录，让用户直接编辑
+      if (creatingScript) return
+      setCreatingScript(true)
+      setActiveScript(null)
+      try {
+        await createScript(projectId, ep.id, ep.title)
+        // createScript 内部已 set({ scripts: [...] })，上面的 useEffect 会自动同步
+      } catch {
+        // 如果已存在（409），刷新一次即可
+        await fetchScripts(projectId)
+      } finally {
+        setCreatingScript(false)
+      }
+    },
+    [projectId, createScript, fetchScripts, creatingScript]
+  )
 
   const handleGenerateEpisodes = useCallback(
     async (episodeIdsOrdered: string[]) => {
@@ -91,13 +118,6 @@ export default function ScriptPage() {
         toast.error(err instanceof Error ? err.message : "生成失败")
         throw err
       }
-    },
-    [projectId, generateScripts]
-  )
-
-  const handleGenerateEpisode = useCallback(
-    async (episodeId: string) => {
-      await generateScripts(projectId, [episodeId], "overwrite")
     },
     [projectId, generateScripts]
   )
@@ -126,7 +146,21 @@ export default function ScriptPage() {
     [projectId, generateEpisodeOutlines]
   )
 
-  const activeScript = scripts.find((s) => s.id === activeScriptId) || null
+  const handleDeleteEpisode = useCallback(
+    async (pid: string, eid: string) => {
+      try {
+        await deleteEpisode(pid, eid)
+        if (activeEpisodeId === eid) {
+          setActiveEpisodeId(null)
+          setActiveScript(null)
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "删除分集失败")
+      }
+    },
+    [deleteEpisode, activeEpisodeId]
+  )
+
   const hasScripts = scripts.length > 0
 
   const episodesForProject = useMemo(
@@ -138,6 +172,9 @@ export default function ScriptPage() {
     [episodesForProject]
   )
   const isGenerating = generateStatus === "generating"
+  /** 已有分集记录（含仅有大纲、尚未生成剧本时）也应显示左侧分集列表，否则会误以为分集未创建 */
+  const hasAnyEpisodes = episodesForProject.length > 0
+  const showScriptWorkspace = hasScripts || hasAnyEpisodes
 
   if (loading) {
     return (
@@ -204,8 +241,8 @@ export default function ScriptPage() {
         </div>
       )}
 
-      {/* Empty state */}
-      {!hasScripts && !isGenerating && (
+      {/* Empty state：无分集且无剧本时引导导入 / 生成分集大纲 */}
+      {!showScriptWorkspace && !isGenerating && (
         <div className="flex-1 overflow-hidden">
           <ScriptEmptyState
             episodes={episodesForProject}
@@ -217,8 +254,8 @@ export default function ScriptPage() {
         </div>
       )}
 
-      {/* Main content */}
-      {hasScripts && (
+      {/* Main content：有剧本或有分集时展示左侧分集列表 */}
+      {showScriptWorkspace && (
         <>
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <ResizablePanelGroup
@@ -237,14 +274,13 @@ export default function ScriptPage() {
                     projectId={projectId}
                     episodes={episodes}
                     scripts={scripts}
-                    activeScriptId={activeScriptId}
+                    activeEpisodeId={activeEpisodeId}
                     generateStatus={generateStatus}
                     assetCharacters={assetCharacters}
                     assetScenes={assetScenes}
                     assetProps={assetProps}
-                    onSelectScript={setActiveScriptId}
-                    onGenerateEpisode={handleGenerateEpisode}
-                    onDeleteEpisode={deleteEpisode}
+                    onSelectEpisode={handleSelectEpisode}
+                    onDeleteEpisode={handleDeleteEpisode}
                     onReorderEpisodes={reorderEpisodes}
                     onCreateEpisodeScript={handleCreateEpisodeScript}
                   />
@@ -256,32 +292,51 @@ export default function ScriptPage() {
               {/* Right: Script editor */}
               <ResizablePanel className="min-w-0">
                 <div className="h-full min-w-0 overflow-hidden">
-                  {activeScript ? (
-                    <ScriptEditor
-                      script={activeScript}
-                      episode={episodes.find((e) => e.id === activeScript.episodeId)!}
-                      episodeDisplayNumber={
-                        episodeDisplayMap.get(activeScript.episodeId) ?? 1
-                      }
-                      projectId={projectId}
-                      assetCharacters={assetCharacters}
-                      assetScenes={assetScenes}
-                      assetProps={assetProps}
-                      onUpdateScript={(data) =>
-                        updateScript(activeScript.id, data)
-                      }
-                      onUpdateEpisode={(data) =>
-                        updateEpisode(activeScript.episodeId, data)
-                      }
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                      <h3 className="text-base font-medium mb-2">选择一个分集</h3>
-                      <p className="text-sm text-muted-foreground">
-                        从左侧列表中选择一个已生成剧本的分集进行查看和编辑
-                      </p>
-                    </div>
-                  )}
+                  {(() => {
+                    const activeEpisode = activeScript
+                      ? episodes.find((e) => e.id === activeScript.episodeId)
+                      : null
+
+                    if (activeScript && activeEpisode) {
+                      return (
+                        <ScriptEditor
+                          script={activeScript}
+                          episode={activeEpisode}
+                          episodeDisplayNumber={
+                            episodeDisplayMap.get(activeScript.episodeId) ?? 1
+                          }
+                          projectId={projectId}
+                          assetCharacters={assetCharacters}
+                          assetScenes={assetScenes}
+                          assetProps={assetProps}
+                          onUpdateScript={(data) =>
+                            updateScript(activeScript.id, data)
+                          }
+                          onUpdateEpisode={(data) =>
+                            updateEpisode(activeScript.episodeId, data)
+                          }
+                        />
+                      )
+                    }
+
+                    if (creatingScript) {
+                      return (
+                        <div className="flex items-center justify-center h-full gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="size-4 animate-spin" />
+                          正在准备编辑器...
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="flex flex-col items-center justify-center h-full text-center p-8 max-w-md mx-auto">
+                        <h3 className="text-base font-medium mb-2">选择一个分集</h3>
+                        <p className="text-sm text-muted-foreground">
+                          点击左侧任意分集即可开始编辑剧本
+                        </p>
+                      </div>
+                    )
+                  })()}
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
