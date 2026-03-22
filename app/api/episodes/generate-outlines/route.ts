@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getLLMProvider } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
+import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 
 interface OutlineItem {
   episode: number
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
   // 拼接小说原文
   const novelText = selectedChapters
     .map((c) => {
-      const label = c.title?.trim() ? `第${c.index}章 ${c.title}` : `第${c.index}章`
+      const label = `${formatChapterOrdinalLabel(c.index)}${c.title?.trim() ? ` ${c.title.trim()}` : ""}`
       return `### ${label}\n\n${c.content}`
     })
     .join("\n\n---\n\n")
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     // 降级：每个章节生成一个占位分集
     outlines = selectedChapters.map((c, i) => ({
       episode: i + 1,
-      summary: `本集以"${c.title?.trim() || `第${c.index}章`}"内容展开。${c.content.slice(0, 80).replace(/\n/g, " ")}…（占位大纲，请配置 LLM API 后重新生成）`,
+      summary: `本集以"${c.title?.trim() || formatChapterOrdinalLabel(c.index)}"内容展开。${c.content.slice(0, 80).replace(/\n/g, " ")}…（占位大纲，请配置 LLM API 后重新生成）`,
       core_conflict: "",
       hook: "",
       cliffhanger: "",

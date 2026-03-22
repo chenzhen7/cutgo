@@ -26,7 +26,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Trash2, Plus, Check, X, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { countWords } from "@/lib/novel-utils"
+import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import type { Chapter } from "@/lib/types"
 
 interface TabChaptersProps {
@@ -202,12 +202,15 @@ function ChapterEditor({
   return (
     <div className="flex flex-col h-full">
       {/* 编辑区顶栏 */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0">
+      <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0 min-w-0">
+        <span className="shrink-0 text-sm font-semibold text-muted-foreground tabular-nums">
+          {formatChapterOrdinalLabel(chapter.index)}
+        </span>
         <Input
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="章节标题"
-          className="flex-1 border-0 bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0 placeholder:font-normal placeholder:text-muted-foreground/60"
+          placeholder="标题（不含「第N章」）"
+          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0 placeholder:font-normal placeholder:text-muted-foreground/60"
         />
         <div className="flex items-center gap-1.5 shrink-0">
           {saving && (
@@ -288,7 +291,7 @@ function ChapterEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>删除章节</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除「{chapter.title || `段落组 ${chapter.index + 1}`}」吗？此操作不可撤销。
+              {`确定要删除「${formatChapterOrdinalLabel(chapter.index)}${chapter.title?.trim() ? ` ${chapter.title.trim()}` : ""}」吗？此操作不可撤销。`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -379,7 +382,8 @@ export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChapters
                   "text-xs font-medium leading-snug line-clamp-2",
                   selectedChapter?.id === ch.id && "text-foreground"
                 )}>
-                  {ch.title || `段落组 ${ch.index + 1}`}
+                  {formatChapterOrdinalLabel(ch.index)}
+                  {ch.title?.trim() ? ` ${ch.title.trim()}` : ""}
                 </span>
                 <span className="text-[10px] text-muted-foreground/70">
                   {ch.wordCount.toLocaleString()} 字

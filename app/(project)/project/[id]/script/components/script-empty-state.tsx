@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, ArrowLeft, ListOrdered, Sparkles } from "lucide-react"
 import type { Chapter, Episode } from "@/lib/types"
+import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 
 interface ScriptEmptyStateProps {
   episodes: Episode[]
@@ -52,7 +53,8 @@ export function ScriptEmptyState({
         <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
           {chapters.slice(0, 12).map((ch) => (
             <Badge key={ch.id} variant="secondary" className="text-xs">
-              {ch.title?.trim() || `第 ${ch.index} 章`}
+              {formatChapterOrdinalLabel(ch.index)}
+              {ch.title?.trim() ? ` ${ch.title.trim()}` : ""}
             </Badge>
           ))}
           {chapters.length > 12 && (

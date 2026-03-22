@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { BookMarked, Loader2, ListOrdered } from "lucide-react"
 import type { Chapter, Episode } from "@/lib/types"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
+import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 
 interface EpisodeOutlineDialogProps {
   open: boolean
@@ -38,7 +39,6 @@ export function EpisodeOutlineDialog({
     chapterId: string
     chapterIndex: number
     chapterTitle: string | null
-    label: string
     hasEpisode: boolean
   }
 
@@ -59,7 +59,6 @@ export function EpisodeOutlineDialog({
           chapterId: ch.id,
           chapterIndex: ch.index,
           chapterTitle: ch.title,
-          label: ch.title?.trim() || `第 ${ch.index} 章`,
           hasEpisode: (ids?.size ?? 0) > 0,
         }
       })
@@ -162,7 +161,10 @@ export function EpisodeOutlineDialog({
                       <div className="flex items-center gap-2 min-w-0">
                         <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
                         <span className="text-sm font-medium truncate min-w-0 flex-1">
-                          第{row.chapterIndex}章 {row.label}
+                          {formatChapterOrdinalLabel(row.chapterIndex)}
+                          {row.chapterTitle?.trim()
+                            ? ` ${row.chapterTitle.trim()}`
+                            : ""}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {row.hasEpisode && (

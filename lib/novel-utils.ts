@@ -7,6 +7,42 @@ const CHAPTER_PATTERNS = [
   /^---+$/,
 ]
 
+/**
+ * 从章节标题行去掉「第N章」「第N节」「Chapter N」等前缀，仅保留正文标题。
+ * 去前缀后无内容时返回 null。
+ */
+export function stripChapterHeadingPrefix(line: string): string | null {
+  const t = line.trim()
+  if (!t || t === "---") return null
+
+  const restAfter = (s: string) => {
+    const r = s.trim().replace(/^[\s\u3000]+/, "")
+    return r.length > 0 ? r : null
+  }
+
+  let m = t.match(/^第\s*\d+\s*章\s*(.*)$/u)
+  if (m) return restAfter(m[1] ?? "")
+
+  m = t.match(/^第\s*[一二三四五六七八九十百千]+\s*章\s*(.*)$/u)
+  if (m) return restAfter(m[1] ?? "")
+
+  m = t.match(/^第\s*\d+\s*节\s*(.*)$/u)
+  if (m) return restAfter(m[1] ?? "")
+
+  m = t.match(/^第\s*[一二三四五六七八九十百千]+\s*节\s*(.*)$/u)
+  if (m) return restAfter(m[1] ?? "")
+
+  m = t.match(/^Chapter\s+\d+\s*(.*)$/iu)
+  if (m) return restAfter(m[1] ?? "")
+
+  return null
+}
+
+/** 库内章节 index 从 0 起时，用于 UI 展示「第N章」 */
+export function formatChapterOrdinalLabel(index: number): string {
+  return `第${index + 1}章`
+}
+
 export interface DetectedChapter {
   index: number
   title: string | null
@@ -39,7 +75,11 @@ export function detectChapters(text: string): DetectedChapter[] {
 
     if (isChapterHeading) {
       pushChapter()
-      currentTitle = trimmed === "---" ? null : trimmed
+      if (trimmed === "---") {
+        currentTitle = null
+      } else {
+        currentTitle = stripChapterHeadingPrefix(trimmed)
+      }
       currentLines = []
     } else {
       currentLines.push(line)
