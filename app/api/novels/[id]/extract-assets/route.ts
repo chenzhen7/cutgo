@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { buildExtractAssetsPrompt } from "@/lib/prompts"
 
 interface AIAssetResult {
   characters: {
@@ -40,60 +41,7 @@ async function callAIExtractAssetsFromChapters(
     .map((ch, i) => `【第${i + 1}章${ch.title ? ` ${ch.title}` : ""}】\n${ch.content.slice(0, 3000)}`)
     .join("\n\n---\n\n")
 
-  const prompt = `你是一位专业的短剧制作资产管理专家。请根据以下小说章节内容，提取并整理出该项目所需的全部资产。
-
-## 小说章节内容
-${chaptersText}
-
-## 任务
-请从以上内容中提取三类资产：
-
-### 1. 角色（characters）
-- 提取所有在章节中出现的角色（包括主角、配角、龙套）
-- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、年龄、外貌描述、性格描述
-- 根据章节内容尽可能补充详细的外貌和性格信息
-
-### 2. 场景（scenes）
-- 提取所有在章节中出现的地点/环境
-- 合并相同或相似的场景，使用最常用的名称
-- 每个场景包含：名称、环境描述、标签（逗号分隔）、时间段、天气
-
-### 3. 道具（props）
-- 提取在剧情中有重要作用的道具/物品
-- 每个道具包含：名称、描述、分类
-
-## 输出格式
-请严格按以下 JSON 格式输出，不要输出任何其他内容：
-
-{
-  "characters": [
-    {
-      "name": "角色名",
-      "role": "protagonist",
-      "gender": "female",
-      "age": "24岁",
-      "description": "角色简介",
-      "appearance": "外貌描述（发型、身材、穿着风格等）",
-      "personality": "性格描述"
-    }
-  ],
-  "scenes": [
-    {
-      "name": "场景名",
-      "description": "场景环境描述",
-      "tags": "室内,现代,豪华",
-      "timeOfDay": "白天",
-      "weather": "晴天"
-    }
-  ],
-  "props": [
-    {
-      "name": "道具名",
-      "description": "道具描述",
-      "category": "文件"
-    }
-  ]
-}`
+  const prompt = buildExtractAssetsPrompt(chaptersText)
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
