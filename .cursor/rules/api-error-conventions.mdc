@@ -1,6 +1,9 @@
 ---
-description: API 路由错误响应规范：使用 lib/api-error.ts 统一返回错误响应（错误码定义在 lib/api-error-shared.ts）
-globs: app/api/**/*.ts
+description: 规范 API 路由中的错误响应写法，统一使用 @/lib/api-error 的错误码与快捷方法，禁止手写 NextResponse.json 错误结构。
+globs:
+  - app/**/route.ts
+  - lib/api-error.ts
+  - lib/api-error-shared.ts
 alwaysApply: false
 ---
 

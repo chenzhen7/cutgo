@@ -1,0 +1,40 @@
+---
+description: 规范前端页面、组件与状态管理中的 API 调用方式，优先使用 @/lib/api-client，避免直接裸调 fetch，统一错误语义与提示处理。
+globs:
+  - "app/**/*.tsx"
+  - "components/**/*.tsx"
+  - "store/**/*.ts"
+  - "lib/api-client.ts"
+alwaysApply: false
+---
+
+## 前端调用规范（api-client）
+
+前端（页面、组件、store）调用本项目 API 时，优先使用 `@/lib/api-client`，避免直接裸调 `fetch`，以确保错误语义一致。
+
+```ts
+import { apiFetch, ApiError } from "@/lib/api-client"
+import { ERR_NOT_FOUND } from "@/lib/api-error"
+
+try {
+  const data = await apiFetch<Project[]>("/api/projects")
+  // 使用 data
+} catch (err) {
+  if (err instanceof ApiError) {
+    // 前端展示优先使用 message
+    toast.error(err.message)
+
+    // 分支判断使用 error code（ApiError.code）
+    if (err.code === ERR_NOT_FOUND) {
+      // ...
+    }
+  } else {
+    toast.error("请求失败，请稍后重试")
+  }
+}
+```
+
+约定：
+- 用户提示优先使用 `ApiError.message`
+- 业务分支判断使用 `ApiError.code`（对应后端响应体 `error` 字段）
+- 对非关键链路可使用 `apiFetchSilent()`，失败返回 `null`

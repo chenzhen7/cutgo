@@ -1,6 +1,9 @@
 ---
-description: LLM 调用规范：必须使用项目统一封装的 getLLMProvider，禁止直接裸调 fetch 请求 AI API
-globs: app/api/**/*.ts
+description: Enforce unified LLM provider usage in API code; avoid direct env var reads and raw fetch calls for LLM requests.
+globs:
+  - "app/api/**/*.ts"
+  - "lib/ai/**/*.ts"
+  - "lib/api-error*.ts"
 alwaysApply: false
 ---
 
