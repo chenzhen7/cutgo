@@ -21,8 +21,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { StoryboardEmptyState } from "./components/storyboard-empty-state"
-import { StoryboardToolbar } from "./components/storyboard-toolbar"
+import { ScriptShotEmptyState } from "./components/script-shot-empty-state"
+import { ScriptShotToolbar } from "./components/script-shot-toolbar"
 import { EpisodeSelectView } from "./components/episode-select-view"
 import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
@@ -32,7 +32,7 @@ import type { ShotCardDisplayMode } from "./components/shot-card"
 import type { ScriptShotPlan, ShotInput, Shot } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 
-export default function StoryboardPage() {
+export default function ScriptShotPage() {
   const params = useParams()
   const router = useRouter()
   const projectId = params.id as string
@@ -75,7 +75,7 @@ export default function StoryboardPage() {
     prevShot,
   } = useScriptShotsStore()
 
-  const [view, setView] = useState<"episode-select" | "storyboard-list">("storyboard-list")
+  const [view, setView] = useState<"episode-select" | "script-shot-list">("script-shot-list")
   const [loading, setLoading] = useState(true)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ scriptId: string; shotId: string } | null>(null)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
@@ -114,7 +114,7 @@ export default function StoryboardPage() {
   const handleEnterEpisode = useCallback(
     (episodeId: string) => {
       setActiveEpisodeId(episodeId)
-      setView("storyboard-list")
+      setView("script-shot-list")
     },
     [setActiveEpisodeId]
   )
@@ -468,7 +468,7 @@ export default function StoryboardPage() {
               分集
             </Button>
           </div>
-          <StoryboardEmptyState
+          <ScriptShotEmptyState
             scripts={scripts}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
             onSelectEpisodes={handleBackToEpisodeSelect}
@@ -499,7 +499,7 @@ export default function StoryboardPage() {
               </h2>
             </div>
 
-            <StoryboardToolbar
+            <ScriptShotToolbar
               generateStatus={generateStatus}
               batchImageStatus={batchImageStatus}
               batchImageProgress={batchImageProgress}
