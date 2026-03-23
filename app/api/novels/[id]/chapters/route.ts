@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { notFound } from "@/lib/api-error"
 
 export async function POST(
   request: NextRequest,
@@ -10,7 +11,7 @@ export async function POST(
 
   const novel = await prisma.novel.findUnique({ where: { id } })
   if (!novel) {
-    return NextResponse.json({ error: "小说不存在" }, { status: 404 })
+    return notFound("小说不存在")
   }
 
   const maxIndex = await prisma.chapter.aggregate({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
+import { notFound } from "@/lib/api-error"
 
 export async function PATCH(
   request: NextRequest,
@@ -36,7 +37,7 @@ export async function DELETE(
 
   const episode = await prisma.episode.findUnique({ where: { id } })
   if (!episode) {
-    return NextResponse.json({ error: "分集不存在" }, { status: 404 })
+    return notFound("分集不存在")
   }
 
   await prisma.episode.delete({ where: { id } })

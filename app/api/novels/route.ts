@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { countWords } from "@/lib/novel-utils"
+import { badRequest, validationError } from "@/lib/api-error"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -32,10 +33,10 @@ export async function POST(request: NextRequest) {
   const { projectId, title, rawText } = body
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
   if (!rawText || !rawText.trim()) {
-    return NextResponse.json({ error: "文本内容不能为空" }, { status: 400 })
+    return validationError("文本内容不能为空")
   }
 
   const existing = await prisma.novel.findUnique({ where: { projectId } })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { conflict } from "@/lib/api-error"
 
 export async function PATCH(
   request: NextRequest,
@@ -15,7 +16,7 @@ export async function PATCH(
         where: { projectId_name: { projectId: current.projectId, name: body.name } },
       })
       if (dup) {
-        return NextResponse.json({ error: `角色名「${body.name}」已存在，请使用不同的名称` }, { status: 409 })
+        return conflict(`角色名「${body.name}」已存在，请使用不同的名称`)
       }
     }
   }

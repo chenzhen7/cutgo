@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { getLLMProvider } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
+import { badRequest, validationError, llmNotConfigured, llmInvalidResponse } from "@/lib/api-error"
 
 interface OutlineItem {
   episode: number
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { projectId, chapterIds } = body as { projectId: string; chapterIds?: string[] }
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
 
   // 读取小说及章节
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (!novel) {
-    return NextResponse.json({ error: "请先导入小说并解析章节" }, { status: 400 })
+    return validationError("请先导入小说并解析章节")
   }
 
   const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
@@ -60,13 +61,13 @@ export async function POST(request: NextRequest) {
     const idSet = new Set(chapterIds)
     selectedChapters = allSorted.filter((c) => idSet.has(c.id))
     if (selectedChapters.length === 0) {
-      return NextResponse.json({ error: "未找到所选章节" }, { status: 400 })
+      return validationError("未找到所选章节")
     }
   } else {
     const hasAnySelected = allSorted.some((c) => c.selected)
     selectedChapters = hasAnySelected ? allSorted.filter((c) => c.selected) : allSorted
     if (selectedChapters.length === 0) {
-      return NextResponse.json({ error: "暂无可用章节" }, { status: 400 })
+      return validationError("暂无可用章节")
     }
   }
 
@@ -86,10 +87,7 @@ export async function POST(request: NextRequest) {
   const llmProvider = await getLLMProvider()
 
   if (!llmProvider) {
-    return NextResponse.json(
-      { error: "LLM_NOT_CONFIGURED", message: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
-      { status: 422 }
-    )
+    return llmNotConfigured()
   }
 
   const prompt = buildEpisodeOutlinePrompt(novelText)
@@ -99,7 +97,7 @@ export async function POST(request: NextRequest) {
   const outlines = parseOutlineJSON(result.content)
 
   if (outlines.length === 0) {
-    return NextResponse.json({ error: "LLM 未返回有效的分集大纲" }, { status: 500 })
+    return llmInvalidResponse("LLM 未返回有效的分集大纲")
   }
 
   // 获取当前项目最大分集 index

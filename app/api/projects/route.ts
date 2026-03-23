@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { validationError } from "@/lib/api-error"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   const { name, description, tags, platform, aspectRatio, resolution, duration } = body
 
   if (!name || !name.trim()) {
-    return NextResponse.json({ error: "项目名称不能为空" }, { status: 400 })
+    return validationError("项目名称不能为空")
   }
 
   const project = await prisma.project.create({

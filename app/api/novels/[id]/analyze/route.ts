@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { detectChapters, splitParagraphs, countWords } from "@/lib/novel-utils"
+import { notFound, validationError, internalError } from "@/lib/api-error"
 
 export async function POST(
   _request: NextRequest,
@@ -10,10 +11,10 @@ export async function POST(
 
   const novel = await prisma.novel.findUnique({ where: { id } })
   if (!novel) {
-    return NextResponse.json({ error: "小说不存在" }, { status: 404 })
+    return notFound("小说不存在")
   }
   if (!novel.rawText || !novel.rawText.trim()) {
-    return NextResponse.json({ error: "文本内容为空" }, { status: 400 })
+    return validationError("文本内容为空")
   }
 
   try {
@@ -52,7 +53,7 @@ export async function POST(
     })
 
     if (!updated) {
-      return NextResponse.json({ error: "小说不存在" }, { status: 404 })
+      return notFound("小说不存在")
     }
 
     return NextResponse.json({
@@ -64,9 +65,6 @@ export async function POST(
     })
   } catch (err) {
     console.error("Analysis failed:", err)
-    return NextResponse.json(
-      { error: "分析失败，请重试" },
-      { status: 500 }
-    )
+    return internalError("分析失败，请重试")
   }
 }

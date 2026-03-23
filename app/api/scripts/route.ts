@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { badRequest, conflict } from "@/lib/api-error"
 
 const scriptInclude = {
   episode: {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   const episodeId = searchParams.get("episodeId")
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
 
   const where: Record<string, string> = { projectId }
@@ -38,18 +39,12 @@ export async function POST(request: NextRequest) {
   const { projectId, episodeId, title } = body
 
   if (!projectId || !episodeId || !title) {
-    return NextResponse.json(
-      { error: "projectId, episodeId, title are required" },
-      { status: 400 }
-    )
+    return badRequest("projectId, episodeId, title are required")
   }
 
   const existing = await prisma.script.findUnique({ where: { episodeId } })
   if (existing) {
-    return NextResponse.json(
-      { error: "该分集已有剧本" },
-      { status: 409 }
-    )
+    return conflict("该分集已有剧本")
   }
 
   const script = await prisma.script.create({

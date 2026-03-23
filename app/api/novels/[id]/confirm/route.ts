@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { notFound, validationError } from "@/lib/api-error"
 
 export async function POST(
   _request: NextRequest,
@@ -9,7 +10,7 @@ export async function POST(
 
   const novel = await prisma.novel.findUnique({ where: { id } })
   if (!novel) {
-    return NextResponse.json({ error: "小说不存在" }, { status: 404 })
+    return notFound("小说不存在")
   }
 
   const selectedChapters = await prisma.chapter.findMany({
@@ -18,10 +19,7 @@ export async function POST(
   })
 
   if (selectedChapters.length === 0) {
-    return NextResponse.json(
-      { error: "请至少保留一章并勾选参与制作" },
-      { status: 400 }
-    )
+    return validationError("请至少保留一章并勾选参与制作")
   }
 
   await prisma.$transaction(async (tx) => {

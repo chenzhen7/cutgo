@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { notFound } from "@/lib/api-error"
 
 const scriptInclude = {
   episode: {
@@ -22,7 +23,7 @@ export async function GET(
     include: scriptInclude,
   })
   if (!script) {
-    return NextResponse.json({ error: "剧本不存在" }, { status: 404 })
+    return notFound("剧本不存在")
   }
   return NextResponse.json(script)
 }

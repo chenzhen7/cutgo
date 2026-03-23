@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { badRequest } from "@/lib/api-error"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
 
   const [characters, scenes, props] = await Promise.all([

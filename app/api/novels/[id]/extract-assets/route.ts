@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { getLLMProvider } from "@/lib/ai/llm"
 import { buildExtractAssetsPrompt } from "@/lib/prompts"
+import { badRequest, notFound, validationError, llmNotConfigured, internalError, ERR_LLM_NOT_CONFIGURED } from "@/lib/api-error"
 
 interface AIAssetResult {
   characters: {
@@ -21,15 +23,24 @@ interface AIAssetResult {
   }[]
 }
 
-async function callAIExtractAssetsFromChapters(
+function parseAssetsJSON(raw: string): AIAssetResult {
+  let text = raw.trim()
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
+  const parsed = JSON.parse(text)
+  return {
+    characters: Array.isArray(parsed.characters) ? parsed.characters : [],
+    scenes: Array.isArray(parsed.scenes) ? parsed.scenes : [],
+    props: Array.isArray(parsed.props) ? parsed.props : [],
+  }
+}
+
+async function callLLMExtractAssetsFromChapters(
   chapters: { title: string | null; content: string }[]
 ): Promise<AIAssetResult> {
-  const apiKey = process.env.OPENAI_API_KEY
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
+  const llmProvider = await getLLMProvider()
 
-  if (!apiKey) {
-    throw new Error("未配置 AI API Key，请在设置中配置后重试")
+  if (!llmProvider) {
+    throw new Error("LLM_NOT_CONFIGURED")
   }
 
   const chaptersText = chapters
@@ -38,35 +49,11 @@ async function callAIExtractAssetsFromChapters(
 
   const prompt = buildExtractAssetsPrompt(chaptersText)
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-    }),
+  const result = await llmProvider.chat({
+    messages: [{ role: "user", content: prompt }],
   })
 
-  if (!response.ok) {
-    const errText = await response.text()
-    throw new Error(`AI API 请求失败 (${response.status}): ${errText.slice(0, 200)}`)
-  }
-
-  const data = await response.json()
-  const content = data.choices?.[0]?.message?.content
-  if (!content) throw new Error("AI 未返回有效内容")
-
-  const parsed = JSON.parse(content)
-  return {
-    characters: Array.isArray(parsed.characters) ? parsed.characters : [],
-    scenes: Array.isArray(parsed.scenes) ? parsed.scenes : [],
-    props: Array.isArray(parsed.props) ? parsed.props : [],
-  }
+  return parseAssetsJSON(result.content)
 }
 
 export async function POST(
@@ -81,7 +68,7 @@ export async function POST(
   }
 
   if (!chapterIds || chapterIds.length === 0) {
-    return NextResponse.json({ error: "请至少选择一个章节" }, { status: 400 })
+    return validationError("请至少选择一个章节")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -89,7 +76,7 @@ export async function POST(
     select: { id: true, projectId: true },
   })
   if (!novel) {
-    return NextResponse.json({ error: "小说不存在" }, { status: 404 })
+    return notFound("小说不存在")
   }
 
   const { projectId } = novel
@@ -101,7 +88,7 @@ export async function POST(
   })
 
   if (chapters.length === 0) {
-    return NextResponse.json({ error: "未找到指定章节" }, { status: 400 })
+    return validationError("未找到指定章节")
   }
 
   if (mode === "overwrite") {
@@ -137,7 +124,7 @@ export async function POST(
   }
 
   try {
-    const aiResult = await callAIExtractAssetsFromChapters(
+    const aiResult = await callLLMExtractAssetsFromChapters(
       chapters.map((ch) => ({ title: ch.title, content: ch.content }))
     )
 
@@ -200,9 +187,10 @@ export async function POST(
     })
   } catch (err) {
     console.error("Asset extraction from chapters failed:", err)
-    return NextResponse.json(
-      { error: "资产提取失败: " + (err as Error).message },
-      { status: 500 }
-    )
+    const message = (err as Error).message
+    if (message === ERR_LLM_NOT_CONFIGURED) {
+      return llmNotConfigured()
+    }
+    return internalError("资产提取失败", message)
   }
 }

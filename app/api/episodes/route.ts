@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
+import { badRequest } from "@/lib/api-error"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
 
   const episodes = await prisma.episode.findMany({
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   } = body
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    return badRequest("projectId is required")
   }
 
   const chapterIdsJson = normalizeChapterIdsFromBody(chapterIds)
