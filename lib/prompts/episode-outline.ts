@@ -9,7 +9,7 @@ export const EPISODE_OUTLINE_NOVEL_PLACEHOLDER = "{NOVEL_TEXT}" as const
  * 默认分集大纲生成模板（含占位符 {@link EPISODE_OUTLINE_NOVEL_PLACEHOLDER}）
  * 后续可从数据库或用户设置读取后传入 {@link buildEpisodeOutlinePrompt}
  */
-export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视编剧 + 短剧工业化制作专家，擅长将小说内容改编为适合短视频平台的连续短剧内容，并能够适配 AI 自动化生产流程。
+export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视编剧 + 短剧工业化制作专家，擅长将我提供的小说内容改编为适合短视频平台的连续短剧内容，并能够适配 AI 自动化生产流程。
 
 请根据我提供的【小说原文】，并结合以下参数配置，完成短剧改编与剧本生成。
 
@@ -21,7 +21,7 @@ export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视
 
 ## 二、分集拆解
 
-请将小说改编为若干集短剧，每一集必须包含：
+请将我提供的小说原文多个章节进行拆分为若干集短剧，每一集必须包含：
 
 * 集数
 * 标题（由悬念或情节构成的强吸引力标题）
@@ -39,25 +39,26 @@ export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视
 ---
 
  ## 六、输出格式
-  /** 字段说明：title 为集标题；hook 为黄金钩子；core_conflict 为核心冲突；summary 为详细大纲；cliffhanger 为结尾悬念；chapters 为关联章节。 */
+  /** 字段说明：title 为集标题；goldenHook 为黄金钩子；core_conflict 为核心冲突；summary 为详细大纲；cliffhanger 为结尾悬念；chapters 为关联章节。 */
 
 [
   {
     "episode": 1,
     "title": "",
-    "hook": "",
+    "goldenHook": "",
     "core_conflict": "",
     "summary": "",
     "cliffhanger": "",
     "chapters": []
   }
 ]
+---
+严格按照上述 JSON 格式输出，不要包含任何额外说明、注释或 markdown 代码块标记，直接输出 JSON 数组。
 
 【小说原文】：
 ${EPISODE_OUTLINE_NOVEL_PLACEHOLDER}
 
----
-严格按照上述 JSON 格式输出，不要包含任何额外说明、注释或 markdown 代码块标记，直接输出 JSON 数组。`
+`
 
 export interface BuildEpisodeOutlinePromptOptions {
   /** 自定义模板；须包含占位符 {@link EPISODE_OUTLINE_NOVEL_PLACEHOLDER}，否则将追加在末尾 */

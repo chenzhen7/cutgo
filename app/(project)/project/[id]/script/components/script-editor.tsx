@@ -618,7 +618,7 @@ export function ScriptEditor({
                 {/* 黄金钩子 & 核心冲突 (左右布局) */}
                 <div className="px-4 grid grid-cols-2 gap-4">
                   {/* 黄金钩子 */}
-                  <div className="group/hook relative">
+                  <div className="group/goldenHook relative">
                     <div className="flex items-center justify-between mb-1.5">
                       <Label className="text-xs font-semibold text-amber-600 dark:text-amber-400">黄金钩子</Label>
                     </div>

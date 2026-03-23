@@ -10,7 +10,7 @@ interface OutlineItem {
   title?: string
   summary: string
   core_conflict?: string
-  hook?: string
+  goldenHook?: string
   cliffhanger?: string
   chapters: number[]
 }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         title,
         synopsis: item.summary || "",
         outline: item.summary || null,
-        goldenHook: item.hook || null,
+        goldenHook: item.goldenHook || null,
         keyConflict: item.core_conflict || null,
         cliffhanger: item.cliffhanger || null,
         duration: "3min",
