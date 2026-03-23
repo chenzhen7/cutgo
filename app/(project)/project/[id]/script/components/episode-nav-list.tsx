@@ -20,7 +20,6 @@ import {
   Plus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { countWords } from "@/lib/novel-utils"
 import { ScriptAssetStrip } from "./script-asset-strip"
 import {
   DndContext,
@@ -152,11 +151,6 @@ function SortableEpisodeItem({
             <span className="text-sm font-medium truncate min-w-0 flex-1">
               {ep.title}
             </span>
-            {hasScript && (
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
-                {countWords(script!.content).toLocaleString()} 字
-              </span>
-            )}
           </div>
 
           {/* Delete button */}
