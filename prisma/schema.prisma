@@ -142,32 +142,8 @@ model Episode {
   /// 本集目标时长描述
   duration    String  @default("60s")
 
-  scenes            EpisodeScene[]
   script            Script?
   videoCompositions VideoComposition[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// 分集内的场次拆分
-model EpisodeScene {
-  id        String  @id @default(cuid())
-  episodeId String
-  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
-  /// 场次序号
-  index      Int
-  /// 场次标题
-  title      String
-  /// 场次内容摘要
-  summary    String
-  /// 场次时长
-  duration   String  @default("15s")
-  /// 出场角色描述或 JSON
-  characters String?
-  /// 情绪
-  emotion    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
