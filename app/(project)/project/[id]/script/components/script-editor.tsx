@@ -275,9 +275,12 @@ export function ScriptEditor({
   
   const sourceChapterIds = parseSourceChapterIds(episode)
   const sourceChapterCount = sourceChapterIds.length
-  const sourceChapters = chapters.filter(c => sourceChapterIds.includes(c.id))
-    // 按原始 ID 顺序排列
-    .sort((a, b) => sourceChapterIds.indexOf(a.id) - sourceChapterIds.indexOf(b.id))
+  // 仅在明确设置了 sourceChapterIds 时展示关联章节区块（避免 null 时回退到 chapterId 的显示）
+  const hasExplicitSourceChapters = !!episode.sourceChapterIds
+  const sourceChapters = hasExplicitSourceChapters 
+    ? chapters.filter(c => sourceChapterIds.includes(c.id))
+        .sort((a, b) => sourceChapterIds.indexOf(a.id) - sourceChapterIds.indexOf(b.id))
+    : []
 
   const lineNumbers = content.split("\n").map((_, i) => i + 1)
 
