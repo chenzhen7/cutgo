@@ -2,7 +2,7 @@ import { getLLMConfig } from "../config"
 import { GoogleLLMProvider } from "./google"
 import { OpenAILLMProvider } from "./openai"
 import type { LLMGenerateOptions, LLMGenerateResult, LLMProvider } from "../types"
-import { ERR_LLM_NOT_CONFIGURED } from "@/lib/api-error-shared"
+import { API_ERRORS } from "@/lib/api-error-shared"
 
 // 缓存 Provider 实例，避免重复创建
 let cachedProvider: LLMProvider | null = null
@@ -71,14 +71,14 @@ export function clearLLMProviderCache(): void {
 
 /**
  * 使用当前生效配置调用 LLM 聊天接口。
- * 未配置时抛出 ERR_LLM_NOT_CONFIGURED，由上层 route 统一转换为标准错误响应。
+ * 未配置时抛出 API_ERRORS.LLM_NOT_CONFIGURED.code，由上层 route 统一转换为标准错误响应。
  */
 export async function callLLM(
   options: LLMGenerateOptions
 ): Promise<LLMGenerateResult> {
   const llmProvider = await getLLMProvider()
   if (!llmProvider) {
-    throw new Error(ERR_LLM_NOT_CONFIGURED)
+    throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)
   }
   return llmProvider.chat(options)
 }

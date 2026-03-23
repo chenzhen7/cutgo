@@ -7,7 +7,7 @@
  *   - message 字段为用户可读提示，优先用于展示
  */
 
-import { ERR_UNKNOWN, type ApiErrorBody } from "./api-error-shared"
+import { API_ERRORS, type ApiErrorBody } from "./api-error-shared"
 
 /** 带机器可读 code 的前端错误类 */
 export class ApiError extends Error {
@@ -46,9 +46,9 @@ async function parseErrorBody(res: Response): Promise<ApiErrorBody> {
         detail: body.detail as string | undefined,
       }
     }
-    return { error: ERR_UNKNOWN, message: `请求失败（${res.status}）` }
+    return { error: API_ERRORS.UNKNOWN.code, message: `请求失败（${res.status}）` }
   } catch {
-    return { error: ERR_UNKNOWN, message: `请求失败（${res.status}）` }
+    return { error: API_ERRORS.UNKNOWN.code, message: `请求失败（${res.status}）` }
   }
 }
 

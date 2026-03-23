@@ -31,10 +31,10 @@ alwaysApply: false
 
 需要附加业务数据的 500 错误，使用常量手动构造：
 ```ts
-import { ERR_INTERNAL, HTTP_STATUS } from "@/lib/api-error"
+import { API_ERRORS } from "@/lib/api-error"
 return NextResponse.json(
-  { error: ERR_INTERNAL, message: "部分生成失败", scripts: allScripts },
-  { status: HTTP_STATUS.INTERNAL_ERROR }
+  { error: API_ERRORS.INTERNAL.code, message: "部分生成失败", scripts: allScripts },
+  { status: API_ERRORS.INTERNAL.status }
 )
 ```
 
@@ -56,6 +56,5 @@ return validationError("请至少选择一个章节")
 ## 错误码常量
 
 新增错误码时：
-- 先在 `lib/api-error-shared.ts` 中定义 `ERR_XXX` 常量（前后端共享来源）
-- 再在 `lib/api-error.ts` 的 `DEFAULT_MESSAGES` 中补充默认 message
+- 先在 `lib/api-error-shared.ts` 的 `API_ERRORS` 中新增项（`code` / `status` / `defaultMessage`）
 - 最后通过 `apiError()` 或快捷方法构造响应

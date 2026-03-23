@@ -10,40 +10,11 @@ import { NextResponse } from "next/server"
 import {
   API_ERROR_BY_CODE,
   API_ERRORS,
-  ERR_AI_CALL_FAILED,
-  ERR_CONFLICT,
-  ERR_INTERNAL,
-  ERR_LLM_INVALID_RESPONSE,
-  ERR_LLM_NOT_CONFIGURED,
-  ERR_MISSING_PARAMS,
-  ERR_NOT_FOUND,
-  ERR_VALIDATION,
   type ApiErrorCode,
   type ApiErrorBody,
 } from "./api-error-shared"
 
-export {
-  ERR_AI_CALL_FAILED,
-  ERR_CONFLICT,
-  ERR_INTERNAL,
-  ERR_LLM_INVALID_RESPONSE,
-  ERR_LLM_NOT_CONFIGURED,
-  ERR_MISSING_PARAMS,
-  ERR_NOT_FOUND,
-  ERR_VALIDATION,
-} from "./api-error-shared"
-
-// ── HTTP 状态码常量 ─────────────────────────────────────────────────────────
-
-export const HTTP_STATUS = {
-  OK: 200,
-  CREATED: 201,
-  BAD_REQUEST: API_ERRORS.MISSING_PARAMS.status,
-  NOT_FOUND: API_ERRORS.NOT_FOUND.status,
-  CONFLICT: API_ERRORS.CONFLICT.status,
-  UNPROCESSABLE: API_ERRORS.LLM_NOT_CONFIGURED.status,
-  INTERNAL_ERROR: API_ERRORS.INTERNAL.status,
-} as const
+export { API_ERRORS } from "./api-error-shared"
 
 // ── 响应构造函数 ────────────────────────────────────────────────────────────
 
@@ -51,8 +22,8 @@ export const HTTP_STATUS = {
  * 构造标准错误响应。
  *
  * @example
- * return apiError(ERR_NOT_FOUND, HTTP_STATUS.NOT_FOUND, "小说不存在")
- * return apiError(ERR_LLM_NOT_CONFIGURED, HTTP_STATUS.UNPROCESSABLE)
+ * return apiError(API_ERRORS.NOT_FOUND.code, API_ERRORS.NOT_FOUND.status, "小说不存在")
+ * return apiError(API_ERRORS.LLM_NOT_CONFIGURED.code, API_ERRORS.LLM_NOT_CONFIGURED.status)
  */
 export function apiError(
   code: ApiErrorCode | string,
@@ -72,22 +43,22 @@ export function apiError(
 // ── 快捷方法 ────────────────────────────────────────────────────────────────
 
 export const badRequest = (message?: string, detail?: string) =>
-  apiError(ERR_MISSING_PARAMS, HTTP_STATUS.BAD_REQUEST, message, detail)
+  apiError(API_ERRORS.MISSING_PARAMS.code, API_ERRORS.MISSING_PARAMS.status, message, detail)
 
 export const validationError = (message: string, detail?: string) =>
-  apiError(ERR_VALIDATION, HTTP_STATUS.BAD_REQUEST, message, detail)
+  apiError(API_ERRORS.VALIDATION.code, API_ERRORS.VALIDATION.status, message, detail)
 
 export const notFound = (message?: string) =>
-  apiError(ERR_NOT_FOUND, HTTP_STATUS.NOT_FOUND, message)
+  apiError(API_ERRORS.NOT_FOUND.code, API_ERRORS.NOT_FOUND.status, message)
 
 export const conflict = (message: string) =>
-  apiError(ERR_CONFLICT, HTTP_STATUS.CONFLICT, message)
+  apiError(API_ERRORS.CONFLICT.code, API_ERRORS.CONFLICT.status, message)
 
 export const llmNotConfigured = () =>
-  apiError(ERR_LLM_NOT_CONFIGURED, HTTP_STATUS.UNPROCESSABLE)
+  apiError(API_ERRORS.LLM_NOT_CONFIGURED.code, API_ERRORS.LLM_NOT_CONFIGURED.status)
 
 export const llmInvalidResponse = (detail?: string) =>
-  apiError(ERR_LLM_INVALID_RESPONSE, HTTP_STATUS.INTERNAL_ERROR, undefined, detail)
+  apiError(API_ERRORS.LLM_INVALID_RESPONSE.code, API_ERRORS.LLM_INVALID_RESPONSE.status, undefined, detail)
 
 export const internalError = (message?: string, detail?: string) =>
-  apiError(ERR_INTERNAL, HTTP_STATUS.INTERNAL_ERROR, message, detail)
+  apiError(API_ERRORS.INTERNAL.code, API_ERRORS.INTERNAL.status, message, detail)

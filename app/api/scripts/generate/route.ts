@@ -332,8 +332,8 @@ export async function POST(request: NextRequest) {
       include: scriptInclude,
     })
     return NextResponse.json(
-      { error: apiError.ERR_INTERNAL, message: "部分分集生成失败", scripts: allScripts },
-      { status: apiError.HTTP_STATUS.INTERNAL_ERROR }
+      { error: apiError.API_ERRORS.INTERNAL.code, message: "部分分集生成失败", scripts: allScripts },
+      { status: apiError.API_ERRORS.INTERNAL.status }
     )
   }
 }

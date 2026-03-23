@@ -344,8 +344,12 @@ export async function POST(request: NextRequest) {
     })
     const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
     return NextResponse.json(
-      { error: apiError.ERR_INTERNAL, message: "部分剧本生成失败", scriptShotPlans: allScriptShotPlans },
-      { status: apiError.HTTP_STATUS.INTERNAL_ERROR }
+      {
+        error: apiError.API_ERRORS.INTERNAL.code,
+        message: "部分剧本生成失败",
+        scriptShotPlans: allScriptShotPlans,
+      },
+      { status: apiError.API_ERRORS.INTERNAL.status }
     )
   }
 }

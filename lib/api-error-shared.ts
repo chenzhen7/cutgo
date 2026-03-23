@@ -79,22 +79,3 @@ export const API_ERROR_BY_CODE: Record<ApiErrorCode, ApiErrorDefinition> = Objec
   },
   {} as Record<ApiErrorCode, ApiErrorDefinition>
 )
-
-/** 通用参数校验 */
-export const ERR_MISSING_PARAMS = API_ERRORS.MISSING_PARAMS.code
-/** 资源不存在 */
-export const ERR_NOT_FOUND = API_ERRORS.NOT_FOUND.code
-/** 资源名称冲突 */
-export const ERR_CONFLICT = API_ERRORS.CONFLICT.code
-/** LLM 未配置 */
-export const ERR_LLM_NOT_CONFIGURED = API_ERRORS.LLM_NOT_CONFIGURED.code
-/** LLM 返回内容无效 */
-export const ERR_LLM_INVALID_RESPONSE = API_ERRORS.LLM_INVALID_RESPONSE.code
-/** 外部 AI 服务调用失败 */
-export const ERR_AI_CALL_FAILED = API_ERRORS.AI_CALL_FAILED.code
-/** 业务校验不通过 */
-export const ERR_VALIDATION = API_ERRORS.VALIDATION.code
-/** 服务端内部错误 */
-export const ERR_INTERNAL = API_ERRORS.INTERNAL.code
-/** 前端本地解析失败或未知错误 */
-export const ERR_UNKNOWN = API_ERRORS.UNKNOWN.code

@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     })
     outlines = parseOutlineJSON(result.content)
   } catch (err) {
-    if ((err as Error).message === apiError.ERR_LLM_NOT_CONFIGURED) {
+    if ((err as Error).message === apiError.API_ERRORS.LLM_NOT_CONFIGURED.code) {
       return apiError.llmNotConfigured()
     }
     return apiError.llmInvalidResponse((err as Error).message)

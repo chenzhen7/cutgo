@@ -51,21 +51,21 @@ const response = await fetch(`${baseUrl}/chat/completions`, {
 ## LLM 未配置的错误处理
 
 - 直接调用路径：`getLLMProvider()` 返回 `null` 时，直接 `return llmNotConfigured()`
-- 间接调用路径（内部函数中）：`throw new Error(ERR_LLM_NOT_CONFIGURED)`，在外层 catch 中判断并返回
+- 间接调用路径（内部函数中）：`throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)`，在外层 catch 中判断并返回
 
 ```ts
-import { ERR_LLM_NOT_CONFIGURED } from "@/lib/api-error"
+import { API_ERRORS } from "@/lib/api-error"
 
 // 内部函数
 async function callLLM(...) {
   const llmProvider = await getLLMProvider()
-  if (!llmProvider) throw new Error(ERR_LLM_NOT_CONFIGURED)
+  if (!llmProvider) throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)
   ...
 }
 
 // 外层 catch
 } catch (err) {
-  if ((err as Error).message === ERR_LLM_NOT_CONFIGURED) {
+  if ((err as Error).message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
     return llmNotConfigured()
   }
   return internalError("调用失败", (err as Error).message)
