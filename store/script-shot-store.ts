@@ -11,6 +11,7 @@ import type {
   AssetScene,
   AssetProp,
 } from "@/lib/types"
+import { apiFetch } from "@/lib/api-client"
 
 interface ScriptShotState {
   scriptShotPlans: ScriptShotPlan[]
@@ -111,54 +112,58 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   batchImageProgress: null,
 
   fetchScriptShotPlans: async (projectId, episodeId) => {
-    const url = episodeId
-      ? `/api/script-shots?projectId=${projectId}&episodeId=${episodeId}`
-      : `/api/script-shots?projectId=${projectId}`
-    const res = await fetch(url)
-    if (!res.ok) return
-    const data = await res.json()
-    set({ scriptShotPlans: data || [] })
+    try {
+      const url = episodeId
+        ? `/api/script-shots?projectId=${projectId}&episodeId=${episodeId}`
+        : `/api/script-shots?projectId=${projectId}`
+      const data = await apiFetch<ScriptShotPlan[]>(url)
+      set({ scriptShotPlans: data || [] })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   fetchEpisodes: async (projectId) => {
-    const res = await fetch(`/api/episodes?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    set({ episodes: data || [] })
-    return data || []
+    try {
+      const data = await apiFetch<Episode[]>(`/api/episodes?projectId=${projectId}`)
+      set({ episodes: data || [] })
+      return data || []
+    } catch {
+      return []
+    }
   },
 
   fetchScripts: async (projectId) => {
-    const res = await fetch(`/api/scripts?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    set({ scripts: data || [] })
+    try {
+      const data = await apiFetch<Script[]>(`/api/scripts?projectId=${projectId}`)
+      set({ scripts: data || [] })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   fetchAssets: async (projectId) => {
-    const res = await fetch(`/api/assets?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    set({
-      assetCharacters: data.characters || [],
-      assetScenes: data.scenes || [],
-      assetProps: data.props || [],
-    })
+    try {
+      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(
+        `/api/assets?projectId=${projectId}`
+      )
+      set({
+        assetCharacters: data.characters || [],
+        assetScenes: data.scenes || [],
+        assetProps: data.props || [],
+      })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   generateScriptShots: async (projectId, episodeIds, scriptIds, mode = "skip_existing") => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
-      const res = await fetch("/api/script-shots/generate", {
+      const data = await apiFetch<{ scriptShotPlans?: ScriptShotPlan[] }>("/api/script-shots/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, episodeIds, scriptIds, mode }),
+        body: { projectId, episodeIds, scriptIds, mode },
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "生成失败")
-      }
-      const data = await res.json()
       set({
         scriptShotPlans: data.scriptShotPlans || [],
         generateStatus: "completed",
@@ -174,41 +179,31 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   createScriptShotPlan: async (projectId, scriptId) => {
-    const res = await fetch("/api/script-shots", {
+    const sb = await apiFetch<ScriptShotPlan>("/api/script-shots", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, scriptId }),
+      body: { projectId, scriptId },
     })
-    if (!res.ok) throw new Error("创建分镜板失败")
-    const sb = await res.json()
     set({ scriptShotPlans: [...get().scriptShotPlans, sb] })
   },
 
   updateScriptShotPlan: async (scriptId, data) => {
-    const res = await fetch(`/api/script-shots/${scriptId}`, {
+    const updated = await apiFetch<ScriptShotPlan>(`/api/script-shots/${scriptId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("更新分镜板失败")
-    const updated = await res.json()
     set({ scriptShotPlans: get().scriptShotPlans.map((sb) => (sb.id === scriptId ? { ...sb, ...updated } : sb)) })
   },
 
   deleteScriptShotPlan: async (scriptId) => {
-    const res = await fetch(`/api/script-shots/${scriptId}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除分镜板失败")
+    await apiFetch(`/api/script-shots/${scriptId}`, { method: "DELETE" })
     set({ scriptShotPlans: get().scriptShotPlans.filter((sb) => sb.id !== scriptId) })
   },
 
   addShot: async (scriptId, data) => {
-    const res = await fetch(`/api/script-shots/${scriptId}/shots`, {
+    const shots = await apiFetch<Shot[]>(`/api/script-shots/${scriptId}/shots`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("添加镜头失败")
-    const shots: Shot[] = await res.json()
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
         sb.id === scriptId ? { ...sb, shots, status: "edited" as const } : sb
@@ -217,13 +212,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   updateShot: async (scriptId, shotId, data) => {
-    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}`, {
+    const updated = await apiFetch<Shot>(`/api/script-shots/${scriptId}/shots/${shotId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("更新镜头失败")
-    const updated: Shot = await res.json()
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
         sb.id === scriptId
@@ -234,9 +226,9 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   deleteShot: async (scriptId, shotId) => {
-    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除镜头失败")
-    const shots: Shot[] = await res.json()
+    const shots = await apiFetch<Shot[]>(`/api/script-shots/${scriptId}/shots/${shotId}`, {
+      method: "DELETE",
+    })
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
         sb.id === scriptId ? { ...sb, shots } : sb
@@ -264,13 +256,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   reorderShots: async (scriptId, orderedIds) => {
-    const res = await fetch(`/api/script-shots/${scriptId}/shots/reorder`, {
+    const shots = await apiFetch<Shot[]>(`/api/script-shots/${scriptId}/shots/reorder`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedIds }),
+      body: { orderedIds },
     })
-    if (!res.ok) throw new Error("排序失败")
-    const shots: Shot[] = await res.json()
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
         sb.id === scriptId ? { ...sb, shots } : sb
@@ -279,13 +268,13 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   moveShot: async (shotId, sourceScriptId, targetScriptId, targetIndex) => {
-    const res = await fetch("/api/script-shots/shots/move", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shotId, sourceScriptId, targetScriptId, targetIndex }),
-    })
-    if (!res.ok) throw new Error("移动镜头失败")
-    const { source, target } = await res.json()
+    const { source, target } = await apiFetch<{ source: { shots: Shot[] }; target: { shots: Shot[] } }>(
+      "/api/script-shots/shots/move",
+      {
+        method: "POST",
+        body: { shotId, sourceScriptId, targetScriptId, targetIndex },
+      }
+    )
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) => {
         if (sb.id === sourceScriptId) return { ...sb, shots: source.shots }
@@ -299,13 +288,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) throw new Error("镜头不存在")
-    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}/optimize-prompt`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPrompt: shot.prompt }),
-    })
-    if (!res.ok) throw new Error("优化失败")
-    return await res.json()
+    return apiFetch<{ optimizedPrompt: string; negativePrompt: string }>(
+      `/api/script-shots/${scriptId}/shots/${shotId}/optimize-prompt`,
+      { method: "POST", body: { currentPrompt: shot.prompt } }
+    )
   },
 
   generateImage: async (scriptId, shotId) => {
@@ -332,14 +318,11 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         body.gridLayout = shot.gridLayout || "2x2"
       }
 
-      const res = await fetch("/api/images/generate", {
+      const data = await apiFetch<{ shot: Shot }>("/api/images/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body,
       })
-      if (!res.ok) throw new Error("生成失败")
-      const data = await res.json()
-      const updatedShot = data.shot as Shot
+      const updatedShot = data.shot
 
       set({
         scriptShotPlans: get().scriptShotPlans.map((s) =>
@@ -358,17 +341,17 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   generateBatchImages: async (projectId, options) => {
     set({ batchImageStatus: "generating", batchImageProgress: null })
     try {
-      const res = await fetch("/api/images/generate-batch", {
+      const data = await apiFetch<{
+        results: Array<{ status: string; shotId: string; imageUrl?: string; imageUrls?: string[] }>
+        stats: { total: number }
+      }>("/api/images/generate-batch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           projectId,
           episodeId: options?.episodeId,
           mode: options?.mode || "missing_only",
-        }),
+        },
       })
-      if (!res.ok) throw new Error("批量生成失败")
-      const data = await res.json()
 
       const resultMap = new Map<string, { imageUrl?: string; imageUrls?: string[] }>()
       for (const r of data.results) {
@@ -399,13 +382,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   clearImage: async (scriptId, shotId) => {
-    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}`, {
+    const updated = await apiFetch<Shot>(`/api/script-shots/${scriptId}/shots/${shotId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: null, imageUrls: null }),
+      body: { imageUrl: null, imageUrls: null },
     })
-    if (!res.ok) throw new Error("清除失败")
-    const updated: Shot = await res.json()
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
         sb.id === scriptId
@@ -432,15 +412,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   clearShotSelection: () => set({ selectedShotIds: new Set() }),
 
   confirmScriptShots: async (projectId) => {
-    const res = await fetch("/api/script-shots/confirm", {
+    await apiFetch("/api/script-shots/confirm", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId }),
+      body: { projectId },
     })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || "确认分镜失败")
-    }
   },
 
   activeEpisodeScriptShots: () => {

@@ -1,5 +1,5 @@
 ---
-description: API 路由错误响应规范：使用 lib/api-error.ts 统一返回错误码和 HTTP 状态码
+description: API 路由错误响应规范：使用 lib/api-error.ts 统一返回错误响应（错误码定义在 lib/api-error-shared.ts）
 globs: app/api/**/*.ts
 alwaysApply: false
 ---
@@ -52,4 +52,7 @@ return validationError("请至少选择一个章节")
 
 ## 错误码常量
 
-新增错误码时，必须先在 `lib/api-error.ts` 中定义 `ERR_XXX` 常量和默认 message，再使用 `apiError()` 构造响应。
+新增错误码时：
+- 先在 `lib/api-error-shared.ts` 中定义 `ERR_XXX` 常量（前后端共享来源）
+- 再在 `lib/api-error.ts` 的 `DEFAULT_MESSAGES` 中补充默认 message
+- 最后通过 `apiError()` 或快捷方法构造响应

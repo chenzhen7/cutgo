@@ -5,6 +5,7 @@ import type {
   AnalysisStatus,
   ImportNovelInput,
 } from "@/lib/types"
+import { apiFetch } from "@/lib/api-client"
 
 interface ChapterInput {
   title?: string
@@ -38,16 +39,7 @@ export const useNovelStore = create<NovelState>((set, get) => ({
   analysisError: null,
 
   importNovel: async (data) => {
-    const res = await fetch("/api/novels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || "导入失败")
-    }
-    const novel = await res.json()
+    const novel = await apiFetch<Novel>("/api/novels", { method: "POST", body: data })
     set({ novel, analysisStatus: "idle", analysisError: null, chapters: [] })
     return novel
   },
@@ -55,12 +47,10 @@ export const useNovelStore = create<NovelState>((set, get) => ({
   analyzeNovel: async (novelId) => {
     set({ analysisStatus: "analyzing", analysisError: null })
     try {
-      const res = await fetch(`/api/novels/${novelId}/analyze`, { method: "POST" })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "分析失败")
-      }
-      const data = await res.json()
+      const data = await apiFetch<Novel & { stats?: unknown; chapters?: Chapter[] }>(
+        `/api/novels/${novelId}/analyze`,
+        { method: "POST" }
+      )
       const { stats, chapters, ...novelFields } = data
       void stats
       const ch = chapters ?? []
@@ -75,62 +65,48 @@ export const useNovelStore = create<NovelState>((set, get) => ({
   },
 
   confirmImport: async (novelId) => {
-    const res = await fetch(`/api/novels/${novelId}/confirm`, { method: "POST" })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "确认导入失败")
-    }
-    const updated = await res.json()
+    const updated = await apiFetch<Novel>(`/api/novels/${novelId}/confirm`, { method: "POST" })
     const ch = get().chapters
-    set({
-      novel: { ...get().novel!, ...updated, chapters: ch },
-    })
+    set({ novel: { ...get().novel!, ...updated, chapters: ch } })
   },
 
   fetchNovel: async (projectId) => {
-    const res = await fetch(`/api/novels?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    if (!data) {
-      set({ novel: null, chapters: [], analysisStatus: "idle" })
-      return
+    try {
+      const data = await apiFetch<Novel | null>(`/api/novels?projectId=${projectId}`)
+      if (!data) {
+        set({ novel: null, chapters: [], analysisStatus: "idle" })
+        return
+      }
+      set({
+        novel: data,
+        chapters: (data as Novel & { chapters?: Chapter[] }).chapters || [],
+        analysisStatus: ((data as Novel & { chapters?: Chapter[] }).chapters?.length ?? 0) > 0 ? "completed" : "idle",
+      })
+    } catch {
+      // fetchNovel 为非关键数据加载，静默失败
     }
-    set({
-      novel: data,
-      chapters: data.chapters || [],
-      analysisStatus: (data.chapters?.length ?? 0) > 0 ? "completed" : "idle",
-    })
   },
 
   addChapter: async (novelId, data) => {
-    const res = await fetch(`/api/novels/${novelId}/chapters`, {
+    const chapter = await apiFetch<Chapter>(`/api/novels/${novelId}/chapters`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("添加章节失败")
-    const chapter = await res.json()
     set({ chapters: [...get().chapters, chapter] })
   },
 
   updateChapter: async (chapterId, data) => {
     const novelId = get().novel?.id
     if (!novelId) return
-    const res = await fetch(`/api/novels/${novelId}/chapters/${chapterId}`, {
+    const updated = await apiFetch<Chapter>(`/api/novels/${novelId}/chapters/${chapterId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("更新章节失败")
-    const updated = await res.json()
     set({ chapters: get().chapters.map((ch) => (ch.id === chapterId ? updated : ch)) })
   },
 
   deleteChapter: async (novelId, chapterId) => {
-    const res = await fetch(`/api/novels/${novelId}/chapters/${chapterId}`, {
-      method: "DELETE",
-    })
-    if (!res.ok) throw new Error("删除章节失败")
+    await apiFetch(`/api/novels/${novelId}/chapters/${chapterId}`, { method: "DELETE" })
     set({ chapters: get().chapters.filter((ch) => ch.id !== chapterId) })
   },
 

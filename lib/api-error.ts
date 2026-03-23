@@ -2,11 +2,33 @@
  * API 统一错误码与 HTTP 状态码定义
  *
  * 使用规范：
- *   - 所有 route.ts 通过 `apiError` / `apiErrorWithMessage` 返回错误响应
+ *   - 所有 route.ts 通过 `apiError` 或快捷方法返回错误响应
  *   - 前端通过 `error` 字段（机器可读码）做分支判断，通过 `message` 字段展示用户提示
  */
 
 import { NextResponse } from "next/server"
+import {
+  ERR_AI_CALL_FAILED,
+  ERR_CONFLICT,
+  ERR_INTERNAL,
+  ERR_LLM_INVALID_RESPONSE,
+  ERR_LLM_NOT_CONFIGURED,
+  ERR_MISSING_PARAMS,
+  ERR_NOT_FOUND,
+  ERR_VALIDATION,
+  type ApiErrorBody,
+} from "./api-error-shared"
+
+export {
+  ERR_AI_CALL_FAILED,
+  ERR_CONFLICT,
+  ERR_INTERNAL,
+  ERR_LLM_INVALID_RESPONSE,
+  ERR_LLM_NOT_CONFIGURED,
+  ERR_MISSING_PARAMS,
+  ERR_NOT_FOUND,
+  ERR_VALIDATION,
+} from "./api-error-shared"
 
 // ── HTTP 状态码常量 ─────────────────────────────────────────────────────────
 
@@ -19,25 +41,6 @@ export const HTTP_STATUS = {
   UNPROCESSABLE: 422,
   INTERNAL_ERROR: 500,
 } as const
-
-// ── 机器可读错误码（error 字段） ────────────────────────────────────────────
-
-/** 通用参数校验 */
-export const ERR_MISSING_PARAMS = "MISSING_PARAMS"
-/** 资源不存在 */
-export const ERR_NOT_FOUND = "NOT_FOUND"
-/** 资源名称冲突 */
-export const ERR_CONFLICT = "CONFLICT"
-/** LLM 未配置 */
-export const ERR_LLM_NOT_CONFIGURED = "LLM_NOT_CONFIGURED"
-/** LLM 返回内容无效 */
-export const ERR_LLM_INVALID_RESPONSE = "LLM_INVALID_RESPONSE"
-/** 外部 AI 服务调用失败 */
-export const ERR_AI_CALL_FAILED = "AI_CALL_FAILED"
-/** 业务校验不通过 */
-export const ERR_VALIDATION = "VALIDATION_ERROR"
-/** 服务端内部错误 */
-export const ERR_INTERNAL = "INTERNAL_ERROR"
 
 // ── 错误码对应的默认用户提示 ────────────────────────────────────────────────
 
@@ -53,15 +56,6 @@ const DEFAULT_MESSAGES: Record<string, string> = {
 }
 
 // ── 响应构造函数 ────────────────────────────────────────────────────────────
-
-export interface ApiErrorBody {
-  /** 机器可读错误码 */
-  error: string
-  /** 用户可读提示（可覆盖默认值） */
-  message: string
-  /** 附加调试信息（可选，仅非生产环境建议携带） */
-  detail?: string
-}
 
 /**
  * 构造标准错误响应。

@@ -7,6 +7,7 @@ import type {
   Chapter,
 } from "@/lib/types"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
+import { apiFetch } from "@/lib/api-client"
 
 interface ScriptState {
   scripts: Script[]
@@ -79,42 +80,42 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   filterChapterIds: [],
 
   fetchScripts: async (projectId, episodeId) => {
-    const url = episodeId
-      ? `/api/scripts?projectId=${projectId}&episodeId=${episodeId}`
-      : `/api/scripts?projectId=${projectId}`
-    const res = await fetch(url)
-    if (!res.ok) return
-    const data = await res.json()
-    set({ scripts: data || [] })
+    try {
+      const url = episodeId
+        ? `/api/scripts?projectId=${projectId}&episodeId=${episodeId}`
+        : `/api/scripts?projectId=${projectId}`
+      const data = await apiFetch<Script[]>(url)
+      set({ scripts: data || [] })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   fetchEpisodes: async (projectId) => {
-    const res = await fetch(`/api/episodes?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    set({ episodes: data || [] })
+    try {
+      const data = await apiFetch<Episode[]>(`/api/episodes?projectId=${projectId}`)
+      set({ episodes: data || [] })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   fetchChapters: async (projectId) => {
-    const res = await fetch(`/api/novels?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    set({ chapters: data?.chapters ?? [] })
+    try {
+      const data = await apiFetch<{ chapters?: Chapter[] }>(`/api/novels?projectId=${projectId}`)
+      set({ chapters: data?.chapters ?? [] })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   generateScripts: async (projectId, episodeIds, mode = "skip_existing") => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
-      const res = await fetch("/api/scripts/generate", {
+      const data = await apiFetch<{ scripts?: Script[] }>("/api/scripts/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, episodeIds, mode }),
+        body: { projectId, episodeIds, mode },
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "生成失败")
-      }
-      const data = await res.json()
       set({
         scripts: data.scripts || [],
         generateStatus: "completed",
@@ -130,68 +131,45 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   },
 
   createScript: async (projectId, episodeId, title) => {
-    const res = await fetch("/api/scripts", {
+    const script = await apiFetch<Script>("/api/scripts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, episodeId, title }),
+      body: { projectId, episodeId, title },
     })
-    if (!res.ok) throw new Error("创建剧本失败")
-    const script = await res.json()
     set({ scripts: [...get().scripts, script] })
   },
 
   updateScript: async (scriptId, data) => {
-    const res = await fetch(`/api/scripts/${scriptId}`, {
+    const updated = await apiFetch<Script>(`/api/scripts/${scriptId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("更新剧本失败")
-    const updated = await res.json()
     set({ scripts: get().scripts.map((s) => (s.id === scriptId ? updated : s)) })
   },
 
   deleteScript: async (scriptId) => {
-    const res = await fetch(`/api/scripts/${scriptId}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除剧本失败")
+    await apiFetch(`/api/scripts/${scriptId}`, { method: "DELETE" })
     set({ scripts: get().scripts.filter((s) => s.id !== scriptId) })
   },
 
   updateEpisode: async (episodeId, data) => {
-    const res = await fetch(`/api/episodes/${episodeId}`, {
+    const updated = await apiFetch<Episode>(`/api/episodes/${episodeId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) throw new Error("更新分集失败")
-    const updated = await res.json()
     set({ episodes: get().episodes.map((ep) => (ep.id === episodeId ? updated : ep)) })
   },
 
   generateEpisodeOutlines: async (projectId, chapterIds) => {
-    const res = await fetch("/api/episodes/generate-outlines", {
+    const data = await apiFetch<{ episodes?: Episode[] }>("/api/episodes/generate-outlines", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, chapterIds }),
+      body: { projectId, chapterIds },
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      const errData = err as { error?: string; message?: string }
-      const e = new Error(errData.message || errData.error || "生成大纲失败") as Error & { code?: string }
-      e.code = errData.error
-      throw e
-    }
-    const data = await res.json()
     const newEpisodes: Episode[] = data.episodes ?? []
-    set({
-      episodes: [...get().episodes, ...newEpisodes],
-    })
+    set({ episodes: [...get().episodes, ...newEpisodes] })
   },
 
   deleteEpisode: async (projectId, episodeId) => {
-    const res = await fetch(`/api/episodes/${episodeId}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除分集失败")
-    const remaining = await res.json()
+    const remaining = await apiFetch<Episode[]>(`/api/episodes/${episodeId}`, { method: "DELETE" })
     set({
       episodes: remaining,
       scripts: get().scripts.filter((s) => s.episodeId !== episodeId),
@@ -203,30 +181,14 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   },
 
   createEpisodeWithScript: async (projectId, chapterIds) => {
-    const epRes = await fetch("/api/episodes", {
+    const episode = await apiFetch<Episode>("/api/episodes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, chapterIds }),
+      body: { projectId, chapterIds },
     })
-    if (!epRes.ok) {
-      const err = await epRes.json().catch(() => ({}))
-      throw new Error((err as { error?: string }).error || "创建分集失败")
-    }
-    const episode = await epRes.json()
-    const scriptRes = await fetch("/api/scripts", {
+    const script = await apiFetch<Script>("/api/scripts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        episodeId: episode.id,
-        title: episode.title,
-      }),
+      body: { projectId, episodeId: episode.id, title: episode.title },
     })
-    if (!scriptRes.ok) {
-      const err = await scriptRes.json().catch(() => ({}))
-      throw new Error((err as { error?: string }).error || "创建剧本失败")
-    }
-    const script = await scriptRes.json()
     await get().fetchEpisodes(projectId)
     await get().fetchScripts(projectId)
     set({ activeScriptId: script.id })
@@ -241,13 +203,10 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     })
     set({ episodes: merged })
     try {
-      const res = await fetch("/api/episodes/reorder", {
+      const updated = await apiFetch<Episode[]>("/api/episodes/reorder", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, orderedIds }),
+        body: { projectId, orderedIds },
       })
-      if (!res.ok) throw new Error("排序失败")
-      const updated = await res.json()
       set({ episodes: updated })
     } catch {
       set({ episodes: prevEpisodes })
@@ -258,15 +217,10 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   setFilterChapterIds: (chapterIds) => set({ filterChapterIds: chapterIds }),
 
   confirmScripts: async (projectId) => {
-    const res = await fetch("/api/scripts/confirm", {
+    await apiFetch("/api/scripts/confirm", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId }),
+      body: { projectId },
     })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || "确认剧本失败")
-    }
   },
 
   filteredScripts: () => {

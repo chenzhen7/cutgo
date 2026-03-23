@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { BookMarked, Loader2, Sparkles } from "lucide-react"
 import type { Chapter } from "@/lib/types"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
+import { apiFetch } from "@/lib/api-client"
 
 interface ExtractAssetsDialogProps {
   open: boolean
@@ -70,18 +71,10 @@ export function ExtractAssetsDialog({
     try {
       const idSet = new Set(selectedChapterIds)
       const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
-
-      const res = await fetch(`/api/novels/${novelId}/extract-assets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chapterIds: orderedIds, mode }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.error || "提取失败")
-      }
-
+      const data = await apiFetch<{ stats: { characterCount: number; sceneCount: number; propCount: number } }>(
+        `/api/novels/${novelId}/extract-assets`,
+        { method: "POST", body: { chapterIds: orderedIds, mode } }
+      )
       onSuccess?.(data.stats)
       onOpenChange(false)
     } catch (err) {

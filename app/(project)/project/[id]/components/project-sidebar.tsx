@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar"
 import { PIPELINE_STEPS } from "@/lib/pipeline"
 import type { Project } from "@/lib/types"
+import { apiFetchSilent } from "@/lib/api-client"
 import * as React from "react";
 
 const managementLinks = [
@@ -39,13 +40,10 @@ export function ProjectSidebar({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProject(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
+    apiFetchSilent<Project>(`/api/projects/${projectId}`).then((data) => {
+      setProject(data)
+      setLoading(false)
+    })
   }, [projectId])
 
   const currentStepKey = pathname.split("/").pop() || "import"

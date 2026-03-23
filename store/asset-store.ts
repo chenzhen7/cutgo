@@ -7,6 +7,7 @@ import type {
   AssetSceneInput,
   AssetPropInput,
 } from "@/lib/types"
+import { apiFetch } from "@/lib/api-client"
 
 interface AssetState {
   characters: AssetCharacter[]
@@ -43,115 +44,80 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   props: [],
 
   fetchAssets: async (projectId) => {
-    const res = await fetch(`/api/assets?projectId=${projectId}`)
-    if (!res.ok) return
-    const data = await res.json()
-    set({
-      characters: data.characters || [],
-      scenes: data.scenes || [],
-      props: data.props || [],
-    })
+    try {
+      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(
+        `/api/assets?projectId=${projectId}`
+      )
+      set({
+        characters: data.characters || [],
+        scenes: data.scenes || [],
+        props: data.props || [],
+      })
+    } catch {
+      // 非关键数据加载，静默失败
+    }
   },
 
   addCharacter: async (projectId, data) => {
-    const res = await fetch("/api/assets/characters", {
+    const character = await apiFetch<AssetCharacter>("/api/assets/characters", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, ...data }),
+      body: { projectId, ...data },
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "添加角色失败")
-    }
-    const character = await res.json()
     set({ characters: [...get().characters, character] })
   },
 
   updateCharacter: async (id, data) => {
-    const res = await fetch(`/api/assets/characters/${id}`, {
+    const updated = await apiFetch<AssetCharacter>(`/api/assets/characters/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "更新角色失败")
-    }
-    const updated = await res.json()
     set({ characters: get().characters.map((c) => (c.id === id ? updated : c)) })
   },
 
   deleteCharacter: async (id) => {
-    const res = await fetch(`/api/assets/characters/${id}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除角色失败")
+    await apiFetch(`/api/assets/characters/${id}`, { method: "DELETE" })
     set({ characters: get().characters.filter((c) => c.id !== id) })
   },
 
   addScene: async (projectId, data) => {
-    const res = await fetch("/api/assets/scenes", {
+    const scene = await apiFetch<AssetScene>("/api/assets/scenes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, ...data }),
+      body: { projectId, ...data },
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "添加场景失败")
-    }
-    const scene = await res.json()
     set({ scenes: [...get().scenes, scene] })
   },
 
   updateScene: async (id, data) => {
-    const res = await fetch(`/api/assets/scenes/${id}`, {
+    const updated = await apiFetch<AssetScene>(`/api/assets/scenes/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "更新场景失败")
-    }
-    const updated = await res.json()
     set({ scenes: get().scenes.map((s) => (s.id === id ? updated : s)) })
   },
 
   deleteScene: async (id) => {
-    const res = await fetch(`/api/assets/scenes/${id}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除场景失败")
+    await apiFetch(`/api/assets/scenes/${id}`, { method: "DELETE" })
     set({ scenes: get().scenes.filter((s) => s.id !== id) })
   },
 
   addProp: async (projectId, data) => {
-    const res = await fetch("/api/assets/props", {
+    const prop = await apiFetch<AssetProp>("/api/assets/props", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, ...data }),
+      body: { projectId, ...data },
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "添加道具失败")
-    }
-    const prop = await res.json()
     set({ props: [...get().props, prop] })
   },
 
   updateProp: async (id, data) => {
-    const res = await fetch(`/api/assets/props/${id}`, {
+    const updated = await apiFetch<AssetProp>(`/api/assets/props/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: data,
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || "更新道具失败")
-    }
-    const updated = await res.json()
     set({ props: get().props.map((p) => (p.id === id ? updated : p)) })
   },
 
   deleteProp: async (id) => {
-    const res = await fetch(`/api/assets/props/${id}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("删除道具失败")
+    await apiFetch(`/api/assets/props/${id}`, { method: "DELETE" })
     set({ props: get().props.filter((p) => p.id !== id) })
   },
 

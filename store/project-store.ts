@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import type { Project } from "@/lib/types"
+import { apiFetch } from "@/lib/api-client"
 
 interface ProjectState {
   projects: Project[]
@@ -21,9 +22,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   fetchProjects: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch("/api/projects")
-      if (!res.ok) throw new Error("Failed to fetch projects")
-      const data = await res.json()
+      const data = await apiFetch<Project[]>("/api/projects")
       set({ projects: data, loading: false })
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
@@ -31,40 +30,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   createProject: async (data) => {
-    const res = await fetch("/api/projects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error("Failed to create project")
-    const project = await res.json()
+    const project = await apiFetch<Project>("/api/projects", { method: "POST", body: data })
     set({ projects: [...get().projects, project] })
     return project
   },
 
   updateProject: async (id, data) => {
-    const res = await fetch(`/api/projects/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error("Failed to update project")
-    const project = await res.json()
-    set({
-      projects: get().projects.map((p) => (p.id === id ? project : p)),
-    })
+    const project = await apiFetch<Project>(`/api/projects/${id}`, { method: "PATCH", body: data })
+    set({ projects: get().projects.map((p) => (p.id === id ? project : p)) })
     return project
   },
 
   deleteProject: async (id) => {
-    const res = await fetch(`/api/projects/${id}`, { method: "DELETE" })
-    if (!res.ok) throw new Error("Failed to delete project")
+    await apiFetch(`/api/projects/${id}`, { method: "DELETE" })
     set({ projects: get().projects.filter((p) => p.id !== id) })
   },
 
   getProject: async (id) => {
-    const res = await fetch(`/api/projects/${id}`)
-    if (!res.ok) throw new Error("Failed to fetch project")
-    return res.json()
+    return apiFetch<Project>(`/api/projects/${id}`)
   },
 }))

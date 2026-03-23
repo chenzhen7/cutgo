@@ -8,6 +8,7 @@ import type {
   AssetCharacter,
 } from "@/lib/types"
 import { DEFAULT_VIDEO_COMPOSITION_CONFIG, TTS_VOICES } from "@/lib/types"
+import { apiFetch } from "@/lib/api-client"
 
 interface VideoState {
   tasks: VideoComposition[]
@@ -91,9 +92,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
   fetchTasks: async (projectId: string) => {
     set({ isLoading: true, error: null })
     try {
-      const res = await fetch(`/api/videos?projectId=${projectId}`)
-      if (!res.ok) throw new Error("获取合成任务失败")
-      const data = await res.json()
+      const data = await apiFetch<VideoComposition[]>(`/api/videos?projectId=${projectId}`)
       set({ tasks: data, isLoading: false })
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false })
@@ -102,9 +101,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
   fetchEpisodes: async (projectId: string) => {
     try {
-      const res = await fetch(`/api/episodes?projectId=${projectId}`)
-      if (!res.ok) throw new Error("获取分集失败")
-      const data = await res.json()
+      const data = await apiFetch<Episode[]>(`/api/episodes?projectId=${projectId}`)
       set({ episodes: data })
     } catch (e) {
       set({ error: (e as Error).message })
@@ -113,9 +110,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
   fetchAssetCharacters: async (projectId: string) => {
     try {
-      const res = await fetch(`/api/assets/characters?projectId=${projectId}`)
-      if (!res.ok) throw new Error("获取角色失败")
-      const data = await res.json()
+      const data = await apiFetch<AssetCharacter[]>(`/api/assets/characters?projectId=${projectId}`)
       set({ assetCharacters: data })
     } catch (e) {
       set({ error: (e as Error).message })
@@ -124,9 +119,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
   fetchTtsVoices: async () => {
     try {
-      const res = await fetch("/api/videos/tts/voices")
-      if (!res.ok) return
-      const data = await res.json()
+      const data = await apiFetch<{ voices: TtsVoice[] }>("/api/videos/tts/voices")
       set({ ttsVoices: data.voices })
     } catch {
       // 使用默认声线列表
@@ -181,16 +174,10 @@ export const useVideoStore = create<VideoState>((set, get) => ({
     set({ isStarting: true, error: null })
     try {
       const { draftConfig } = get()
-      const res = await fetch("/api/videos", {
+      const data = await apiFetch<{ taskIds?: string[] }>("/api/videos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, episodeIds, config: draftConfig }),
+        body: { projectId, episodeIds, config: draftConfig },
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "启动合成失败")
-      }
-      const data = await res.json()
       set({ isStarting: false })
       await get().fetchTasks(projectId)
       if (data.taskIds && data.taskIds.length > 0) {
@@ -205,8 +192,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
   cancelComposition: async (taskId: string) => {
     try {
-      const res = await fetch(`/api/videos/${taskId}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("取消合成失败")
+      await apiFetch(`/api/videos/${taskId}`, { method: "DELETE" })
       get().stopPolling()
       set((state) => ({
         tasks: state.tasks.filter((t) => t.id !== taskId),
@@ -239,9 +225,7 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
   pollTaskProgress: async (taskId: string) => {
     try {
-      const res = await fetch(`/api/videos/${taskId}`)
-      if (!res.ok) return
-      const data = await res.json()
+      const data = await apiFetch<VideoComposition>(`/api/videos/${taskId}`)
       set((state) => ({
         tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, ...data } : t)),
       }))
@@ -260,15 +244,10 @@ export const useVideoStore = create<VideoState>((set, get) => ({
 
   confirmComposition: async (projectId: string) => {
     try {
-      const res = await fetch("/api/videos/confirm", {
+      await apiFetch("/api/videos/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId }),
+        body: { projectId },
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "确认合成失败")
-      }
     } catch (e) {
       set({ error: (e as Error).message })
       throw e

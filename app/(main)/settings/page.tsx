@@ -42,6 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { AI_PROVIDER_OPTIONS_BY_TYPE } from "@/lib/ai/providers"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 // ── 类型定义 ──
 
@@ -111,12 +112,12 @@ export default function SettingsPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [cfgRes, settingsRes] = await Promise.all([
-        fetch("/api/settings/ai-configs"),
-        fetch("/api/settings"),
+      const [configs, settings] = await Promise.all([
+        apiFetch<AIModelConfig[]>("/api/settings/ai-configs").catch(() => null),
+        apiFetch<Settings>("/api/settings").catch(() => null),
       ])
-      if (cfgRes.ok) setConfigs(await cfgRes.json())
-      if (settingsRes.ok) setSettings(await settingsRes.json())
+      if (configs) setConfigs(configs)
+      if (settings) setSettings(settings)
     } finally {
       setLoading(false)
     }
@@ -180,22 +181,12 @@ export default function SettingsPage() {
         ? `/api/settings/ai-configs/${editingConfig.id}`
         : "/api/settings/ai-configs"
       const method = editingConfig ? "PUT" : "POST"
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        toast.error(err.error ?? "保存失败")
-        return
-      }
-
+      await apiFetch(url, { method, body: form })
       toast.success(editingConfig ? "配置已更新" : "配置已添加")
       setDialogOpen(false)
       await fetchAll()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "保存失败")
     } finally {
       setSaving(false)
     }
@@ -204,11 +195,11 @@ export default function SettingsPage() {
   // 删除配置
   async function handleDelete(cfg: AIModelConfig) {
     if (!confirm(`确认删除配置「${cfg.name}」？`)) return
-    const res = await fetch(`/api/settings/ai-configs/${cfg.id}`, { method: "DELETE" })
-    if (res.ok) {
+    try {
+      await apiFetch(`/api/settings/ai-configs/${cfg.id}`, { method: "DELETE" })
       toast.success("已删除")
       await fetchAll()
-    } else {
+    } catch {
       toast.error("删除失败")
     }
   }
@@ -223,17 +214,14 @@ export default function SettingsPage() {
         video: "activeVideoConfigId",
         tts: "activeTTSConfigId",
       }
-      const res = await fetch("/api/settings", {
+      await apiFetch("/api/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [fieldMap[cfg.type]]: cfg.id }),
+        body: { [fieldMap[cfg.type]]: cfg.id },
       })
-      if (res.ok) {
-        toast.success(`已切换到「${cfg.name}」`)
-        await fetchAll()
-      } else {
-        toast.error("切换失败")
-      }
+      toast.success(`已切换到「${cfg.name}」`)
+      await fetchAll()
+    } catch {
+      toast.error("切换失败")
     } finally {
       setSwitchingId(null)
     }
@@ -244,28 +232,25 @@ export default function SettingsPage() {
     setTestingId(cfg.id)
     setTestResult((prev) => ({ ...prev, [cfg.id]: { ok: false, msg: "测试中..." } }))
     try {
-      const res = await fetch("/api/settings/ai-configs/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: cfg.type,
-          provider: cfg.provider,
-          model: cfg.model,
-          apiKey: cfg.apiKey,
-          baseUrl: cfg.baseUrl,
-        }),
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        setTestResult((prev) => ({ ...prev, [cfg.id]: { ok: true, msg: data.message } }))
-        toast.success(`「${cfg.name}」连接成功`)
-      } else {
-        setTestResult((prev) => ({
-          ...prev,
-          [cfg.id]: { ok: false, msg: data.error ?? "连接失败" },
-        }))
-        toast.error(`「${cfg.name}」${data.error ?? "连接失败"}`)
-      }
+      const data = await apiFetch<{ success: boolean; message: string }>(
+        "/api/settings/ai-configs/test",
+        {
+          method: "POST",
+          body: {
+            type: cfg.type,
+            provider: cfg.provider,
+            model: cfg.model,
+            apiKey: cfg.apiKey,
+            baseUrl: cfg.baseUrl,
+          },
+        }
+      )
+      setTestResult((prev) => ({ ...prev, [cfg.id]: { ok: true, msg: data.message } }))
+      toast.success(`「${cfg.name}」连接成功`)
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "连接失败"
+      setTestResult((prev) => ({ ...prev, [cfg.id]: { ok: false, msg } }))
+      toast.error(`「${cfg.name}」${msg}`)
     } finally {
       setTestingId(null)
     }
