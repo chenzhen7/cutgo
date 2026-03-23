@@ -193,7 +193,6 @@ export interface AssetProp {
   name: string
   description: string | null
   imageUrl: string | null
-  category: string | null
   createdAt: string
   updatedAt: string
 }
@@ -220,7 +219,6 @@ export interface AssetPropInput {
   name: string
   description?: string
   imageUrl?: string
-  category?: string
 }
 
 export type AssetGenerateStatus = "idle" | "generating" | "completed" | "error"

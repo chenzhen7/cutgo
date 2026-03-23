@@ -316,11 +316,6 @@ export function ScriptAssetDialog({
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">{prop.name}</span>
-                                {prop.category && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                    {prop.category}
-                                  </Badge>
-                                )}
                               </div>
                               {prop.description && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">

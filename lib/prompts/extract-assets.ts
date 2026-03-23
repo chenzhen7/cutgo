@@ -29,7 +29,7 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
 
 ### 3. 道具（props）
 - 提取在剧情中有重要作用的道具/物品
-- 每个道具包含：名称、描述、分类
+- 每个道具包含：名称、描述
 
 ## 输出格式
 请严格按以下 JSON 格式输出，不要包含任何额外说明、注释或 markdown 代码块标记：
@@ -54,8 +54,7 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
   "props": [
     {
       "name": "道具名",
-      "description": "道具描述",
-      "category": "文件"
+      "description": "道具描述"
     }
   ]
 }

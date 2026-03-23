@@ -686,9 +686,6 @@ function PropList({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{prop.name}</span>
-                  {prop.category && (
-                    <Badge variant="secondary" className="text-[10px]">{prop.category}</Badge>
-                  )}
                 </div>
                 {prop.description && (
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
@@ -931,7 +928,6 @@ function PropFormDialog({
 }) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -939,11 +935,9 @@ function PropFormDialog({
     if (prop) {
       setName(prop.name)
       setDescription(prop.description || "")
-      setCategory(prop.category || "")
     } else {
       setName("")
       setDescription("")
-      setCategory("")
     }
     setError("")
   }, [prop, open])
@@ -956,7 +950,6 @@ function PropFormDialog({
       await onSave({
         name: name.trim(),
         description: description || undefined,
-        category: category || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -979,10 +972,6 @@ function PropFormDialog({
           <div className="grid gap-2">
             <Label>道具描述</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="道具描述" rows={3} />
-          </div>
-          <div className="grid gap-2">
-            <Label>分类</Label>
-            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="如 文件、首饰、交通工具" />
           </div>
         </div>
         {error && (

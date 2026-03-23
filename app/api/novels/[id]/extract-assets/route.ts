@@ -18,7 +18,6 @@ interface AIAssetResult {
   props: {
     name: string
     description?: string
-    category?: string
   }[]
 }
 
@@ -184,7 +183,6 @@ export async function POST(
             projectId,
             name: p.name,
             description: p.description || null,
-            category: p.category || null,
           },
         })
       )
