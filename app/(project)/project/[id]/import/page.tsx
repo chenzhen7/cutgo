@@ -101,7 +101,7 @@ export default function ImportPage() {
   const isEmpty = chapters.length === 0
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-screen overflow-hidden">
       {/* 顶部 header */}
       <div className="flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0">
         <div className="flex items-center gap-3">
