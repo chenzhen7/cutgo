@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import type { Episode, Storyboard, Script } from "@/lib/types"
+import type { Episode, ScriptShotPlan, Script } from "@/lib/types"
 import {
   buildEpisodeDisplayNumberMap,
   sortEpisodesByChapterAndIndex,
@@ -23,7 +23,7 @@ interface EpisodeSelectDialogProps {
   onOpenChange: (open: boolean) => void
   episodes: Episode[]
   scripts: Script[]
-  storyboards: Storyboard[]
+  scriptShotPlans: ScriptShotPlan[]
   onGenerate: (episodeIds: string[]) => void
 }
 
@@ -32,7 +32,7 @@ export function EpisodeSelectDialog({
   onOpenChange,
   episodes,
   scripts,
-  storyboards,
+  scriptShotPlans,
   onGenerate,
 }: EpisodeSelectDialogProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -57,7 +57,7 @@ export function EpisodeSelectDialog({
     const ungeneratedIds = episodes.filter((ep) => {
       const epScripts = scripts.filter((s) => s.episodeId === ep.id)
       const scriptIds = epScripts.map((s) => s.id)
-      const generatedCount = storyboards.filter(
+      const generatedCount = scriptShotPlans.filter(
         (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
       ).length
       return generatedCount === 0
@@ -69,12 +69,12 @@ export function EpisodeSelectDialog({
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
     const scriptIds = epScripts.map((s) => s.id)
     if (scriptIds.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: 0 }
-    const generatedSbs = storyboards.filter(
+    const generatedPlans = scriptShotPlans.filter(
       (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     )
-    const shotCount = generatedSbs.reduce((sum, sb) => sum + sb.shots.length, 0)
-    if (generatedSbs.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: scriptIds.length }
-    if (generatedSbs.length < scriptIds.length) return { status: "partial" as const, shotCount, scriptCount: scriptIds.length }
+    const shotCount = generatedPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
+    if (generatedPlans.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: scriptIds.length }
+    if (generatedPlans.length < scriptIds.length) return { status: "partial" as const, shotCount, scriptCount: scriptIds.length }
     return { status: "generated" as const, shotCount, scriptCount: scriptIds.length }
   }
 

@@ -13,9 +13,6 @@ export async function GET(request: NextRequest) {
   const episodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
-    include: {
-      scenes: { orderBy: { index: "asc" } },
-    },
   })
 
   return NextResponse.json(episodes)
@@ -61,9 +58,6 @@ export async function POST(request: NextRequest) {
       keyConflict: keyConflict || null,
       cliffhanger: cliffhanger || null,
       duration: duration || "60s",
-    },
-    include: {
-      scenes: { orderBy: { index: "asc" } },
     },
   })
 

@@ -66,16 +66,16 @@ export async function POST(request: NextRequest) {
 
     const mergedConfig = { ...DEFAULT_VIDEO_COMPOSITION_CONFIG, ...config }
 
-    const storyboards = await prisma.storyboard.findMany({
+    const scriptsWithShots = await prisma.script.findMany({
       where: { projectId },
       include: { shots: true },
     })
 
     let totalShots = 0
     let missingImages = 0
-    for (const sb of storyboards) {
-      totalShots += sb.shots.length
-      missingImages += sb.shots.filter((s) => !s.imageUrl).length
+    for (const script of scriptsWithShots) {
+      totalShots += script.shots.length
+      missingImages += script.shots.filter((s) => !s.imageUrl).length
     }
 
     const createdTasks = []

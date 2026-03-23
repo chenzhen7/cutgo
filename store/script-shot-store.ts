@@ -1,28 +1,27 @@
 import { create } from "zustand"
 import type {
-  Storyboard,
+  ScriptShotPlan,
   Shot,
   ShotInput,
-  StoryboardGenerateStatus,
-  StoryboardGenerateProgress,
+  ScriptShotGenerateStatus,
+  ScriptShotGenerateProgress,
   Episode,
   Script,
   AssetCharacter,
   AssetScene,
   AssetProp,
-  ImageType,
 } from "@/lib/types"
 
-interface StoryboardState {
-  storyboards: Storyboard[]
+interface ScriptShotState {
+  scriptShotPlans: ScriptShotPlan[]
   episodes: Episode[]
   scripts: Script[]
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  generateStatus: StoryboardGenerateStatus
+  generateStatus: ScriptShotGenerateStatus
   generateError: string | null
-  generateProgress: StoryboardGenerateProgress | null
+  generateProgress: ScriptShotGenerateProgress | null
 
   activeEpisodeId: string | null
   activeShotId: string | null
@@ -33,40 +32,40 @@ interface StoryboardState {
   batchImageStatus: "idle" | "generating" | "completed" | "error"
   batchImageProgress: { current: number; total: number } | null
 
-  fetchStoryboards: (projectId: string, episodeId?: string) => Promise<void>
+  fetchScriptShotPlans: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<Episode[]>
   fetchScripts: (projectId: string) => Promise<void>
   fetchAssets: (projectId: string) => Promise<void>
 
-  generateStoryboards: (
+  generateScriptShots: (
     projectId: string,
     episodeIds?: string[],
     scriptIds?: string[],
     mode?: "skip_existing" | "overwrite"
   ) => Promise<void>
 
-  createStoryboard: (projectId: string, scriptId: string) => Promise<void>
-  updateStoryboard: (storyboardId: string, data: { status?: string }) => Promise<void>
-  deleteStoryboard: (storyboardId: string) => Promise<void>
+  createScriptShotPlan: (projectId: string, scriptId: string) => Promise<void>
+  updateScriptShotPlan: (scriptId: string, data: { status?: string }) => Promise<void>
+  deleteScriptShotPlan: (scriptId: string) => Promise<void>
 
-  addShot: (storyboardId: string, data: ShotInput) => Promise<void>
-  updateShot: (storyboardId: string, shotId: string, data: Partial<ShotInput>) => Promise<void>
-  deleteShot: (storyboardId: string, shotId: string) => Promise<void>
-  duplicateShot: (storyboardId: string, shotId: string) => Promise<void>
-  reorderShots: (storyboardId: string, orderedIds: string[]) => Promise<void>
+  addShot: (scriptId: string, data: ShotInput) => Promise<void>
+  updateShot: (scriptId: string, shotId: string, data: Partial<ShotInput>) => Promise<void>
+  deleteShot: (scriptId: string, shotId: string) => Promise<void>
+  duplicateShot: (scriptId: string, shotId: string) => Promise<void>
+  reorderShots: (scriptId: string, orderedIds: string[]) => Promise<void>
 
   moveShot: (
     shotId: string,
-    sourceStoryboardId: string,
-    targetStoryboardId: string,
+    sourceScriptId: string,
+    targetScriptId: string,
     targetIndex: number
   ) => Promise<void>
 
-  optimizePrompt: (storyboardId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
+  optimizePrompt: (scriptId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
 
-  generateImage: (storyboardId: string, shotId: string) => Promise<void>
+  generateImage: (scriptId: string, shotId: string) => Promise<void>
   generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
-  clearImage: (storyboardId: string, shotId: string) => Promise<void>
+  clearImage: (scriptId: string, shotId: string) => Promise<void>
 
   setActiveEpisodeId: (episodeId: string | null) => void
   setActiveShotId: (shotId: string | null) => void
@@ -74,17 +73,17 @@ interface StoryboardState {
   toggleShotSelection: (shotId: string) => void
   clearShotSelection: () => void
 
-  confirmStoryboards: (projectId: string) => Promise<void>
+  confirmScriptShots: (projectId: string) => Promise<void>
 
-  activeEpisodeStoryboards: () => Storyboard[]
-  activeShot: () => { shot: Shot; storyboard: Storyboard } | null
-  nextShot: () => { shot: Shot; storyboard: Storyboard } | null
-  prevShot: () => { shot: Shot; storyboard: Storyboard } | null
-  episodeStoryboardStatus: (episodeId: string) => "none" | "partial" | "generated" | "generating" | "error"
-  storyboardStats: () => {
-    storyboardCount: number
+  activeEpisodeScriptShots: () => ScriptShotPlan[]
+  activeShot: () => { shot: Shot; scriptShotPlan: ScriptShotPlan } | null
+  nextShot: () => { shot: Shot; scriptShotPlan: ScriptShotPlan } | null
+  prevShot: () => { shot: Shot; scriptShotPlan: ScriptShotPlan } | null
+  episodeScriptShotStatus: (episodeId: string) => "none" | "partial" | "generated" | "generating" | "error"
+  scriptShotStats: () => {
+    scriptCount: number
     totalShots: number
-    avgShotsPerScene: number
+    avgShotsPerScript: number
     coverage: string
     totalScripts: number
   }
@@ -92,8 +91,8 @@ interface StoryboardState {
   reset: () => void
 }
 
-export const useStoryboardStore = create<StoryboardState>((set, get) => ({
-  storyboards: [],
+export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
+  scriptShotPlans: [],
   episodes: [],
   scripts: [],
   assetCharacters: [],
@@ -111,14 +110,14 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   batchImageStatus: "idle",
   batchImageProgress: null,
 
-  fetchStoryboards: async (projectId, episodeId) => {
+  fetchScriptShotPlans: async (projectId, episodeId) => {
     const url = episodeId
-      ? `/api/storyboards?projectId=${projectId}&episodeId=${episodeId}`
-      : `/api/storyboards?projectId=${projectId}`
+      ? `/api/script-shots?projectId=${projectId}&episodeId=${episodeId}`
+      : `/api/script-shots?projectId=${projectId}`
     const res = await fetch(url)
     if (!res.ok) return
     const data = await res.json()
-    set({ storyboards: data || [] })
+    set({ scriptShotPlans: data || [] })
   },
 
   fetchEpisodes: async (projectId) => {
@@ -147,10 +146,10 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     })
   },
 
-  generateStoryboards: async (projectId, episodeIds, scriptIds, mode = "skip_existing") => {
+  generateScriptShots: async (projectId, episodeIds, scriptIds, mode = "skip_existing") => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
-      const res = await fetch("/api/storyboards/generate", {
+      const res = await fetch("/api/script-shots/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId, episodeIds, scriptIds, mode }),
@@ -161,7 +160,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       }
       const data = await res.json()
       set({
-        storyboards: data.storyboards || [],
+        scriptShotPlans: data.scriptShotPlans || [],
         generateStatus: "completed",
         generateProgress: null,
       })
@@ -174,36 +173,36 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     }
   },
 
-  createStoryboard: async (projectId, scriptId) => {
-    const res = await fetch("/api/storyboards", {
+  createScriptShotPlan: async (projectId, scriptId) => {
+    const res = await fetch("/api/script-shots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, scriptId }),
     })
     if (!res.ok) throw new Error("创建分镜板失败")
     const sb = await res.json()
-    set({ storyboards: [...get().storyboards, sb] })
+    set({ scriptShotPlans: [...get().scriptShotPlans, sb] })
   },
 
-  updateStoryboard: async (storyboardId, data) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}`, {
+  updateScriptShotPlan: async (scriptId, data) => {
+    const res = await fetch(`/api/script-shots/${scriptId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error("更新分镜板失败")
     const updated = await res.json()
-    set({ storyboards: get().storyboards.map((sb) => (sb.id === storyboardId ? { ...sb, ...updated } : sb)) })
+    set({ scriptShotPlans: get().scriptShotPlans.map((sb) => (sb.id === scriptId ? { ...sb, ...updated } : sb)) })
   },
 
-  deleteStoryboard: async (storyboardId) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}`, { method: "DELETE" })
+  deleteScriptShotPlan: async (scriptId) => {
+    const res = await fetch(`/api/script-shots/${scriptId}`, { method: "DELETE" })
     if (!res.ok) throw new Error("删除分镜板失败")
-    set({ storyboards: get().storyboards.filter((sb) => sb.id !== storyboardId) })
+    set({ scriptShotPlans: get().scriptShotPlans.filter((sb) => sb.id !== scriptId) })
   },
 
-  addShot: async (storyboardId, data) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}/shots`, {
+  addShot: async (scriptId, data) => {
+    const res = await fetch(`/api/script-shots/${scriptId}/shots`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -211,14 +210,14 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     if (!res.ok) throw new Error("添加镜头失败")
     const shots: Shot[] = await res.json()
     set({
-      storyboards: get().storyboards.map((sb) =>
-        sb.id === storyboardId ? { ...sb, shots, status: "edited" as const } : sb
+      scriptShotPlans: get().scriptShotPlans.map((sb) =>
+        sb.id === scriptId ? { ...sb, shots, status: "edited" as const } : sb
       ),
     })
   },
 
-  updateShot: async (storyboardId, shotId, data) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}/shots/${shotId}`, {
+  updateShot: async (scriptId, shotId, data) => {
+    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -226,30 +225,30 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     if (!res.ok) throw new Error("更新镜头失败")
     const updated: Shot = await res.json()
     set({
-      storyboards: get().storyboards.map((sb) =>
-        sb.id === storyboardId
+      scriptShotPlans: get().scriptShotPlans.map((sb) =>
+        sb.id === scriptId
           ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)), status: "edited" as const }
           : sb
       ),
     })
   },
 
-  deleteShot: async (storyboardId, shotId) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}/shots/${shotId}`, { method: "DELETE" })
+  deleteShot: async (scriptId, shotId) => {
+    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}`, { method: "DELETE" })
     if (!res.ok) throw new Error("删除镜头失败")
     const shots: Shot[] = await res.json()
     set({
-      storyboards: get().storyboards.map((sb) =>
-        sb.id === storyboardId ? { ...sb, shots } : sb
+      scriptShotPlans: get().scriptShotPlans.map((sb) =>
+        sb.id === scriptId ? { ...sb, shots } : sb
       ),
     })
   },
 
-  duplicateShot: async (storyboardId, shotId) => {
-    const sb = get().storyboards.find((s) => s.id === storyboardId)
+  duplicateShot: async (scriptId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
-    await get().addShot(storyboardId, {
+    await get().addShot(scriptId, {
       shotSize: "medium",
       composition: shot.composition,
       prompt: shot.prompt,
@@ -264,8 +263,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     })
   },
 
-  reorderShots: async (storyboardId, orderedIds) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}/shots/reorder`, {
+  reorderShots: async (scriptId, orderedIds) => {
+    const res = await fetch(`/api/script-shots/${scriptId}/shots/reorder`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedIds }),
@@ -273,34 +272,34 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     if (!res.ok) throw new Error("排序失败")
     const shots: Shot[] = await res.json()
     set({
-      storyboards: get().storyboards.map((sb) =>
-        sb.id === storyboardId ? { ...sb, shots } : sb
+      scriptShotPlans: get().scriptShotPlans.map((sb) =>
+        sb.id === scriptId ? { ...sb, shots } : sb
       ),
     })
   },
 
-  moveShot: async (shotId, sourceStoryboardId, targetStoryboardId, targetIndex) => {
-    const res = await fetch("/api/storyboards/shots/move", {
+  moveShot: async (shotId, sourceScriptId, targetScriptId, targetIndex) => {
+    const res = await fetch("/api/script-shots/shots/move", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shotId, sourceStoryboardId, targetStoryboardId, targetIndex }),
+      body: JSON.stringify({ shotId, sourceScriptId, targetScriptId, targetIndex }),
     })
     if (!res.ok) throw new Error("移动镜头失败")
     const { source, target } = await res.json()
     set({
-      storyboards: get().storyboards.map((sb) => {
-        if (sb.id === sourceStoryboardId) return { ...sb, shots: source.shots }
-        if (sb.id === targetStoryboardId) return { ...sb, shots: target.shots }
+      scriptShotPlans: get().scriptShotPlans.map((sb) => {
+        if (sb.id === sourceScriptId) return { ...sb, shots: source.shots }
+        if (sb.id === targetScriptId) return { ...sb, shots: target.shots }
         return sb
       }),
     })
   },
 
-  optimizePrompt: async (storyboardId, shotId) => {
-    const sb = get().storyboards.find((s) => s.id === storyboardId)
+  optimizePrompt: async (scriptId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) throw new Error("镜头不存在")
-    const res = await fetch(`/api/storyboards/${storyboardId}/shots/${shotId}/optimize-prompt`, {
+    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}/optimize-prompt`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentPrompt: shot.prompt }),
@@ -309,8 +308,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     return await res.json()
   },
 
-  generateImage: async (storyboardId, shotId) => {
-    const sb = get().storyboards.find((s) => s.id === storyboardId)
+  generateImage: async (scriptId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
 
@@ -343,8 +342,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       const updatedShot = data.shot as Shot
 
       set({
-        storyboards: get().storyboards.map((s) =>
-          s.id === storyboardId
+        scriptShotPlans: get().scriptShotPlans.map((s) =>
+          s.id === scriptId
             ? { ...s, shots: s.shots.map((sh) => (sh.id === shotId ? updatedShot : sh)) }
             : s
         ),
@@ -379,7 +378,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       }
 
       set({
-        storyboards: get().storyboards.map((sb) => ({
+        scriptShotPlans: get().scriptShotPlans.map((sb) => ({
           ...sb,
           shots: sb.shots.map((shot) => {
             const update = resultMap.get(shot.id)
@@ -399,8 +398,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     }
   },
 
-  clearImage: async (storyboardId, shotId) => {
-    const res = await fetch(`/api/storyboards/${storyboardId}/shots/${shotId}`, {
+  clearImage: async (scriptId, shotId) => {
+    const res = await fetch(`/api/script-shots/${scriptId}/shots/${shotId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageUrl: null, imageUrls: null }),
@@ -408,8 +407,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     if (!res.ok) throw new Error("清除失败")
     const updated: Shot = await res.json()
     set({
-      storyboards: get().storyboards.map((sb) =>
-        sb.id === storyboardId
+      scriptShotPlans: get().scriptShotPlans.map((sb) =>
+        sb.id === scriptId
           ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
           : sb
       ),
@@ -432,8 +431,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
 
   clearShotSelection: () => set({ selectedShotIds: new Set() }),
 
-  confirmStoryboards: async (projectId) => {
-    const res = await fetch("/api/storyboards/confirm", {
+  confirmScriptShots: async (projectId) => {
+    const res = await fetch("/api/script-shots/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId }),
@@ -444,53 +443,53 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     }
   },
 
-  activeEpisodeStoryboards: () => {
-    const { storyboards, activeEpisodeId } = get()
-    if (!activeEpisodeId) return storyboards
-    return storyboards.filter(
+  activeEpisodeScriptShots: () => {
+    const { scriptShotPlans, activeEpisodeId } = get()
+    if (!activeEpisodeId) return scriptShotPlans
+    return scriptShotPlans.filter(
       (sb) => sb.script?.episodeId === activeEpisodeId
     )
   },
 
   activeShot: () => {
-    const { storyboards, activeShotId } = get()
+    const { scriptShotPlans, activeShotId } = get()
     if (!activeShotId) return null
-    for (const sb of storyboards) {
+    for (const sb of scriptShotPlans) {
       const shot = sb.shots.find((s) => s.id === activeShotId)
-      if (shot) return { shot, storyboard: sb }
+      if (shot) return { shot, scriptShotPlan: sb }
     }
     return null
   },
 
   nextShot: () => {
-    const { storyboards, activeShotId, activeEpisodeId } = get()
+    const { scriptShotPlans, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
     const episodeSbs = activeEpisodeId
-      ? storyboards.filter((sb) => sb.script?.episodeId === activeEpisodeId)
-      : storyboards
-    const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, storyboard: sb })))
+      ? scriptShotPlans.filter((sb) => sb.script?.episodeId === activeEpisodeId)
+      : scriptShotPlans
+    const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, scriptShotPlan: sb })))
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
     return idx >= 0 && idx < allShots.length - 1 ? allShots[idx + 1] : null
   },
 
   prevShot: () => {
-    const { storyboards, activeShotId, activeEpisodeId } = get()
+    const { scriptShotPlans, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
     const episodeSbs = activeEpisodeId
-      ? storyboards.filter((sb) => sb.script?.episodeId === activeEpisodeId)
-      : storyboards
-    const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, storyboard: sb })))
+      ? scriptShotPlans.filter((sb) => sb.script?.episodeId === activeEpisodeId)
+      : scriptShotPlans
+    const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, scriptShotPlan: sb })))
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
     return idx > 0 ? allShots[idx - 1] : null
   },
 
-  episodeStoryboardStatus: (episodeId) => {
-    const { storyboards, scripts, generateStatus } = get()
+  episodeScriptShotStatus: (episodeId) => {
+    const { scriptShotPlans, scripts, generateStatus } = get()
     if (generateStatus === "generating") return "generating"
     const episodeScripts = scripts.filter((s) => s.episodeId === episodeId)
     const scriptIds = episodeScripts.map((s) => s.id)
     if (scriptIds.length === 0) return "none"
-    const generatedCount = storyboards.filter(
+    const generatedCount = scriptShotPlans.filter(
       (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     ).length
     if (generatedCount === 0) return "none"
@@ -498,15 +497,15 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     return "generated"
   },
 
-  storyboardStats: () => {
-    const { storyboards, scripts } = get()
+  scriptShotStats: () => {
+    const { scriptShotPlans, scripts } = get()
     const totalScripts = scripts.length
-    const generatedSbs = storyboards.filter((sb) => sb.shots.length > 0)
-    const totalShots = storyboards.reduce((sum, sb) => sum + sb.shots.length, 0)
+    const generatedSbs = scriptShotPlans.filter((sb) => sb.shots.length > 0)
+    const totalShots = scriptShotPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
     return {
-      storyboardCount: generatedSbs.length,
+      scriptCount: generatedSbs.length,
       totalShots,
-      avgShotsPerScene: generatedSbs.length > 0 ? Math.round((totalShots / generatedSbs.length) * 10) / 10 : 0,
+      avgShotsPerScript: generatedSbs.length > 0 ? Math.round((totalShots / generatedSbs.length) * 10) / 10 : 0,
       coverage: `${generatedSbs.length}/${totalScripts}`,
       totalScripts,
     }
@@ -514,7 +513,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
 
   reset: () => {
     set({
-      storyboards: [],
+      scriptShotPlans: [],
       episodes: [],
       scripts: [],
       assetCharacters: [],

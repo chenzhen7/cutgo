@@ -5,7 +5,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: storyboardId } = await params
+  const { id: scriptId } = await params
   const body = await request.json()
 
   const {
@@ -33,7 +33,7 @@ export async function POST(
   }
 
   const existingShots = await prisma.shot.findMany({
-    where: { storyboardId },
+    where: { scriptId },
     orderBy: { index: "asc" },
   })
 
@@ -55,7 +55,7 @@ export async function POST(
 
   await prisma.shot.create({
     data: {
-      storyboardId,
+      scriptId,
       index: newIndex,
       shotSize,
       cameraMovement,
@@ -73,13 +73,13 @@ export async function POST(
     },
   })
 
-  await prisma.storyboard.update({
-    where: { id: storyboardId },
+  await prisma.script.update({
+    where: { id: scriptId },
     data: { status: "edited" },
   })
 
   const shots = await prisma.shot.findMany({
-    where: { storyboardId },
+    where: { scriptId },
     orderBy: { index: "asc" },
   })
 

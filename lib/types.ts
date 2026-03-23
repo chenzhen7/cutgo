@@ -307,12 +307,12 @@ export const STYLE_PRESETS = [
 export const DEFAULT_NEGATIVE_PROMPTS =
   "bad anatomy, text, watermark, low quality, blurry, deformed, extra limbs, disfigured"
 
-// ── Storyboard Types ──
+// ── Script Shot Plan Types ──
 
 export type ShotSize = "extreme_wide" | "wide" | "medium" | "medium_close" | "close" | "extreme_close"
 export type CameraMovement = "static" | "push_in" | "pull_out" | "pan" | "tilt" | "tracking" | "orbit" | "crane" | "handheld"
 export type CameraAngle = "eye_level" | "high" | "low" | "birds_eye" | "dutch"
-export type StoryboardStatus = "draft" | "generated" | "edited"
+export type ScriptShotPlanStatus = "draft" | "generated" | "edited"
 
 export const SHOT_SIZE_OPTIONS: { value: ShotSize; label: string; en: string }[] = [
   { value: "extreme_wide", label: "远景", en: "Extreme Wide Shot" },
@@ -360,7 +360,7 @@ export const GRID_LAYOUT_OPTIONS: { value: GridLayout; label: string; cols: numb
 
 export interface Shot {
   id: string
-  storyboardId: string
+  scriptId: string
   index: number
   shotSize: ShotSize
   cameraMovement: CameraMovement
@@ -398,7 +398,7 @@ export const VIDEO_MOTION_OPTIONS: { value: string; label: string }[] = [
   { value: "high", label: "高" },
 ]
 
-export interface Storyboard {
+export interface ScriptShotPlan {
   id: string
   projectId: string
   scriptId: string
@@ -413,15 +413,15 @@ export interface Storyboard {
       title: string
     }
   }
-  status: StoryboardStatus
+  status: ScriptShotPlanStatus
   shots: Shot[]
   createdAt: string
   updatedAt: string
 }
 
-export type StoryboardGenerateStatus = "idle" | "generating" | "completed" | "error"
+export type ScriptShotGenerateStatus = "idle" | "generating" | "completed" | "error"
 
-export interface StoryboardGenerateProgress {
+export interface ScriptShotGenerateProgress {
   current: number
   total: number
   currentSceneTitle: string
@@ -455,12 +455,12 @@ export interface ShotInput {
   insertAfter?: string
 }
 
-export interface StoryboardGenerateResult {
-  storyboards: Storyboard[]
+export interface ScriptShotGenerateResult {
+  scriptShotPlans: ScriptShotPlan[]
   stats: {
-    storyboardCount: number
+    scriptCount: number
     totalShots: number
-    avgShotsPerScene: number
+    avgShotsPerScript: number
     generatedScenes: number
     skippedScenes: number
   }

@@ -26,7 +26,7 @@ interface AIAssetResult {
 }
 
 async function callAIExtractAssets(
-  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[]
+  episodes: { title: string; outline: string | null }[]
 ): Promise<AIAssetResult> {
   const apiKey = process.env.OPENAI_API_KEY
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
@@ -39,7 +39,7 @@ async function callAIExtractAssets(
   const episodesText = episodes
     .map(
       (ep) =>
-        `【${ep.title}】${ep.outline || ""}\n场景：${ep.scenes.map((s) => `${s.title}: ${s.summary} (角色: ${s.characters || "无"})`).join("; ")}`
+        `【${ep.title}】${ep.outline || ""}`
     )
     .join("\n\n")
 
@@ -136,43 +136,13 @@ ${episodesText}
 }
 
 function extractAssetsLocally(
-  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[]
+  episodes: { title: string; outline: string | null }[]
 ): AIAssetResult {
-  const characterNames = new Set<string>()
-  for (const ep of episodes) {
-    for (const scene of ep.scenes) {
-      if (scene.characters) {
-        try {
-          const chars = JSON.parse(scene.characters) as string[]
-          chars.forEach((c) => characterNames.add(c))
-        } catch { /* ignore */ }
-      }
-    }
-  }
-
-  const characters: AIAssetResult["characters"] = []
-  for (const name of characterNames) {
-    characters.push({
-      name,
-      role: "supporting",
-    })
-  }
-
-  const sceneNames = new Set<string>()
-  const scenes: AIAssetResult["scenes"] = []
-  for (const ep of episodes) {
-    for (const scene of ep.scenes) {
-      if (!sceneNames.has(scene.title)) {
-        sceneNames.add(scene.title)
-        scenes.push({
-          name: scene.title,
-          description: scene.summary.slice(0, 100),
-        })
-      }
-    }
-  }
-
-  return { characters, scenes, props: [] }
+  const scenes: AIAssetResult["scenes"] = episodes.map((ep) => ({
+    name: ep.title,
+    description: (ep.outline || "").slice(0, 100) || undefined,
+  }))
+  return { characters: [], scenes, props: [] }
 }
 
 export async function POST(request: NextRequest) {
@@ -191,7 +161,6 @@ export async function POST(request: NextRequest) {
   const episodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
-    include: { scenes: { orderBy: { index: "asc" } } },
   })
 
   if (episodes.length === 0) {
@@ -240,11 +209,6 @@ export async function POST(request: NextRequest) {
       episodes.map((ep) => ({
         title: ep.title,
         outline: ep.outline,
-        scenes: ep.scenes.map((s) => ({
-          title: s.title,
-          summary: s.summary,
-          characters: s.characters,
-        })),
       }))
     )
 

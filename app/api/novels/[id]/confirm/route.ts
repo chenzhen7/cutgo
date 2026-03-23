@@ -37,15 +37,6 @@ export async function POST(
           index: episodeIndex,
           title: ch.title?.trim() || `第${episodeIndex}集`,
           outline: ch.content.slice(0, 1200),
-          scenes: {
-            create: [
-              {
-                index: 1,
-                title: "主场景",
-                summary: ch.content.slice(0, 500),
-              },
-            ],
-          },
         },
       })
     }

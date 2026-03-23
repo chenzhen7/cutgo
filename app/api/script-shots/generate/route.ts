@@ -9,24 +9,46 @@ interface AIShotResult {
   actionNote?: string
 }
 
-interface AIStoryboardResult {
+interface AIScriptShotResult {
   shots: AIShotResult[]
 }
 
-const storyboardInclude = {
-  script: {
-    select: {
-      id: true,
-      title: true,
-      content: true,
-      episodeId: true,
-      episode: { select: { id: true, index: true, title: true } },
-    },
-  },
+const scriptWithShotsInclude = {
+  episode: { select: { id: true, index: true, title: true } },
   shots: { orderBy: { index: "asc" as const } },
 }
 
-async function callAIGenerateStoryboard(
+function toScriptShotPlan(script: {
+  id: string
+  projectId: string
+  title: string
+  content: string
+  episodeId: string
+  status: string
+  createdAt: Date
+  updatedAt: Date
+  episode: { id: string; index: number; title: string }
+  shots: unknown[]
+}) {
+  return {
+    id: script.id,
+    projectId: script.projectId,
+    scriptId: script.id,
+    script: {
+      id: script.id,
+      title: script.title,
+      content: script.content,
+      episodeId: script.episodeId,
+      episode: script.episode,
+    },
+    status: script.status,
+    shots: script.shots,
+    createdAt: script.createdAt,
+    updatedAt: script.updatedAt,
+  }
+}
+
+async function callAIGenerateScriptShots(
   scriptTitle: string,
   scriptContent: string,
   scriptCharacters: string | null,
@@ -39,13 +61,13 @@ async function callAIGenerateStoryboard(
   stylePreset: string | null,
   globalNegPrompt: string | null,
   previousShotStr: string | null
-): Promise<AIStoryboardResult> {
+): Promise<AIScriptShotResult> {
   const apiKey = process.env.OPENAI_API_KEY
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
 
   if (!apiKey) {
-    return generateLocalStoryboard(scriptTitle, scriptContent)
+    return generateLocalScriptShots(scriptTitle, scriptContent)
   }
 
   const prompt = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的画面描述提示词。
@@ -127,25 +149,25 @@ ${previousShotStr ? `## 前一个剧本最后一个镜头信息\n${previousShotS
 
     if (!response.ok) {
       console.error("AI API error:", response.status)
-      return generateLocalStoryboard(scriptTitle, scriptContent)
+      return generateLocalScriptShots(scriptTitle, scriptContent)
     }
 
     const data = await response.json()
     const content = data.choices?.[0]?.message?.content
-    if (!content) return generateLocalStoryboard(scriptTitle, scriptContent)
+    if (!content) return generateLocalScriptShots(scriptTitle, scriptContent)
 
     const parsed = JSON.parse(content)
     return { shots: parsed.shots || [] }
   } catch (err) {
-    console.error("AI storyboard generation failed, falling back to local:", err)
-    return generateLocalStoryboard(scriptTitle, scriptContent)
+    console.error("AI script-shot generation failed, falling back to local:", err)
+    return generateLocalScriptShots(scriptTitle, scriptContent)
   }
 }
 
-function generateLocalStoryboard(
+function generateLocalScriptShots(
   scriptTitle: string,
   scriptContent: string
-): AIStoryboardResult {
+): AIScriptShotResult {
   const contentLength = scriptContent.length
   const shotCount = Math.max(2, Math.min(Math.ceil(contentLength / 200), 6))
 
@@ -189,26 +211,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "没有可生成的剧本" }, { status: 400 })
   }
 
-  const existingStoryboardScriptIds = new Set(
-    (await prisma.storyboard.findMany({
-      where: { projectId },
+  const existingShotScriptIds = new Set(
+    (await prisma.shot.findMany({
+      where: { script: { projectId } },
       select: { scriptId: true },
-    })).map((sb) => sb.scriptId)
+      distinct: ["scriptId"],
+    })).map((item) => item.scriptId)
   )
 
   let skippedScripts = 0
 
   if (mode === "skip_existing") {
     const before = targetScripts.length
-    targetScripts = targetScripts.filter((s) => !existingStoryboardScriptIds.has(s.id))
+    targetScripts = targetScripts.filter((s) => !existingShotScriptIds.has(s.id))
     skippedScripts = before - targetScripts.length
   } else if (mode === "overwrite") {
     const overwriteIds = targetScripts
-      .filter((s) => existingStoryboardScriptIds.has(s.id))
+      .filter((s) => existingShotScriptIds.has(s.id))
       .map((s) => s.id)
     if (overwriteIds.length > 0) {
-      await prisma.storyboard.deleteMany({
-        where: { projectId, scriptId: { in: overwriteIds } },
+      await prisma.shot.deleteMany({
+        where: { scriptId: { in: overwriteIds } },
       })
     }
   }
@@ -236,7 +259,7 @@ export async function POST(request: NextRequest) {
 
   try {
     for (const script of targetScripts) {
-      const aiResult = await callAIGenerateStoryboard(
+      const aiResult = await callAIGenerateScriptShots(
         script.title,
         script.content,
         script.characters,
@@ -263,29 +286,27 @@ export async function POST(request: NextRequest) {
         .filter((p) => scriptPropNames.includes(p.name))
         .map((p) => p.id)
 
-      await prisma.storyboard.create({
-        data: {
-          projectId,
+      await prisma.shot.createMany({
+        data: (aiResult.shots || []).map((shot, si) => ({
           scriptId: script.id,
-          status: "generated",
-          shots: {
-            create: (aiResult.shots || []).map((shot, si) => ({
-              index: si,
-              shotSize: "medium",
-              cameraMovement: "static",
-              cameraAngle: "eye_level",
-              composition: shot.composition || "",
-              prompt: shot.prompt || "",
-              negativePrompt: shot.negativePrompt || null,
-              duration: "3s",
-              dialogueText: shot.dialogueText || null,
-              actionNote: shot.actionNote || null,
-              characterIds: matchedCharacterIds.length > 0 ? JSON.stringify(matchedCharacterIds) : null,
-              sceneId: matchedScene?.id || null,
-              propIds: matchedPropIds.length > 0 ? JSON.stringify(matchedPropIds) : null,
-            })),
-          },
-        },
+          index: si,
+          shotSize: "medium",
+          cameraMovement: "static",
+          cameraAngle: "eye_level",
+          composition: shot.composition || "",
+          prompt: shot.prompt || "",
+          negativePrompt: shot.negativePrompt || null,
+          duration: "3s",
+          dialogueText: shot.dialogueText || null,
+          actionNote: shot.actionNote || null,
+          characterIds: matchedCharacterIds.length > 0 ? JSON.stringify(matchedCharacterIds) : null,
+          sceneId: matchedScene?.id || null,
+          propIds: matchedPropIds.length > 0 ? JSON.stringify(matchedPropIds) : null,
+        })),
+      })
+      await prisma.script.update({
+        where: { id: script.id },
+        data: { status: "generated" },
       })
 
       if (aiResult.shots?.length) {
@@ -294,34 +315,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const allStoryboards = await prisma.storyboard.findMany({
+    const scriptsWithShots = await prisma.script.findMany({
       where: { projectId },
       orderBy: { createdAt: "asc" },
-      include: storyboardInclude,
+      include: scriptWithShotsInclude,
     })
+    const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
 
-    const totalShots = allStoryboards.reduce((sum, sb) => sum + sb.shots.length, 0)
-    const generatedSbs = allStoryboards.filter((sb) => sb.shots.length > 0)
+    const totalShots = allScriptShotPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
+    const generatedPlans = allScriptShotPlans.filter((sb) => sb.shots.length > 0)
 
     return NextResponse.json({
-      storyboards: allStoryboards,
+      scriptShotPlans: allScriptShotPlans,
       stats: {
-        storyboardCount: generatedSbs.length,
+        scriptCount: generatedPlans.length,
         totalShots,
-        avgShotsPerScene: generatedSbs.length > 0 ? Math.round(totalShots / generatedSbs.length * 10) / 10 : 0,
+        avgShotsPerScript: generatedPlans.length > 0 ? Math.round(totalShots / generatedPlans.length * 10) / 10 : 0,
         generatedScripts: targetScripts.length,
         skippedScripts,
       },
     })
   } catch (err) {
-    console.error("Storyboard generation failed:", err)
-    const allStoryboards = await prisma.storyboard.findMany({
+    console.error("Script-shot generation failed:", err)
+    const scriptsWithShots = await prisma.script.findMany({
       where: { projectId },
       orderBy: { createdAt: "asc" },
-      include: storyboardInclude,
+      include: scriptWithShotsInclude,
     })
+    const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
     return NextResponse.json(
-      { error: "部分剧本生成失败", storyboards: allStoryboards },
+      { error: "部分剧本生成失败", scriptShotPlans: allScriptShotPlans },
       { status: 500 }
     )
   }

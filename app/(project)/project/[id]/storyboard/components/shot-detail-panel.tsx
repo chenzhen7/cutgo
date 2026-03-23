@@ -44,18 +44,18 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS, VIDEO_DURATION_OPTIONS, VIDEO_MOTION_OPTIONS } from "@/lib/types"
-import type { Shot, Storyboard, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
+import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
 
 interface ShotDetailPanelProps {
   shot: Shot
-  storyboard: Storyboard
+  scriptShotPlan: ScriptShotPlan
   episodeDisplayNumber: number
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onUpdate: (storyboardId: string, shotId: string, data: Partial<ShotInput>) => void
+  onUpdate: (scriptId: string, shotId: string, data: Partial<ShotInput>) => void
   onGenerateImage: () => void
   onClearImage: () => void
   onGenerateVideo: () => void
@@ -73,7 +73,7 @@ function parseJsonArray(value: string | null): string[] {
 
 export function ShotDetailPanel({
   shot,
-  storyboard,
+  scriptShotPlan,
   episodeDisplayNumber,
   isGeneratingImage,
   isGeneratingVideo,
@@ -122,9 +122,9 @@ export function ShotDetailPanel({
 
   const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
-      onUpdate(storyboard.id, shot.id, data)
+      onUpdate(scriptShotPlan.id, shot.id, data)
     },
-    [onUpdate, storyboard.id, shot.id]
+    [onUpdate, scriptShotPlan.id, shot.id]
   )
 
   const debouncedUpdate = useMemo(
@@ -133,11 +133,11 @@ export function ShotDetailPanel({
       return (data: Partial<ShotInput>) => {
         clearTimeout(timer)
         timer = setTimeout(() => {
-          onUpdate(storyboard.id, shot.id, data)
+          onUpdate(scriptShotPlan.id, shot.id, data)
         }, 500)
       }
     },
-    [onUpdate, storyboard.id, shot.id]
+    [onUpdate, scriptShotPlan.id, shot.id]
   )
 
   const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
@@ -205,7 +205,7 @@ export function ShotDetailPanel({
   const imageType = shot.imageType || "keyframe"
   const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const hasImage = !!shot.imageUrl
-  const script = storyboard.script
+  const script = scriptShotPlan.script
   const currentGridLayout = GRID_LAYOUT_OPTIONS.find((o) => o.value === (shot.gridLayout || "2x2")) || GRID_LAYOUT_OPTIONS[0]
 
   return (

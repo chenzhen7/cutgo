@@ -5,7 +5,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; shotId: string }> }
 ) {
-  const { id: storyboardId, shotId } = await params
+  const { id: scriptId, shotId } = await params
   const body = await request.json()
 
   const updateData: Record<string, unknown> = {}
@@ -29,8 +29,8 @@ export async function PATCH(
     data: updateData,
   })
 
-  await prisma.storyboard.update({
-    where: { id: storyboardId },
+  await prisma.script.update({
+    where: { id: scriptId },
     data: { status: "edited" },
   })
 
@@ -41,12 +41,12 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; shotId: string }> }
 ) {
-  const { id: storyboardId, shotId } = await params
+  const { id: scriptId, shotId } = await params
 
   await prisma.shot.delete({ where: { id: shotId } })
 
   const remaining = await prisma.shot.findMany({
-    where: { storyboardId },
+    where: { scriptId },
     orderBy: { index: "asc" },
   })
 
@@ -60,7 +60,7 @@ export async function DELETE(
   }
 
   const shots = await prisma.shot.findMany({
-    where: { storyboardId },
+    where: { scriptId },
     orderBy: { index: "asc" },
   })
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { useDefaultLayout } from "react-resizable-panels"
 import { useParams } from "next/navigation"
-import { useStoryboardStore } from "@/store/storyboard-store"
+import { useScriptShotsStore } from "@/store/script-shot-store"
 import { useVideoEditorStore } from "@/store/video-editor-store"
 import {
   ResizableHandle,
@@ -30,15 +30,15 @@ export default function VideoPage() {
   const [exportOpen, setExportOpen] = useState(false)
   const [rightTab, setRightTab] = useState<string>("properties")
 
-  const fetchStoryboards = useStoryboardStore(s => s.fetchStoryboards)
-  const fetchEpisodes = useStoryboardStore(s => s.fetchEpisodes)
-  const storyboards = useStoryboardStore(s => s.storyboards)
-  const episodes = useStoryboardStore(s => s.episodes)
+  const fetchScriptShotPlans = useScriptShotsStore((s) => s.fetchScriptShotPlans)
+  const fetchEpisodes = useScriptShotsStore((s) => s.fetchEpisodes)
+  const scriptShotPlans = useScriptShotsStore((s) => s.scriptShotPlans)
+  const episodes = useScriptShotsStore((s) => s.episodes)
 
   const videoClips = useVideoEditorStore(s => s.videoClips)
   const selectedClipId = useVideoEditorStore(s => s.selectedClipId)
   const duration = useVideoEditorStore(s => s.duration)
-  const initFromStoryboards = useVideoEditorStore(s => s.initFromStoryboards)
+  const initFromScriptShotPlans = useVideoEditorStore((s) => s.initFromScriptShotPlans)
   const setActiveEpisodeId = useVideoEditorStore(s => s.setActiveEpisodeId)
 
   const activeEpisodeId = useVideoEditorStore(s => s.activeEpisodeId)
@@ -48,20 +48,20 @@ export default function VideoPage() {
       setLoading(true)
       await Promise.all([
         fetchEpisodes(projectId),
-        fetchStoryboards(projectId),
+        fetchScriptShotPlans(projectId),
       ])
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, fetchStoryboards])
+  }, [projectId, fetchEpisodes, fetchScriptShotPlans])
 
   useEffect(() => {
-    if (storyboards.length > 0 && episodes.length > 0 && !activeEpisodeId) {
+    if (scriptShotPlans.length > 0 && episodes.length > 0 && !activeEpisodeId) {
       const sorted = sortEpisodesByChapterAndIndex(episodes)
       const defaultEpisodeId = sorted[0]?.id
-      initFromStoryboards(storyboards, episodes, defaultEpisodeId)
+      initFromScriptShotPlans(scriptShotPlans, episodes, defaultEpisodeId)
     }
-  }, [storyboards, episodes, activeEpisodeId, initFromStoryboards, setActiveEpisodeId])
+  }, [scriptShotPlans, episodes, activeEpisodeId, initFromScriptShotPlans, setActiveEpisodeId])
 
   useEffect(() => {
     if (selectedClipId) {
@@ -82,8 +82,8 @@ export default function VideoPage() {
   }
 
   const hasVideoShots = useMemo(() =>
-    storyboards.some((sb) => sb.shots.some((s) => s.videoUrl)),
-    [storyboards]
+    scriptShotPlans.some((sb) => sb.shots.some((s) => s.videoUrl)),
+    [scriptShotPlans]
   )
 
   if (loading) {

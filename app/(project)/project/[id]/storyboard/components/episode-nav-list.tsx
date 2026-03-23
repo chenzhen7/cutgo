@@ -3,13 +3,13 @@
 import { useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { CheckCircle2, Circle, Clock } from "lucide-react"
-import type { Episode, Script, Storyboard } from "@/lib/types"
+import type { Episode, Script, ScriptShotPlan } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 interface EpisodeNavListProps {
   episodes: Episode[]
   scripts: Script[]
-  storyboards: Storyboard[]
+  scriptShotPlans: ScriptShotPlan[]
   activeEpisodeId: string | null
   onSelectEpisode: (episodeId: string) => void
 }
@@ -17,7 +17,7 @@ interface EpisodeNavListProps {
 export function EpisodeNavList({
   episodes,
   scripts,
-  storyboards,
+  scriptShotPlans,
   activeEpisodeId,
   onSelectEpisode,
 }: EpisodeNavListProps) {
@@ -29,14 +29,14 @@ export function EpisodeNavList({
   const getEpisodeInfo = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
     const scriptIds = epScripts.map((s) => s.id)
-    const epStoryboards = storyboards.filter(
+    const episodePlans = scriptShotPlans.filter(
       (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     )
-    const shotCount = epStoryboards.reduce((sum, sb) => sum + sb.shots.length, 0)
+    const shotCount = episodePlans.reduce((sum, sb) => sum + sb.shots.length, 0)
 
     let status: "none" | "partial" | "generated" = "none"
-    if (epStoryboards.length > 0 && epStoryboards.length >= scriptIds.length) status = "generated"
-    else if (epStoryboards.length > 0) status = "partial"
+    if (episodePlans.length > 0 && episodePlans.length >= scriptIds.length) status = "generated"
+    else if (episodePlans.length > 0) status = "partial"
 
     return { scriptCount: scriptIds.length, shotCount, status }
   }

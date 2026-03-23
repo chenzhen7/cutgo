@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import type { Shot, Storyboard, Episode } from "@/lib/types"
+import type { ScriptShotPlan, Episode } from "@/lib/types"
 
 export interface TimelineClip {
   id: string
@@ -72,7 +72,7 @@ export interface SubtitleClip {
 export type ExportStatus = "idle" | "preparing" | "compositing" | "completed" | "error"
 
 interface VideoEditorState {
-  storyboards: Storyboard[]
+  scriptShotPlans: ScriptShotPlan[]
   episodes: Episode[]
   activeEpisodeId: string | null
 
@@ -101,7 +101,7 @@ interface VideoEditorState {
 
   isLoading: boolean
 
-  initFromStoryboards: (storyboards: Storyboard[], episodes: Episode[], episodeId?: string) => void
+  initFromScriptShotPlans: (scriptShotPlans: ScriptShotPlan[], episodes: Episode[], episodeId?: string) => void
   setActiveEpisodeId: (id: string | null) => void
 
   addVideoClip: (clip: Omit<TimelineClip, "id">) => void
@@ -152,7 +152,7 @@ const DEFAULT_TRACKS: Track[] = [
 ]
 
 export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
-  storyboards: [],
+  scriptShotPlans: [],
   episodes: [],
   activeEpisodeId: null,
 
@@ -181,12 +181,12 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
 
   isLoading: false,
 
-  initFromStoryboards: (storyboards, episodes, episodeId) => {
-    const filteredSbs = episodeId
-      ? storyboards.filter((sb) => sb.script?.episode?.id === episodeId)
-      : storyboards
+  initFromScriptShotPlans: (scriptShotPlans, episodes, episodeId) => {
+    const filteredPlans = episodeId
+      ? scriptShotPlans.filter((sb) => sb.script?.episode?.id === episodeId)
+      : scriptShotPlans
 
-    const shotsWithVideo = filteredSbs
+    const shotsWithVideo = filteredPlans
       .flatMap((sb) => sb.shots)
       .filter((s) => s.videoUrl)
       .sort((a, b) => a.index - b.index)
@@ -234,7 +234,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
       })
 
     set({
-      storyboards,
+      scriptShotPlans,
       episodes,
       activeEpisodeId: episodeId || null,
       videoClips,
@@ -252,9 +252,9 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
   },
 
   setActiveEpisodeId: (id) => {
-    const { storyboards, episodes } = get()
+    const { scriptShotPlans, episodes } = get()
     set({ activeEpisodeId: id })
-    get().initFromStoryboards(storyboards, episodes, id || undefined)
+    get().initFromScriptShotPlans(scriptShotPlans, episodes, id || undefined)
   },
 
   addVideoClip: (clip) => {
@@ -447,7 +447,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
   reset: () => {
     clipIdCounter = 0
     set({
-      storyboards: [],
+      scriptShotPlans: [],
       episodes: [],
       activeEpisodeId: null,
       tracks: DEFAULT_TRACKS,

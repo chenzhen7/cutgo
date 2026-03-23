@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { CheckCircle2, Circle, Clock, ChevronRight, Film } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Episode, Script, Storyboard } from "@/lib/types"
+import type { Episode, Script, ScriptShotPlan } from "@/lib/types"
 import {
   buildEpisodeDisplayNumberMap,
   sortEpisodesByChapterAndIndex,
@@ -12,14 +12,14 @@ import {
 interface EpisodeSelectViewProps {
   episodes: Episode[]
   scripts: Script[]
-  storyboards: Storyboard[]
+  scriptShotPlans: ScriptShotPlan[]
   onSelectEpisode: (episodeId: string) => void
 }
 
 export function EpisodeSelectView({
   episodes,
   scripts,
-  storyboards,
+  scriptShotPlans,
   onSelectEpisode,
 }: EpisodeSelectViewProps) {
   const orderedEpisodes = useMemo(
@@ -34,14 +34,14 @@ export function EpisodeSelectView({
   const getEpisodeInfo = (episodeId: string) => {
     const epScripts = scripts.filter((s) => s.episodeId === episodeId)
     const scriptIds = epScripts.map((s) => s.id)
-    const epStoryboards = storyboards.filter(
+    const episodePlans = scriptShotPlans.filter(
       (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
     )
-    const shotCount = epStoryboards.reduce((sum, sb) => sum + sb.shots.length, 0)
+    const shotCount = episodePlans.reduce((sum, sb) => sum + sb.shots.length, 0)
 
     let status: "none" | "partial" | "generated" = "none"
-    if (epStoryboards.length > 0 && epStoryboards.length >= scriptIds.length) status = "generated"
-    else if (epStoryboards.length > 0) status = "partial"
+    if (episodePlans.length > 0 && episodePlans.length >= scriptIds.length) status = "generated"
+    else if (episodePlans.length > 0) status = "partial"
 
     return { scriptCount: scriptIds.length, shotCount, status }
   }

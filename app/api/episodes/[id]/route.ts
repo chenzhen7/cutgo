@@ -23,9 +23,6 @@ export async function PATCH(
         chapterIds: normalizeChapterIdsFromBody(body.chapterIds),
       }),
     },
-    include: {
-      scenes: { orderBy: { index: "asc" } },
-    },
   })
 
   return NextResponse.json(episode)
@@ -47,9 +44,6 @@ export async function DELETE(
   const remaining = await prisma.episode.findMany({
     where: { projectId: episode.projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
-    include: {
-      scenes: { orderBy: { index: "asc" } },
-    },
   })
 
   return NextResponse.json(remaining)

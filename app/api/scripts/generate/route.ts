@@ -26,10 +26,10 @@ async function callAIGenerateScript(
     return generateLocalScript(episodeTitle, episodeSynopsis)
   }
 
-  const prompt = `你是一位资深短剧编剧，擅长将分集梗概与场景要点转化为高质量的竖屏短剧剧本。
+  const prompt = `你是一位资深短剧编剧，擅长将分集梗概转化为高质量的竖屏短剧剧本。
 
 ## 任务
-请基于以下分集信息与场景列表，生成该集的完整剧本文本。
+请基于以下分集信息，生成该集的完整剧本文本。
 
 ## 当前分集信息
 - 集标题：${episodeTitle}
@@ -38,7 +38,7 @@ async function callAIGenerateScript(
 - 结尾钩子：${cliffhanger || "无"}
 - 目标时长：${episodeDuration}
 
-## 大纲场景列表
+## 大纲要点（结构参考）
 ${scenesJson}
 
 ## 来源章节原文（供参考，提取对白和描写素材）
@@ -191,9 +191,6 @@ export async function POST(request: NextRequest) {
   let targetEpisodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
-    include: {
-      scenes: { orderBy: { index: "asc" } },
-    },
   })
 
   if (episodeIds?.length) {
@@ -267,15 +264,15 @@ export async function POST(request: NextRequest) {
 
   try {
     for (const episode of targetEpisodes) {
-      const scenesJson = JSON.stringify(
-        episode.scenes.map((s) => ({
-          title: s.title,
-          summary: s.summary,
-          duration: s.duration,
-          characters: s.characters,
-          emotion: s.emotion,
-        }))
-      )
+      const scenesJson = JSON.stringify([
+        {
+          title: episode.title,
+          summary: episode.outline ?? "",
+          duration: episode.duration,
+          characters: null,
+          emotion: null,
+        },
+      ])
 
       const sourceIds = parseSourceChapterIds(episode)
       const chapterContent = sourceIds

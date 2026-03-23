@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useStoryboardStore } from "@/store/storyboard-store"
+import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
 import { Loader2, LayoutGrid, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -29,7 +29,7 @@ import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import type { ShotCardDisplayMode } from "./components/shot-card"
-import type { Storyboard, ShotInput, Shot } from "@/lib/types"
+import type { ScriptShotPlan, ShotInput, Shot } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 
 export default function StoryboardPage() {
@@ -38,7 +38,7 @@ export default function StoryboardPage() {
   const projectId = params.id as string
 
   const {
-    storyboards,
+    scriptShotPlans,
     episodes,
     scripts,
     assetCharacters,
@@ -53,11 +53,11 @@ export default function StoryboardPage() {
     imageGeneratingIds,
     batchImageStatus,
     batchImageProgress,
-    fetchStoryboards,
+    fetchScriptShotPlans,
     fetchEpisodes,
     fetchScripts,
     fetchAssets,
-    generateStoryboards,
+    generateScriptShots,
     addShot,
     updateShot,
     deleteShot,
@@ -68,17 +68,17 @@ export default function StoryboardPage() {
     setActiveEpisodeId,
     setActiveShotId,
     setDetailPanelOpen,
-    confirmStoryboards,
-    activeEpisodeStoryboards,
+    confirmScriptShots,
+    activeEpisodeScriptShots,
     activeShot,
     nextShot,
     prevShot,
-  } = useStoryboardStore()
+  } = useScriptShotsStore()
 
   const [view, setView] = useState<"episode-select" | "storyboard-list">("storyboard-list")
   const [loading, setLoading] = useState(true)
-  const [deletingShotInfo, setDeletingShotInfo] = useState<{ storyboardId: string; shotId: string } | null>(null)
-  const [viewingScriptStoryboard, setViewingScriptStoryboard] = useState<Storyboard | null>(null)
+  const [deletingShotInfo, setDeletingShotInfo] = useState<{ scriptId: string; shotId: string } | null>(null)
+  const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   // Video generation mock state
   const [videoGeneratingIds, setVideoGeneratingIds] = useState<Set<string>>(new Set())
@@ -93,7 +93,7 @@ export default function StoryboardPage() {
       const [eps] = await Promise.all([
         fetchEpisodes(projectId),
         fetchScripts(projectId),
-        fetchStoryboards(projectId),
+        fetchScriptShotPlans(projectId),
         fetchAssets(projectId),
       ])
 
@@ -125,28 +125,28 @@ export default function StoryboardPage() {
 
   const handleGenerateAll = useCallback(
     async (mode: "skip_existing" | "overwrite") => {
-      await generateStoryboards(projectId, undefined, undefined, mode)
+      await generateScriptShots(projectId, undefined, undefined, mode)
     },
-    [projectId, generateStoryboards]
+    [projectId, generateScriptShots]
   )
 
   const handleGenerateEpisodes = useCallback(
     async (episodeIds: string[]) => {
-      await generateStoryboards(projectId, episodeIds, undefined, "overwrite")
+      await generateScriptShots(projectId, episodeIds, undefined, "overwrite")
     },
-    [projectId, generateStoryboards]
+    [projectId, generateScriptShots]
   )
 
   const handleRegenerateScript = useCallback(
     async (scriptId: string) => {
-      await generateStoryboards(projectId, undefined, [scriptId], "overwrite")
+      await generateScriptShots(projectId, undefined, [scriptId], "overwrite")
     },
-    [projectId, generateStoryboards]
+    [projectId, generateScriptShots]
   )
 
   const handleDeleteShot = useCallback(
-    async (storyboardId: string, shotId: string) => {
-      await deleteShot(storyboardId, shotId)
+    async (scriptId: string, shotId: string) => {
+      await deleteShot(scriptId, shotId)
       setDeletingShotInfo(null)
       if (activeShotId === shotId) {
         setActiveShotId(null)
@@ -156,8 +156,8 @@ export default function StoryboardPage() {
   )
 
   const handleAddShot = useCallback(
-    async (storyboardId: string) => {
-      await addShot(storyboardId, {
+    async (scriptId: string) => {
+      await addShot(scriptId, {
         shotSize: "medium",
         composition: "新画面描述",
         prompt: "Cinematic scene, detailed environment, dramatic lighting, photorealistic",
@@ -167,8 +167,8 @@ export default function StoryboardPage() {
   )
 
   const handleUpdateShot = useCallback(
-    (storyboardId: string, shotId: string, data: Partial<ShotInput>) => {
-      updateShot(storyboardId, shotId, data)
+    (scriptId: string, shotId: string, data: Partial<ShotInput>) => {
+      updateShot(scriptId, shotId, data)
     },
     [updateShot]
   )
@@ -191,8 +191,8 @@ export default function StoryboardPage() {
   }, [nextShot, setActiveShotId])
 
   const handleGenerateImage = useCallback(
-    (storyboardId: string, shotId: string) => {
-      generateImage(storyboardId, shotId)
+    (scriptId: string, shotId: string) => {
+      generateImage(scriptId, shotId)
     },
     [generateImage]
   )
@@ -213,13 +213,13 @@ export default function StoryboardPage() {
   const handleClearImage = useCallback(() => {
     const active = activeShot()
     if (active) {
-      clearImage(active.storyboard.id, active.shot.id)
+      clearImage(active.scriptShotPlan.id, active.shot.id)
     }
   }, [activeShot, clearImage])
 
   // Mock: simulate single shot video generation (3-5s delay)
   const handleGenerateVideo = useCallback(
-    (_storyboardId: string, shotId: string) => {
+    (scriptId: string, shotId: string) => {
       setVideoGeneratingIds((prev) => new Set(prev).add(shotId))
       const delay = 3000 + Math.random() * 2000
       setTimeout(() => {
@@ -228,7 +228,7 @@ export default function StoryboardPage() {
           next.delete(shotId)
           return next
         })
-        updateShot(_storyboardId, shotId, {
+        updateShot(scriptId, shotId, {
           videoUrl: `/testVideo.mp4`,
           videoStatus: "completed",
           videoDuration: "5s",
@@ -241,7 +241,7 @@ export default function StoryboardPage() {
   const handleClearVideo = useCallback(() => {
     const active = activeShot()
     if (active) {
-      updateShot(active.storyboard.id, active.shot.id, {
+      updateShot(active.scriptShotPlan.id, active.shot.id, {
         videoUrl: undefined,
         videoStatus: undefined,
         videoDuration: undefined,
@@ -252,8 +252,8 @@ export default function StoryboardPage() {
   // Mock: batch video generation
   const handleBatchGenerateVideos = useCallback(
     (mode: "all" | "missing_only") => {
-      const allShots = storyboards.flatMap((sb) =>
-        sb.shots.filter((s) => s.imageUrl).map((s) => ({ storyboardId: sb.id, shot: s }))
+      const allShots = scriptShotPlans.flatMap((plan) =>
+        plan.shots.filter((s) => s.imageUrl).map((s) => ({ scriptId: plan.id, shot: s }))
       )
       const targets = mode === "missing_only"
         ? allShots.filter((s) => !s.shot.videoUrl)
@@ -272,7 +272,7 @@ export default function StoryboardPage() {
             next.delete(target.shot.id)
             return next
           })
-          updateShot(target.storyboardId, target.shot.id, {
+          updateShot(target.scriptId, target.shot.id, {
             videoUrl: `/testVideo.mp4`,
             videoStatus: "completed",
             videoDuration: "5s",
@@ -288,14 +288,14 @@ export default function StoryboardPage() {
         }, delay)
       })
     },
-    [storyboards, updateShot]
+    [scriptShotPlans, updateShot]
   )
 
   const handleBatchGenerateEpisodeVideos = useCallback(() => {
     if (!activeEpisodeId) return
-    const epStoryboards = storyboards.filter((sb) => sb.script.episode.id === activeEpisodeId)
-    const targets = epStoryboards.flatMap((sb) =>
-      sb.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ storyboardId: sb.id, shot: s }))
+    const episodePlans = scriptShotPlans.filter((plan) => plan.script.episode.id === activeEpisodeId)
+    const targets = episodePlans.flatMap((plan) =>
+      plan.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ scriptId: plan.id, shot: s }))
     )
     if (targets.length === 0) return
 
@@ -311,7 +311,7 @@ export default function StoryboardPage() {
           next.delete(target.shot.id)
           return next
         })
-        updateShot(target.storyboardId, target.shot.id, {
+        updateShot(target.scriptId, target.shot.id, {
           videoUrl: `/testVideo.mp4`,
           videoStatus: "completed",
           videoDuration: "5s",
@@ -326,30 +326,30 @@ export default function StoryboardPage() {
         }
       }, delay)
     })
-  }, [activeEpisodeId, storyboards, updateShot])
+  }, [activeEpisodeId, scriptShotPlans, updateShot])
 
   const handlePlayVideo = useCallback(
     (shotId: string) => {
-      const allShots = storyboards.flatMap((sb) => sb.shots)
+      const allShots = scriptShotPlans.flatMap((plan) => plan.shots)
       const shot = allShots.find((s) => s.id === shotId)
       if (shot?.videoUrl) setVideoPreviewShot(shot)
     },
-    [storyboards]
+    [scriptShotPlans]
   )
 
   const handleVideoPreviewPrev = useCallback(() => {
     if (!videoPreviewShot) return
-    const allShots = storyboards.flatMap((sb) => sb.shots).filter((s) => s.videoUrl)
+    const allShots = scriptShotPlans.flatMap((plan) => plan.shots).filter((s) => s.videoUrl)
     const idx = allShots.findIndex((s) => s.id === videoPreviewShot.id)
     if (idx > 0) setVideoPreviewShot(allShots[idx - 1])
-  }, [videoPreviewShot, storyboards])
+  }, [videoPreviewShot, scriptShotPlans])
 
   const handleVideoPreviewNext = useCallback(() => {
     if (!videoPreviewShot) return
-    const allShots = storyboards.flatMap((sb) => sb.shots).filter((s) => s.videoUrl)
+    const allShots = scriptShotPlans.flatMap((plan) => plan.shots).filter((s) => s.videoUrl)
     const idx = allShots.findIndex((s) => s.id === videoPreviewShot.id)
     if (idx < allShots.length - 1) setVideoPreviewShot(allShots[idx + 1])
-  }, [videoPreviewShot, storyboards])
+  }, [videoPreviewShot, scriptShotPlans])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -367,31 +367,31 @@ export default function StoryboardPage() {
         e.preventDefault()
         const active = activeShot()
         if (active) {
-          setDeletingShotInfo({ storyboardId: active.storyboard.id, shotId: active.shot.id })
+          setDeletingShotInfo({ scriptId: active.scriptShotPlan.id, shotId: active.shot.id })
         }
       }
       if (e.ctrlKey && e.key === "d" && activeShotId) {
         e.preventDefault()
         const active = activeShot()
-        if (active) duplicateShot(active.storyboard.id, active.shot.id)
+        if (active) duplicateShot(active.scriptShotPlan.id, active.shot.id)
       }
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
   }, [activeShotId, handlePrevShot, handleNextShot, activeShot, duplicateShot])
 
-  const currentStoryboards = activeEpisodeStoryboards()
+  const currentScriptShotPlans = activeEpisodeScriptShots()
   const currentActiveShot = activeShot()
-  const hasStoryboards = storyboards.some((sb) => sb.shots.length > 0)
+  const hasScriptShots = scriptShotPlans.some((plan) => plan.shots.length > 0)
   const isGenerating = generateStatus === "generating"
 
   const imageStats = useMemo(() => {
-    const allShots = storyboards.flatMap((sb) => sb.shots)
+    const allShots = scriptShotPlans.flatMap((plan) => plan.shots)
     return {
       withImage: allShots.filter((s) => s.imageUrl).length,
       total: allShots.length,
     }
-  }, [storyboards])
+  }, [scriptShotPlans])
 
   const episodesForProject = useMemo(
     () => episodes.filter((e) => e.projectId === projectId),
@@ -417,7 +417,7 @@ export default function StoryboardPage() {
         <EpisodeSelectView
           episodes={episodes}
           scripts={scripts}
-          storyboards={storyboards}
+          scriptShotPlans={scriptShotPlans}
           onSelectEpisode={handleEnterEpisode}
         />
       </div>
@@ -455,7 +455,7 @@ export default function StoryboardPage() {
       )}
 
       {/* Empty state */}
-      {!hasStoryboards && !isGenerating && (
+      {!hasScriptShots && !isGenerating && (
         <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pt-3 pb-6 sm:px-3">
           <div className="mb-4">
             <Button
@@ -478,7 +478,7 @@ export default function StoryboardPage() {
       )}
 
       {/* Main content */}
-      {(hasStoryboards || isGenerating) && (
+      {(hasScriptShots || isGenerating) && (
         <>
           {/* Toolbar — 顶栏全宽贴边 */}
           <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
@@ -526,17 +526,17 @@ export default function StoryboardPage() {
                       : "border-border border-b bg-background"
                   )}
                 >
-                  {currentStoryboards.length > 0 ? (
+                  {currentScriptShotPlans.length > 0 ? (
                     <div className={cn(
                       "space-y-3",
                       detailPanelOpen ? "p-0" : ""
                     )}>
-                      {currentStoryboards.map((sb) => (
+                      {currentScriptShotPlans.map((plan) => (
                         <SceneSwimlane
-                          key={sb.id}
-                          storyboard={sb}
+                          key={plan.id}
+                          scriptShotPlan={plan}
                           episodeDisplayNumber={
-                            episodeDisplayMap.get(sb.script.episodeId) ?? 1
+                            episodeDisplayMap.get(plan.script.episodeId) ?? 1
                           }
                           activeShotId={activeShotId}
                           selectedShotIds={selectedShotIds}
@@ -547,14 +547,14 @@ export default function StoryboardPage() {
                           assetScenes={assetScenes}
                           assetProps={assetProps}
                           onSelectShot={handleSelectShot}
-                          onDuplicateShot={(sbId, shotId) => duplicateShot(sbId, shotId)}
-                          onDeleteShot={(sbId, shotId) => setDeletingShotInfo({ storyboardId: sbId, shotId })}
+                          onDuplicateShot={(scriptId, shotId) => duplicateShot(scriptId, shotId)}
+                          onDeleteShot={(scriptId, shotId) => setDeletingShotInfo({ scriptId, shotId })}
                           onAddShot={handleAddShot}
                           onGenerateImage={handleGenerateImage}
                           onGenerateVideo={handleGenerateVideo}
                           onPlayVideo={handlePlayVideo}
                           onRegenerateScript={handleRegenerateScript}
-                          onViewScript={(sb) => setViewingScriptStoryboard(sb)}
+                          onViewScript={(plan) => setViewingScriptShotPlan(plan)}
                           onToggleShotDisplayMode={() => setShotDisplayMode((m) => m === "composition" ? "prompts" : "composition")}
                         />
                       ))}
@@ -592,10 +592,10 @@ export default function StoryboardPage() {
                     <div className="h-full shrink-0 overflow-hidden border-r border-border bg-card">
                       <ShotDetailPanel
                         shot={currentActiveShot.shot}
-                        storyboard={currentActiveShot.storyboard}
+                        scriptShotPlan={currentActiveShot.scriptShotPlan}
                         episodeDisplayNumber={
                           episodeDisplayMap.get(
-                            currentActiveShot.storyboard.script.episodeId
+                            currentActiveShot.scriptShotPlan.script.episodeId
                           ) ?? 1
                         }
                         isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
@@ -604,9 +604,9 @@ export default function StoryboardPage() {
                         assetScenes={assetScenes}
                         assetProps={assetProps}
                         onUpdate={handleUpdateShot}
-                        onGenerateImage={() => handleGenerateImage(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
+                        onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.id, currentActiveShot.shot.id)}
                         onClearImage={handleClearImage}
-                        onGenerateVideo={() => handleGenerateVideo(currentActiveShot.storyboard.id, currentActiveShot.shot.id)}
+                        onGenerateVideo={() => handleGenerateVideo(currentActiveShot.scriptShotPlan.id, currentActiveShot.shot.id)}
                         onClearVideo={handleClearVideo}
                         onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
                         onPrev={prevShot() ? handlePrevShot : null}
@@ -625,9 +625,9 @@ export default function StoryboardPage() {
 
       {/* Script lines dialog */}
       <ScriptLinesDialog
-        open={!!viewingScriptStoryboard}
-        onOpenChange={(open) => !open && setViewingScriptStoryboard(null)}
-        storyboard={viewingScriptStoryboard}
+        open={!!viewingScriptShotPlan}
+        onOpenChange={(open) => !open && setViewingScriptShotPlan(null)}
+        scriptShotPlan={viewingScriptShotPlan}
       />
 
       {/* Delete shot confirmation */}
@@ -647,7 +647,7 @@ export default function StoryboardPage() {
             <AlertDialogAction
               onClick={() => {
                 if (deletingShotInfo) {
-                  handleDeleteShot(deletingShotInfo.storyboardId, deletingShotInfo.shotId)
+                  handleDeleteShot(deletingShotInfo.scriptId, deletingShotInfo.shotId)
                 }
               }}
             >

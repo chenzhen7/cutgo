@@ -13,25 +13,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ArrowRight } from "lucide-react"
-import type { Storyboard } from "@/lib/types"
+import type { ScriptShotPlan } from "@/lib/types"
 
 interface ConfirmStoryboardDialogProps {
-  storyboards: Storyboard[]
+  scriptShotPlans: ScriptShotPlan[]
   onConfirm: () => void
 }
 
 export function ConfirmStoryboardDialog({
-  storyboards,
+  scriptShotPlans,
   onConfirm,
 }: ConfirmStoryboardDialogProps) {
-  const generatedSbs = storyboards.filter((sb) => sb.shots.length > 0)
-  const totalShots = storyboards.reduce((sum, sb) => sum + sb.shots.length, 0)
-  const hasStoryboards = generatedSbs.length > 0
+  const generatedPlans = scriptShotPlans.filter((sb) => sb.shots.length > 0)
+  const totalShots = scriptShotPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
+  const hasScriptShots = generatedPlans.length > 0
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="px-8" disabled={!hasStoryboards}>
+        <Button className="px-8" disabled={!hasScriptShots}>
           确认分镜，进入视频合成
           <ArrowRight className="size-4 ml-2" />
         </Button>
@@ -44,7 +44,7 @@ export function ConfirmStoryboardDialog({
               <p>确认后将进入视频合成阶段，您仍可以返回修改分镜。</p>
               <div className="rounded-lg bg-muted p-3 space-y-1">
                 <p className="text-sm">
-                  已生成分镜：<span className="font-medium">{generatedSbs.length}</span> 个场景
+                  已生成分镜：<span className="font-medium">{generatedPlans.length}</span> 个场景
                 </p>
                 <p className="text-sm">
                   总画面数：<span className="font-medium">{totalShots}</span> 个

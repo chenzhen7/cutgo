@@ -18,9 +18,6 @@ export async function PUT(request: NextRequest) {
   const episodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
-    include: {
-      scenes: { orderBy: { index: "asc" } },
-    },
   })
 
   return NextResponse.json(episodes)

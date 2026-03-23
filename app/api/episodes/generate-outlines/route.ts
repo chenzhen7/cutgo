@@ -136,9 +136,6 @@ export async function POST(request: NextRequest) {
         cliffhanger: item.cliffhanger || null,
         duration: "3min",
       },
-      include: {
-        scenes: { orderBy: { index: "asc" } },
-      },
     })
 
     createdEpisodes.push(episode)

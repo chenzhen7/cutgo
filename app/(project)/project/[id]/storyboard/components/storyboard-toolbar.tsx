@@ -10,10 +10,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sparkles, ChevronDown, Loader2, Paintbrush, Video } from "lucide-react"
-import type { StoryboardGenerateStatus } from "@/lib/types"
+import type { ScriptShotGenerateStatus } from "@/lib/types"
 
 interface StoryboardToolbarProps {
-  generateStatus: StoryboardGenerateStatus
+  generateStatus: ScriptShotGenerateStatus
   batchImageStatus: "idle" | "generating" | "completed" | "error"
   batchImageProgress: { current: number; total: number } | null
   onGenerateAll: (mode: "skip_existing" | "overwrite") => void

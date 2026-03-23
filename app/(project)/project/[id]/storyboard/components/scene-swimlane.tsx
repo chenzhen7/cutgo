@@ -12,10 +12,10 @@ import {
 } from "lucide-react"
 import { ShotCard } from "./shot-card"
 import type { ShotCardDisplayMode } from "./shot-card"
-import type { Storyboard, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
+import type { ScriptShotPlan, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
-  storyboard: Storyboard
+  scriptShotPlan: ScriptShotPlan
   /** 全项目分集排序后的展示集序号 */
   episodeDisplayNumber: number
   activeShotId: string | null
@@ -27,19 +27,19 @@ interface SceneSwimlaneProps {
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
   onSelectShot: (shotId: string) => void
-  onDuplicateShot: (storyboardId: string, shotId: string) => void
-  onDeleteShot: (storyboardId: string, shotId: string) => void
-  onAddShot: (storyboardId: string) => void
-  onGenerateImage: (storyboardId: string, shotId: string) => void
-  onGenerateVideo: (storyboardId: string, shotId: string) => void
+  onDuplicateShot: (scriptId: string, shotId: string) => void
+  onDeleteShot: (scriptId: string, shotId: string) => void
+  onAddShot: (scriptId: string) => void
+  onGenerateImage: (scriptId: string, shotId: string) => void
+  onGenerateVideo: (scriptId: string, shotId: string) => void
   onPlayVideo: (shotId: string) => void
   onRegenerateScript: (scriptId: string) => void
-  onViewScript: (storyboard: Storyboard) => void
+  onViewScript: (scriptShotPlan: ScriptShotPlan) => void
   onToggleShotDisplayMode: () => void
 }
 
 export function SceneSwimlane({
-  storyboard,
+  scriptShotPlan,
   episodeDisplayNumber,
   activeShotId,
   selectedShotIds,
@@ -60,9 +60,9 @@ export function SceneSwimlane({
   onViewScript,
   onToggleShotDisplayMode,
 }: SceneSwimlaneProps) {
-  const script = storyboard.script
-  const shotsWithImage = storyboard.shots.filter((s) => s.imageUrl).length
-  const shotsWithVideo = storyboard.shots.filter((s) => s.videoUrl).length
+  const script = scriptShotPlan.script
+  const shotsWithImage = scriptShotPlan.shots.filter((s) => s.imageUrl).length
+  const shotsWithVideo = scriptShotPlan.shots.filter((s) => s.videoUrl).length
 
   return (
     <div className={cn(
@@ -82,12 +82,12 @@ export function SceneSwimlane({
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">
-              {storyboard.shots.length} 个画面
+              {scriptShotPlan.shots.length} 个画面
             </span>
-            {storyboard.shots.length > 0 && (
+            {scriptShotPlan.shots.length > 0 && (
               <>
                 <span className="text-xs text-muted-foreground">
-                  · {shotsWithImage}/{storyboard.shots.length} 已生图
+                  · {shotsWithImage}/{scriptShotPlan.shots.length} 已生图
                 </span>
                 {shotsWithVideo > 0 && (
                   <span className="text-xs text-violet-600 dark:text-violet-400">
@@ -131,7 +131,7 @@ export function SceneSwimlane({
             variant="ghost"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => onViewScript(storyboard)}
+            onClick={() => onViewScript(scriptShotPlan)}
           >
             <BookOpen className="size-3 mr-1" />
             剧本
@@ -141,7 +141,7 @@ export function SceneSwimlane({
 
       {/* Shots */}
       <div className="flex flex-col gap-3 p-3">
-        {storyboard.shots.map((shot) => (
+        {scriptShotPlan.shots.map((shot) => (
           <ShotCard
             key={shot.id}
             shot={shot}
@@ -154,16 +154,16 @@ export function SceneSwimlane({
             assetScenes={assetScenes}
             assetProps={assetProps}
             onSelect={() => onSelectShot(shot.id)}
-            onDuplicate={() => onDuplicateShot(storyboard.id, shot.id)}
-            onDelete={() => onDeleteShot(storyboard.id, shot.id)}
-            onGenerateImage={() => onGenerateImage(storyboard.id, shot.id)}
-            onGenerateVideo={() => onGenerateVideo(storyboard.id, shot.id)}
+            onDuplicate={() => onDuplicateShot(scriptShotPlan.id, shot.id)}
+            onDelete={() => onDeleteShot(scriptShotPlan.id, shot.id)}
+            onGenerateImage={() => onGenerateImage(scriptShotPlan.id, shot.id)}
+            onGenerateVideo={() => onGenerateVideo(scriptShotPlan.id, shot.id)}
             onPlayVideo={() => onPlayVideo(shot.id)}
           />
         ))}
 
         <button
-          onClick={() => onAddShot(storyboard.id)}
+          onClick={() => onAddShot(scriptShotPlan.id)}
           className="col-span-2 h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
         >
           <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />

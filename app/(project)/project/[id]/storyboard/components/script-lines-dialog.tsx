@@ -7,21 +7,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { Storyboard } from "@/lib/types"
+import type { ScriptShotPlan } from "@/lib/types"
 
 interface ScriptLinesDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  storyboard: Storyboard | null
+  scriptShotPlan: ScriptShotPlan | null
 }
 
 export function ScriptLinesDialog({
   open,
   onOpenChange,
-  storyboard,
+  scriptShotPlan,
 }: ScriptLinesDialogProps) {
-  if (!storyboard) return null
-  const script = storyboard.script
+  if (!scriptShotPlan) return null
+  const script = scriptShotPlan.script
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

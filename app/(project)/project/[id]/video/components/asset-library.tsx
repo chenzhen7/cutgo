@@ -23,12 +23,12 @@ interface AssetItem {
 }
 
 export function AssetLibrary() {
-  const { storyboards, activeEpisodeId, videoClips, addVideoClip, duration } = useVideoEditorStore()
+  const { scriptShotPlans, activeEpisodeId, videoClips, addVideoClip, duration } = useVideoEditorStore()
 
   const assets = useMemo<AssetItem[]>(() => {
     const filteredSbs = activeEpisodeId
-      ? storyboards.filter((sb) => sb.script?.episode?.id === activeEpisodeId)
-      : storyboards
+      ? scriptShotPlans.filter((sb) => sb.script?.episode?.id === activeEpisodeId)
+      : scriptShotPlans
 
     const shots = filteredSbs
       .flatMap((sb) => sb.shots)
@@ -38,7 +38,7 @@ export function AssetLibrary() {
       shot,
       isInTimeline: videoClips.some((c) => c.shotId === shot.id),
     }))
-  }, [storyboards, activeEpisodeId, videoClips])
+  }, [scriptShotPlans, activeEpisodeId, videoClips])
 
   const handleAddToTimeline = (shot: Shot) => {
     if (!shot.videoUrl) return

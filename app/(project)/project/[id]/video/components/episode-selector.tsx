@@ -17,7 +17,7 @@ import {
 } from "@/lib/episode-display"
 
 export function EpisodeSelector() {
-  const { episodes, activeEpisodeId, setActiveEpisodeId, storyboards } = useVideoEditorStore()
+  const { episodes, activeEpisodeId, setActiveEpisodeId, scriptShotPlans } = useVideoEditorStore()
 
   const orderedEpisodes = useMemo(
     () => sortEpisodesByChapterAndIndex(episodes),
@@ -34,7 +34,7 @@ export function EpisodeSelector() {
     : undefined
 
   const getEpisodeVideoCount = (episodeId: string) => {
-    return storyboards
+    return scriptShotPlans
       .filter((sb) => sb.script?.episode?.id === episodeId)
       .flatMap((sb) => sb.shots)
       .filter((s) => s.videoUrl)

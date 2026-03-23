@@ -8,12 +8,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "projectId is required" }, { status: 400 })
   }
 
-  const storyboards = await prisma.storyboard.findMany({
-    where: { projectId },
-    include: { shots: true },
+  const shotCount = await prisma.shot.count({
+    where: { script: { projectId } },
   })
-
-  const hasShots = storyboards.some((sb) => sb.shots.length > 0)
+  const hasShots = shotCount > 0
   if (!hasShots) {
     return NextResponse.json({ error: "至少需要 1 个已生成的分镜" }, { status: 400 })
   }

@@ -46,7 +46,6 @@ model Project {
   novel    Novel?
   episodes Episode[]
   scripts  Script[]
-  storyboards Storyboard[]
 
   assetCharacters   AssetCharacter[]
   assetScenes       AssetScene[]
@@ -171,7 +170,7 @@ model Script {
   /// 主场景资产名称
   location   String?
 
-  storyboards Storyboard[]
+  shots Shot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -255,26 +254,6 @@ model AssetProp {
   @@unique([projectId, name])
 }
 
-// ── Storyboard Models ──
-
-/// 分镜板（关联剧本）
-model Storyboard {
-  id        String  @id @default(cuid())
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  scriptId String
-  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-
-  /// draft | generated | edited
-  status String @default("draft")
-
-  shots Shot[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 /// 分集视频合成任务与输出
 model VideoComposition {
   id        String  @id @default(cuid())
@@ -311,9 +290,9 @@ model VideoComposition {
 
 /// 分镜镜头
 model Shot {
-  id           String     @id @default(cuid())
-  storyboardId String
-  storyboard   Storyboard @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  scriptId String
+  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
 
   /// 镜头序号
   index           Int
