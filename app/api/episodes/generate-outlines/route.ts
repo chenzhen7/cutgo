@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
         title,
         synopsis: item.summary || "",
         outline: item.summary || null,
+        goldenHook: item.hook || null,
         keyConflict: item.core_conflict || null,
         cliffhanger: item.cliffhanger || null,
         duration: "3min",

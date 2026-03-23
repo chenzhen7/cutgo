@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Check, X, Pencil, MapPin, User, Package } from "lucide-react"
+import { Check, X, Pencil, MapPin, User, Package, ListOrdered } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   AssetCharacter,
@@ -53,7 +53,13 @@ interface ScriptEditorProps {
     props?: string
     location?: string
   }) => Promise<void>
-  onUpdateEpisode?: (data: { title?: string; outline?: string | null }) => Promise<void>
+  onUpdateEpisode?: (data: {
+    title?: string
+    outline?: string | null
+    goldenHook?: string | null
+    keyConflict?: string | null
+    cliffhanger?: string | null
+  }) => Promise<void>
 }
 
 export function ScriptEditor({
@@ -75,6 +81,9 @@ export function ScriptEditor({
   const [savingTitle, setSavingTitle] = useState(false)
   const [editingOutline, setEditingOutline] = useState(false)
   const [outlineValue, setOutlineValue] = useState(episode.outline ?? "")
+  const [goldenHookValue, setGoldenHookValue] = useState(episode.goldenHook ?? "")
+  const [keyConflictValue, setKeyConflictValue] = useState(episode.keyConflict ?? "")
+  const [cliffhangerValue, setCliffhangerValue] = useState(episode.cliffhanger ?? "")
   const [savingOutline, setSavingOutline] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const outlineRef = useRef<HTMLTextAreaElement>(null)
@@ -99,7 +108,10 @@ export function ScriptEditor({
   useEffect(() => {
     setTitleValue(episode.title)
     setOutlineValue(episode.outline ?? "")
-  }, [episode.id, episode.title, episode.outline])
+    setGoldenHookValue(episode.goldenHook ?? "")
+    setKeyConflictValue(episode.keyConflict ?? "")
+    setCliffhangerValue(episode.cliffhanger ?? "")
+  }, [episode.id, episode.title, episode.outline, episode.goldenHook, episode.keyConflict, episode.cliffhanger])
 
   useEffect(() => {
     return () => {
@@ -211,25 +223,47 @@ export function ScriptEditor({
   }
 
   const handleOutlineSave = async () => {
-    const trimmed = outlineValue.trim()
-    const prev = episode.outline ?? ""
-    if (trimmed === prev.trim()) {
+    const trimmedOutline = outlineValue.trim()
+    const trimmedGoldenHook = goldenHookValue.trim()
+    const trimmedKeyConflict = keyConflictValue.trim()
+    const trimmedCliffhanger = cliffhangerValue.trim()
+
+    const hasChanged = 
+      trimmedOutline !== (episode.outline ?? "").trim() ||
+      trimmedGoldenHook !== (episode.goldenHook ?? "").trim() ||
+      trimmedKeyConflict !== (episode.keyConflict ?? "").trim() ||
+      trimmedCliffhanger !== (episode.cliffhanger ?? "").trim()
+
+    if (!hasChanged) {
       setEditingOutline(false)
       return
     }
+
     setSavingOutline(true)
     try {
-      await onUpdateEpisode?.({ outline: trimmed || null })
+      await onUpdateEpisode?.({ 
+        outline: trimmedOutline || null,
+        goldenHook: trimmedGoldenHook || null,
+        keyConflict: trimmedKeyConflict || null,
+        cliffhanger: trimmedCliffhanger || null,
+      })
     } finally {
       setSavingOutline(false)
       setEditingOutline(false)
     }
   }
 
+  const handleOutlineCancel = () => {
+    setEditingOutline(false)
+    setOutlineValue(episode.outline ?? "")
+    setGoldenHookValue(episode.goldenHook ?? "")
+    setKeyConflictValue(episode.keyConflict ?? "")
+    setCliffhangerValue(episode.cliffhanger ?? "")
+  }
+
   const handleOutlineKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape") {
-      setEditingOutline(false)
-      setOutlineValue(episode.outline ?? "")
+      handleOutlineCancel()
     }
   }
 
@@ -537,64 +571,149 @@ export function ScriptEditor({
               </div>
 
               {/* 大纲区块 */}
-              <div className="shrink-0">
-                <div className="px-4 py-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">大纲</Label>
-                </div>
-                <div className="px-4 pb-3 pt-0 group/outline relative">
-                  {editingOutline ? (
-                    <div className="flex flex-col gap-1.5">
-                      <Textarea
-                        ref={outlineRef}
-                        value={outlineValue}
-                        onChange={(e) => setOutlineValue(e.target.value)}
-                        onKeyDown={handleOutlineKeyDown}
-                        disabled={savingOutline}
-                        placeholder="在此输入分集大纲..."
-                        className="min-h-[120px] resize-none text-xs leading-relaxed border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/40"
-                      />
-                      <div className="flex items-center gap-1.5 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs text-muted-foreground"
-                          disabled={savingOutline}
-                          onClick={() => { setEditingOutline(false); setOutlineValue(episode.outline ?? "") }}
-                        >
-                          <X className="size-3 mr-1" />
-                          取消
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          disabled={savingOutline}
-                          onClick={handleOutlineSave}
-                        >
-                          <Check className="size-3 mr-1" />
-                          {savingOutline ? "保存中..." : "保存"}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className="relative min-h-[1.5rem] cursor-text"
-                      onClick={onUpdateEpisode ? handleOutlineEdit : undefined}
+              <div className="shrink-0 space-y-4 pb-6">
+                <div className="px-4 py-2 bg-muted/20 border-y flex items-center justify-between">
+                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <ListOrdered className="size-3" />
+                    分集大纲
+                  </Label>
+                  {!editingOutline && onUpdateEpisode && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] px-2 gap-1 text-primary hover:text-primary hover:bg-primary/5"
+                      onClick={handleOutlineEdit}
                     >
+                      <Pencil className="size-3" />
+                      编辑大纲
+                    </Button>
+                  )}
+                </div>
+
+                {/* 详细大纲 (放在最上面，去掉颜色) */}
+                <div className="px-4 group/outline relative">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground">大纲详情</Label>
+                  </div>
+                  {editingOutline ? (
+                    <Textarea
+                      ref={outlineRef}
+                      value={outlineValue}
+                      onChange={(e) => setOutlineValue(e.target.value)}
+                      onKeyDown={handleOutlineKeyDown}
+                      placeholder="详细的情节发展..."
+                      className="min-h-[120px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40"
+                    />
+                  ) : (
+                    <div className="min-h-[1.5rem]">
                       {episode.outline?.trim() ? (
-                        <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap pr-5">
-                          {episode.outline}
-                        </p>
+                        <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{episode.outline}</p>
                       ) : (
-                        <p className="text-xs text-muted-foreground/60 italic">
-                          暂无大纲{onUpdateEpisode ? "，点击添加" : ""}
-                        </p>
-                      )}
-                      {onUpdateEpisode && (
-                        <Pencil className="absolute top-0 right-0 size-3 text-muted-foreground opacity-0 group-hover/outline:opacity-100 transition-opacity" />
+                        <p className="text-[11px] text-muted-foreground/50 italic">未设置大纲</p>
                       )}
                     </div>
                   )}
                 </div>
+
+                {/* 黄金钩子 & 核心冲突 (左右布局) */}
+                <div className="px-4 grid grid-cols-2 gap-4">
+                  {/* 黄金钩子 */}
+                  <div className="group/hook relative">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-xs font-semibold text-amber-600 dark:text-amber-400">黄金钩子</Label>
+                    </div>
+                    {editingOutline ? (
+                      <Textarea
+                        value={goldenHookValue}
+                        onChange={(e) => setGoldenHookValue(e.target.value)}
+                        onKeyDown={handleOutlineKeyDown}
+                        placeholder="开篇吸睛点..."
+                        className="min-h-[80px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40"
+                      />
+                    ) : (
+                      <div className="min-h-[1.25rem]">
+                        {episode.goldenHook?.trim() ? (
+                          <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{episode.goldenHook}</p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground/50 italic">未设置</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 核心冲突 */}
+                  <div className="group/conflict relative">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-xs font-semibold text-rose-600 dark:text-rose-400">核心冲突</Label>
+                    </div>
+                    {editingOutline ? (
+                      <Textarea
+                        value={keyConflictValue}
+                        onChange={(e) => setKeyConflictValue(e.target.value)}
+                        onKeyDown={handleOutlineKeyDown}
+                        placeholder="主要矛盾点..."
+                        className="min-h-[80px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40"
+                      />
+                    ) : (
+                      <div className="min-h-[1.25rem]">
+                        {episode.keyConflict?.trim() ? (
+                          <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{episode.keyConflict}</p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground/50 italic">未设置</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 结尾悬念 (放下面) */}
+                <div className="px-4 group/cliffhanger relative">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">结尾悬念</Label>
+                  </div>
+                  {editingOutline ? (
+                    <Textarea
+                      value={cliffhangerValue}
+                      onChange={(e) => setCliffhangerValue(e.target.value)}
+                      onKeyDown={handleOutlineKeyDown}
+                      placeholder="如何引导下一集？"
+                      className="min-h-[60px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40"
+                    />
+                  ) : (
+                    <div className="min-h-[1.25rem]">
+                      {episode.cliffhanger?.trim() ? (
+                        <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{episode.cliffhanger}</p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground/50 italic">未设置悬念</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 保存/取消按钮 */}
+                {editingOutline && (
+                  <div className="px-4 flex items-center gap-1.5 justify-end mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground"
+                      disabled={savingOutline}
+                      onClick={handleOutlineCancel}
+                    >
+                      <X className="size-3 mr-1" />
+                      取消
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={savingOutline}
+                      onClick={handleOutlineSave}
+                    >
+                      <Check className="size-3 mr-1" />
+                      {savingOutline ? "保存中..." : "保存"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </ResizablePanel>

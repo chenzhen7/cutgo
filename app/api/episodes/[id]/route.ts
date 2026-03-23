@@ -15,6 +15,7 @@ export async function PATCH(
       ...(body.title !== undefined && { title: body.title }),
       ...(body.synopsis !== undefined && { synopsis: body.synopsis }),
       ...(body.outline !== undefined && { outline: body.outline }),
+      ...(body.goldenHook !== undefined && { goldenHook: body.goldenHook }),
       ...(body.keyConflict !== undefined && { keyConflict: body.keyConflict }),
       ...(body.cliffhanger !== undefined && { cliffhanger: body.cliffhanger }),
       ...(body.duration !== undefined && { duration: body.duration }),

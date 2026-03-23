@@ -102,6 +102,7 @@ export interface Episode {
   title: string
   synopsis: string
   outline: string | null
+  goldenHook: string | null
   keyConflict: string | null
   cliffhanger: string | null
   duration: string
@@ -176,6 +177,7 @@ export interface EpisodeInput {
   index?: number
   title: string
   synopsis?: string
+  goldenHook?: string
   keyConflict?: string
   cliffhanger?: string
   duration?: string
