@@ -1,0 +1,55 @@
+---
+description: API 路由错误响应规范：使用 lib/api-error.ts 统一返回错误码和 HTTP 状态码
+globs: app/api/**/*.ts
+alwaysApply: false
+---
+
+# API 错误响应规范
+
+所有 `route.ts` 必须使用 `@/lib/api-error` 中的快捷方法返回错误响应，**禁止**直接使用 `NextResponse.json({ error: "..." }, { status: xxx })`。
+
+## 响应格式
+
+每个错误响应体固定包含两个字段：
+- `error`：机器可读错误码（前端据此做分支判断）
+- `message`：用户可读提示文本
+
+## 快捷方法对照表
+
+| 场景 | 方法 | 状态码 |
+|---|---|---|
+| 缺少必要参数 | `badRequest(message?)` | 400 |
+| 业务校验不通过 | `validationError(message)` | 400 |
+| 资源不存在 | `notFound(message?)` | 404 |
+| 名称/唯一键冲突 | `conflict(message)` | 409 |
+| LLM 未配置 | `llmNotConfigured()` | 422 |
+| LLM 返回内容无效 | `llmInvalidResponse(detail?)` | 500 |
+| 服务端内部错误 | `internalError(message?, detail?)` | 500 |
+
+需要附加业务数据的 500 错误，使用常量手动构造：
+```ts
+import { ERR_INTERNAL, HTTP_STATUS } from "@/lib/api-error"
+return NextResponse.json(
+  { error: ERR_INTERNAL, message: "部分生成失败", scripts: allScripts },
+  { status: HTTP_STATUS.INTERNAL_ERROR }
+)
+```
+
+## 示例
+
+```ts
+// ❌ 禁止
+return NextResponse.json({ error: "项目不存在" }, { status: 404 })
+return NextResponse.json({ error: "LLM_NOT_CONFIGURED", message: "..." }, { status: 422 })
+
+// ✅ 正确
+import { notFound, llmNotConfigured, validationError } from "@/lib/api-error"
+
+return notFound("项目不存在")
+return llmNotConfigured()
+return validationError("请至少选择一个章节")
+```
+
+## 错误码常量
+
+新增错误码时，必须先在 `lib/api-error.ts` 中定义 `ERR_XXX` 常量和默认 message，再使用 `apiError()` 构造响应。
