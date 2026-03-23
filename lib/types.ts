@@ -28,8 +28,6 @@ export interface Novel {
   rawText: string
   wordCount: number
   chapters: Chapter[]
-  characters: NovelCharacter[]
-  events: PlotEvent[]
   createdAt: string
   updatedAt: string
 }
@@ -57,33 +55,6 @@ export interface Paragraph {
   createdAt: string
 }
 
-export interface NovelCharacter {
-  id: string
-  novelId: string
-  name: string
-  role: "protagonist" | "supporting" | "extra"
-  description: string | null
-  firstAppear: string | null
-  frequency: number
-  relations: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface PlotEvent {
-  id: string
-  novelId: string
-  index: number
-  type: "setup" | "rising" | "climax" | "resolution"
-  summary: string
-  detail: string | null
-  emotion: string | null
-  sourceRef: string | null
-  adaptScore: number | null
-  isHighlight: boolean
-  createdAt: string
-  updatedAt: string
-}
 
 // ── Episode（可按小说章节创建，或由剧本页按所选章节生成）──
 
@@ -201,25 +172,6 @@ export interface ImportNovelInput {
   rawText: string
 }
 
-export interface CharacterInput {
-  name: string
-  role?: "protagonist" | "supporting" | "extra"
-  description?: string
-  firstAppear?: string
-  frequency?: number
-  relations?: string
-}
-
-export interface EventInput {
-  index: number
-  type: "setup" | "rising" | "climax" | "resolution"
-  summary: string
-  detail?: string
-  emotion?: string
-  sourceRef?: string
-  adaptScore?: number
-  isHighlight?: boolean
-}
 
 // ── Asset Types ──
 
@@ -236,7 +188,6 @@ export interface AssetCharacter {
   imageUrl: string | null
   seed: number | null
   locked: boolean
-  sourceNovelCharacterId: string | null
   createdAt: string
   updatedAt: string
 }
@@ -276,7 +227,6 @@ export interface AssetCharacterInput {
   imageUrl?: string
   seed?: number
   locked?: boolean
-  sourceNovelCharacterId?: string
 }
 
 export interface AssetSceneInput {
@@ -317,29 +267,9 @@ export interface AnalysisResult {
     content: string
     paragraphs: { index: number; content: string }[]
   }[]
-  characters: {
-    name: string
-    role: "protagonist" | "supporting" | "extra"
-    description: string
-    firstAppear: string
-    frequency: number
-    relations: { target: string; relation: string }[]
-  }[]
-  events: {
-    index: number
-    type: "setup" | "rising" | "climax" | "resolution"
-    summary: string
-    detail: string
-    emotion: string
-    sourceRef: string
-    adaptScore: number
-    isHighlight: boolean
-  }[]
   stats: {
     totalWords: number
     chapterCount: number
-    characterCount: number
-    eventCount: number
   }
 }
 

@@ -17,8 +17,6 @@ export async function GET(request: NextRequest) {
         orderBy: { index: "asc" },
         include: { paragraphs: { orderBy: { index: "asc" } } },
       },
-      characters: { orderBy: { frequency: "desc" } },
-      events: { orderBy: { index: "asc" } },
     },
   })
 
@@ -52,8 +50,6 @@ export async function POST(request: NextRequest) {
     })
 
     await prisma.chapter.deleteMany({ where: { novelId: existing.id } })
-    await prisma.novelCharacter.deleteMany({ where: { novelId: existing.id } })
-    await prisma.plotEvent.deleteMany({ where: { novelId: existing.id } })
 
     return NextResponse.json(updated)
   }

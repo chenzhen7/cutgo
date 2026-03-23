@@ -71,8 +71,6 @@ model Novel {
   wordCount Int
 
   chapters   Chapter[]
-  characters NovelCharacter[]
-  events     PlotEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -119,55 +117,6 @@ model Paragraph {
   createdAt DateTime @default(now())
 }
 
-/// 从小说抽取的角色
-model NovelCharacter {
-  id      String @id @default(cuid())
-  novelId String
-  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
-
-  /// 角色名
-  name        String
-  /// 角色类型：protagonist | supporting | extra
-  role        String  @default("supporting")
-  /// 角色设定摘要
-  description String?
-  /// 首次出现位置描述
-  firstAppear String?
-  /// 出现频次权重
-  frequency   Int     @default(1)
-  /// JSON：与其他角色的关系，如 [{ target, relation }]
-  relations   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// 剧情节点（结构化解构）
-model PlotEvent {
-  id      String @id @default(cuid())
-  novelId String
-  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
-
-  /// 节点顺序
-  index       Int
-  /// 类型：setup | rising | climax | resolution
-  type        String
-  /// 一句话摘要
-  summary     String
-  /// 详细说明
-  detail      String?
-  /// 情绪标签
-  emotion     String?
-  /// 对应原文位置/引用
-  sourceRef   String?
-  /// 改编适配分（可选）
-  adaptScore  Int?
-  /// 是否高光情节
-  isHighlight Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 /// 分集
 model Episode {
@@ -280,9 +229,6 @@ model AssetCharacter {
   seed        Int?
   /// 是否锁定不再自动改写
   locked      Boolean @default(false)
-
-  /// 对应 NovelCharacter.id（若有）
-  sourceNovelCharacterId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

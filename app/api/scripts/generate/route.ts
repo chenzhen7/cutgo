@@ -178,7 +178,6 @@ export async function POST(request: NextRequest) {
     where: { projectId },
     include: {
       chapters: { orderBy: { index: "asc" } },
-      characters: true,
     },
   })
 
@@ -233,19 +232,15 @@ export async function POST(request: NextRequest) {
   const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
   const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
 
-  const charactersStr = assetCharacters.length > 0
-    ? assetCharacters
-      .map((c) => {
-        const parts = [`${c.name}(${c.role})`]
-        if (c.description) parts.push(c.description)
-        if (c.appearance) parts.push(`外貌: ${c.appearance}`)
-        if (c.personality) parts.push(`性格: ${c.personality}`)
-        return parts.join(", ")
-      })
-      .join("; ")
-    : novel.characters
-      .map((c) => `${c.name}(${c.role}): ${c.description || ""}`)
-      .join("; ")
+  const charactersStr = assetCharacters
+    .map((c) => {
+      const parts = [`${c.name}(${c.role})`]
+      if (c.description) parts.push(c.description)
+      if (c.appearance) parts.push(`外貌: ${c.appearance}`)
+      if (c.personality) parts.push(`性格: ${c.personality}`)
+      return parts.join(", ")
+    })
+    .join("; ")
 
   const scenesStr = assetScenes.length > 0
     ? assetScenes.map((s) => `${s.name}: ${s.description || ""}${s.timeOfDay ? ` (${s.timeOfDay})` : ""}`).join("; ")

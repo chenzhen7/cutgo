@@ -2,12 +2,8 @@ import { create } from "zustand"
 import type {
   Novel,
   Chapter,
-  NovelCharacter,
-  PlotEvent,
   AnalysisStatus,
   ImportNovelInput,
-  CharacterInput,
-  EventInput,
 } from "@/lib/types"
 
 interface ChapterInput {
@@ -18,8 +14,6 @@ interface ChapterInput {
 interface NovelState {
   novel: Novel | null
   chapters: Chapter[]
-  characters: NovelCharacter[]
-  events: PlotEvent[]
 
   analysisStatus: AnalysisStatus
   analysisError: string | null
@@ -29,15 +23,6 @@ interface NovelState {
   confirmImport: (novelId: string) => Promise<void>
 
   fetchNovel: (projectId: string) => Promise<void>
-
-  addCharacter: (novelId: string, data: CharacterInput) => Promise<void>
-  updateCharacter: (characterId: string, data: Partial<CharacterInput>) => Promise<void>
-  deleteCharacter: (novelId: string, characterId: string) => Promise<void>
-
-  addEvent: (novelId: string, data: EventInput) => Promise<void>
-  updateEvent: (eventId: string, data: Partial<EventInput>) => Promise<void>
-  deleteEvent: (novelId: string, eventId: string) => Promise<void>
-  reorderEvents: (novelId: string, orderedIds: string[]) => Promise<void>
 
   addChapter: (novelId: string, data: ChapterInput) => Promise<void>
   updateChapter: (chapterId: string, data: Partial<ChapterInput>) => Promise<void>
@@ -49,8 +34,6 @@ interface NovelState {
 export const useNovelStore = create<NovelState>((set, get) => ({
   novel: null,
   chapters: [],
-  characters: [],
-  events: [],
   analysisStatus: "idle",
   analysisError: null,
 
@@ -65,7 +48,7 @@ export const useNovelStore = create<NovelState>((set, get) => ({
       throw new Error(err.error || "导入失败")
     }
     const novel = await res.json()
-    set({ novel, analysisStatus: "idle", analysisError: null, chapters: [], characters: [], events: [] })
+    set({ novel, analysisStatus: "idle", analysisError: null, chapters: [] })
     return novel
   },
 
@@ -78,16 +61,12 @@ export const useNovelStore = create<NovelState>((set, get) => ({
         throw new Error(err.error || "分析失败")
       }
       const data = await res.json()
-      const { stats, chapters, characters, events, ...novelFields } = data
+      const { stats, chapters, ...novelFields } = data
       void stats
       const ch = chapters ?? []
-      const chs = characters ?? []
-      const ev = events ?? []
       set({
-        novel: { ...get().novel!, ...novelFields, chapters: ch, characters: chs, events: ev },
+        novel: { ...get().novel!, ...novelFields, chapters: ch },
         chapters: ch,
-        characters: chs,
-        events: ev,
         analysisStatus: "completed",
       })
     } catch (err) {
@@ -103,10 +82,8 @@ export const useNovelStore = create<NovelState>((set, get) => ({
     }
     const updated = await res.json()
     const ch = get().chapters
-    const chs = get().characters
-    const ev = get().events
     set({
-      novel: { ...get().novel!, ...updated, chapters: ch, characters: chs, events: ev },
+      novel: { ...get().novel!, ...updated, chapters: ch },
     })
   },
 
@@ -115,92 +92,14 @@ export const useNovelStore = create<NovelState>((set, get) => ({
     if (!res.ok) return
     const data = await res.json()
     if (!data) {
-      set({ novel: null, chapters: [], characters: [], events: [], analysisStatus: "idle" })
+      set({ novel: null, chapters: [], analysisStatus: "idle" })
       return
     }
     set({
       novel: data,
       chapters: data.chapters || [],
-      characters: data.characters || [],
-      events: data.events || [],
-      analysisStatus:
-        (data.chapters?.length ?? 0) > 0 ? "completed" : "idle",
+      analysisStatus: (data.chapters?.length ?? 0) > 0 ? "completed" : "idle",
     })
-  },
-
-  addCharacter: async (novelId, data) => {
-    const res = await fetch(`/api/novels/${novelId}/characters`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error("添加角色失败")
-    const character = await res.json()
-    set({ characters: [...get().characters, character] })
-  },
-
-  updateCharacter: async (characterId, data) => {
-    const novelId = get().novel?.id
-    if (!novelId) return
-    const res = await fetch(`/api/novels/${novelId}/characters/${characterId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error("更新角色失败")
-    const updated = await res.json()
-    set({ characters: get().characters.map((c) => (c.id === characterId ? updated : c)) })
-  },
-
-  deleteCharacter: async (novelId, characterId) => {
-    const res = await fetch(`/api/novels/${novelId}/characters/${characterId}`, {
-      method: "DELETE",
-    })
-    if (!res.ok) throw new Error("删除角色失败")
-    set({ characters: get().characters.filter((c) => c.id !== characterId) })
-  },
-
-  addEvent: async (novelId, data) => {
-    const res = await fetch(`/api/novels/${novelId}/events`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error("添加事件失败")
-    const event = await res.json()
-    set({ events: [...get().events, event] })
-  },
-
-  updateEvent: async (eventId, data) => {
-    const novelId = get().novel?.id
-    if (!novelId) return
-    const res = await fetch(`/api/novels/${novelId}/events/${eventId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error("更新事件失败")
-    const updated = await res.json()
-    set({ events: get().events.map((e) => (e.id === eventId ? updated : e)) })
-  },
-
-  deleteEvent: async (novelId, eventId) => {
-    const res = await fetch(`/api/novels/${novelId}/events/${eventId}`, {
-      method: "DELETE",
-    })
-    if (!res.ok) throw new Error("删除事件失败")
-    set({ events: get().events.filter((e) => e.id !== eventId) })
-  },
-
-  reorderEvents: async (novelId, orderedIds) => {
-    const res = await fetch(`/api/novels/${novelId}/events/reorder`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedIds }),
-    })
-    if (!res.ok) throw new Error("排序失败")
-    const events = await res.json()
-    set({ events })
   },
 
   addChapter: async (novelId, data) => {
@@ -239,8 +138,6 @@ export const useNovelStore = create<NovelState>((set, get) => ({
     set({
       novel: null,
       chapters: [],
-      characters: [],
-      events: [],
       analysisStatus: "idle",
       analysisError: null,
     })

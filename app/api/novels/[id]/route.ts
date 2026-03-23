@@ -16,8 +16,6 @@ export async function GET(
         orderBy: { index: "asc" },
         include: { paragraphs: { orderBy: { index: "asc" } } },
       },
-      characters: { orderBy: { frequency: "desc" } },
-      events: { orderBy: { index: "asc" } },
     },
   })
 

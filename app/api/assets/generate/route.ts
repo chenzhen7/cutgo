@@ -10,7 +10,6 @@ interface AIAssetResult {
     description?: string
     appearance?: string
     personality?: string
-    sourceNovelCharacterId?: string
   }[]
   scenes: {
     name: string
@@ -27,15 +26,14 @@ interface AIAssetResult {
 }
 
 async function callAIExtractAssets(
-  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[],
-  novelCharacters: { id: string; name: string; role: string; description: string | null }[]
+  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[]
 ): Promise<AIAssetResult> {
   const apiKey = process.env.OPENAI_API_KEY
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
 
   if (!apiKey) {
-    return extractAssetsLocally(episodes, novelCharacters)
+    return extractAssetsLocally(episodes)
   }
 
   const episodesText = episodes
@@ -45,14 +43,7 @@ async function callAIExtractAssets(
     )
     .join("\n\n")
 
-  const novelCharsText = novelCharacters
-    .map((c) => `${c.name}(${c.role}): ${c.description || "无描述"}`)
-    .join("\n")
-
   const prompt = `你是一位专业的短剧制作资产管理专家。请根据以下分集与场景信息，提取并整理出该项目所需的全部资产。
-
-## 小说原始角色列表
-${novelCharsText || "无"}
 
 ## 分集与场景
 ${episodesText}
@@ -125,12 +116,12 @@ ${episodesText}
 
     if (!response.ok) {
       console.error("AI API error:", response.status)
-      return extractAssetsLocally(episodes, novelCharacters)
+      return extractAssetsLocally(episodes)
     }
 
     const data = await response.json()
     const content = data.choices?.[0]?.message?.content
-    if (!content) return extractAssetsLocally(episodes, novelCharacters)
+    if (!content) return extractAssetsLocally(episodes)
 
     const parsed = JSON.parse(content)
     return {
@@ -140,13 +131,12 @@ ${episodesText}
     }
   } catch (err) {
     console.error("AI asset extraction failed, falling back to local:", err)
-    return extractAssetsLocally(episodes, novelCharacters)
+    return extractAssetsLocally(episodes)
   }
 }
 
 function extractAssetsLocally(
-  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[],
-  novelCharacters: { id: string; name: string; role: string; description: string | null }[]
+  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[]
 ): AIAssetResult {
   const characterNames = new Set<string>()
   for (const ep of episodes) {
@@ -162,12 +152,9 @@ function extractAssetsLocally(
 
   const characters: AIAssetResult["characters"] = []
   for (const name of characterNames) {
-    const novelChar = novelCharacters.find((nc) => nc.name === name)
     characters.push({
       name,
-      role: (novelChar?.role as "protagonist" | "supporting" | "extra") || "supporting",
-      description: novelChar?.description || undefined,
-      sourceNovelCharacterId: novelChar?.id,
+      role: "supporting",
     })
   }
 
@@ -214,10 +201,6 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const novel = await prisma.novel.findUnique({
-    where: { projectId },
-    include: { characters: true },
-  })
 
   if (mode === "overwrite") {
     await Promise.all([
@@ -262,8 +245,7 @@ export async function POST(request: NextRequest) {
           summary: s.summary,
           characters: s.characters,
         })),
-      })),
-      novel?.characters || []
+      }))
     )
 
     const createdCharacters = await Promise.all(
@@ -278,7 +260,6 @@ export async function POST(request: NextRequest) {
             description: c.description || null,
             appearance: c.appearance || null,
             personality: c.personality || null,
-            sourceNovelCharacterId: c.sourceNovelCharacterId || null,
           },
         })
       )
