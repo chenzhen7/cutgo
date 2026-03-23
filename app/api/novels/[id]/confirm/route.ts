@@ -38,10 +38,10 @@ export async function POST(
       await tx.episode.create({
         data: {
           projectId: novel.projectId,
-          chapterId: ch.id,
+          chapterIds: JSON.stringify([ch.id]),
           index: episodeIndex,
           title: ch.title?.trim() || `第${episodeIndex}集`,
-          synopsis: ch.content.slice(0, 1200),
+          outline: ch.content.slice(0, 1200),
           scenes: {
             create: [
               {

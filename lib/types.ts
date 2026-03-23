@@ -94,13 +94,10 @@ export interface PlotEvent {
 export interface Episode {
   id: string
   projectId: string
-  chapterId: string
-  /** JSON 数组字符串，本集涵盖的章节 ID（有序）；空则仅 chapterId */
-  sourceChapterIds?: string | null
-  chapter: { id: string; index: number; title: string | null }
+  /** JSON 数组字符串，本集涵盖的所有章节 ID（有序）；无关联章节时为 null */
+  chapterIds: string | null
   index: number
   title: string
-  synopsis: string
   outline: string | null
   goldenHook: string | null
   keyConflict: string | null
@@ -134,8 +131,7 @@ export interface Script {
     id: string
     index: number
     title: string
-    chapterId: string
-    chapter: { id: string; index: number; title: string | null }
+    chapterIds: string | null
   }
   title: string
   content: string
@@ -176,7 +172,7 @@ export interface EpisodeInput {
   chapterId: string
   index?: number
   title: string
-  synopsis?: string
+  outline?: string
   goldenHook?: string
   keyConflict?: string
   cliffhanger?: string

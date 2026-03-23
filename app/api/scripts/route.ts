@@ -7,8 +7,7 @@ const scriptInclude = {
       id: true,
       index: true,
       title: true,
-      chapterId: true,
-      chapter: { select: { id: true, index: true, title: true } },
+      chapterIds: true,
     },
   },
 }

@@ -156,8 +156,7 @@ const scriptInclude = {
       id: true,
       index: true,
       title: true,
-      chapterId: true,
-      chapter: { select: { id: true, index: true, title: true } },
+      chapterIds: true,
     },
   },
 }
@@ -195,7 +194,6 @@ export async function POST(request: NextRequest) {
     orderBy: { index: "asc" },
     include: {
       scenes: { orderBy: { index: "asc" } },
-      chapter: true,
     },
   })
 
@@ -295,7 +293,7 @@ export async function POST(request: NextRequest) {
 
       const scriptContent = await callAIGenerateScript(
         episode.title,
-        episode.synopsis,
+        episode.outline ?? "",
         episode.keyConflict,
         episode.cliffhanger,
         episode.duration,

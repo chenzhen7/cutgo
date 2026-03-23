@@ -123,9 +123,9 @@ export function EpisodeSelectView({
                 </div>
 
                 {/* Synopsis */}
-                {ep.synopsis && (
+                {ep.outline && (
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
-                    {ep.synopsis}
+                    {ep.outline}
                   </p>
                 )}
 

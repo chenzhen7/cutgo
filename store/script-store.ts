@@ -6,6 +6,7 @@ import type {
   Episode,
   Chapter,
 } from "@/lib/types"
+import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 interface ScriptState {
   scripts: Script[]
@@ -23,10 +24,9 @@ interface ScriptState {
   fetchChapters: (projectId: string) => Promise<void>
   deleteEpisode: (projectId: string, episodeId: string) => Promise<void>
   reorderEpisodes: (projectId: string, orderedIds: string[]) => Promise<void>
-  createEpisodeWithScript: (projectId: string, chapterId: string) => Promise<void>
+  createEpisodeWithScript: (projectId: string, chapterIds: string[]) => Promise<void>
   updateEpisode: (episodeId: string, data: {
     title?: string
-    synopsis?: string
     outline?: string | null
     goldenHook?: string | null
     keyConflict?: string | null
@@ -202,11 +202,11 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     }
   },
 
-  createEpisodeWithScript: async (projectId, chapterId) => {
+  createEpisodeWithScript: async (projectId, chapterIds) => {
     const epRes = await fetch("/api/episodes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, chapterId }),
+      body: JSON.stringify({ projectId, chapterIds }),
     })
     if (!epRes.ok) {
       const err = await epRes.json().catch(() => ({}))
@@ -272,7 +272,10 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   filteredScripts: () => {
     const { scripts, filterChapterIds } = get()
     if (filterChapterIds.length === 0) return scripts
-    return scripts.filter((s) => filterChapterIds.includes(s.episode.chapterId))
+    return scripts.filter((s) => {
+      const ids = parseSourceChapterIds(s.episode)
+      return ids.some((id) => filterChapterIds.includes(id))
+    })
   },
 
   activeScript: () => {

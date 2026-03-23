@@ -76,7 +76,6 @@ model Chapter {
   selected  Boolean @default(true)
 
   paragraphs Paragraph[]
-  episodes   Episode[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -134,15 +133,11 @@ model Episode {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  chapterId String
-  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-
-  /// JSON 字符串数组：本集涵盖的小说章节 ID（有序）。空则视为仅 chapterId 一章
-  sourceChapterIds String?
+  /// JSON 字符串数组：本集涵盖的所有章节 ID（有序）；无关联章节时为 null
+  chapterIds String?
 
   index       Int
   title       String
-  synopsis    String
   outline     String? // 分集大纲，纯文本
   goldenHook  String?
   keyConflict String?

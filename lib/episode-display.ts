@@ -1,12 +1,8 @@
 import type { Episode } from "@/lib/types"
 
-/** 全项目分集：先按章节顺序，再按分集 index（与导航/持久化顺序一致） */
+/** 全项目分集：按分集 index（与剧本侧持久化顺序一致） */
 export function sortEpisodesByChapterAndIndex(episodes: Episode[]): Episode[] {
-  return [...episodes].sort((a, b) => {
-    const c = a.chapter.index - b.chapter.index
-    if (c !== 0) return c
-    return a.index - b.index
-  })
+  return sortEpisodesByGlobalIndex(episodes)
 }
 
 /** 全剧分集顺序：按分集 index（与剧本侧拖拽排序写入库中的顺序一致） */

@@ -123,9 +123,9 @@ export default function ScriptPage() {
   )
 
   const handleCreateEpisodeScript = useCallback(
-    async (chapterId: string) => {
+    async (chapterIds: string[]) => {
       try {
-        await createEpisodeWithScript(projectId, chapterId)
+        await createEpisodeWithScript(projectId, chapterIds)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "新增分集失败")
       }

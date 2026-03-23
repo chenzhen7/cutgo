@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
 
 export async function PATCH(
   request: NextRequest,
@@ -13,24 +14,16 @@ export async function PATCH(
     data: {
       ...(body.index !== undefined && { index: body.index }),
       ...(body.title !== undefined && { title: body.title }),
-      ...(body.synopsis !== undefined && { synopsis: body.synopsis }),
       ...(body.outline !== undefined && { outline: body.outline }),
       ...(body.goldenHook !== undefined && { goldenHook: body.goldenHook }),
       ...(body.keyConflict !== undefined && { keyConflict: body.keyConflict }),
       ...(body.cliffhanger !== undefined && { cliffhanger: body.cliffhanger }),
       ...(body.duration !== undefined && { duration: body.duration }),
-      ...(body.chapterId !== undefined && { chapterId: body.chapterId }),
-      ...(body.sourceChapterIds !== undefined && {
-        sourceChapterIds:
-          body.sourceChapterIds === null
-            ? null
-            : typeof body.sourceChapterIds === "string"
-              ? body.sourceChapterIds
-              : JSON.stringify(body.sourceChapterIds),
+      ...(body.chapterIds !== undefined && {
+        chapterIds: normalizeChapterIdsFromBody(body.chapterIds),
       }),
     },
     include: {
-      chapter: { select: { id: true, index: true, title: true } },
       scenes: { orderBy: { index: "asc" } },
     },
   })
@@ -55,7 +48,6 @@ export async function DELETE(
     where: { projectId: episode.projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
     include: {
-      chapter: { select: { id: true, index: true, title: true } },
       scenes: { orderBy: { index: "asc" } },
     },
   })

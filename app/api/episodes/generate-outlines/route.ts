@@ -40,9 +40,6 @@ export async function POST(request: NextRequest) {
   if (!projectId) {
     return NextResponse.json({ error: "projectId is required" }, { status: 400 })
   }
-  if (!chapterIds || chapterIds.length === 0) {
-    return NextResponse.json({ error: "chapterIds is required" }, { status: 400 })
-  }
 
   // 读取小说及章节
   const novel = await prisma.novel.findUnique({
@@ -56,13 +53,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "请先导入小说并解析章节" }, { status: 400 })
   }
 
-  const idSet = new Set(chapterIds)
-  const selectedChapters = novel.chapters
-    .filter((c) => idSet.has(c.id))
-    .sort((a, b) => a.index - b.index)
+  const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
+  let selectedChapters: typeof novel.chapters
 
-  if (selectedChapters.length === 0) {
-    return NextResponse.json({ error: "未找到所选章节" }, { status: 400 })
+  if (chapterIds && chapterIds.length > 0) {
+    const idSet = new Set(chapterIds)
+    selectedChapters = allSorted.filter((c) => idSet.has(c.id))
+    if (selectedChapters.length === 0) {
+      return NextResponse.json({ error: "未找到所选章节" }, { status: 400 })
+    }
+  } else {
+    const hasAnySelected = allSorted.some((c) => c.selected)
+    selectedChapters = hasAnySelected ? allSorted.filter((c) => c.selected) : allSorted
+    if (selectedChapters.length === 0) {
+      return NextResponse.json({ error: "暂无可用章节" }, { status: 400 })
+    }
   }
 
   // 拼接小说原文
@@ -73,8 +78,9 @@ export async function POST(request: NextRequest) {
     })
     .join("\n\n---\n\n")
 
-  // 构建章节序号 → chapterId 映射
-  const indexToChapterId = new Map(selectedChapters.map((c) => [c.index, c.id]))
+  // 构建显示章节号（1-based）→ chapterId 映射
+  // LLM 看到的是「第N章」，N = c.index + 1，因此用 c.index + 1 作为 key
+  const indexToChapterId = new Map(selectedChapters.map((c) => [c.index + 1, c.id]))
 
   // 调用 LLM
   const llmProvider = await getLLMProvider()
@@ -107,43 +113,23 @@ export async function POST(request: NextRequest) {
   const createdEpisodes = []
 
   for (const item of outlines) {
-    // 找到该分集关联的章节（用 chapter.index 匹配）
+    // 收集该分集关联的所有章节 ID（按 LLM 返回的显示章节号顺序）
     const chapterIndexList: number[] = Array.isArray(item.chapters) ? item.chapters : []
-
-    // 找到第一个有效的 chapterId 作为锚点
-    let anchorChapterId: string | null = null
-    const sourceIds: string[] = []
-
+    const allChapterIds: string[] = []
     for (const idx of chapterIndexList) {
       const cid = indexToChapterId.get(idx)
-      if (cid) {
-        sourceIds.push(cid)
-        if (!anchorChapterId) anchorChapterId = cid
-      }
-    }
-
-    // 如果没有匹配到，使用第一个选中章节作为锚点
-    if (!anchorChapterId) {
-      anchorChapterId = selectedChapters[0].id
+      if (cid) allChapterIds.push(cid)
     }
 
     const episodeIndex = nextIndex++
-    const generatedTitle = item.title?.trim()
-    const title = generatedTitle || `第${episodeIndex}集`
-
-    const sourceIdsJson =
-      sourceIds.length > 1
-        ? JSON.stringify(sourceIds)
-        : null
+    const title = item.title?.trim() || `第${episodeIndex}集`
 
     const episode = await prisma.episode.create({
       data: {
         projectId,
-        chapterId: anchorChapterId,
-        ...(sourceIdsJson ? { sourceChapterIds: sourceIdsJson } : {}),
+        chapterIds: allChapterIds.length > 0 ? JSON.stringify(allChapterIds) : null,
         index: episodeIndex,
         title,
-        synopsis: item.summary || "",
         outline: item.summary || null,
         goldenHook: item.goldenHook || null,
         keyConflict: item.core_conflict || null,
@@ -151,7 +137,6 @@ export async function POST(request: NextRequest) {
         duration: "3min",
       },
       include: {
-        chapter: { select: { id: true, index: true, title: true } },
         scenes: { orderBy: { index: "asc" } },
       },
     })

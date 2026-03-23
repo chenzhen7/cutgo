@@ -19,7 +19,6 @@ export async function PUT(request: NextRequest) {
     where: { projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
     include: {
-      chapter: { select: { id: true, index: true, title: true } },
       scenes: { orderBy: { index: "asc" } },
     },
   })

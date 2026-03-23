@@ -27,7 +27,7 @@ interface AIAssetResult {
 }
 
 async function callAIExtractAssets(
-  episodes: { title: string; synopsis: string; scenes: { title: string; summary: string; characters: string | null }[] }[],
+  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[],
   novelCharacters: { id: string; name: string; role: string; description: string | null }[],
   synopsis: string | null
 ): Promise<AIAssetResult> {
@@ -42,7 +42,7 @@ async function callAIExtractAssets(
   const episodesText = episodes
     .map(
       (ep) =>
-        `【${ep.title}】${ep.synopsis}\n场景：${ep.scenes.map((s) => `${s.title}: ${s.summary} (角色: ${s.characters || "无"})`).join("; ")}`
+        `【${ep.title}】${ep.outline || ""}\n场景：${ep.scenes.map((s) => `${s.title}: ${s.summary} (角色: ${s.characters || "无"})`).join("; ")}`
     )
     .join("\n\n")
 
@@ -149,7 +149,7 @@ ${episodesText}
 }
 
 function extractAssetsLocally(
-  episodes: { title: string; synopsis: string; scenes: { title: string; summary: string; characters: string | null }[] }[],
+  episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[],
   novelCharacters: { id: string; name: string; role: string; description: string | null }[]
 ): AIAssetResult {
   const characterNames = new Set<string>()
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
     const aiResult = await callAIExtractAssets(
       episodes.map((ep) => ({
         title: ep.title,
-        synopsis: ep.synopsis,
+        outline: ep.outline,
         scenes: ep.scenes.map((s) => ({
           title: s.title,
           summary: s.summary,
