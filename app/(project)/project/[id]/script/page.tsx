@@ -313,6 +313,7 @@ export default function ScriptPage() {
                         <ScriptEditor
                           script={activeScript}
                           episode={activeEpisode}
+                          chapters={chapters}
                           episodeDisplayNumber={
                             episodeDisplayMap.get(activeScript.episodeId) ?? 1
                           }

@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Check, X, Pencil, MapPin, User, Package, ListOrdered } from "lucide-react"
+import { Check, X, Pencil, MapPin, User, Package, ListOrdered, BookOpen, School } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   AssetCharacter,
@@ -19,8 +19,9 @@ import type {
   AssetScene,
   Episode,
   Script,
+  Chapter,
 } from "@/lib/types"
-import { countWords } from "@/lib/novel-utils"
+import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import {
   ResizableHandle,
@@ -41,6 +42,7 @@ function parseJsonArray(val: string | null | undefined): string[] {
 interface ScriptEditorProps {
   script: Script
   episode: Episode
+  chapters?: Chapter[]
   /** 全项目分集排序后的展示集序号（第 1、2… 集），非数据库 index 字段 */
   episodeDisplayNumber: number
   projectId: string
@@ -65,6 +67,7 @@ interface ScriptEditorProps {
 export function ScriptEditor({
   script,
   episode,
+  chapters = [],
   episodeDisplayNumber,
   projectId,
   assetCharacters,
@@ -269,7 +272,13 @@ export function ScriptEditor({
 
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
-  const sourceChapterCount = parseSourceChapterIds(episode).length
+  
+  const sourceChapterIds = parseSourceChapterIds(episode)
+  const sourceChapterCount = sourceChapterIds.length
+  const sourceChapters = chapters.filter(c => sourceChapterIds.includes(c.id))
+    // 按原始 ID 顺序排列
+    .sort((a, b) => sourceChapterIds.indexOf(a.id) - sourceChapterIds.indexOf(b.id))
+
   const lineNumbers = content.split("\n").map((_, i) => i + 1)
 
   const syncGutterScroll = () => {
@@ -367,10 +376,16 @@ export function ScriptEditor({
           >
             <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
               {/* 资产区 */}
-              <div className="px-4 py-3 mb-1 space-y-2.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
+              <div className="mb-4 space-y-2.5">
+                {/* <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label> */}
+                <div className="px-4 py-2 bg-muted/20 border-b flex items-center justify-between">
+                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <School className="size-3" />
+                    关联资产 
+                  </Label>
 
-                <div className="grid grid-cols-3 gap-3">
+                </div>
+                <div className="grid grid-cols-3 gap-3 px-4">
                   {/* Scene */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -570,6 +585,7 @@ export function ScriptEditor({
                 </div>
               </div>
 
+              
               {/* 大纲区块 */}
               <div className="shrink-0 space-y-4 pb-6">
                 <div className="px-4 py-2 bg-muted/20 border-y flex items-center justify-between">
@@ -715,6 +731,34 @@ export function ScriptEditor({
                   </div>
                 )}
               </div>
+
+
+              {/* 关联章节 */}
+              {sourceChapters.length > 0 && (
+                <div className="shrink-0 space-y-2 pb-2">
+                  <div className="px-4 py-2 bg-muted/20 border-y flex items-center justify-between">
+                    <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                      <BookOpen className="size-3" />
+                      关联章节 ({sourceChapters.length})
+                    </Label>
+
+                  </div>
+                  <div className="px-4 flex flex-wrap gap-1.5">
+                    {sourceChapters.map((ch) => (
+                      <Badge 
+                        key={ch.id} 
+                        variant="outline" 
+                        className="bg-background/50 text-[10px] font-medium py-0.5 px-2 hover:bg-muted transition-colors cursor-default"
+                        title={ch.title || undefined}
+                      >
+                        <span className="text-muted-foreground mr-1">{formatChapterOrdinalLabel(ch.index)}</span>
+                        {ch.title || "未命名"}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </ResizablePanel>
 

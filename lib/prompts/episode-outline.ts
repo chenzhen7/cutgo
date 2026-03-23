@@ -49,7 +49,7 @@ export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视
     "core_conflict": "",
     "summary": "",
     "cliffhanger": "",
-    "chapters": []
+    "chapters": [3,4,5]
   }
 ]
 ---
