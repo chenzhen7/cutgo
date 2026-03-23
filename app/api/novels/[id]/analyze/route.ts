@@ -34,13 +34,11 @@ async function callAIAnalysis(text: string) {
   const prompt = `你是一位专业的影视编剧顾问，擅长将小说文本转化为短剧结构。请分析以下小说文本，返回严格的 JSON 格式结果。
 
 要求分析以下维度：
-1. synopsis: 故事大纲（200-500字的精炼摘要）
-2. characters: 角色列表，每个角色包含 name, role("protagonist"/"supporting"/"extra"), description, firstAppear, frequency, relations([{target, relation}])
-3. events: 剧情事件列表，每个事件包含 index, type("setup"/"rising"/"climax"/"resolution"), summary, detail, emotion(情感标签), sourceRef(对应原文引用), adaptScore(1-5改编价值), isHighlight(是否高潮点)
+1. characters: 角色列表，每个角色包含 name, role("protagonist"/"supporting"/"extra"), description, firstAppear, frequency, relations([{target, relation}])
+2. events: 剧情事件列表，每个事件包含 index, type("setup"/"rising"/"climax"/"resolution"), summary, detail, emotion(情感标签), sourceRef(对应原文引用), adaptScore(1-5改编价值), isHighlight(是否高潮点)
 
 请严格返回如下 JSON 格式（不要包含 markdown 标记）：
 {
-  "synopsis": "...",
   "characters": [...],
   "events": [...]
 }
@@ -74,7 +72,6 @@ ${text.slice(0, 15000)}`
 
     const parsed = JSON.parse(content)
     return {
-      synopsis: parsed.synopsis || "",
       characters: (parsed.characters || []) as AICharacter[],
       events: (parsed.events || []) as AIEvent[],
     }
@@ -123,9 +120,6 @@ function generateLocalAnalysis(text: string) {
     relations: [],
   }))
 
-  const totalWords = countWords(text)
-  const synopsis = `本文共 ${totalWords} 字。故事涉及${characters.length}个角色${characters.length > 0 ? "，包括" + characters.slice(0, 3).map((c) => c.name).join("、") : ""}。请使用AI分析获取更准确的大纲。`
-
   const events: AIEvent[] = [
     {
       index: 0,
@@ -169,7 +163,7 @@ function generateLocalAnalysis(text: string) {
     },
   ]
 
-  return { synopsis, characters, events }
+  return { characters, events }
 }
 
 export async function POST(
@@ -187,8 +181,6 @@ export async function POST(
   }
 
   try {
-    await prisma.novel.update({ where: { id }, data: { status: "draft" } })
-
     await prisma.chapter.deleteMany({ where: { novelId: id } })
     await prisma.novelCharacter.deleteMany({ where: { novelId: id } })
     await prisma.plotEvent.deleteMany({ where: { novelId: id } })
@@ -246,9 +238,8 @@ export async function POST(
       })
     }
 
-    const updated = await prisma.novel.update({
+    const updated = await prisma.novel.findUnique({
       where: { id },
-      data: { synopsis: aiResult.synopsis, status: "analyzed" },
       include: {
         chapters: {
           orderBy: { index: "asc" },
@@ -258,6 +249,10 @@ export async function POST(
         events: { orderBy: { index: "asc" } },
       },
     })
+
+    if (!updated) {
+      return NextResponse.json({ error: "小说不存在" }, { status: 404 })
+    }
 
     return NextResponse.json({
       ...updated,
@@ -270,7 +265,6 @@ export async function POST(
     })
   } catch (err) {
     console.error("Analysis failed:", err)
-    await prisma.novel.update({ where: { id }, data: { status: "draft" } })
     return NextResponse.json(
       { error: "分析失败，请重试" },
       { status: 500 }

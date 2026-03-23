@@ -69,16 +69,6 @@ model Novel {
   rawText   String
   /// 字数统计
   wordCount Int
-  /// 来源：paste（粘贴）| file（文件）
-  source    String  @default("paste")
-  /// 上传文件名（file 来源时）
-  fileName  String?
-
-  /// AI 生成的故事大纲
-  synopsis String?
-
-  /// 解析状态：draft | analyzed | confirmed
-  status String @default("draft")
 
   chapters   Chapter[]
   characters NovelCharacter[]

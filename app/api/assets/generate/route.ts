@@ -28,8 +28,7 @@ interface AIAssetResult {
 
 async function callAIExtractAssets(
   episodes: { title: string; outline: string | null; scenes: { title: string; summary: string; characters: string | null }[] }[],
-  novelCharacters: { id: string; name: string; role: string; description: string | null }[],
-  synopsis: string | null
+  novelCharacters: { id: string; name: string; role: string; description: string | null }[]
 ): Promise<AIAssetResult> {
   const apiKey = process.env.OPENAI_API_KEY
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
@@ -51,9 +50,6 @@ async function callAIExtractAssets(
     .join("\n")
 
   const prompt = `你是一位专业的短剧制作资产管理专家。请根据以下分集与场景信息，提取并整理出该项目所需的全部资产。
-
-## 故事大纲
-${synopsis || "无"}
 
 ## 小说原始角色列表
 ${novelCharsText || "无"}
@@ -267,8 +263,7 @@ export async function POST(request: NextRequest) {
           characters: s.characters,
         })),
       })),
-      novel?.characters || [],
-      novel?.synopsis || null
+      novel?.characters || []
     )
 
     const createdCharacters = await Promise.all(

@@ -27,10 +27,6 @@ export interface Novel {
   title: string | null
   rawText: string
   wordCount: number
-  source: "paste" | "file"
-  fileName: string | null
-  synopsis: string | null
-  status: "draft" | "analyzed" | "confirmed"
   chapters: Chapter[]
   characters: NovelCharacter[]
   events: PlotEvent[]
@@ -203,8 +199,6 @@ export interface ImportNovelInput {
   projectId: string
   title?: string
   rawText: string
-  source: "paste" | "file"
-  fileName?: string
 }
 
 export interface CharacterInput {
@@ -317,7 +311,6 @@ export interface AssetGenerateResult {
 export type AnalysisStatus = "idle" | "analyzing" | "completed" | "error"
 
 export interface AnalysisResult {
-  synopsis: string
   chapters: {
     index: number
     title: string | null

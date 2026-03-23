@@ -73,8 +73,6 @@ export default function ImportPage() {
           projectId,
           title: fileName || undefined,
           rawText: text,
-          source: fileName ? "file" : "paste",
-          fileName: fileName || undefined,
         })
         await analyzeNovel(imported.id)
         stopProgressAnimation()

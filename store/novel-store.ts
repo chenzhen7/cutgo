@@ -29,7 +29,6 @@ interface NovelState {
   confirmImport: (novelId: string) => Promise<void>
 
   fetchNovel: (projectId: string) => Promise<void>
-  updateSynopsis: (novelId: string, synopsis: string) => Promise<void>
 
   addCharacter: (novelId: string, data: CharacterInput) => Promise<void>
   updateCharacter: (characterId: string, data: Partial<CharacterInput>) => Promise<void>
@@ -79,11 +78,16 @@ export const useNovelStore = create<NovelState>((set, get) => ({
         throw new Error(err.error || "分析失败")
       }
       const data = await res.json()
+      const { stats, chapters, characters, events, ...novelFields } = data
+      void stats
+      const ch = chapters ?? []
+      const chs = characters ?? []
+      const ev = events ?? []
       set({
-        novel: { ...get().novel!, ...data, status: "analyzed" },
-        chapters: data.chapters || [],
-        characters: data.characters || [],
-        events: data.events || [],
+        novel: { ...get().novel!, ...novelFields, chapters: ch, characters: chs, events: ev },
+        chapters: ch,
+        characters: chs,
+        events: ev,
         analysisStatus: "completed",
       })
     } catch (err) {
@@ -98,7 +102,12 @@ export const useNovelStore = create<NovelState>((set, get) => ({
       throw new Error(err.error || "确认导入失败")
     }
     const updated = await res.json()
-    set({ novel: { ...get().novel!, ...updated, status: "confirmed" } })
+    const ch = get().chapters
+    const chs = get().characters
+    const ev = get().events
+    set({
+      novel: { ...get().novel!, ...updated, chapters: ch, characters: chs, events: ev },
+    })
   },
 
   fetchNovel: async (projectId) => {
@@ -114,18 +123,9 @@ export const useNovelStore = create<NovelState>((set, get) => ({
       chapters: data.chapters || [],
       characters: data.characters || [],
       events: data.events || [],
-      analysisStatus: data.status === "analyzed" || data.status === "confirmed" ? "completed" : "idle",
+      analysisStatus:
+        (data.chapters?.length ?? 0) > 0 ? "completed" : "idle",
     })
-  },
-
-  updateSynopsis: async (novelId, synopsis) => {
-    const res = await fetch(`/api/novels/${novelId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ synopsis }),
-    })
-    if (!res.ok) throw new Error("更新大纲失败")
-    set({ novel: { ...get().novel!, synopsis } })
   },
 
   addCharacter: async (novelId, data) => {

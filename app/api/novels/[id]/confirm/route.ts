@@ -25,11 +25,6 @@ export async function POST(
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.novel.update({
-      where: { id },
-      data: { status: "confirmed" },
-    })
-
     await tx.episode.deleteMany({ where: { projectId: novel.projectId } })
 
     let episodeIndex = 0

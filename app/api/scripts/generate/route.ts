@@ -299,7 +299,7 @@ export async function POST(request: NextRequest) {
         episode.duration,
         scenesJson,
         chapterContent,
-        novel.synopsis,
+        null,
         charactersStr,
         previousContent,
         project.platform,

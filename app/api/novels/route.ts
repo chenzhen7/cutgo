@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { projectId, title, rawText, source, fileName } = body
+  const { projectId, title, rawText } = body
 
   if (!projectId) {
     return NextResponse.json({ error: "projectId is required" }, { status: 400 })
@@ -48,10 +48,6 @@ export async function POST(request: NextRequest) {
         title: title || null,
         rawText,
         wordCount: countWords(rawText),
-        source: source || "paste",
-        fileName: fileName || null,
-        status: "draft",
-        synopsis: null,
       },
     })
 
@@ -68,8 +64,6 @@ export async function POST(request: NextRequest) {
       title: title || null,
       rawText,
       wordCount: countWords(rawText),
-      source: source || "paste",
-      fileName: fileName || null,
     },
   })
 
