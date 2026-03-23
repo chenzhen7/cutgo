@@ -1,7 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import {
   FolderOpen,
   Users,
@@ -15,9 +15,7 @@ import {
   Trash2,
   Lock,
   Unlock,
-  RefreshCw,
   ImageIcon,
-  ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -52,6 +50,8 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { useAssetStore } from "@/store/asset-store"
+import { useNovelStore } from "@/store/novel-store"
+import { ExtractAssetsDialog } from "../import/components/extract-assets-dialog"
 import type {
   AssetCharacter,
   AssetScene,
@@ -65,18 +65,13 @@ type AssetTab = "characters" | "scenes" | "props"
 
 export default function AssetsPage() {
   const params = useParams()
-  const router = useRouter()
   const projectId = params.id as string
-  const autoGenerateTriggered = useRef(false)
 
   const {
     characters,
     scenes,
     props,
-    generateStatus,
-    generateError,
     fetchAssets,
-    generateAssets,
     addCharacter,
     updateCharacter,
     deleteCharacter,
@@ -87,6 +82,7 @@ export default function AssetsPage() {
     updateProp,
     deleteProp,
   } = useAssetStore()
+  const { novel, chapters, fetchNovel } = useNovelStore()
 
   const [activeTab, setActiveTab] = useState<AssetTab>("characters")
   const [loading, setLoading] = useState(true)
@@ -103,31 +99,31 @@ export default function AssetsPage() {
   const [showPropForm, setShowPropForm] = useState(false)
   const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
   const [deletingPropId, setDeletingPropId] = useState<string | null>(null)
+  const [showExtractDialog, setShowExtractDialog] = useState(false)
+  const [extractSuccessMsg, setExtractSuccessMsg] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
       setLoading(true)
-      await fetchAssets(projectId)
+      await Promise.all([fetchAssets(projectId), fetchNovel(projectId)])
       setLoading(false)
     }
     init()
-  }, [projectId, fetchAssets])
+  }, [projectId, fetchAssets, fetchNovel])
 
-  useEffect(() => {
-    if (!loading && !autoGenerateTriggered.current && characters.length === 0 && scenes.length === 0 && props.length === 0 && generateStatus === "idle") {
-      autoGenerateTriggered.current = true
-      generateAssets(projectId, "skip_existing")
-    }
-  }, [loading, characters.length, scenes.length, props.length, generateStatus, projectId, generateAssets])
-
-  const handleGenerate = useCallback(
-    async (mode: "skip_existing" | "overwrite") => {
-      await generateAssets(projectId, mode)
+  const handleExtractSuccess = useCallback(
+    async (stats: { characterCount: number; sceneCount: number; propCount: number }) => {
+      const parts: string[] = []
+      if (stats.characterCount > 0) parts.push(`${stats.characterCount} 个角色`)
+      if (stats.sceneCount > 0) parts.push(`${stats.sceneCount} 个场景`)
+      if (stats.propCount > 0) parts.push(`${stats.propCount} 个道具`)
+      setExtractSuccessMsg(parts.length > 0 ? `资产提取成功：${parts.join("、")}` : "资产提取完成")
+      await fetchAssets(projectId)
+      setTimeout(() => setExtractSuccessMsg(null), 5000)
     },
-    [projectId, generateAssets]
+    [projectId, fetchAssets]
   )
 
-  const isGenerating = generateStatus === "generating"
   const totalAssets = characters.length + scenes.length + props.length
 
   const TABS = [
@@ -160,45 +156,18 @@ export default function AssetsPage() {
         <div className="flex shrink-0 items-center gap-2">
           <Button
             size="sm"
-            variant={totalAssets > 0 ? "outline" : "default"}
-            onClick={() => handleGenerate(totalAssets > 0 ? "overwrite" : "skip_existing")}
-            disabled={isGenerating}
+            onClick={() => setShowExtractDialog(true)}
+            disabled={!novel || chapters.length === 0}
           >
-            {isGenerating ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : totalAssets > 0 ? (
-              <RefreshCw className="size-3.5" />
-            ) : (
-              <Sparkles className="size-3.5" />
-            )}
-            {isGenerating ? "生成中..." : totalAssets > 0 ? "重新生成" : "AI 提取资产"}
+            <Sparkles className="size-4" />
+            AI提取资产
           </Button>
         </div>
       </div>
 
-      {/* Generate error */}
-      {generateStatus === "error" && generateError && (
-        <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-          <p className="text-sm text-destructive">{generateError}</p>
-          <button
-            onClick={() => handleGenerate("skip_existing")}
-            className="mt-2 text-sm text-destructive underline hover:no-underline"
-          >
-            重试
-          </button>
-        </div>
-      )}
-
-      {/* Generating progress */}
-      {isGenerating && (
-        <div className="mt-4 rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
-          <Loader2 className="size-5 animate-spin text-primary" />
-          <div>
-            <p className="text-sm font-medium">正在从分集中提取资产...</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              AI 正在分析分集与场景信息，提取角色、场景和道具
-            </p>
-          </div>
+      {extractSuccessMsg && (
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+          <p className="text-xs text-primary">{extractSuccessMsg}</p>
         </div>
       )}
 
@@ -259,21 +228,13 @@ export default function AssetsPage() {
       {/* Content */}
       <div className="mt-6">
         {/* Empty state */}
-        {totalAssets === 0 && !isGenerating && (
+        {totalAssets === 0 && (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-16">
             <FolderOpen className="h-12 w-12 text-muted-foreground/30" />
             <h3 className="mt-4 text-sm font-medium">暂无资产数据</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              请先在「剧本生成」中按章节创建分集并生成剧本后，再点击「AI 提取资产」
+              请前往「小说导入」页面，通过“提取资产”弹窗生成角色、场景和道具
             </p>
-            <Button
-              className="mt-4"
-              size="sm"
-              onClick={() => handleGenerate("skip_existing")}
-            >
-              <Sparkles className="size-3.5" />
-              AI 提取资产
-            </Button>
           </div>
         )}
 
@@ -463,6 +424,16 @@ export default function AssetsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {novel && (
+        <ExtractAssetsDialog
+          open={showExtractDialog}
+          onOpenChange={setShowExtractDialog}
+          novelId={novel.id}
+          chapters={chapters}
+          onSuccess={(stats) => void handleExtractSuccess(stats)}
+        />
+      )}
     </div>
   )
 }
@@ -784,10 +755,10 @@ function CharacterFormDialog({
         </DialogHeader>
         <div className="grid gap-4 py-1">
           <div className="grid grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label>角色名 *</Label>
-            <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="角色名称" />
-          </div>
+            <div className="grid gap-2">
+              <Label>角色名 *</Label>
+              <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="角色名称" />
+            </div>
             <div className="grid gap-2">
               <Label>角色类型</Label>
               <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>

@@ -6,22 +6,14 @@ import type {
   AssetCharacterInput,
   AssetSceneInput,
   AssetPropInput,
-  AssetGenerateStatus,
 } from "@/lib/types"
 
 interface AssetState {
   characters: AssetCharacter[]
   scenes: AssetScene[]
   props: AssetProp[]
-  generateStatus: AssetGenerateStatus
-  generateError: string | null
 
   fetchAssets: (projectId: string) => Promise<void>
-
-  generateAssets: (
-    projectId: string,
-    mode?: "skip_existing" | "overwrite"
-  ) => Promise<void>
 
   addCharacter: (projectId: string, data: AssetCharacterInput) => Promise<void>
   updateCharacter: (id: string, data: Partial<AssetCharacterInput>) => Promise<void>
@@ -49,8 +41,6 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   characters: [],
   scenes: [],
   props: [],
-  generateStatus: "idle",
-  generateError: null,
 
   fetchAssets: async (projectId) => {
     const res = await fetch(`/api/assets?projectId=${projectId}`)
@@ -61,33 +51,6 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       scenes: data.scenes || [],
       props: data.props || [],
     })
-  },
-
-  generateAssets: async (projectId, mode = "skip_existing") => {
-    set({ generateStatus: "generating", generateError: null })
-    try {
-      const res = await fetch("/api/assets/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, mode }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "资产提取失败")
-      }
-      const data = await res.json()
-      set({
-        characters: data.characters || [],
-        scenes: data.scenes || [],
-        props: data.props || [],
-        generateStatus: "completed",
-      })
-    } catch (err) {
-      set({
-        generateStatus: "error",
-        generateError: (err as Error).message,
-      })
-    }
   },
 
   addCharacter: async (projectId, data) => {
@@ -207,8 +170,6 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       characters: [],
       scenes: [],
       props: [],
-      generateStatus: "idle",
-      generateError: null,
     })
   },
 }))

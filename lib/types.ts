@@ -221,19 +221,6 @@ export interface AssetPropInput {
   imageUrl?: string
 }
 
-export type AssetGenerateStatus = "idle" | "generating" | "completed" | "error"
-
-export interface AssetGenerateResult {
-  characters: AssetCharacter[]
-  scenes: AssetScene[]
-  props: AssetProp[]
-  stats: {
-    characterCount: number
-    sceneCount: number
-    propCount: number
-  }
-}
-
 export type AnalysisStatus = "idle" | "analyzing" | "completed" | "error"
 
 export interface AnalysisResult {
