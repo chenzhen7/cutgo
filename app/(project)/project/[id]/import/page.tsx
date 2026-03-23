@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation"
 import { useNovelStore } from "@/store/novel-store"
 import { ImportNovelDialog } from "./components/import-novel-dialog"
 import { TabChapters } from "./components/tab-chapters"
+import { ExtractAssetsDialog } from "./components/extract-assets-dialog"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Upload, ArrowRight } from "lucide-react"
+import { BookOpen, Upload, ArrowRight, Sparkles } from "lucide-react"
 
 const ANALYSIS_STAGES = [
   "正在拆分文本结构...",
@@ -35,6 +36,8 @@ export default function ImportPage() {
   } = useNovelStore()
 
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showExtractDialog, setShowExtractDialog] = useState(false)
+  const [extractSuccessMsg, setExtractSuccessMsg] = useState<string | null>(null)
   const [stageIndex, setStageIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [confirmError, setConfirmError] = useState<string | null>(null)
@@ -95,6 +98,20 @@ export default function ImportPage() {
     }
   }, [novel, confirmImport, router, projectId])
 
+  const handleExtractSuccess = useCallback(
+    (stats: { characterCount: number; sceneCount: number; propCount: number }) => {
+      const parts: string[] = []
+      if (stats.characterCount > 0) parts.push(`${stats.characterCount} 个角色`)
+      if (stats.sceneCount > 0) parts.push(`${stats.sceneCount} 个场景`)
+      if (stats.propCount > 0) parts.push(`${stats.propCount} 个道具`)
+      setExtractSuccessMsg(
+        parts.length > 0 ? `资产提取成功：${parts.join("、")}` : "资产提取完成"
+      )
+      setTimeout(() => setExtractSuccessMsg(null), 5000)
+    },
+    []
+  )
+
   const isImported = !!novel
   const isEmpty = chapters.length === 0
 
@@ -114,10 +131,20 @@ export default function ImportPage() {
             </Button>
           )}
           {!isEmpty && (
-            <Button size="sm" onClick={handleConfirm}>
-              确认导入，进入剧本生成
-              <ArrowRight className="size-4" />
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowExtractDialog(true)}
+              >
+                <Sparkles className="size-4" />
+                提取资产
+              </Button>
+              <Button size="sm" onClick={handleConfirm}>
+                确认导入，进入剧本生成
+                <ArrowRight className="size-4" />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -131,6 +158,11 @@ export default function ImportPage() {
       {confirmError && (
         <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
           <p className="text-xs text-destructive">{confirmError}</p>
+        </div>
+      )}
+      {extractSuccessMsg && (
+        <div className="px-6 py-2 border-b bg-primary/5 shrink-0">
+          <p className="text-xs text-primary">{extractSuccessMsg}</p>
         </div>
       )}
 
@@ -168,6 +200,16 @@ export default function ImportPage() {
         analysisStageIndex={stageIndex}
         analysisProgress={progress}
       />
+
+      {novel && (
+        <ExtractAssetsDialog
+          open={showExtractDialog}
+          onOpenChange={setShowExtractDialog}
+          novelId={novel.id}
+          chapters={chapters}
+          onSuccess={handleExtractSuccess}
+        />
+      )}
     </div>
   )
 }
