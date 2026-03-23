@@ -7,24 +7,40 @@ datasource db {
   provider = "sqlite"
 }
 
+/// 短视频/漫剧项目主表
 model Project {
+  /// 主键
   id          String   @id @default(cuid())
+  /// 项目名称
   name        String
+  /// 项目描述
   description String?
+  /// 标签（可存逗号分隔或 JSON，视业务而定）
   tags        String?
+  /// 封面图 URL
   coverUrl    String?
 
+  /// 目标发布平台，如「抖音」
   platform    String   @default("抖音")
+  /// 画幅比，如 9:16
   aspectRatio String   @default("9:16")
+  /// 分辨率描述，如 1080x1920
   resolution  String   @default("1080x1920")
+  /// 目标单集时长描述，如 60s
   duration    String   @default("60s")
 
+  /// 风格预设标识或名称
   stylePreset     String?
+  /// 全局负面提示词（图像等）
   globalNegPrompt String?
+  /// 风格参考图 URL
   styleRefUrl     String?
 
+  /// 项目状态，如 draft
   status    String   @default("draft")
+  /// 当前流程步骤序号（1-based）
   step      Int      @default(1)
+  /// 当前步骤展示文案，如「小说导入」
   stepLabel String   @default("小说导入")
 
   novel    Novel?
@@ -41,20 +57,28 @@ model Project {
   updatedAt DateTime @updatedAt
 }
 
+/// 项目关联的小说原文与分析产物
 model Novel {
   id        String  @id @default(cuid())
   projectId String  @unique
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  /// 小说标题（可空）
   title     String?
+  /// 原始全文
   rawText   String
+  /// 字数统计
   wordCount Int
-  source    String  @default("paste") // "paste" | "file"
+  /// 来源：paste（粘贴）| file（文件）
+  source    String  @default("paste")
+  /// 上传文件名（file 来源时）
   fileName  String?
 
-  synopsis String? // AI 生成的故事大纲
+  /// AI 生成的故事大纲
+  synopsis String?
 
-  status String @default("draft") // "draft" | "analyzed" | "confirmed"
+  /// 解析状态：draft | analyzed | confirmed
+  status String @default("draft")
 
   chapters   Chapter[]
   characters NovelCharacter[]
@@ -64,15 +88,21 @@ model Novel {
   updatedAt DateTime @updatedAt
 }
 
+/// 小说章节
 model Chapter {
   id      String @id @default(cuid())
   novelId String
   novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
 
+  /// 章节序号（从 0 或 1 起，与业务一致）
   index     Int
+  /// 章节标题
   title     String?
+  /// 章节正文
   content   String
+  /// 本章字数
   wordCount Int
+  /// 是否参与后续分集/选用
   selected  Boolean @default(true)
 
   paragraphs Paragraph[]
@@ -81,67 +111,96 @@ model Chapter {
   updatedAt DateTime @updatedAt
 }
 
+/// 章节内段落（细粒度选用）
 model Paragraph {
   id        String  @id @default(cuid())
   chapterId String
   chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
+  /// 段落在章内序号
   index     Int
+  /// 段落文本
   content   String
+  /// 段落字数
   wordCount Int
+  /// 是否选用
   selected  Boolean @default(true)
 
   createdAt DateTime @default(now())
 }
 
+/// 从小说抽取的角色
 model NovelCharacter {
   id      String @id @default(cuid())
   novelId String
   novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
 
+  /// 角色名
   name        String
-  role        String  @default("supporting") // "protagonist" | "supporting" | "extra"
+  /// 角色类型：protagonist | supporting | extra
+  role        String  @default("supporting")
+  /// 角色设定摘要
   description String?
+  /// 首次出现位置描述
   firstAppear String?
+  /// 出现频次权重
   frequency   Int     @default(1)
-  relations   String? // JSON: [{ target: "角色B", relation: "恋人" }]
+  /// JSON：与其他角色的关系，如 [{ target, relation }]
+  relations   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+/// 剧情节点（结构化解构）
 model PlotEvent {
   id      String @id @default(cuid())
   novelId String
   novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
 
+  /// 节点顺序
   index       Int
-  type        String  // "setup" | "rising" | "climax" | "resolution"
+  /// 类型：setup | rising | climax | resolution
+  type        String
+  /// 一句话摘要
   summary     String
+  /// 详细说明
   detail      String?
+  /// 情绪标签
   emotion     String?
+  /// 对应原文位置/引用
   sourceRef   String?
+  /// 改编适配分（可选）
   adaptScore  Int?
+  /// 是否高光情节
   isHighlight Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+/// 分集
 model Episode {
   id        String  @id @default(cuid())
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  /// JSON 字符串数组：本集涵盖的所有章节 ID（有序）；无关联章节时为 null
+  /// JSON 字符串数组：本集涵盖的章节 ID（有序）；无关联章节时为 null
   chapterIds String?
 
+  /// 集序号
   index       Int
+  /// 分集标题
   title       String
-  outline     String? // 分集大纲，纯文本
+  /// 分集大纲（纯文本）
+  outline     String?
+  /// 黄金钩子/开场吸引点
   goldenHook  String?
+  /// 核心冲突
   keyConflict String?
+  /// 悬念/钩子等收尾
   cliffhanger String?
+  /// 本集目标时长描述
   duration    String  @default("60s")
 
   scenes            EpisodeScene[]
@@ -152,22 +211,30 @@ model Episode {
   updatedAt DateTime @updatedAt
 }
 
+/// 分集内的场次拆分
 model EpisodeScene {
   id        String  @id @default(cuid())
   episodeId String
   episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
+  /// 场次序号
   index      Int
+  /// 场次标题
   title      String
+  /// 场次内容摘要
   summary    String
+  /// 场次时长
   duration   String  @default("15s")
+  /// 出场角色描述或 JSON
   characters String?
+  /// 情绪
   emotion    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+/// 分集剧本（与 Episode 一对一）
 model Script {
   id        String  @id @default(cuid())
   projectId String
@@ -176,12 +243,18 @@ model Script {
   episodeId String  @unique
   episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
+  /// 剧本标题
   title      String
+  /// 剧本文本正文
   content    String    @default("")
-  status     String    @default("draft") // "draft" | "generated" | "edited"
-  characters String?   // JSON array of asset character names
-  props      String?   // JSON array of asset prop names
-  location   String?   // asset scene name
+  /// 状态：draft | generated | edited
+  status     String    @default("draft")
+  /// JSON 数组：引用的资产角色名称列表
+  characters String?
+  /// JSON 数组：引用的资产道具名称列表
+  props      String?
+  /// 主场景资产名称
+  location   String?
 
   storyboards Storyboard[]
 
@@ -191,22 +264,34 @@ model Script {
 
 // ── Asset Models ──
 
+/// 项目级角色资产（立绘、设定）
 model AssetCharacter {
   id        String  @id @default(cuid())
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  /// 角色名称（项目内唯一）
   name        String
-  role        String  @default("supporting") // "protagonist" | "supporting" | "extra"
-  gender      String? // "male" | "female" | "other"
+  /// protagonist | supporting | extra
+  role        String  @default("supporting")
+  /// male | female | other
+  gender      String?
+  /// 年龄描述
   age         String?
+  /// 背景设定
   description String?
+  /// 外貌描述
   appearance  String?
+  /// 性格描述
   personality String?
+  /// 立绘/参考图 URL
   imageUrl    String?
+  /// 图像生成随机种子（可空）
   seed        Int?
+  /// 是否锁定不再自动改写
   locked      Boolean @default(false)
 
+  /// 对应 NovelCharacter.id（若有）
   sourceNovelCharacterId String?
 
   createdAt DateTime @default(now())
@@ -215,16 +300,22 @@ model AssetCharacter {
   @@unique([projectId, name])
 }
 
+/// 项目级场景资产
 model AssetScene {
   id        String  @id @default(cuid())
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  /// 场景名称（项目内唯一）
   name        String
+  /// 场景说明
   description String?
   imageUrl    String?
+  /// 标签
   tags        String?
+  /// 时段，如白天/夜晚
   timeOfDay   String?
+  /// 天气
   weather     String?
 
   createdAt DateTime @default(now())
@@ -233,14 +324,17 @@ model AssetScene {
   @@unique([projectId, name])
 }
 
+/// 项目级道具资产
 model AssetProp {
   id        String  @id @default(cuid())
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  /// 道具名称（项目内唯一）
   name        String
   description String?
   imageUrl    String?
+  /// 分类
   category    String?
 
   createdAt DateTime @default(now())
@@ -251,6 +345,7 @@ model AssetProp {
 
 // ── Storyboard Models ──
 
+/// 分镜板（关联剧本）
 model Storyboard {
   id        String  @id @default(cuid())
   projectId String
@@ -259,7 +354,8 @@ model Storyboard {
   scriptId String
   script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
 
-  status String @default("draft") // "draft" | "generated" | "edited"
+  /// draft | generated | edited
+  status String @default("draft")
 
   shots Shot[]
 
@@ -267,6 +363,7 @@ model Storyboard {
   updatedAt DateTime @updatedAt
 }
 
+/// 分集视频合成任务与输出
 model VideoComposition {
   id        String  @id @default(cuid())
   projectId String
@@ -275,54 +372,78 @@ model VideoComposition {
   episodeId String
   episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
-  config   String  // JSON: VideoCompositionConfig
+  /// JSON：VideoCompositionConfig
+  config   String
 
+  /// idle | preparing | tts_generating | subtitle_generating | compositing | completed | error
   status   String  @default("idle")
-  // "idle" | "preparing" | "tts_generating" | "subtitle_generating" | "compositing" | "completed" | "error"
 
+  /// 输出文件路径
   outputPath    String?
+  /// 文件大小（字节）
   fileSize      Int?
+  /// 成片时长（秒）
   videoDuration Float?
+  /// 版本号（重跑递增）
   version       Int     @default(1)
 
   errorMessage  String?
+  /// 进度 0–100
   progress      Int     @default(0)
+  /// 当前子步骤说明
   currentStep   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+/// 分镜镜头
 model Shot {
   id           String     @id @default(cuid())
   storyboardId String
   storyboard   Storyboard @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
 
+  /// 镜头序号
   index           Int
+  /// 景别
   shotSize        String
+  /// 运镜
   cameraMovement  String    @default("static")
+  /// 机位角度
   cameraAngle     String    @default("eye_level")
+  /// 构图说明
   composition     String
+  /// 文生图主提示词
   prompt          String
   negativePrompt  String?
+  /// 镜头时长
   duration        String    @default("3s")
   imageUrl        String?
-  imageType       String    @default("keyframe") // "keyframe" | "first_last" | "multi_grid"
-  imageUrls       String?   // JSON: first_last mode ["url1", "url2"]
-  promptEnd       String?   // first_last mode: end-frame prompt
-  gridLayout      String?   // multi_grid layout: "2x2" | "1x3" | "2x3"
-  gridPrompts     String?   // JSON: multi_grid per-cell prompts ["p1","p2",...]
+  /// keyframe | first_last | multi_grid
+  imageType       String    @default("keyframe")
+  /// first_last：首尾帧 URL 的 JSON 数组
+  imageUrls       String?
+  /// first_last：尾帧提示词
+  promptEnd       String?
+  /// multi_grid：布局如 2x2、1x3
+  gridLayout      String?
+  /// multi_grid：每格提示词 JSON 数组
+  gridPrompts     String?
 
   scriptLineIds   String?
   dialogueText    String?
   actionNote      String?
 
-  characterIds    String?   // JSON array of AssetCharacter IDs
-  sceneId         String?   // AssetScene ID
-  propIds         String?   // JSON array of AssetProp IDs
+  /// JSON：AssetCharacter id 数组
+  characterIds    String?
+  /// AssetScene id
+  sceneId         String?
+  /// JSON：AssetProp id 数组
+  propIds         String?
 
   videoUrl      String?
-  videoStatus   String?   // "idle" | "generating" | "completed" | "error"
+  /// idle | generating | completed | error
+  videoStatus   String?
   videoPrompt   String?
   videoDuration String?
 
@@ -330,55 +451,67 @@ model Shot {
   updatedAt DateTime @updatedAt
 }
 
-// ── AI 配置（全局单条记录，id 固定为 "global"）──
+// ── AI 配置（Settings 为全局单条，id 默认 global）──
 
+/// 可多条：各类 AI 模型连接配置
 model AIModelConfig {
   id          String   @id @default(cuid())
-  name        String   // 配置名称，如 "我的 GPT-4o"
-  type        String   // 模型类型: "llm" | "image" | "video" | "tts"
-  provider    String   // 提供商: "openai" | "deepseek" | "comfyui" 等
-  model       String   // 模型标识: "gpt-4o" | "flux-1" 等
+  /// 展示名称，如「我的 GPT-4o」
+  name        String
+  /// llm | image | video | tts
+  type        String
+  /// openai | deepseek | comfyui 等
+  provider    String
+  /// 模型 id，如 gpt-4o
+  model       String
   apiKey      String   @default("")
   baseUrl     String   @default("")
-  config      String   @default("{}") // JSON 字符串，存储额外参数（如 ComfyUI URL）
-  
-  isDefault   Boolean  @default(false) // 是否为该类型的默认配置
-  
+  /// JSON 扩展参数（如 ComfyUI 工作流相关）
+  config      String   @default("{}")
+
+  /// 是否为该 type 下的默认配置
+  isDefault   Boolean  @default(false)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([type])
 }
 
+/// 全局设置（单行，主键常为 global）
 model Settings {
   id String @id @default("global")
 
-  // 当前选中的各类型模型配置 ID
+  /// 当前选用的 LLM 配置 id
   activeLLMConfigId   String?
+  /// 当前选用的图像配置 id
   activeImageConfigId String?
+  /// 当前选用的视频配置 id
   activeVideoConfigId String?
+  /// 当前选用的 TTS 配置 id
   activeTTSConfigId   String?
 
-  // 文本大模型 (旧字段，保留以防迁移需要，或在 UI 层面逐步弃用)
+  /// 旧版：文本模型提供商
   textProvider String  @default("deepseek")
+  /// 旧版：文本模型名
   textModel    String  @default("deepseek-v3")
   textApiKey   String  @default("")
   textBaseUrl  String  @default("")
 
-  // 图像生成 (旧字段)
+  /// 旧版：图像提供商
   imageProvider String  @default("placeholder")
   imageModel    String  @default("dall-e-3")
   imageApiKey   String  @default("")
   imageBaseUrl  String  @default("")
   comfyuiUrl    String  @default("http://127.0.0.1:8188")
 
-  // 视频生成 (旧字段)
+  /// 旧版：视频提供商
   videoProvider String  @default("placeholder")
   videoModel    String  @default("")
   videoApiKey   String  @default("")
   videoBaseUrl  String  @default("")
 
-  // TTS 语音合成 (旧字段)
+  /// 旧版：TTS 提供商
   ttsProvider String  @default("edge-tts")
   ttsModel    String  @default("")
   ttsApiKey   String  @default("")

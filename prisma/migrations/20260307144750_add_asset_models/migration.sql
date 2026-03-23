@@ -1,4 +1,5 @@
 -- CreateTable
+-- AssetCharacter：项目级角色资产（立绘、设定、与小说角色关联）
 CREATE TABLE "AssetCharacter" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -19,6 +20,7 @@ CREATE TABLE "AssetCharacter" (
 );
 
 -- CreateTable
+-- AssetScene：项目级场景资产
 CREATE TABLE "AssetScene" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -34,6 +36,7 @@ CREATE TABLE "AssetScene" (
 );
 
 -- CreateTable
+-- AssetProp：项目级道具资产
 CREATE TABLE "AssetProp" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,

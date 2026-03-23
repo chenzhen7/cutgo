@@ -8,6 +8,7 @@
 -- RedefineTables
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
+-- 重建 Episode：用 chapterIds（多章 JSON）替代单 chapterId 外键
 CREATE TABLE "new_Episode" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,

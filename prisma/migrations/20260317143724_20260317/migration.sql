@@ -19,6 +19,7 @@ DROP TABLE "ScriptScene";
 PRAGMA foreign_keys=on;
 
 -- CreateTable
+-- Storyboard：分镜板（关联剧本，状态草稿/生成/已编辑）
 CREATE TABLE "Storyboard" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -31,6 +32,7 @@ CREATE TABLE "Storyboard" (
 );
 
 -- CreateTable
+-- VideoComposition：分集视频合成任务与输出元数据
 CREATE TABLE "VideoComposition" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -84,6 +86,7 @@ CREATE TABLE "Shot" (
 );
 
 -- CreateTable
+-- AIModelConfig：AI 模型连接配置（LLM/图/视频/TTS）
 CREATE TABLE "AIModelConfig" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
@@ -128,6 +131,7 @@ CREATE TABLE "Settings" (
 -- RedefineTables
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
+-- 重建 Script：增加正文 content 及角色/道具/场景引用字段（JSON/名称）
 CREATE TABLE "new_Script" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,

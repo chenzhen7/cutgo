@@ -1,4 +1,5 @@
 -- CreateTable
+-- Project：短视频/漫剧项目主表（平台、画幅、分辨率、流程步骤等）
 CREATE TABLE "Project" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
@@ -20,6 +21,7 @@ CREATE TABLE "Project" (
 );
 
 -- CreateTable
+-- Novel：项目关联的小说原文、字数、来源及 AI 大纲等
 CREATE TABLE "Novel" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -36,6 +38,7 @@ CREATE TABLE "Novel" (
 );
 
 -- CreateTable
+-- Chapter：小说章节（序号、标题、正文、是否选用）
 CREATE TABLE "Chapter" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "novelId" TEXT NOT NULL,
@@ -50,6 +53,7 @@ CREATE TABLE "Chapter" (
 );
 
 -- CreateTable
+-- Paragraph：章节内段落拆分
 CREATE TABLE "Paragraph" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "chapterId" TEXT NOT NULL,
@@ -62,6 +66,7 @@ CREATE TABLE "Paragraph" (
 );
 
 -- CreateTable
+-- NovelCharacter：从小说提取的角色及关系等
 CREATE TABLE "NovelCharacter" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "novelId" TEXT NOT NULL,
@@ -77,6 +82,7 @@ CREATE TABLE "NovelCharacter" (
 );
 
 -- CreateTable
+-- PlotEvent：剧情节点（起承转合、摘要、高光等）
 CREATE TABLE "PlotEvent" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "novelId" TEXT NOT NULL,
@@ -94,6 +100,7 @@ CREATE TABLE "PlotEvent" (
 );
 
 -- CreateTable
+-- Episode：分集（初版：单章节关联 + 梗概等）
 CREATE TABLE "Episode" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -111,6 +118,7 @@ CREATE TABLE "Episode" (
 );
 
 -- CreateTable
+-- EpisodeScene：分集内的场次拆分
 CREATE TABLE "EpisodeScene" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "episodeId" TEXT NOT NULL,
@@ -126,6 +134,7 @@ CREATE TABLE "EpisodeScene" (
 );
 
 -- CreateTable
+-- Script：分集对应剧本（初版无正文 content 字段）
 CREATE TABLE "Script" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -139,6 +148,7 @@ CREATE TABLE "Script" (
 );
 
 -- CreateTable
+-- ScriptScene：剧本场次（后续迁移中已删除，由分镜流程替代）
 CREATE TABLE "ScriptScene" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "scriptId" TEXT NOT NULL,
@@ -155,6 +165,7 @@ CREATE TABLE "ScriptScene" (
 );
 
 -- CreateTable
+-- ScriptLine：场次内台词/动作行（后续迁移中已删除）
 CREATE TABLE "ScriptLine" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "sceneId" TEXT NOT NULL,

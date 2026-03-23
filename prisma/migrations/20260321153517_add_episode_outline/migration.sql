@@ -7,6 +7,7 @@
 -- RedefineTables
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
+-- 重建 Episode：增加分集大纲 outline，并移除 goldenHook 列
 CREATE TABLE "new_Episode" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
