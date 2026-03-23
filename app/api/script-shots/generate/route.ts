@@ -84,7 +84,7 @@ async function callAIGenerateScriptShots(
 ## 剧本内容
 ${scriptContent.slice(0, 6000)}
 
-## 角色资产（用于画面 Prompt 中的外貌描述）
+## 角色资产（用于画面 Prompt 中的角色设定描述）
 ${assetCharactersStr || "无"}
 
 ## 场景资产（用于画面 Prompt 中的环境描述）
@@ -244,7 +244,6 @@ export async function POST(request: NextRequest) {
     ? assetCharacters
         .map((c) => {
           const parts = [`${c.name}(${c.role})`]
-          if (c.appearance) parts.push(`外貌: ${c.appearance}`)
           if (c.description) parts.push(c.description)
           return parts.join(", ")
         })

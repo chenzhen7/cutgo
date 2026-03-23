@@ -539,19 +539,14 @@ function CharacterList({
                     {roleLabel(char.role)}
                   </Badge>
                 </div>
-                {(char.gender || char.age) && (
+                {char.gender && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {[char.gender, char.age].filter(Boolean).join(" · ")}
+                    {char.gender}
                   </p>
                 )}
                 {char.description && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                     {char.description}
-                  </p>
-                )}
-                {char.appearance && (
-                  <p className="text-xs text-muted-foreground/70 mt-0.5 line-clamp-1">
-                    外貌: {char.appearance}
                   </p>
                 )}
               </div>
@@ -749,9 +744,7 @@ function CharacterFormDialog({
   const [name, setName] = useState("")
   const [role, setRole] = useState<"protagonist" | "supporting" | "extra">("supporting")
   const [gender, setGender] = useState("")
-  const [age, setAge] = useState("")
   const [description, setDescription] = useState("")
-  const [appearance, setAppearance] = useState("")
   const [personality, setPersonality] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -761,17 +754,13 @@ function CharacterFormDialog({
       setName(character.name)
       setRole(character.role as "protagonist" | "supporting" | "extra")
       setGender(character.gender || "")
-      setAge(character.age || "")
       setDescription(character.description || "")
-      setAppearance(character.appearance || "")
       setPersonality(character.personality || "")
     } else {
       setName("")
       setRole("supporting")
       setGender("")
-      setAge("")
       setDescription("")
-      setAppearance("")
       setPersonality("")
     }
     setError("")
@@ -786,9 +775,7 @@ function CharacterFormDialog({
         name: name.trim(),
         role,
         gender: gender || undefined,
-        age: age || undefined,
         description: description || undefined,
-        appearance: appearance || undefined,
         personality: personality || undefined,
       })
     } catch (err) {
@@ -822,30 +809,20 @@ function CharacterFormDialog({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>性别</Label>
-              <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger><SelectValue placeholder="选择性别" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">男</SelectItem>
-                  <SelectItem value="female">女</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>年龄</Label>
-              <Input value={age} onChange={(e) => setAge(e.target.value)} placeholder="如 24岁" />
-            </div>
+          <div className="grid gap-2">
+            <Label>性别</Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger><SelectValue placeholder="选择性别" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">男</SelectItem>
+                <SelectItem value="female">女</SelectItem>
+                <SelectItem value="other">其他</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label>角色描述</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="角色简介" rows={2} />
-          </div>
-          <div className="grid gap-2">
-            <Label>外貌描述</Label>
-            <Textarea value={appearance} onChange={(e) => setAppearance(e.target.value)} placeholder="发型、身材、穿着风格等" rows={2} />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="角色简介（可包含外貌特征、身份背景等）" rows={2} />
           </div>
           <div className="grid gap-2">
             <Label>性格描述</Label>

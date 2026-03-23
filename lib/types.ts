@@ -167,9 +167,7 @@ export interface AssetCharacter {
   name: string
   role: "protagonist" | "supporting" | "extra"
   gender: string | null
-  age: string | null
   description: string | null
-  appearance: string | null
   personality: string | null
   imageUrl: string | null
   seed: number | null
@@ -206,9 +204,7 @@ export interface AssetCharacterInput {
   name: string
   role?: "protagonist" | "supporting" | "extra"
   gender?: string
-  age?: string
   description?: string
-  appearance?: string
   personality?: string
   imageUrl?: string
   seed?: number

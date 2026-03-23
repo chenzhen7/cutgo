@@ -7,9 +7,7 @@ interface AIAssetResult {
     name: string
     role: "protagonist" | "supporting" | "extra"
     gender?: string
-    age?: string
     description?: string
-    appearance?: string
     personality?: string
   }[]
   scenes: {
@@ -155,17 +153,13 @@ export async function POST(
             name: c.name,
             role: c.role || "supporting",
             gender: c.gender || null,
-            age: c.age || null,
             description: c.description || null,
-            appearance: c.appearance || null,
             personality: c.personality || null,
           },
           update: {
             role: c.role || "supporting",
             gender: c.gender || null,
-            age: c.age || null,
             description: c.description || null,
-            appearance: c.appearance || null,
             personality: c.personality || null,
           },
         })

@@ -190,12 +190,8 @@ model AssetCharacter {
   role        String  @default("supporting")
   /// male | female | other
   gender      String?
-  /// 年龄描述
-  age         String?
   /// 背景设定
   description String?
-  /// 外貌描述
-  appearance  String?
   /// 性格描述
   personality String?
   /// 立绘/参考图 URL

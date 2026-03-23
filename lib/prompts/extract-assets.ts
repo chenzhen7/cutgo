@@ -19,8 +19,8 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
 
 ### 1. 角色（characters）
 - 提取所有在章节中出现的角色（包括主角、配角、龙套）
-- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、年龄、外貌描述、性格描述
-- 根据章节内容尽可能补充详细的外貌和性格信息
+- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、角色描述、性格描述
+- 角色外貌信息请写入角色描述（description）字段，不要单独输出外貌字段
 
 ### 2. 场景（scenes）
 - 提取所有在章节中出现的地点/环境
@@ -40,9 +40,7 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
       "name": "角色名",
       "role": "protagonist",
       "gender": "female",
-      "age": "24岁",
-      "description": "角色简介",
-      "appearance": "外貌描述（发型、身材、穿着风格等）",
+      "description": "角色简介（包含外貌特征、身份背景等）",
       "personality": "性格描述"
     }
   ],

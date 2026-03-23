@@ -6,9 +6,7 @@ interface AIAssetResult {
     name: string
     role: "protagonist" | "supporting" | "extra"
     gender?: string
-    age?: string
     description?: string
-    appearance?: string
     personality?: string
   }[]
   scenes: {
@@ -54,7 +52,8 @@ ${episodesText}
 ### 1. 角色（characters）
 - 提取所有在大纲中出现的角色
 - 结合小说原始角色信息补充描述
-- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、年龄、外貌描述、性格描述
+- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、角色描述、性格描述
+- 角色外貌信息请写入 description，不要单独输出外貌字段
 - 如果角色来自小说原始角色列表，标注对应关系
 
 ### 2. 场景（scenes）
@@ -75,9 +74,7 @@ ${episodesText}
       "name": "角色名",
       "role": "protagonist",
       "gender": "female",
-      "age": "24岁",
-      "description": "角色简介",
-      "appearance": "外貌描述（发型、身材、穿着风格等）",
+      "description": "角色简介（包含外貌特征、身份背景等）",
       "personality": "性格描述"
     }
   ],
@@ -220,9 +217,7 @@ export async function POST(request: NextRequest) {
             name: c.name,
             role: c.role || "supporting",
             gender: c.gender || null,
-            age: c.age || null,
             description: c.description || null,
-            appearance: c.appearance || null,
             personality: c.personality || null,
           },
         })
