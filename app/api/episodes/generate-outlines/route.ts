@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { getLLMProvider } from "@/lib/ai/llm"
+import { callLLM } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
-import { badRequest, validationError, llmNotConfigured, llmInvalidResponse } from "@/lib/api-error"
+import {
+  badRequest,
+  validationError,
+  llmNotConfigured,
+  llmInvalidResponse,
+  ERR_LLM_NOT_CONFIGURED,
+} from "@/lib/api-error"
 
 interface OutlineItem {
   episode: number
@@ -83,18 +89,19 @@ export async function POST(request: NextRequest) {
   // LLM 看到的是「第N章」，N = c.index + 1，因此用 c.index + 1 作为 key
   const indexToChapterId = new Map(selectedChapters.map((c) => [c.index + 1, c.id]))
 
-  // 调用 LLM
-  const llmProvider = await getLLMProvider()
-
-  if (!llmProvider) {
-    return llmNotConfigured()
-  }
-
   const prompt = buildEpisodeOutlinePrompt(novelText)
-  const result = await llmProvider.chat({
-    messages: [{ role: "user", content: prompt }]
-  })
-  const outlines = parseOutlineJSON(result.content)
+  let outlines: OutlineItem[]
+  try {
+    const result = await callLLM({
+      messages: [{ role: "user", content: prompt }],
+    })
+    outlines = parseOutlineJSON(result.content)
+  } catch (err) {
+    if ((err as Error).message === ERR_LLM_NOT_CONFIGURED) {
+      return llmNotConfigured()
+    }
+    return llmInvalidResponse((err as Error).message)
+  }
 
   if (outlines.length === 0) {
     return llmInvalidResponse("LLM 未返回有效的分集大纲")

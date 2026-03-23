@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { getLLMProvider } from "@/lib/ai/llm"
+import { callLLM } from "@/lib/ai/llm"
 import { buildExtractAssetsPrompt } from "@/lib/prompts"
 import { badRequest, notFound, validationError, llmNotConfigured, internalError, ERR_LLM_NOT_CONFIGURED } from "@/lib/api-error"
 
@@ -37,19 +37,13 @@ function parseAssetsJSON(raw: string): AIAssetResult {
 async function callLLMExtractAssetsFromChapters(
   chapters: { title: string | null; content: string }[]
 ): Promise<AIAssetResult> {
-  const llmProvider = await getLLMProvider()
-
-  if (!llmProvider) {
-    throw new Error("LLM_NOT_CONFIGURED")
-  }
-
   const chaptersText = chapters
     .map((ch, i) => `【第${i + 1}章${ch.title ? ` ${ch.title}` : ""}】\n${ch.content.slice(0, 3000)}`)
     .join("\n\n---\n\n")
 
   const prompt = buildExtractAssetsPrompt(chaptersText)
 
-  const result = await llmProvider.chat({
+  const result = await callLLM({
     messages: [{ role: "user", content: prompt }],
   })
 
