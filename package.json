@@ -9,7 +9,12 @@
     "start": "next start -p 4000",
     "lint": "eslint",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:4000 && electron .\"",
-    "electron:build": "next build && concurrently \"npm run start\" \"wait-on http://localhost:4000 && electron .\""
+    "electron:build": "next build && concurrently \"npm run start\" \"wait-on http://localhost:4000 && electron .\"",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",

@@ -209,7 +209,7 @@ function ChapterEditor({
         <Input
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="标题（不含「第N章」）"
+          placeholder="标题"
           className="min-w-0 flex-1 border-0 bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0 placeholder:font-normal placeholder:text-muted-foreground/60"
         />
         <div className="flex items-center gap-1.5 shrink-0">

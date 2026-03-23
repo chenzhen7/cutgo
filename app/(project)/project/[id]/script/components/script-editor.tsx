@@ -326,9 +326,9 @@ export function ScriptEditor({
         >
           {/* 左侧：大纲 + 资产区 */}
           <ResizablePanel
-            defaultSize={450}
-            minSize={450}
-            maxSize={650}
+            defaultSize={"40%"}
+            minSize={"30%"}
+            maxSize={"60%"}
             className="min-w-0 flex flex-col"
           >
             <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
