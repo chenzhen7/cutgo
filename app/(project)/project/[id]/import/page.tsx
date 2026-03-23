@@ -138,7 +138,7 @@ export default function ImportPage() {
                 onClick={() => setShowExtractDialog(true)}
               >
                 <Sparkles className="size-4" />
-                提取资产
+                AI 提取资产
               </Button>
               <Button size="sm" onClick={handleConfirm}>
                 确认导入，进入剧本生成

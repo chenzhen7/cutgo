@@ -184,7 +184,6 @@ export function ExtractAssetsDialog({
               </>
             ) : (
               <>
-                <Sparkles className="size-4" />
                 提取资产
               </>
             )}

@@ -19,8 +19,7 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
 
 ### 1. 角色（characters）
 - 提取所有在章节中出现的角色（包括主角、配角、龙套）
-- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、角色描述、性格描述
-- 角色外貌信息请写入角色描述（description）字段，不要单独输出外貌字段
+- 每个角色包含：名字、角色类型（protagonist/supporting/extra）、性别、角色描述、角色外貌、性格描述
 
 ### 2. 场景（scenes）
 - 提取所有在章节中出现的地点/环境

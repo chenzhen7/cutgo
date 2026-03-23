@@ -160,7 +160,7 @@ export default function AssetsPage() {
             disabled={!novel || chapters.length === 0}
           >
             <Sparkles className="size-4" />
-            AI提取资产
+            AI 提取资产
           </Button>
         </div>
       </div>
