@@ -220,10 +220,6 @@ model AssetScene {
   imageUrl    String?
   /// 标签
   tags        String?
-  /// 时段，如白天/夜晚
-  timeOfDay   String?
-  /// 天气
-  weather     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

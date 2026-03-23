@@ -621,12 +621,6 @@ function SceneList({
               </p>
             )}
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-              {scene.timeOfDay && (
-                <Badge variant="outline" className="text-[10px]">{scene.timeOfDay}</Badge>
-              )}
-              {scene.weather && (
-                <Badge variant="outline" className="text-[10px]">{scene.weather}</Badge>
-              )}
               {scene.tags?.split(",").map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-[10px]">
                   {tag.trim()}
@@ -857,8 +851,6 @@ function SceneFormDialog({
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [tags, setTags] = useState("")
-  const [timeOfDay, setTimeOfDay] = useState("")
-  const [weather, setWeather] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -867,14 +859,10 @@ function SceneFormDialog({
       setName(scene.name)
       setDescription(scene.description || "")
       setTags(scene.tags || "")
-      setTimeOfDay(scene.timeOfDay || "")
-      setWeather(scene.weather || "")
     } else {
       setName("")
       setDescription("")
       setTags("")
-      setTimeOfDay("")
-      setWeather("")
     }
     setError("")
   }, [scene, open])
@@ -888,8 +876,6 @@ function SceneFormDialog({
         name: name.trim(),
         description: description || undefined,
         tags: tags || undefined,
-        timeOfDay: timeOfDay || undefined,
-        weather: weather || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -916,33 +902,6 @@ function SceneFormDialog({
           <div className="grid gap-2">
             <Label>标签</Label>
             <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="用逗号分隔，如 室内,现代,豪华" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>时间段</Label>
-              <Select value={timeOfDay} onValueChange={setTimeOfDay}>
-                <SelectTrigger><SelectValue placeholder="选择时间" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="白天">白天</SelectItem>
-                  <SelectItem value="黄昏">黄昏</SelectItem>
-                  <SelectItem value="夜晚">夜晚</SelectItem>
-                  <SelectItem value="清晨">清晨</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>天气</Label>
-              <Select value={weather} onValueChange={setWeather}>
-                <SelectTrigger><SelectValue placeholder="选择天气" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="晴天">晴天</SelectItem>
-                  <SelectItem value="阴天">阴天</SelectItem>
-                  <SelectItem value="雨天">雨天</SelectItem>
-                  <SelectItem value="雪天">雪天</SelectItem>
-                  <SelectItem value="室内">室内</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
         {error && (

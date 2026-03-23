@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
     : ""
 
   const assetScenesStr = assetScenes.length > 0
-    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}${s.timeOfDay ? ` (${s.timeOfDay})` : ""}`).join("; ")
+    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}`).join("; ")
     : ""
 
   let previousShotStr: string | null = null

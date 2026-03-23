@@ -13,8 +13,6 @@ interface AIAssetResult {
     name: string
     description?: string
     tags?: string
-    timeOfDay?: string
-    weather?: string
   }[]
   props: {
     name: string
@@ -59,7 +57,7 @@ ${episodesText}
 ### 2. 场景（scenes）
 - 提取所有在大纲场景中出现的地点/环境
 - 合并相同或相似的场景
-- 每个场景包含：名称、环境描述、标签、时间段、天气
+- 每个场景包含：名称、环境描述、标签
 
 ### 3. 道具（props）
 - 提取在剧情中有重要作用的道具/物品
@@ -82,9 +80,7 @@ ${episodesText}
     {
       "name": "场景名",
       "description": "场景环境描述",
-      "tags": "室内,现代,豪华",
-      "timeOfDay": "白天",
-      "weather": "晴天"
+      "tags": "室内,现代,豪华"
     }
   ],
   "props": [
@@ -232,8 +228,6 @@ export async function POST(request: NextRequest) {
             name: s.name,
             description: s.description || null,
             tags: s.tags || null,
-            timeOfDay: s.timeOfDay || null,
-            weather: s.weather || null,
           },
         })
       )

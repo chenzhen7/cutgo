@@ -183,8 +183,6 @@ export interface AssetScene {
   description: string | null
   imageUrl: string | null
   tags: string | null
-  timeOfDay: string | null
-  weather: string | null
   createdAt: string
   updatedAt: string
 }
@@ -216,8 +214,6 @@ export interface AssetSceneInput {
   description?: string
   imageUrl?: string
   tags?: string
-  timeOfDay?: string
-  weather?: string
 }
 
 export interface AssetPropInput {

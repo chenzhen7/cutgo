@@ -25,7 +25,7 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
 ### 2. 场景（scenes）
 - 提取所有在章节中出现的地点/环境
 - 合并相同或相似的场景，使用最常用的名称
-- 每个场景包含：名称、环境描述、标签（逗号分隔）、时间段、天气
+- 每个场景包含：名称、环境描述、标签（逗号分隔）
 
 ### 3. 道具（props）
 - 提取在剧情中有重要作用的道具/物品
@@ -48,9 +48,7 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
     {
       "name": "场景名",
       "description": "场景环境描述",
-      "tags": "室内,现代,豪华",
-      "timeOfDay": "白天",
-      "weather": "晴天"
+      "tags": "室内,现代,豪华"
     }
   ],
   "props": [

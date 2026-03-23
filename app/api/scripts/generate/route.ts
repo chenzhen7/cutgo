@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
     .join("; ")
 
   const scenesStr = assetScenes.length > 0
-    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}${s.timeOfDay ? ` (${s.timeOfDay})` : ""}`).join("; ")
+    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}`).join("; ")
     : ""
 
   const propsStr = assetProps.length > 0

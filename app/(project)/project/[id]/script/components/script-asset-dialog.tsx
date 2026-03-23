@@ -265,18 +265,6 @@ export function ScriptAssetDialog({
                                   {sc.description}
                                 </p>
                               )}
-                              <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                {sc.timeOfDay && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0">
-                                    {sc.timeOfDay}
-                                  </Badge>
-                                )}
-                                {sc.weather && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0">
-                                    {sc.weather}
-                                  </Badge>
-                                )}
-                              </div>
                             </div>
                             <div className={cn(
                               "size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",

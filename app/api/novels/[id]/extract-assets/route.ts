@@ -14,8 +14,6 @@ interface AIAssetResult {
     name: string
     description?: string
     tags?: string
-    timeOfDay?: string
-    weather?: string
   }[]
   props: {
     name: string
@@ -174,8 +172,6 @@ export async function POST(
             name: s.name,
             description: s.description || null,
             tags: s.tags || null,
-            timeOfDay: s.timeOfDay || null,
-            weather: s.weather || null,
           },
         })
       )
