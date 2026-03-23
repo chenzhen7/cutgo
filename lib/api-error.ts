@@ -8,6 +8,8 @@
 
 import { NextResponse } from "next/server"
 import {
+  API_ERROR_BY_CODE,
+  API_ERRORS,
   ERR_AI_CALL_FAILED,
   ERR_CONFLICT,
   ERR_INTERNAL,
@@ -16,6 +18,7 @@ import {
   ERR_MISSING_PARAMS,
   ERR_NOT_FOUND,
   ERR_VALIDATION,
+  type ApiErrorCode,
   type ApiErrorBody,
 } from "./api-error-shared"
 
@@ -35,25 +38,12 @@ export {
 export const HTTP_STATUS = {
   OK: 200,
   CREATED: 201,
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  UNPROCESSABLE: 422,
-  INTERNAL_ERROR: 500,
+  BAD_REQUEST: API_ERRORS.MISSING_PARAMS.status,
+  NOT_FOUND: API_ERRORS.NOT_FOUND.status,
+  CONFLICT: API_ERRORS.CONFLICT.status,
+  UNPROCESSABLE: API_ERRORS.LLM_NOT_CONFIGURED.status,
+  INTERNAL_ERROR: API_ERRORS.INTERNAL.status,
 } as const
-
-// ── 错误码对应的默认用户提示 ────────────────────────────────────────────────
-
-const DEFAULT_MESSAGES: Record<string, string> = {
-  [ERR_MISSING_PARAMS]: "缺少必要参数",
-  [ERR_NOT_FOUND]: "资源不存在",
-  [ERR_CONFLICT]: "资源名称已存在，请使用不同的名称",
-  [ERR_LLM_NOT_CONFIGURED]: "尚未配置语言模型，请先前往设置页面配置 LLM API",
-  [ERR_LLM_INVALID_RESPONSE]: "LLM 未返回有效内容，请重试",
-  [ERR_AI_CALL_FAILED]: "AI 服务调用失败，请稍后重试",
-  [ERR_VALIDATION]: "请求参数校验失败",
-  [ERR_INTERNAL]: "服务器内部错误，请稍后重试",
-}
 
 // ── 响应构造函数 ────────────────────────────────────────────────────────────
 
@@ -65,14 +55,15 @@ const DEFAULT_MESSAGES: Record<string, string> = {
  * return apiError(ERR_LLM_NOT_CONFIGURED, HTTP_STATUS.UNPROCESSABLE)
  */
 export function apiError(
-  code: string,
+  code: ApiErrorCode | string,
   status: number,
   message?: string,
   detail?: string
 ): NextResponse<ApiErrorBody> {
+  const definition = API_ERROR_BY_CODE[code as ApiErrorCode]
   const body: ApiErrorBody = {
     error: code,
-    message: message ?? DEFAULT_MESSAGES[code] ?? code,
+    message: message ?? definition?.defaultMessage ?? code,
   }
   if (detail) body.detail = detail
   return NextResponse.json(body, { status })

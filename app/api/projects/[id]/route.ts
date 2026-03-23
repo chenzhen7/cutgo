@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { notFound } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 export async function GET(
   _request: NextRequest,
@@ -11,7 +11,7 @@ export async function GET(
   const project = await prisma.project.findUnique({ where: { id } })
 
   if (!project) {
-    return notFound("项目不存在")
+    return apiError.notFound("项目不存在")
   }
 
   return NextResponse.json(project)
@@ -26,7 +26,7 @@ export async function PATCH(
 
   const existing = await prisma.project.findUnique({ where: { id } })
   if (!existing) {
-    return notFound("项目不存在")
+    return apiError.notFound("项目不存在")
   }
 
   const project = await prisma.project.update({
@@ -45,7 +45,7 @@ export async function DELETE(
 
   const existing = await prisma.project.findUnique({ where: { id } })
   if (!existing) {
-    return notFound("项目不存在")
+    return apiError.notFound("项目不存在")
   }
 
   await prisma.project.delete({ where: { id } })

@@ -3,13 +3,7 @@ import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
-import {
-  badRequest,
-  validationError,
-  llmNotConfigured,
-  llmInvalidResponse,
-  ERR_LLM_NOT_CONFIGURED,
-} from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 interface OutlineItem {
   episode: number
@@ -45,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { projectId, chapterIds } = body as { projectId: string; chapterIds?: string[] }
 
   if (!projectId) {
-    return badRequest("projectId is required")
+    return apiError.badRequest("projectId is required")
   }
 
   // 读取小说及章节
@@ -57,7 +51,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (!novel) {
-    return validationError("请先导入小说并解析章节")
+    return apiError.validationError("请先导入小说并解析章节")
   }
 
   const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
@@ -67,13 +61,13 @@ export async function POST(request: NextRequest) {
     const idSet = new Set(chapterIds)
     selectedChapters = allSorted.filter((c) => idSet.has(c.id))
     if (selectedChapters.length === 0) {
-      return validationError("未找到所选章节")
+      return apiError.validationError("未找到所选章节")
     }
   } else {
     const hasAnySelected = allSorted.some((c) => c.selected)
     selectedChapters = hasAnySelected ? allSorted.filter((c) => c.selected) : allSorted
     if (selectedChapters.length === 0) {
-      return validationError("暂无可用章节")
+      return apiError.validationError("暂无可用章节")
     }
   }
 
@@ -97,14 +91,14 @@ export async function POST(request: NextRequest) {
     })
     outlines = parseOutlineJSON(result.content)
   } catch (err) {
-    if ((err as Error).message === ERR_LLM_NOT_CONFIGURED) {
-      return llmNotConfigured()
+    if ((err as Error).message === apiError.ERR_LLM_NOT_CONFIGURED) {
+      return apiError.llmNotConfigured()
     }
-    return llmInvalidResponse((err as Error).message)
+    return apiError.llmInvalidResponse((err as Error).message)
   }
 
   if (outlines.length === 0) {
-    return llmInvalidResponse("LLM 未返回有效的分集大纲")
+    return apiError.llmInvalidResponse("LLM 未返回有效的分集大纲")
   }
 
   // 获取当前项目最大分集 index

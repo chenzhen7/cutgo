@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import { buildExtractAssetsPrompt } from "@/lib/prompts"
-import { badRequest, notFound, validationError, llmNotConfigured, internalError, ERR_LLM_NOT_CONFIGURED } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 interface AIAssetResult {
   characters: {
@@ -62,7 +62,7 @@ export async function POST(
   }
 
   if (!chapterIds || chapterIds.length === 0) {
-    return validationError("请至少选择一个章节")
+    return apiError.validationError("请至少选择一个章节")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -70,7 +70,7 @@ export async function POST(
     select: { id: true, projectId: true },
   })
   if (!novel) {
-    return notFound("小说不存在")
+    return apiError.notFound("小说不存在")
   }
 
   const { projectId } = novel
@@ -82,7 +82,7 @@ export async function POST(
   })
 
   if (chapters.length === 0) {
-    return validationError("未找到指定章节")
+    return apiError.validationError("未找到指定章节")
   }
 
   if (mode === "overwrite") {
@@ -182,9 +182,9 @@ export async function POST(
   } catch (err) {
     console.error("Asset extraction from chapters failed:", err)
     const message = (err as Error).message
-    if (message === ERR_LLM_NOT_CONFIGURED) {
-      return llmNotConfigured()
+    if (message === apiError.ERR_LLM_NOT_CONFIGURED) {
+      return apiError.llmNotConfigured()
     }
-    return internalError("资产提取失败", message)
+    return apiError.internalError("资产提取失败", message)
   }
 }

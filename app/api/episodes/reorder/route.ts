@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { badRequest } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 export async function PUT(request: NextRequest) {
   const { projectId, orderedIds } = await request.json()
 
   if (!projectId || !orderedIds?.length) {
-    return badRequest("projectId and orderedIds are required")
+    return apiError.badRequest("projectId and orderedIds are required")
   }
 
   for (let i = 0; i < orderedIds.length; i++) {

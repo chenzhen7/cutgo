@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { badRequest, notFound } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 const scriptWithShotsInclude = {
   episode: { select: { id: true, index: true, title: true } },
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const episodeId = searchParams.get("episodeId")
 
   if (!projectId) {
-    return badRequest("projectId is required")
+    return apiError.badRequest("projectId is required")
   }
 
   const where: Record<string, unknown> = { projectId }
@@ -68,14 +68,14 @@ export async function POST(request: NextRequest) {
   const { projectId, scriptId } = await request.json()
 
   if (!projectId || !scriptId) {
-    return badRequest("projectId and scriptId are required")
+    return apiError.badRequest("projectId and scriptId are required")
   }
 
   const script = await prisma.script.findFirst({
     where: { id: scriptId, projectId },
     include: scriptWithShotsInclude,
   })
-  if (!script) return notFound("script not found")
+  if (!script) return apiError.notFound("script not found")
 
   return NextResponse.json(toScriptShotPlan(script))
 }

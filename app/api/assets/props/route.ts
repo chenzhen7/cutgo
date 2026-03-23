@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { badRequest, conflict } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const { projectId, ...data } = body
 
   if (!projectId) {
-    return badRequest("projectId is required")
+    return apiError.badRequest("projectId is required")
   }
 
   if (data.name) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       where: { projectId_name: { projectId, name: data.name } },
     })
     if (existing) {
-      return conflict(`道具名「${data.name}」已存在，请使用不同的名称`)
+      return apiError.conflict(`道具名「${data.name}」已存在，请使用不同的名称`)
     }
   }
 

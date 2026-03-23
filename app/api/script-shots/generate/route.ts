@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { badRequest, notFound, validationError, ERR_INTERNAL, HTTP_STATUS } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 interface AIShotResult {
   composition: string
@@ -189,12 +189,12 @@ export async function POST(request: NextRequest) {
   const { projectId, episodeIds, scriptIds, mode = "skip_existing" } = body
 
   if (!projectId) {
-    return badRequest("projectId is required")
+    return apiError.badRequest("projectId is required")
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) {
-    return notFound("项目不存在")
+    return apiError.notFound("项目不存在")
   }
 
   let targetScripts = await prisma.script.findMany({
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (targetScripts.length === 0) {
-    return validationError("没有可生成的剧本")
+    return apiError.validationError("没有可生成的剧本")
   }
 
   const existingShotScriptIds = new Set(
@@ -344,8 +344,8 @@ export async function POST(request: NextRequest) {
     })
     const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
     return NextResponse.json(
-      { error: ERR_INTERNAL, message: "部分剧本生成失败", scriptShotPlans: allScriptShotPlans },
-      { status: HTTP_STATUS.INTERNAL_ERROR }
+      { error: apiError.ERR_INTERNAL, message: "部分剧本生成失败", scriptShotPlans: allScriptShotPlans },
+      { status: apiError.HTTP_STATUS.INTERNAL_ERROR }
     )
   }
 }

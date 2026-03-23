@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
-import { badRequest, notFound, validationError, ERR_INTERNAL, HTTP_STATUS } from "@/lib/api-error"
+import * as apiError from "@/lib/api-error"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -167,12 +167,12 @@ export async function POST(request: NextRequest) {
   const { projectId, episodeIds, mode = "skip_existing" } = body
 
   if (!projectId) {
-    return badRequest("projectId is required")
+    return apiError.badRequest("projectId is required")
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) {
-    return notFound("项目不存在")
+    return apiError.notFound("项目不存在")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (!novel) {
-    return validationError("请先导入小说并解析出章节")
+    return apiError.validationError("请先导入小说并解析出章节")
   }
 
   let targetEpisodes = await prisma.episode.findMany({
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (targetEpisodes.length === 0) {
-    return validationError("没有可生成的分集")
+    return apiError.validationError("没有可生成的分集")
   }
 
   const existingScriptEpisodeIds = new Set(
@@ -332,8 +332,8 @@ export async function POST(request: NextRequest) {
       include: scriptInclude,
     })
     return NextResponse.json(
-      { error: ERR_INTERNAL, message: "部分分集生成失败", scripts: allScripts },
-      { status: HTTP_STATUS.INTERNAL_ERROR }
+      { error: apiError.ERR_INTERNAL, message: "部分分集生成失败", scripts: allScripts },
+      { status: apiError.HTTP_STATUS.INTERNAL_ERROR }
     )
   }
 }
