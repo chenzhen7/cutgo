@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { memo, useState, useMemo, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -104,7 +104,7 @@ function useAssetItemStates<T extends { name: string }>(
 }
 
 // ── 单个资产行组件 ──
-function AssetRow<T extends { name: string; description?: string }>({
+const AssetRow = memo(function AssetRow<T extends { name: string; description?: string }>({
   state,
   onUpdate,
   existingNames,
@@ -228,10 +228,15 @@ function AssetRow<T extends { name: string; description?: string }>({
       )}
     </div>
   )
-}
+}) as <T extends { name: string; description?: string }>(props: {
+  state: AssetItemState<T>
+  onUpdate: (patch: Partial<AssetItemState<T>>) => void
+  existingNames: string[]
+  extra?: React.ReactNode
+}) => React.JSX.Element
 
 // ── 资产分组折叠区块 ──
-function AssetGroup({
+const AssetGroup = memo(function AssetGroup({
   icon,
   label,
   count,
@@ -276,7 +281,7 @@ function AssetGroup({
       )}
     </div>
   )
-}
+})
 
 export function ExtractAssetsDialog({
   open,
@@ -365,16 +370,39 @@ export function ExtractAssetsDialog({
     }
   }
 
-  // 统计
-  const saveCount =
-    charStates.filter((s) => s.action !== "skip").length +
-    sceneStates.filter((s) => s.action !== "skip").length +
-    propStates.filter((s) => s.action !== "skip").length
+  // 统计（单次遍历，减少渲染时重复 filter）
+  const stats = useMemo(() => {
+    const countGroup = <T,>(states: AssetItemState<T>[]) => {
+      let save = 0
+      let conflict = 0
+      let skip = 0
 
-  const conflictCount =
-    charStates.filter((s) => s.conflict && s.action !== "skip").length +
-    sceneStates.filter((s) => s.conflict && s.action !== "skip").length +
-    propStates.filter((s) => s.conflict && s.action !== "skip").length
+      for (const state of states) {
+        if (state.action === "skip") {
+          skip++
+          continue
+        }
+
+        save++
+        if (state.conflict) conflict++
+      }
+
+      return { save, conflict, skip, total: states.length }
+    }
+
+    const characters = countGroup(charStates)
+    const scenes = countGroup(sceneStates)
+    const props = countGroup(propStates)
+
+    return {
+      characters,
+      scenes,
+      props,
+      saveCount: characters.save + scenes.save + props.save,
+      conflictCount: characters.conflict + scenes.conflict + props.conflict,
+      totalCount: characters.total + scenes.total + props.total,
+    }
+  }, [charStates, sceneStates, propStates])
 
   const handleSave = async () => {
     setSaving(true)
@@ -511,11 +539,11 @@ export function ExtractAssetsDialog({
         {/* ── 步骤 3：确认资产 ── */}
         {step === "review" && (
           <>
-            {conflictCount > 0 && (
+            {stats.conflictCount > 0 && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
                 <span>
-                  有 <strong>{conflictCount}</strong> 个资产名称已存在。可以选择覆盖保存、改名保存，或点击 × 跳过。
+                  有 <strong>{stats.conflictCount}</strong> 个资产名称已存在。可以选择覆盖保存、改名保存，或点击 × 跳过。
                 </span>
               </div>
             )}
@@ -526,9 +554,9 @@ export function ExtractAssetsDialog({
                   <AssetGroup
                     icon={<User className="size-3.5" />}
                     label="角色"
-                    count={charStates.length}
-                    conflictCount={charStates.filter((s) => s.conflict && s.action !== "skip").length}
-                    skipCount={charStates.filter((s) => s.action === "skip").length}
+                    count={stats.characters.total}
+                    conflictCount={stats.characters.conflict}
+                    skipCount={stats.characters.skip}
                   >
                     {charStates.map((state, i) => (
                       <AssetRow
@@ -555,9 +583,9 @@ export function ExtractAssetsDialog({
                   <AssetGroup
                     icon={<MapPin className="size-3.5" />}
                     label="场景"
-                    count={sceneStates.length}
-                    conflictCount={sceneStates.filter((s) => s.conflict && s.action !== "skip").length}
-                    skipCount={sceneStates.filter((s) => s.action === "skip").length}
+                    count={stats.scenes.total}
+                    conflictCount={stats.scenes.conflict}
+                    skipCount={stats.scenes.skip}
                   >
                     {sceneStates.map((state, i) => (
                       <AssetRow
@@ -579,9 +607,9 @@ export function ExtractAssetsDialog({
                   <AssetGroup
                     icon={<Package className="size-3.5" />}
                     label="道具"
-                    count={propStates.length}
-                    conflictCount={propStates.filter((s) => s.conflict && s.action !== "skip").length}
-                    skipCount={propStates.filter((s) => s.action === "skip").length}
+                    count={stats.props.total}
+                    conflictCount={stats.props.conflict}
+                    skipCount={stats.props.skip}
                   >
                     {propStates.map((state, i) => (
                       <AssetRow
@@ -597,8 +625,8 @@ export function ExtractAssetsDialog({
             </ScrollArea>
 
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
-              <span>共 {charStates.length + sceneStates.length + propStates.length} 个资产</span>
-              <span>将保存 <strong className="text-foreground">{saveCount}</strong> 个</span>
+              <span>共 {stats.totalCount} 个资产</span>
+              <span>将保存 <strong className="text-foreground">{stats.saveCount}</strong> 个</span>
             </div>
           </>
         )}
@@ -630,7 +658,7 @@ export function ExtractAssetsDialog({
           {step === "review" && (
             <Button
               onClick={() => void handleSave()}
-              disabled={saveCount === 0 || saving}
+              disabled={stats.saveCount === 0 || saving}
             >
               {saving ? (
                 <>
@@ -638,7 +666,7 @@ export function ExtractAssetsDialog({
                   保存中...
                 </>
               ) : (
-                `保存 ${saveCount} 个资产`
+                `保存 ${stats.saveCount} 个资产`
               )}
             </Button>
           )}
