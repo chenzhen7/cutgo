@@ -26,13 +26,23 @@ export const API_ERRORS = {
   CONFLICT:            { code: "CONFLICT",            status: 409, defaultMessage: "资源名称已存在，请使用不同的名称" },
   LLM_NOT_CONFIGURED:  { code: "LLM_NOT_CONFIGURED",  status: 422, defaultMessage: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
   LLM_INVALID_RESPONSE:{ code: "LLM_INVALID_RESPONSE",status: 500, defaultMessage: "LLM 未返回有效内容，请重试" },
-  AI_CALL_FAILED:      { code: "AI_CALL_FAILED",      status: 500, defaultMessage: "AI 服务调用失败，请稍后重试" },
   INTERNAL:            { code: "INTERNAL_ERROR",      status: 500, defaultMessage: "服务器内部错误，请稍后重试" },
-  UNKNOWN:             { code: "UNKNOWN_ERROR",        status: 500, defaultMessage: "未知错误" },
 } as const
 
 export type ApiErrorKey  = keyof typeof API_ERRORS
 export type ApiErrorCode = (typeof API_ERRORS)[ApiErrorKey]["code"]
+
+export class CurGoError extends Error {
+  code: ApiErrorCode
+  status: number
+
+  constructor(code: ApiErrorCode, status: number, message: string) {
+    super(message)
+    this.name = "CurGoError"
+    this.code = code
+    this.status = status
+  }
+}
 
 // ── 快捷响应函数（route.ts 直接 return） ─────────────────────────────────────
 
@@ -51,3 +61,45 @@ export const conflict          = (message:  string) => makeError("CONFLICT",    
 export const llmNotConfigured  = ()                 => makeError("LLM_NOT_CONFIGURED")
 export const llmInvalidResponse= (message?: string) => makeError("LLM_INVALID_RESPONSE", message)
 export const internalError     = (message?: string) => makeError("INTERNAL",             message)
+
+
+export const cutGoError = (key: ApiErrorKey, message?: string): never => {
+  const { code, status, defaultMessage } = API_ERRORS[key]
+  throw new CurGoError(code, status, message ?? defaultMessage)
+}
+
+// ── 全局异常兜底 (withErrorHandler) ──────────────────────────────────────────
+
+export function withError(
+  handler: (req: any, ctx: any) => Promise<Response> | Response
+) {
+  return async (req: any, ctx: any) => {
+    try {
+      return await handler(req, ctx)
+    } catch (error: any) {
+      console.error("[API Error]", req.method, req.nextUrl?.pathname, error)
+
+      if (error instanceof CurGoError) {
+        return NextResponse.json<ApiErrorBody>(
+          { error: error.code, message: error.message },
+          { status: error.status }
+        )
+      }
+
+      // Prisma errors
+      if (error?.code === "P2025") {
+        return notFound("记录不存在")
+      }
+      if (error?.code === "P2002") {
+        return conflict("资源已存在")
+      }
+      // LLM errors
+      if (error?.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
+        return llmNotConfigured()
+      }
+
+      // 其他异常
+      return internalError(error?.message || "服务器内部错误")
+    }
+  }
+}

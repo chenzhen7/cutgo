@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { withError, throwApiError } from "@/lib/api-error"
 
-export async function PUT(request: NextRequest) {
+export const PUT = withError(async (request: NextRequest) => {
   const { projectId, orderedIds } = await request.json()
 
   if (!projectId || !orderedIds?.length) {
-    return apiError.badRequest("projectId and orderedIds are required")
+    throwApiError("MISSING_PARAMS", "projectId and orderedIds are required")
   }
 
   for (let i = 0; i < orderedIds.length; i++) {
@@ -22,4 +22,4 @@ export async function PUT(request: NextRequest) {
   })
 
   return NextResponse.json(episodes)
-}
+})
