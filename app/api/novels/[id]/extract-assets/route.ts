@@ -56,10 +56,7 @@ export async function POST(
 ) {
   const { id: novelId } = await params
   const body = await request.json()
-  const { chapterIds, mode = "skip_existing" } = body as {
-    chapterIds: string[]
-    mode?: "skip_existing" | "overwrite"
-  }
+  const { chapterIds } = body as { chapterIds: string[] }
 
   if (!chapterIds || chapterIds.length === 0) {
     return apiError.validationError("请至少选择一个章节")
@@ -85,36 +82,17 @@ export async function POST(
     return apiError.validationError("未找到指定章节")
   }
 
-  if (mode === "overwrite") {
-    await Promise.all([
-      prisma.assetCharacter.deleteMany({ where: { projectId } }),
-      prisma.assetScene.deleteMany({ where: { projectId } }),
-      prisma.assetProp.deleteMany({ where: { projectId } }),
-    ])
-  } else {
-    const counts = await Promise.all([
-      prisma.assetCharacter.count({ where: { projectId } }),
-      prisma.assetScene.count({ where: { projectId } }),
-      prisma.assetProp.count({ where: { projectId } }),
-    ])
-    if (counts.reduce((a, b) => a + b, 0) > 0) {
-      const [characters, scenes, props] = await Promise.all([
-        prisma.assetCharacter.findMany({ where: { projectId }, orderBy: { createdAt: "asc" } }),
-        prisma.assetScene.findMany({ where: { projectId }, orderBy: { createdAt: "asc" } }),
-        prisma.assetProp.findMany({ where: { projectId }, orderBy: { createdAt: "asc" } }),
-      ])
-      return NextResponse.json({
-        characters,
-        scenes,
-        props,
-        stats: {
-          characterCount: characters.length,
-          sceneCount: scenes.length,
-          propCount: props.length,
-        },
-        skipped: true,
-      })
-    }
+  // 查询已存在的名称，用于前端标注冲突
+  const [existingCharacters, existingScenes, existingProps] = await Promise.all([
+    prisma.assetCharacter.findMany({ where: { projectId }, select: { name: true } }),
+    prisma.assetScene.findMany({ where: { projectId }, select: { name: true } }),
+    prisma.assetProp.findMany({ where: { projectId }, select: { name: true } }),
+  ])
+
+  const existingNames = {
+    characters: existingCharacters.map((c) => c.name),
+    scenes: existingScenes.map((s) => s.name),
+    props: existingProps.map((p) => p.name),
   }
 
   try {
@@ -122,62 +100,11 @@ export async function POST(
       chapters.map((ch) => ({ title: ch.title, content: ch.content }))
     )
 
-    const createdCharacters = await Promise.all(
-      aiResult.characters.map((c) =>
-        prisma.assetCharacter.upsert({
-          where: { projectId_name: { projectId, name: c.name } },
-          create: {
-            projectId,
-            name: c.name,
-            role: c.role || "supporting",
-            gender: c.gender || null,
-            description: c.description || null,
-            personality: c.personality || null,
-          },
-          update: {
-            role: c.role || "supporting",
-            gender: c.gender || null,
-            description: c.description || null,
-            personality: c.personality || null,
-          },
-        })
-      )
-    )
-
-    const createdScenes = await Promise.all(
-      aiResult.scenes.map((s) =>
-        prisma.assetScene.create({
-          data: {
-            projectId,
-            name: s.name,
-            description: s.description || null,
-            tags: s.tags || null,
-          },
-        })
-      )
-    )
-
-    const createdProps = await Promise.all(
-      aiResult.props.map((p) =>
-        prisma.assetProp.create({
-          data: {
-            projectId,
-            name: p.name,
-            description: p.description || null,
-          },
-        })
-      )
-    )
-
     return NextResponse.json({
-      characters: createdCharacters,
-      scenes: createdScenes,
-      props: createdProps,
-      stats: {
-        characterCount: createdCharacters.length,
-        sceneCount: createdScenes.length,
-        propCount: createdProps.length,
-      },
+      characters: aiResult.characters,
+      scenes: aiResult.scenes,
+      props: aiResult.props,
+      existingNames,
     })
   } catch (err) {
     console.error("Asset extraction from chapters failed:", err)

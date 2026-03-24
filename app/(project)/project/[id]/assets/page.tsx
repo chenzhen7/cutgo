@@ -429,6 +429,7 @@ export default function AssetsPage() {
         <ExtractAssetsDialog
           open={showExtractDialog}
           onOpenChange={setShowExtractDialog}
+          projectId={projectId}
           novelId={novel.id}
           chapters={chapters}
           onSuccess={(stats) => void handleExtractSuccess(stats)}

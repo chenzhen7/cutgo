@@ -205,6 +205,7 @@ export default function ImportPage() {
         <ExtractAssetsDialog
           open={showExtractDialog}
           onOpenChange={setShowExtractDialog}
+          projectId={projectId}
           novelId={novel.id}
           chapters={chapters}
           onSuccess={handleExtractSuccess}
