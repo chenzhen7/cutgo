@@ -1,4 +1,9 @@
-import type { LLMProvider, LLMGenerateOptions, LLMGenerateResult } from "../types"
+import {
+  DEFAULT_LLM_MAX_RETRIES,
+  type LLMProvider,
+  type LLMGenerateOptions,
+  type LLMGenerateResult,
+} from "../types"
 import { generateText } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 
@@ -33,6 +38,7 @@ export class GoogleLLMProvider implements LLMProvider {
       model: this.googleAI.chat(modelId),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
+      maxRetries: DEFAULT_LLM_MAX_RETRIES,
       timeout: timeoutMs || 300 * 1000,
     })
 

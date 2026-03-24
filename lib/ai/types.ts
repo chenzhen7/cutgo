@@ -27,6 +27,12 @@ export interface LLMMessage {
   content: string
 }
 
+/**
+ * 传给 AI SDK `generateText` 的 `maxRetries`：失败后的额外请求次数（非总次数）。
+ * 设为 1 表示最多再试 1 次（共 2 次请求）。
+ */
+export const DEFAULT_LLM_MAX_RETRIES = 1
+
 /** 生成文本的配置选项 */
 export interface LLMGenerateOptions {
   messages: LLMMessage[]

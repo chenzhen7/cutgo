@@ -1,4 +1,9 @@
-import type { LLMProvider, LLMGenerateOptions, LLMGenerateResult } from "../types"
+import {
+  DEFAULT_LLM_MAX_RETRIES,
+  type LLMProvider,
+  type LLMGenerateOptions,
+  type LLMGenerateResult,
+} from "../types"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 
@@ -49,6 +54,7 @@ export class OpenAILLMProvider implements LLMProvider {
       model: this.openai.chat(model || this.config.model),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
+      maxRetries: DEFAULT_LLM_MAX_RETRIES,
       timeout: timeoutMs || 10 * 1000,
     })
 
