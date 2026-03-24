@@ -466,6 +466,23 @@ const CharacterList = memo(function CharacterList({
   onDelete: (id: string) => void
   onToggleLock: (id: string, locked: boolean) => void
 }) {
+  const normalizeGender = (gender: string | null | undefined): "male" | "female" | "other" | null => {
+    if (!gender) return null
+    const value = gender.trim().toLowerCase()
+    if (["male", "man", "m", "男", "男性"].includes(value)) return "male"
+    if (["female", "woman", "f", "女", "女性"].includes(value)) return "female"
+    if (["other", "others", "其他", "未知", "unknown"].includes(value)) return "other"
+    return null
+  }
+
+  const genderLabel = (gender: string | null | undefined) => {
+    const normalized = normalizeGender(gender)
+    if (normalized === "male") return "男"
+    if (normalized === "female") return "女"
+    if (normalized === "other") return "其他"
+    return gender
+  }
+
   const filtered = useMemo(
     () =>
       characters.filter(
@@ -517,7 +534,7 @@ const CharacterList = memo(function CharacterList({
                 </div>
                 {char.gender && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {char.gender}
+                    {genderLabel(char.gender)}
                   </p>
                 )}
                 {char.description && (
@@ -716,6 +733,15 @@ function CharacterFormDialog({
   character: AssetCharacter | null
   onSave: (data: AssetCharacterInput) => Promise<void>
 }) {
+  const normalizeGender = (gender: string | null | undefined): "male" | "female" | "other" | "" => {
+    if (!gender) return ""
+    const value = gender.trim().toLowerCase()
+    if (["male", "man", "m", "男", "男性"].includes(value)) return "male"
+    if (["female", "woman", "f", "女", "女性"].includes(value)) return "female"
+    if (["other", "others", "其他", "未知", "unknown"].includes(value)) return "other"
+    return ""
+  }
+
   const [name, setName] = useState("")
   const [role, setRole] = useState<"protagonist" | "supporting" | "extra">("supporting")
   const [gender, setGender] = useState("")
@@ -728,7 +754,7 @@ function CharacterFormDialog({
     if (character) {
       setName(character.name)
       setRole(character.role as "protagonist" | "supporting" | "extra")
-      setGender(character.gender || "")
+      setGender(normalizeGender(character.gender))
       setDescription(character.description || "")
       setPersonality(character.personality || "")
     } else {
