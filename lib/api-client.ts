@@ -1,13 +1,13 @@
 /**
  * 前端统一 fetch 封装
  *
- * 与后端 `api-error-shared.ts` 约定对齐：
+ * 与后端 `api-error.ts` 约定对齐：
  *   - 错误响应体格式为 { error: string, message: string }
  *   - error 字段为机器可读错误码，用于分支判断
  *   - message 字段为用户可读提示，优先用于展示
  */
 
-import { API_ERRORS, type ApiErrorBody } from "./api-error-shared"
+import { API_ERRORS, type ApiErrorBody } from "./api-error"
 
 /** 带机器可读 code 的前端错误类 */
 export class ApiError extends Error {

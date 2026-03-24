@@ -3,7 +3,13 @@ import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
-import * as apiError from "@/lib/api-error"
+import {
+  API_ERRORS,
+  badRequest,
+  validationError,
+  llmNotConfigured,
+  llmInvalidResponse,
+} from "@/lib/api-error"
 
 interface OutlineItem {
   episode: number
@@ -17,10 +23,8 @@ interface OutlineItem {
 }
 
 function parseOutlineJSON(raw: string): OutlineItem[] {
-  // 去掉可能的 markdown 代码块包裹
   let text = raw.trim()
   text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
-  // 找到第一个 [ 和最后一个 ]
   const start = text.indexOf("[")
   const end = text.lastIndexOf("]")
   if (start === -1 || end === -1) {
@@ -34,15 +38,14 @@ function parseOutlineJSON(raw: string): OutlineItem[] {
   return parsed as OutlineItem[]
 }
 
-export const POST = apiError.withApiError(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   const body = await request.json()
   const { projectId, chapterIds } = body as { projectId: string; chapterIds?: string[] }
 
   if (!projectId) {
-    return apiError.routeError.badRequest("projectId is required")
+    return badRequest("projectId is required")
   }
 
-  // 读取小说及章节
   const novel = await prisma.novel.findUnique({
     where: { projectId },
     include: {
@@ -51,7 +54,7 @@ export const POST = apiError.withApiError(async (request: NextRequest) => {
   })
 
   if (!novel) {
-    return apiError.routeError.validation("请先导入小说并解析章节")
+    return validationError("请先导入小说并解析章节")
   }
 
   const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
@@ -61,17 +64,16 @@ export const POST = apiError.withApiError(async (request: NextRequest) => {
     const idSet = new Set(chapterIds)
     selectedChapters = allSorted.filter((c) => idSet.has(c.id))
     if (selectedChapters.length === 0) {
-      return apiError.routeError.validation("未找到所选章节")
+      return validationError("未找到所选章节")
     }
   } else {
     const hasAnySelected = allSorted.some((c) => c.selected)
     selectedChapters = hasAnySelected ? allSorted.filter((c) => c.selected) : allSorted
     if (selectedChapters.length === 0) {
-      return apiError.routeError.validation("暂无可用章节")
+      return validationError("暂无可用章节")
     }
   }
 
-  // 拼接小说原文
   const novelText = selectedChapters
     .map((c) => {
       const label = `${formatChapterOrdinalLabel(c.index)}${c.title?.trim() ? ` ${c.title.trim()}` : ""}`
@@ -79,7 +81,6 @@ export const POST = apiError.withApiError(async (request: NextRequest) => {
     })
     .join("\n\n---\n\n")
 
-  // 构建显示章节号（1-based）→ chapterId 映射
   // LLM 看到的是「第N章」，N = c.index + 1，因此用 c.index + 1 作为 key
   const indexToChapterId = new Map(selectedChapters.map((c) => [c.index + 1, c.id]))
 
@@ -91,28 +92,25 @@ export const POST = apiError.withApiError(async (request: NextRequest) => {
     })
     outlines = parseOutlineJSON(result.content)
   } catch (err) {
-    if ((err as Error).message === apiError.API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      return apiError.routeError.llmNotConfigured()
+    if ((err as Error).message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
+      return llmNotConfigured()
     }
-    return apiError.routeError.llmInvalidResponse((err as Error).message)
+    return llmInvalidResponse((err as Error).message)
   }
 
   if (outlines.length === 0) {
-    return apiError.routeError.llmInvalidResponse("LLM 未返回有效的分集大纲")
+    return llmInvalidResponse("LLM 未返回有效的分集大纲")
   }
 
-  // 获取当前项目最大分集 index
   const maxIndexResult = await prisma.episode.aggregate({
     where: { projectId },
     _max: { index: true },
   })
   let nextIndex = (maxIndexResult._max.index ?? 0) + 1
 
-  // 创建分集记录
   const createdEpisodes = []
 
   for (const item of outlines) {
-    // 收集该分集关联的所有章节 ID（按 LLM 返回的显示章节号顺序）
     const chapterIndexList: number[] = Array.isArray(item.chapters) ? item.chapters : []
     const allChapterIds: string[] = []
     for (const idx of chapterIndexList) {
@@ -144,4 +142,4 @@ export const POST = apiError.withApiError(async (request: NextRequest) => {
     episodes: createdEpisodes,
     stats: { generatedCount: createdEpisodes.length },
   })
-})
+}

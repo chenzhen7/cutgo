@@ -1,139 +1,53 @@
 /**
- * API 统一错误码与 HTTP 状态码定义
+ * API 统一错误码与响应构造
  *
- * 使用规范：
- *   - 所有 route.ts 通过 `apiError` 或快捷方法返回错误响应
- *   - 前端通过 `error` 字段（机器可读码）做分支判断，通过 `message` 字段展示用户提示
+ * 后端 route.ts 用快捷函数直接 return 错误响应：
+ *   return badRequest("缺少参数")
+ *   return notFound("小说不存在")
+ *
+ * 前端通过 api-client.ts 的 ApiError.code 做分支判断，ApiError.message 展示用户提示。
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import {
-  API_ERROR_BY_CODE,
-  API_ERRORS,
-  type ApiErrorCode,
-  type ApiErrorBody,
-} from "./api-error-shared"
+import { NextResponse } from "next/server"
 
-export { API_ERRORS } from "./api-error-shared"
+// ── 类型与错误码常量（前后端共用） ────────────────────────────────────────────
 
-// ── 响应构造函数 ────────────────────────────────────────────────────────────
-
-/**
- * 构造标准错误响应。
- *
- * @example
- * return apiError(API_ERRORS.NOT_FOUND.code, API_ERRORS.NOT_FOUND.status, "小说不存在")
- * return apiError(API_ERRORS.LLM_NOT_CONFIGURED.code, API_ERRORS.LLM_NOT_CONFIGURED.status)
- */
-export function apiError(
-  code: ApiErrorCode | string,
-  status: number,
-  message?: string
-): NextResponse<ApiErrorBody> {
-  const definition = API_ERROR_BY_CODE[code as ApiErrorCode]
-  const body: ApiErrorBody = {
-    error: code,
-    message: message ?? definition?.defaultMessage ?? code,
-  }
-  return NextResponse.json(body, { status })
+export interface ApiErrorBody {
+  /** 机器可读错误码（前端 ApiError.code） */
+  error: string
+  /** 用户可读提示（前端优先展示该字段） */
+  message: string
 }
 
-// ── 快捷方法 ────────────────────────────────────────────────────────────────
+export const API_ERRORS = {
+  MISSING_PARAMS:      { code: "MISSING_PARAMS",      status: 400, defaultMessage: "缺少必要参数" },
+  VALIDATION:          { code: "VALIDATION_ERROR",    status: 400, defaultMessage: "请求参数校验失败" },
+  NOT_FOUND:           { code: "NOT_FOUND",           status: 404, defaultMessage: "资源不存在" },
+  CONFLICT:            { code: "CONFLICT",            status: 409, defaultMessage: "资源名称已存在，请使用不同的名称" },
+  LLM_NOT_CONFIGURED:  { code: "LLM_NOT_CONFIGURED",  status: 422, defaultMessage: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
+  LLM_INVALID_RESPONSE:{ code: "LLM_INVALID_RESPONSE",status: 500, defaultMessage: "LLM 未返回有效内容，请重试" },
+  AI_CALL_FAILED:      { code: "AI_CALL_FAILED",      status: 500, defaultMessage: "AI 服务调用失败，请稍后重试" },
+  INTERNAL:            { code: "INTERNAL_ERROR",      status: 500, defaultMessage: "服务器内部错误，请稍后重试" },
+  UNKNOWN:             { code: "UNKNOWN_ERROR",        status: 500, defaultMessage: "未知错误" },
+} as const
 
-export const badRequest = (message?: string) =>
-  apiError(API_ERRORS.MISSING_PARAMS.code, API_ERRORS.MISSING_PARAMS.status, message)
+export type ApiErrorKey  = keyof typeof API_ERRORS
+export type ApiErrorCode = (typeof API_ERRORS)[ApiErrorKey]["code"]
 
-export const validationError = (message: string) =>
-  apiError(API_ERRORS.VALIDATION.code, API_ERRORS.VALIDATION.status, message)
+// ── 快捷响应函数（route.ts 直接 return） ─────────────────────────────────────
 
-export const notFound = (message?: string) =>
-  apiError(API_ERRORS.NOT_FOUND.code, API_ERRORS.NOT_FOUND.status, message)
-
-export const conflict = (message: string) =>
-  apiError(API_ERRORS.CONFLICT.code, API_ERRORS.CONFLICT.status, message)
-
-export const llmNotConfigured = () =>
-  apiError(API_ERRORS.LLM_NOT_CONFIGURED.code, API_ERRORS.LLM_NOT_CONFIGURED.status)
-
-export const llmInvalidResponse = (message?: string) =>
-  apiError(API_ERRORS.LLM_INVALID_RESPONSE.code, API_ERRORS.LLM_INVALID_RESPONSE.status, message)
-
-export const internalError = (message?: string) =>
-  apiError(API_ERRORS.INTERNAL.code, API_ERRORS.INTERNAL.status, message)
-
-// ── 路由级统一异常处理 ────────────────────────────────────────────────────────
-
-type AnyRouteContext = unknown
-
-export type AppRouteHandler<TContext = AnyRouteContext> = (
-  request: NextRequest,
-  context?: TContext
-) => Promise<NextResponse> | NextResponse
-
-export class ApiRouteError extends Error {
-  readonly code: string
-  readonly status: number
-  readonly detail?: string
-
-  constructor(code: string, status: number, message?: string) {
-    super(message ?? code)
-    this.name = "ApiRouteError"
-    this.code = code
-    this.status = status
-    this.detail = message
-  }
+function makeError(key: ApiErrorKey, message?: string) {
+  const { code, status, defaultMessage } = API_ERRORS[key]
+  return NextResponse.json<ApiErrorBody>(
+    { error: code, message: message ?? defaultMessage },
+    { status }
+  )
 }
 
-export const routeError = {
-  badRequest(message?: string): never {
-    throw new ApiRouteError(API_ERRORS.MISSING_PARAMS.code, API_ERRORS.MISSING_PARAMS.status, message)
-  },
-  validation(message: string): never {
-    throw new ApiRouteError(API_ERRORS.VALIDATION.code, API_ERRORS.VALIDATION.status, message)
-  },
-  notFound(message?: string): never {
-    throw new ApiRouteError(API_ERRORS.NOT_FOUND.code, API_ERRORS.NOT_FOUND.status, message)
-  },
-  conflict(message: string): never {
-    throw new ApiRouteError(API_ERRORS.CONFLICT.code, API_ERRORS.CONFLICT.status, message)
-  },
-  llmNotConfigured(): never {
-    throw new ApiRouteError(API_ERRORS.LLM_NOT_CONFIGURED.code, API_ERRORS.LLM_NOT_CONFIGURED.status)
-  },
-  llmInvalidResponse(message?: string): never {
-    throw new ApiRouteError(
-      API_ERRORS.LLM_INVALID_RESPONSE.code,
-      API_ERRORS.LLM_INVALID_RESPONSE.status,
-      message
-    )
-  },
-  internal(message?: string): never {
-    throw new ApiRouteError(API_ERRORS.INTERNAL.code, API_ERRORS.INTERNAL.status, message)
-  },
-}
-
-export function withApiError<TContext = AnyRouteContext>(
-  handler: AppRouteHandler<TContext>
-): AppRouteHandler<TContext> {
-  return async (request: NextRequest, context?: TContext) => {
-    try {
-      return await handler(request, context)
-    } catch (err) {
-      if (err instanceof ApiRouteError) {
-        return apiError(err.code, err.status, err.detail)
-      }
-
-      if (err instanceof SyntaxError) {
-        return badRequest("请求体 JSON 格式错误")
-      }
-
-      if (err instanceof Error && err.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-        return llmNotConfigured()
-      }
-
-      console.error("Unhandled route error:", err)
-      return internalError()
-    }
-  }
-}
-
+export const badRequest        = (message?: string) => makeError("MISSING_PARAMS",       message)
+export const validationError   = (message:  string) => makeError("VALIDATION",           message)
+export const notFound          = (message?: string) => makeError("NOT_FOUND",            message)
+export const conflict          = (message:  string) => makeError("CONFLICT",             message)
+export const llmNotConfigured  = ()                 => makeError("LLM_NOT_CONFIGURED")
+export const llmInvalidResponse= (message?: string) => makeError("LLM_INVALID_RESPONSE", message)
+export const internalError     = (message?: string) => makeError("INTERNAL",             message)

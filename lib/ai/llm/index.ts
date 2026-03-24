@@ -2,7 +2,7 @@ import { getLLMConfig } from "../config"
 import { GoogleLLMProvider } from "./google"
 import { OpenAILLMProvider } from "./openai"
 import type { LLMGenerateOptions, LLMGenerateResult, LLMProvider } from "../types"
-import { API_ERRORS } from "@/lib/api-error-shared"
+import { API_ERRORS } from "@/lib/api-error"
 
 // 缓存 Provider 实例，避免重复创建
 let cachedProvider: LLMProvider | null = null

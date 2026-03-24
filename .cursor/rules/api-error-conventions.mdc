@@ -3,13 +3,12 @@ description: 规范 API 路由中的错误响应写法，统一使用 @/lib/api-
 globs:
   - app/**/route.ts
   - lib/api-error.ts
-  - lib/api-error-shared.ts
 alwaysApply: false
 ---
 
 # API 错误响应规范
 
-所有 `route.ts` 必须使用 `@/lib/api-error` 中的快捷方法返回错误响应，**禁止**直接使用 `NextResponse.json({ error: "..." }, { status: xxx })`。
+所有 `route.ts` 必须使用 `@/lib/api-error` 中的快捷函数直接 `return` 错误响应，**禁止**手写 `NextResponse.json({ error: "..." }, { status: xxx })`。
 
 ## 响应格式
 
@@ -17,19 +16,19 @@ alwaysApply: false
 - `error`：机器可读错误码（前端据此做分支判断）
 - `message`：用户可读提示文本
 
-## 快捷方法对照表
+## 快捷函数对照表
 
-| 场景 | 方法 | 状态码 |
+| 场景 | 函数 | 状态码 |
 |---|---|---|
 | 缺少必要参数 | `badRequest(message?)` | 400 |
 | 业务校验不通过 | `validationError(message)` | 400 |
 | 资源不存在 | `notFound(message?)` | 404 |
 | 名称/唯一键冲突 | `conflict(message)` | 409 |
 | LLM 未配置 | `llmNotConfigured()` | 422 |
-| LLM 返回内容无效 | `llmInvalidResponse(detail?)` | 500 |
-| 服务端内部错误 | `internalError(message?, detail?)` | 500 |
+| LLM 返回内容无效 | `llmInvalidResponse(message?)` | 500 |
+| 服务端内部错误 | `internalError(message?)` | 500 |
 
-需要附加业务数据的 500 错误，使用常量手动构造：
+需要附加业务数据时，手动构造（保持 `error`/`message` 字段）：
 ```ts
 import { API_ERRORS } from "@/lib/api-error"
 return NextResponse.json(
@@ -43,7 +42,6 @@ return NextResponse.json(
 ```ts
 // ❌ 禁止
 return NextResponse.json({ error: "项目不存在" }, { status: 404 })
-return NextResponse.json({ error: "LLM_NOT_CONFIGURED", message: "..." }, { status: 422 })
 
 // ✅ 正确
 import { notFound, llmNotConfigured, validationError } from "@/lib/api-error"
@@ -53,8 +51,7 @@ return llmNotConfigured()
 return validationError("请至少选择一个章节")
 ```
 
-## 错误码常量
+## 新增错误码
 
-新增错误码时：
-- 先在 `lib/api-error-shared.ts` 的 `API_ERRORS` 中新增项（`code` / `status` / `defaultMessage`）
-- 最后通过 `apiError()` 或快捷方法构造响应
+在 `lib/api-error.ts` 的 `API_ERRORS` 对象中新增一项（`code` / `status` / `defaultMessage`），
+然后视需要添加对应的快捷函数。
