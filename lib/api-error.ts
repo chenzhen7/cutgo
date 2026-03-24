@@ -32,13 +32,13 @@ export const API_ERRORS = {
 export type ApiErrorKey  = keyof typeof API_ERRORS
 export type ApiErrorCode = (typeof API_ERRORS)[ApiErrorKey]["code"]
 
-export class CurGoError extends Error {
+export class ApiHttpError extends Error {
   code: ApiErrorCode
   status: number
 
   constructor(code: ApiErrorCode, status: number, message: string) {
     super(message)
-    this.name = "CurGoError"
+    this.name = "ApiHttpError"
     this.code = code
     this.status = status
   }
@@ -65,7 +65,7 @@ export const internalError     = (message?: string) => makeError("INTERNAL",    
 
 export const cutGoError = (key: ApiErrorKey, message?: string): never => {
   const { code, status, defaultMessage } = API_ERRORS[key]
-  throw new CurGoError(code, status, message ?? defaultMessage)
+  throw new ApiHttpError(code, status, message ?? defaultMessage)
 }
 
 // ── 全局异常兜底 (withErrorHandler) ──────────────────────────────────────────
@@ -79,7 +79,7 @@ export function withError(
     } catch (error: any) {
       console.error("[API Error]", req.method, req.nextUrl?.pathname, error)
 
-      if (error instanceof CurGoError) {
+      if (error instanceof ApiHttpError) {
         return NextResponse.json<ApiErrorBody>(
           { error: error.code, message: error.message },
           { status: error.status }
