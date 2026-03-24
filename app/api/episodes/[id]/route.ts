@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function PATCH(
+export const PATCH = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
   const body = await request.json()
 
@@ -27,17 +27,17 @@ export async function PATCH(
   })
 
   return NextResponse.json(episode)
-}
+})
 
-export async function DELETE(
+export const DELETE = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
 
   const episode = await prisma.episode.findUnique({ where: { id } })
   if (!episode) {
-    return apiError.notFound("分集不存在")
+    throw cutGoError("NOT_FOUND", "分集不存在")
   }
 
   await prisma.episode.delete({ where: { id } })
@@ -48,4 +48,4 @@ export async function DELETE(
   })
 
   return NextResponse.json(remaining)
-}
+})

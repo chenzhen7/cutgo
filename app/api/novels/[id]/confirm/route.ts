@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function POST(
+export const POST = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
 
   const novel = await prisma.novel.findUnique({ where: { id } })
   if (!novel) {
-    return apiError.notFound("小说不存在")
+    throw cutGoError("NOT_FOUND", "小说不存在")
   }
 
   const selectedChapters = await prisma.chapter.findMany({
@@ -19,7 +19,7 @@ export async function POST(
   })
 
   if (selectedChapters.length === 0) {
-    return apiError.validationError("请至少保留一章并勾选参与制作")
+    throw cutGoError("VALIDATION", "请至少保留一章并勾选参与制作")
   }
 
   await prisma.$transaction(async (tx) => {
@@ -47,4 +47,4 @@ export async function POST(
 
   const updated = await prisma.novel.findUnique({ where: { id } })
   return NextResponse.json(updated)
-}
+})

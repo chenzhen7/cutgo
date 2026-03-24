@@ -1,14 +1,11 @@
 /**
  * API 统一错误码与响应构造
  *
- * 后端 route.ts 用快捷函数直接抛错：
- *   badRequest("缺少参数")
- *   notFound("小说不存在")
- *
+ * 后端 route.ts 使用 `throw cutGoError("KEY", message?)`，由 `withError` 捕获并返回 JSON。
  * 前端通过 api-client.ts 的 ApiError.code 做分支判断，ApiError.message 展示用户提示。
  */
 
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
 // ── 类型与错误码常量（前后端共用） ────────────────────────────────────────────
 
@@ -44,9 +41,7 @@ export class CutGoError extends Error {
   }
 }
 
-// ── 快捷抛错函数（route.ts 直接调用） ────────────────────────────────────────
-
-function makeError(key: ApiErrorKey, message?: string) {
+function jsonErrorResponse(key: ApiErrorKey, message?: string) {
   const { code, status, defaultMessage } = API_ERRORS[key]
   return NextResponse.json<ApiErrorBody>(
     { error: code, message: message ?? defaultMessage },
@@ -54,29 +49,20 @@ function makeError(key: ApiErrorKey, message?: string) {
   )
 }
 
-export const badRequest        = (message?: string) => makeError("MISSING_PARAMS",       message)
-export const validationError   = (message:  string) => makeError("VALIDATION",           message)
-export const notFound          = (message?: string) => makeError("NOT_FOUND",            message)
-export const conflict          = (message:  string) => makeError("CONFLICT",             message)
-export const llmNotConfigured  = ()                 => makeError("LLM_NOT_CONFIGURED")
-export const llmInvalidResponse= (message?: string) => makeError("LLM_INVALID_RESPONSE", message)
-export const internalError     = (message?: string) => makeError("INTERNAL",             message)
-
-
 export const cutGoError = (key: ApiErrorKey, message?: string): never => {
   const { code, status, defaultMessage } = API_ERRORS[key]
   throw new CutGoError(code, status, message ?? defaultMessage)
 }
 
-// ── 全局异常兜底 (withErrorHandler) ──────────────────────────────────────────
+// ── 全局异常兜底 (withError) ────────────────────────────────────────────────
 
 export function withError(
-  handler: (req: any, ctx: any) => Promise<Response> | Response
+  handler: (req: NextRequest, ctx?: unknown) => Promise<Response> | Response
 ) {
-  return async (req: any, ctx: any) => {
+  return async (req: NextRequest, ctx?: unknown) => {
     try {
       return await handler(req, ctx)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[API Error]", req.method, req.nextUrl?.pathname, error)
 
       if (error instanceof CutGoError) {
@@ -86,20 +72,22 @@ export function withError(
         )
       }
 
-      // Prisma errors
-      if (error?.code === "P2025") {
-        notFound("记录不存在")
+      const e = error as { code?: string; message?: string }
+      if (e.code === "P2025") {
+        return jsonErrorResponse("NOT_FOUND", "记录不存在")
       }
-      if (error?.code === "P2002") {
-        conflict("资源已存在")
+      if (e.code === "P2002") {
+        return jsonErrorResponse("CONFLICT", "资源已存在")
       }
-      // LLM errors
-      if (error?.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-        llmNotConfigured()
+      if (e.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
+        return jsonErrorResponse("LLM_NOT_CONFIGURED")
       }
 
-      // 其他异常
-      internalError(error?.message || "服务器内部错误")
+      const fallback =
+        error instanceof Error && error.message
+          ? error.message
+          : "服务器内部错误"
+      return jsonErrorResponse("INTERNAL", fallback)
     }
   }
 }

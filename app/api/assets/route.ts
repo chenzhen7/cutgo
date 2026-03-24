@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function GET(request: NextRequest) {
+export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
 
   if (!projectId) {
-    return apiError.badRequest("projectId is required")
+    throw cutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const [characters, scenes, props] = await Promise.all([
@@ -26,4 +26,4 @@ export async function GET(request: NextRequest) {
   ])
 
   return NextResponse.json({ characters, scenes, props })
-}
+})

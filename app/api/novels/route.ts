@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { countWords } from "@/lib/novel-utils"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function GET(request: NextRequest) {
+export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
 
   if (!projectId) {
-    return apiError.badRequest("projectId is required")
+    throw cutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -26,17 +26,17 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json(novel)
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
   const { projectId, title, rawText } = body
 
   if (!projectId) {
-    return apiError.badRequest("projectId is required")
+    throw cutGoError("MISSING_PARAMS", "projectId is required")
   }
   if (!rawText || !rawText.trim()) {
-    return apiError.validationError("文本内容不能为空")
+    throw cutGoError("VALIDATION", "文本内容不能为空")
   }
 
   const existing = await prisma.novel.findUnique({ where: { projectId } })
@@ -65,4 +65,4 @@ export async function POST(request: NextRequest) {
   })
 
   return NextResponse.json(novel, { status: 201 })
-}
+})

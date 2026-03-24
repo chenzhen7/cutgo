@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
 
 interface AIShotResult {
   composition: string
@@ -184,17 +184,17 @@ function generateLocalScriptShots(
   return { shots }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
   const { projectId, episodeIds, scriptIds, mode = "skip_existing" } = body
 
   if (!projectId) {
-    return apiError.badRequest("projectId is required")
+    throw cutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) {
-    return apiError.notFound("项目不存在")
+    throw cutGoError("NOT_FOUND", "项目不存在")
   }
 
   let targetScripts = await prisma.script.findMany({
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (targetScripts.length === 0) {
-    return apiError.validationError("没有可生成的剧本")
+    throw cutGoError("VALIDATION", "没有可生成的剧本")
   }
 
   const existingShotScriptIds = new Set(
@@ -345,11 +345,11 @@ export async function POST(request: NextRequest) {
     const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
     return NextResponse.json(
       {
-        error: apiError.API_ERRORS.INTERNAL.code,
+        error: API_ERRORS.INTERNAL.code,
         message: "部分剧本生成失败",
         scriptShotPlans: allScriptShotPlans,
       },
-      { status: apiError.API_ERRORS.INTERNAL.status }
+      { status: API_ERRORS.INTERNAL.status }
     )
   }
-}
+})

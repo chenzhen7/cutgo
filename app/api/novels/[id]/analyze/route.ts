@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { detectChapters, splitParagraphs, countWords } from "@/lib/novel-utils"
-import * as apiError from "@/lib/api-error"
+import { CutGoError, cutGoError, withError } from "@/lib/api-error"
 
-export async function POST(
+export const POST = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
 
   const novel = await prisma.novel.findUnique({ where: { id } })
   if (!novel) {
-    return apiError.notFound("小说不存在")
+    throw cutGoError("NOT_FOUND", "小说不存在")
   }
   if (!novel.rawText || !novel.rawText.trim()) {
-    return apiError.validationError("文本内容为空")
+    throw cutGoError("VALIDATION", "文本内容为空")
   }
 
   try {
@@ -53,7 +53,7 @@ export async function POST(
     })
 
     if (!updated) {
-      return apiError.notFound("小说不存在")
+      throw cutGoError("NOT_FOUND", "小说不存在")
     }
 
     return NextResponse.json({
@@ -65,6 +65,7 @@ export async function POST(
     })
   } catch (err) {
     console.error("Analysis failed:", err)
-    return apiError.internalError("分析失败，请重试")
+    if (err instanceof CutGoError) throw err
+    throw cutGoError("INTERNAL", "分析失败，请重试")
   }
-}
+})

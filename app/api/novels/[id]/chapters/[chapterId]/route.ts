@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function PUT(
+export const PUT = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; chapterId: string }> }
-) {
+) => {
   const { chapterId } = await params
   const body = await request.json()
 
   const existing = await prisma.chapter.findUnique({ where: { id: chapterId } })
   if (!existing) {
-    return apiError.notFound("章节不存在")
+    throw cutGoError("NOT_FOUND", "章节不存在")
   }
 
   const data: Record<string, unknown> = {}
@@ -29,20 +29,20 @@ export async function PUT(
   })
 
   return NextResponse.json(chapter)
-}
+})
 
-export async function DELETE(
+export const DELETE = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; chapterId: string }> }
-) {
+) => {
   const { chapterId } = await params
 
   const existing = await prisma.chapter.findUnique({ where: { id: chapterId } })
   if (!existing) {
-    return apiError.notFound("章节不存在")
+    throw cutGoError("NOT_FOUND", "章节不存在")
   }
 
   await prisma.chapter.delete({ where: { id: chapterId } })
 
   return NextResponse.json({ success: true })
-}
+})

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import { buildExtractAssetsPrompt } from "@/lib/prompts"
-import * as apiError from "@/lib/api-error"
+import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
 
 interface AIAssetResult {
   characters: {
@@ -50,16 +50,16 @@ async function callLLMExtractAssetsFromChapters(
   return parseAssetsJSON(result.content)
 }
 
-export async function POST(
+export const POST = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id: novelId } = await params
   const body = await request.json()
   const { chapterIds } = body as { chapterIds: string[] }
 
   if (!chapterIds || chapterIds.length === 0) {
-    return apiError.validationError("请至少选择一个章节")
+    throw cutGoError("VALIDATION", "请至少选择一个章节")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -67,7 +67,7 @@ export async function POST(
     select: { id: true, projectId: true },
   })
   if (!novel) {
-    return apiError.notFound("小说不存在")
+    throw cutGoError("NOT_FOUND", "小说不存在")
   }
 
   const { projectId } = novel
@@ -79,7 +79,7 @@ export async function POST(
   })
 
   if (chapters.length === 0) {
-    return apiError.validationError("未找到指定章节")
+    throw cutGoError("VALIDATION", "未找到指定章节")
   }
 
   // 查询已存在的名称，用于前端标注冲突
@@ -109,9 +109,9 @@ export async function POST(
   } catch (err) {
     console.error("Asset extraction from chapters failed:", err)
     const message = err instanceof Error ? err.message : String(err)
-    if (message === apiError.API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      return apiError.llmNotConfigured()
+    if (message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
+      throw cutGoError("LLM_NOT_CONFIGURED")
     }
-    return apiError.internalError(`资产提取失败：${message}`)
+    throw cutGoError("INTERNAL", `资产提取失败：${message}`)
   }
-}
+})

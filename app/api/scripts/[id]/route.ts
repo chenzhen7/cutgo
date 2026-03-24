@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
 const scriptInclude = {
   episode: {
@@ -13,25 +13,25 @@ const scriptInclude = {
   },
 }
 
-export async function GET(
+export const GET = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
   const script = await prisma.script.findUnique({
     where: { id },
     include: scriptInclude,
   })
   if (!script) {
-    return apiError.notFound("剧本不存在")
+    throw cutGoError("NOT_FOUND", "剧本不存在")
   }
   return NextResponse.json(script)
-}
+})
 
-export async function PATCH(
+export const PATCH = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
   const body = await request.json()
   const { title, content, status, characters, props, location } = body
@@ -51,13 +51,13 @@ export async function PATCH(
   })
 
   return NextResponse.json(script)
-}
+})
 
-export async function DELETE(
+export const DELETE = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
   await prisma.script.delete({ where: { id } })
   return NextResponse.json({ success: true })
-}
+})

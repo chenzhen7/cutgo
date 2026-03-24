@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function GET(request: NextRequest) {
+export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get("search") || ""
   const platform = searchParams.get("platform") || ""
@@ -34,15 +34,15 @@ export async function GET(request: NextRequest) {
   })
 
   return NextResponse.json(projects)
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
 
   const { name, description, tags, platform, aspectRatio, resolution, duration } = body
 
   if (!name || !name.trim()) {
-    return apiError.validationError("项目名称不能为空")
+    throw cutGoError("VALIDATION", "项目名称不能为空")
   }
 
   const project = await prisma.project.create({
@@ -58,4 +58,4 @@ export async function POST(request: NextRequest) {
   })
 
   return NextResponse.json(project, { status: 201 })
-}
+})

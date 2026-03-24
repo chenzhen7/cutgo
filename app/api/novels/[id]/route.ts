@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@/lib/generated/prisma/client"
 import { countWords } from "@/lib/novel-utils"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
-export async function GET(
+export const GET = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
 
   const novel = await prisma.novel.findUnique({
@@ -21,22 +21,22 @@ export async function GET(
   })
 
   if (!novel) {
-    return apiError.notFound("小说不存在")
+    throw cutGoError("NOT_FOUND", "小说不存在")
   }
 
   return NextResponse.json(novel)
-}
+})
 
-export async function PATCH(
+export const PATCH = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params
   const body = await request.json() as Record<string, unknown>
 
   const existing = await prisma.novel.findUnique({ where: { id } })
   if (!existing) {
-    return apiError.notFound("小说不存在")
+    throw cutGoError("NOT_FOUND", "小说不存在")
   }
 
   const data: Prisma.NovelUpdateInput = {}
@@ -56,4 +56,4 @@ export async function PATCH(
   })
 
   return NextResponse.json(novel)
-}
+})

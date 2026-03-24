@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import * as apiError from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
 const scriptWithShotsInclude = {
   episode: { select: { id: true, index: true, title: true } },
@@ -37,14 +37,14 @@ function toScriptShotPlan(script: {
   }
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
   const scriptId = searchParams.get("scriptId")
   const episodeId = searchParams.get("episodeId")
 
   if (!projectId) {
-    return apiError.badRequest("projectId is required")
+    throw cutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const where: Record<string, unknown> = { projectId }
@@ -62,20 +62,20 @@ export async function GET(request: NextRequest) {
   })
 
   return NextResponse.json(scripts.map(toScriptShotPlan))
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withError(async (request: NextRequest) => {
   const { projectId, scriptId } = await request.json()
 
   if (!projectId || !scriptId) {
-    return apiError.badRequest("projectId and scriptId are required")
+    throw cutGoError("MISSING_PARAMS", "projectId and scriptId are required")
   }
 
   const script = await prisma.script.findFirst({
     where: { id: scriptId, projectId },
     include: scriptWithShotsInclude,
   })
-  if (!script) return apiError.notFound("script not found")
+  if (!script) throw cutGoError("NOT_FOUND", "script not found")
 
   return NextResponse.json(toScriptShotPlan(script))
-}
+})
