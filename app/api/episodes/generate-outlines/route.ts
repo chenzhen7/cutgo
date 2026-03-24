@@ -34,12 +34,12 @@ function parseOutlineJSON(raw: string): OutlineItem[] {
   return parsed as OutlineItem[]
 }
 
-export async function POST(request: NextRequest) {
+export const POST = apiError.withApiError(async (request: NextRequest) => {
   const body = await request.json()
   const { projectId, chapterIds } = body as { projectId: string; chapterIds?: string[] }
 
   if (!projectId) {
-    return apiError.badRequest("projectId is required")
+    return apiError.routeError.badRequest("projectId is required")
   }
 
   // 读取小说及章节
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (!novel) {
-    return apiError.validationError("请先导入小说并解析章节")
+    return apiError.routeError.validation("请先导入小说并解析章节")
   }
 
   const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
@@ -61,13 +61,13 @@ export async function POST(request: NextRequest) {
     const idSet = new Set(chapterIds)
     selectedChapters = allSorted.filter((c) => idSet.has(c.id))
     if (selectedChapters.length === 0) {
-      return apiError.validationError("未找到所选章节")
+      return apiError.routeError.validation("未找到所选章节")
     }
   } else {
     const hasAnySelected = allSorted.some((c) => c.selected)
     selectedChapters = hasAnySelected ? allSorted.filter((c) => c.selected) : allSorted
     if (selectedChapters.length === 0) {
-      return apiError.validationError("暂无可用章节")
+      return apiError.routeError.validation("暂无可用章节")
     }
   }
 
@@ -92,13 +92,13 @@ export async function POST(request: NextRequest) {
     outlines = parseOutlineJSON(result.content)
   } catch (err) {
     if ((err as Error).message === apiError.API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      return apiError.llmNotConfigured()
+      return apiError.routeError.llmNotConfigured()
     }
-    return apiError.llmInvalidResponse((err as Error).message)
+    return apiError.routeError.llmInvalidResponse((err as Error).message)
   }
 
   if (outlines.length === 0) {
-    return apiError.llmInvalidResponse("LLM 未返回有效的分集大纲")
+    return apiError.routeError.llmInvalidResponse("LLM 未返回有效的分集大纲")
   }
 
   // 获取当前项目最大分集 index
@@ -144,4 +144,4 @@ export async function POST(request: NextRequest) {
     episodes: createdEpisodes,
     stats: { generatedCount: createdEpisodes.length },
   })
-}
+})

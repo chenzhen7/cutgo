@@ -38,7 +38,7 @@ async function callLLMExtractAssetsFromChapters(
   chapters: { title: string | null; content: string }[]
 ): Promise<AIAssetResult> {
   const chaptersText = chapters
-    .map((ch, i) => `【第${i + 1}章${ch.title ? ` ${ch.title}` : ""}】\n${ch.content.slice(0, 3000)}`)
+    .map((ch, i) => `【第${i + 1}章${ch.title ? ` ${ch.title}` : ""}】\n${ch.content}`)
     .join("\n\n---\n\n")
 
   const prompt = buildExtractAssetsPrompt(chaptersText)
