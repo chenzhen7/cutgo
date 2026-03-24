@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import {
   FolderOpen,
@@ -116,6 +116,12 @@ export default function AssetsPage() {
       await fetchAssets(projectId)
     },
     [projectId, fetchAssets]
+  )
+  const handleToggleCharacterLock = useCallback(
+    (id: string, locked: boolean) => {
+      void updateCharacter(id, { locked })
+    },
+    [updateCharacter]
   )
 
   const totalAssets = characters.length + scenes.length + props.length
@@ -239,7 +245,7 @@ export default function AssetsPage() {
             searchQuery={searchQuery}
             onEdit={setEditingCharacter}
             onDelete={setDeletingCharacterId}
-            onToggleLock={(id, locked) => updateCharacter(id, { locked })}
+            onToggleLock={handleToggleCharacterLock}
           />
         )}
         {activeTab === "characters" && characters.length === 0 && totalAssets > 0 && (
@@ -447,7 +453,7 @@ function EmptyTabState({ label, onAdd }: { label: string; onAdd: () => void }) {
   )
 }
 
-function CharacterList({
+const CharacterList = memo(function CharacterList({
   characters,
   searchQuery,
   onEdit,
@@ -460,12 +466,16 @@ function CharacterList({
   onDelete: (id: string) => void
   onToggleLock: (id: string, locked: boolean) => void
 }) {
-  const filtered = characters.filter(
-    (c) =>
-      !searchQuery ||
-      c.name.includes(searchQuery) ||
-      c.description?.includes(searchQuery) ||
-      c.role.includes(searchQuery)
+  const filtered = useMemo(
+    () =>
+      characters.filter(
+        (c) =>
+          !searchQuery ||
+          c.name.includes(searchQuery) ||
+          c.description?.includes(searchQuery) ||
+          c.role.includes(searchQuery)
+      ),
+    [characters, searchQuery]
   )
 
   const roleLabel = (role: string) => {
@@ -548,9 +558,9 @@ function CharacterList({
       ))}
     </div>
   )
-}
+})
 
-function SceneList({
+const SceneList = memo(function SceneList({
   scenes,
   searchQuery,
   onEdit,
@@ -561,11 +571,15 @@ function SceneList({
   onEdit: (s: AssetScene) => void
   onDelete: (id: string) => void
 }) {
-  const filtered = scenes.filter(
-    (s) =>
-      !searchQuery ||
-      s.name.includes(searchQuery) ||
-      s.description?.includes(searchQuery)
+  const filtered = useMemo(
+    () =>
+      scenes.filter(
+        (s) =>
+          !searchQuery ||
+          s.name.includes(searchQuery) ||
+          s.description?.includes(searchQuery)
+      ),
+    [scenes, searchQuery]
   )
 
   return (
@@ -616,9 +630,9 @@ function SceneList({
       ))}
     </div>
   )
-}
+})
 
-function PropList({
+const PropList = memo(function PropList({
   props,
   searchQuery,
   onEdit,
@@ -629,11 +643,15 @@ function PropList({
   onEdit: (p: AssetProp) => void
   onDelete: (id: string) => void
 }) {
-  const filtered = props.filter(
-    (p) =>
-      !searchQuery ||
-      p.name.includes(searchQuery) ||
-      p.description?.includes(searchQuery)
+  const filtered = useMemo(
+    () =>
+      props.filter(
+        (p) =>
+          !searchQuery ||
+          p.name.includes(searchQuery) ||
+          p.description?.includes(searchQuery)
+      ),
+    [props, searchQuery]
   )
 
   return (
@@ -683,7 +701,7 @@ function PropList({
       ))}
     </div>
   )
-}
+})
 
 // ── Form Dialogs ──
 
