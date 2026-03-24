@@ -43,9 +43,9 @@ async function parseErrorBody(res: Response): Promise<ApiErrorBody> {
         message: (body.message as string) || (body.error as string),
       }
     }
-    return { error: API_ERRORS.UNKNOWN.code, message: `请求失败（${res.status}）` }
+    return { error: API_ERRORS.INTERNAL.code, message: `请求失败（${res.status}）` }
   } catch {
-    return { error: API_ERRORS.UNKNOWN.code, message: `请求失败（${res.status}）` }
+    return { error: API_ERRORS.INTERNAL.code, message: `请求失败（${res.status}）` }
   }
 }
 

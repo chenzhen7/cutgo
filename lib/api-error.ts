@@ -1,9 +1,9 @@
 /**
  * API 统一错误码与响应构造
  *
- * 后端 route.ts 用快捷函数直接 return 错误响应：
- *   return badRequest("缺少参数")
- *   return notFound("小说不存在")
+ * 后端 route.ts 用快捷函数直接抛错：
+ *   badRequest("缺少参数")
+ *   notFound("小说不存在")
  *
  * 前端通过 api-client.ts 的 ApiError.code 做分支判断，ApiError.message 展示用户提示。
  */
@@ -32,19 +32,19 @@ export const API_ERRORS = {
 export type ApiErrorKey  = keyof typeof API_ERRORS
 export type ApiErrorCode = (typeof API_ERRORS)[ApiErrorKey]["code"]
 
-export class ApiHttpError extends Error {
+export class CutGoError extends Error {
   code: ApiErrorCode
   status: number
 
   constructor(code: ApiErrorCode, status: number, message: string) {
     super(message)
-    this.name = "ApiHttpError"
+    this.name = "CutGoError"
     this.code = code
     this.status = status
   }
 }
 
-// ── 快捷响应函数（route.ts 直接 return） ─────────────────────────────────────
+// ── 快捷抛错函数（route.ts 直接调用） ────────────────────────────────────────
 
 function makeError(key: ApiErrorKey, message?: string) {
   const { code, status, defaultMessage } = API_ERRORS[key]
@@ -65,7 +65,7 @@ export const internalError     = (message?: string) => makeError("INTERNAL",    
 
 export const cutGoError = (key: ApiErrorKey, message?: string): never => {
   const { code, status, defaultMessage } = API_ERRORS[key]
-  throw new ApiHttpError(code, status, message ?? defaultMessage)
+  throw new CutGoError(code, status, message ?? defaultMessage)
 }
 
 // ── 全局异常兜底 (withErrorHandler) ──────────────────────────────────────────
@@ -79,7 +79,7 @@ export function withError(
     } catch (error: any) {
       console.error("[API Error]", req.method, req.nextUrl?.pathname, error)
 
-      if (error instanceof ApiHttpError) {
+      if (error instanceof CutGoError) {
         return NextResponse.json<ApiErrorBody>(
           { error: error.code, message: error.message },
           { status: error.status }
@@ -88,18 +88,18 @@ export function withError(
 
       // Prisma errors
       if (error?.code === "P2025") {
-        return notFound("记录不存在")
+        notFound("记录不存在")
       }
       if (error?.code === "P2002") {
-        return conflict("资源已存在")
+        conflict("资源已存在")
       }
       // LLM errors
       if (error?.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-        return llmNotConfigured()
+        llmNotConfigured()
       }
 
       // 其他异常
-      return internalError(error?.message || "服务器内部错误")
+      internalError(error?.message || "服务器内部错误")
     }
   }
 }
