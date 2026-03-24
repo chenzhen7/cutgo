@@ -100,7 +100,7 @@ export default function AssetsPage() {
   const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
   const [deletingPropId, setDeletingPropId] = useState<string | null>(null)
   const [showExtractDialog, setShowExtractDialog] = useState(false)
-  const [extractSuccessMsg, setExtractSuccessMsg] = useState<string | null>(null)
+  const [extractSuccessMsg] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -112,14 +112,8 @@ export default function AssetsPage() {
   }, [projectId, fetchAssets, fetchNovel])
 
   const handleExtractSuccess = useCallback(
-    async (stats: { characterCount: number; sceneCount: number; propCount: number }) => {
-      const parts: string[] = []
-      if (stats.characterCount > 0) parts.push(`${stats.characterCount} 个角色`)
-      if (stats.sceneCount > 0) parts.push(`${stats.sceneCount} 个场景`)
-      if (stats.propCount > 0) parts.push(`${stats.propCount} 个道具`)
-      setExtractSuccessMsg(parts.length > 0 ? `资产提取成功：${parts.join("、")}` : "资产提取完成")
+    async () => {
       await fetchAssets(projectId)
-      setTimeout(() => setExtractSuccessMsg(null), 5000)
     },
     [projectId, fetchAssets]
   )
@@ -432,7 +426,7 @@ export default function AssetsPage() {
           projectId={projectId}
           novelId={novel.id}
           chapters={chapters}
-          onSuccess={(stats) => void handleExtractSuccess(stats)}
+          onSuccess={() => void handleExtractSuccess()}
         />
       )}
     </div>

@@ -26,13 +26,14 @@ export class GoogleLLMProvider implements LLMProvider {
   }
 
   async chat(options: LLMGenerateOptions): Promise<LLMGenerateResult> {
-    const { messages, model, maxTokens } = options
+    const { messages, model, maxTokens, timeoutMs } = options
     const modelId = model || this.config.model
 
     const result = await generateText({
       model: this.googleAI.chat(modelId),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
+      timeout: timeoutMs || 300 * 1000,
     })
 
     return {

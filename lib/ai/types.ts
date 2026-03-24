@@ -33,6 +33,8 @@ export interface LLMGenerateOptions {
   model?: string
   /** 本次回复最多生成的 token 数（未传则由各厂商/SDK 默认） */
   maxTokens?: number
+  /** 整次请求超时（毫秒），传给 AI SDK `generateText` 的 `timeout` */
+  timeoutMs?: number
 
   // /** 响应格式：普通文本或 JSON 对象 */
   // responseFormat?: "text" | "json_object"

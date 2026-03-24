@@ -85,6 +85,7 @@ async function testLLM({
         model,
         messages: [{ role: "user", content: "hi" }],
         maxTokens: 10,
+        timeoutMs: 1000 * 100
       }),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), 100_000)

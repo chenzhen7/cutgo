@@ -43,12 +43,13 @@ export class OpenAILLMProvider implements LLMProvider {
    * 调用 /chat/completions 接口
    */
   async chat(options: LLMGenerateOptions): Promise<LLMGenerateResult> {
-    const { messages, model, maxTokens } = options
+    const { messages, model, maxTokens, timeoutMs } = options
 
     const result = await generateText({
       model: this.openai.chat(model || this.config.model),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
+      timeout: timeoutMs || 300 * 1000,
     })
 
     return {
