@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { useNovelStore } from "@/store/novel-store"
 import { ImportNovelDialog } from "./components/import-novel-dialog"
 import { TabChapters } from "./components/tab-chapters"
@@ -37,7 +38,6 @@ export default function ImportPage() {
 
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showExtractDialog, setShowExtractDialog] = useState(false)
-  const [extractSuccessMsg, setExtractSuccessMsg] = useState<string | null>(null)
   const [stageIndex, setStageIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [confirmError, setConfirmError] = useState<string | null>(null)
@@ -104,12 +104,16 @@ export default function ImportPage() {
       if (stats.characterCount > 0) parts.push(`${stats.characterCount} 个角色`)
       if (stats.sceneCount > 0) parts.push(`${stats.sceneCount} 个场景`)
       if (stats.propCount > 0) parts.push(`${stats.propCount} 个道具`)
-      setExtractSuccessMsg(
-        parts.length > 0 ? `资产提取成功：${parts.join("、")}` : "资产提取完成"
-      )
-      setTimeout(() => setExtractSuccessMsg(null), 5000)
+      const message = parts.length > 0 ? `资产提取成功：${parts.join("、")}` : "资产提取完成"
+      toast.success(message, {
+        position: "bottom-right",
+        action: {
+          label: "去资产库",
+          onClick: () => router.push(`/project/${projectId}/assets`),
+        },
+      })
     },
-    []
+    [projectId, router]
   )
 
   const isImported = !!novel
@@ -160,12 +164,6 @@ export default function ImportPage() {
           <p className="text-xs text-destructive">{confirmError}</p>
         </div>
       )}
-      {extractSuccessMsg && (
-        <div className="px-6 py-2 border-b bg-primary/5 shrink-0">
-          <p className="text-xs text-primary">{extractSuccessMsg}</p>
-        </div>
-      )}
-
       {/* 主体内容区 */}
       <div className="flex-1 overflow-hidden">
         {isEmpty ? (
