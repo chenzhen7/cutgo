@@ -108,10 +108,10 @@ export async function POST(
     })
   } catch (err) {
     console.error("Asset extraction from chapters failed:", err)
-    const message = (err as Error).message
+    const message = err instanceof Error ? err.message : String(err)
     if (message === apiError.API_ERRORS.LLM_NOT_CONFIGURED.code) {
       return apiError.llmNotConfigured()
     }
-    return apiError.internalError("资产提取失败", message)
+    return apiError.internalError(`资产提取失败：${message}`)
   }
 }

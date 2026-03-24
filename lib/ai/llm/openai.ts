@@ -49,7 +49,7 @@ export class OpenAILLMProvider implements LLMProvider {
       model: this.openai.chat(model || this.config.model),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
-      timeout: timeoutMs || 300 * 1000,
+      timeout: timeoutMs || 10 * 1000,
     })
 
     return {

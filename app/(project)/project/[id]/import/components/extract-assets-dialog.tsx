@@ -347,7 +347,7 @@ export function ExtractAssetsDialog({
       setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
       setStep("review")
     } catch (err) {
-      setError((err as Error).message)
+      setError(err instanceof Error ? err.message : "请求失败")
       setStep("select")
     }
   }
@@ -399,7 +399,7 @@ export function ExtractAssetsDialog({
       onSuccess?.(result.stats)
       onOpenChange(false)
     } catch (err) {
-      setError((err as Error).message)
+      setError(err instanceof Error ? err.message : "请求失败")
     } finally {
       setSaving(false)
     }

@@ -8,8 +8,6 @@ export interface ApiErrorBody {
   error: string
   /** 用户可读提示（前端优先展示该字段） */
   message: string
-  /** 附加调试信息 */
-  detail?: string
 }
 
 /**

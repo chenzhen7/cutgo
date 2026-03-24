@@ -28,25 +28,23 @@ export { API_ERRORS } from "./api-error-shared"
 export function apiError(
   code: ApiErrorCode | string,
   status: number,
-  message?: string,
-  detail?: string
+  message?: string
 ): NextResponse<ApiErrorBody> {
   const definition = API_ERROR_BY_CODE[code as ApiErrorCode]
   const body: ApiErrorBody = {
     error: code,
     message: message ?? definition?.defaultMessage ?? code,
   }
-  if (detail) body.detail = detail
   return NextResponse.json(body, { status })
 }
 
 // ── 快捷方法 ────────────────────────────────────────────────────────────────
 
-export const badRequest = (message?: string, detail?: string) =>
-  apiError(API_ERRORS.MISSING_PARAMS.code, API_ERRORS.MISSING_PARAMS.status, message, detail)
+export const badRequest = (message?: string) =>
+  apiError(API_ERRORS.MISSING_PARAMS.code, API_ERRORS.MISSING_PARAMS.status, message)
 
-export const validationError = (message: string, detail?: string) =>
-  apiError(API_ERRORS.VALIDATION.code, API_ERRORS.VALIDATION.status, message, detail)
+export const validationError = (message: string) =>
+  apiError(API_ERRORS.VALIDATION.code, API_ERRORS.VALIDATION.status, message)
 
 export const notFound = (message?: string) =>
   apiError(API_ERRORS.NOT_FOUND.code, API_ERRORS.NOT_FOUND.status, message)
@@ -57,8 +55,8 @@ export const conflict = (message: string) =>
 export const llmNotConfigured = () =>
   apiError(API_ERRORS.LLM_NOT_CONFIGURED.code, API_ERRORS.LLM_NOT_CONFIGURED.status)
 
-export const llmInvalidResponse = (detail?: string) =>
-  apiError(API_ERRORS.LLM_INVALID_RESPONSE.code, API_ERRORS.LLM_INVALID_RESPONSE.status, undefined, detail)
+export const llmInvalidResponse = (message?: string) =>
+  apiError(API_ERRORS.LLM_INVALID_RESPONSE.code, API_ERRORS.LLM_INVALID_RESPONSE.status, message)
 
-export const internalError = (message?: string, detail?: string) =>
-  apiError(API_ERRORS.INTERNAL.code, API_ERRORS.INTERNAL.status, message, detail)
+export const internalError = (message?: string) =>
+  apiError(API_ERRORS.INTERNAL.code, API_ERRORS.INTERNAL.status, message)

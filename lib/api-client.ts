@@ -2,7 +2,7 @@
  * 前端统一 fetch 封装
  *
  * 与后端 `api-error-shared.ts` 约定对齐：
- *   - 错误响应体格式为 { error: string, message: string, detail?: string }
+ *   - 错误响应体格式为 { error: string, message: string }
  *   - error 字段为机器可读错误码，用于分支判断
  *   - message 字段为用户可读提示，优先用于展示
  */
@@ -12,14 +12,12 @@ import { API_ERRORS, type ApiErrorBody } from "./api-error-shared"
 /** 带机器可读 code 的前端错误类 */
 export class ApiError extends Error {
   readonly code: string
-  readonly detail?: string
   readonly status: number
 
   constructor(body: ApiErrorBody, status: number) {
     super(body.message)
     this.name = "ApiError"
     this.code = body.error
-    this.detail = body.detail
     this.status = status
   }
 }
@@ -43,7 +41,6 @@ async function parseErrorBody(res: Response): Promise<ApiErrorBody> {
       return {
         error: body.error as string,
         message: (body.message as string) || (body.error as string),
-        detail: body.detail as string | undefined,
       }
     }
     return { error: API_ERRORS.UNKNOWN.code, message: `请求失败（${res.status}）` }
