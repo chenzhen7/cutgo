@@ -107,13 +107,26 @@ function useAssetItemStates<T extends { name: string }>(
 function AssetRow<T extends { name: string; description?: string }>({
   state,
   onUpdate,
+  existingNames,
   extra,
 }: {
   state: AssetItemState<T>
   onUpdate: (patch: Partial<AssetItemState<T>>) => void
+  /** 同类型已入库名称，用于改名后重新校验是否仍冲突 */
+  existingNames: string[]
   extra?: React.ReactNode
 }) {
   const { data, conflict, action, newName, editingName } = state
+
+  const finishRename = () => {
+    const trimmed = newName.trim()
+    onUpdate({
+      editingName: false,
+      action: "rename",
+      newName: trimmed,
+      conflict: existingNames.includes(trimmed),
+    })
+  }
 
   return (
     <div
@@ -141,13 +154,13 @@ function AssetRow<T extends { name: string; description?: string }>({
               autoFocus
               onChange={(e) => onUpdate({ newName: e.target.value })}
               onKeyDown={(e) => {
-                if (e.key === "Enter") onUpdate({ editingName: false, action: "rename" })
+                if (e.key === "Enter") finishRename()
                 if (e.key === "Escape") onUpdate({ editingName: false, newName: data.name })
               }}
             />
             <button
               className="text-primary hover:opacity-70 p-0.5"
-              onClick={() => onUpdate({ editingName: false, action: "rename" })}
+              onClick={() => finishRename()}
             >
               <Check className="size-3.5" />
             </button>
@@ -522,6 +535,7 @@ export function ExtractAssetsDialog({
                         key={i}
                         state={state}
                         onUpdate={(patch) => updateChar(i, patch)}
+                        existingNames={existingNames.characters}
                         extra={
                           <div className="flex items-center gap-1 shrink-0">
                             <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5">
@@ -550,6 +564,7 @@ export function ExtractAssetsDialog({
                         key={i}
                         state={state}
                         onUpdate={(patch) => updateScene(i, patch)}
+                        existingNames={existingNames.scenes}
                         extra={
                           state.data.tags ? (
                             <span className="text-[10px] text-muted-foreground shrink-0">{state.data.tags}</span>
@@ -573,6 +588,7 @@ export function ExtractAssetsDialog({
                         key={i}
                         state={state}
                         onUpdate={(patch) => updateProp(i, patch)}
+                        existingNames={existingNames.props}
                       />
                     ))}
                   </AssetGroup>

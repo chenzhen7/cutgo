@@ -32,6 +32,7 @@ export interface LLMMessage {
  * 设为 1 表示最多再试 1 次（共 2 次请求）。
  */
 export const DEFAULT_LLM_MAX_RETRIES = 1
+export const DEFAULT_LLM_TIMEOUT_MS = 300 * 1000
 
 /** 生成文本的配置选项 */
 export interface LLMGenerateOptions {

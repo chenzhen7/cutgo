@@ -1,5 +1,6 @@
 import {
   DEFAULT_LLM_MAX_RETRIES,
+  DEFAULT_LLM_TIMEOUT_MS,
   type LLMProvider,
   type LLMGenerateOptions,
   type LLMGenerateResult,
@@ -39,7 +40,7 @@ export class GoogleLLMProvider implements LLMProvider {
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
       maxRetries: DEFAULT_LLM_MAX_RETRIES,
-      timeout: timeoutMs || 300 * 1000,
+      timeout: timeoutMs || DEFAULT_LLM_TIMEOUT_MS,
     })
 
     return {
