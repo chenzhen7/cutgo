@@ -186,7 +186,7 @@ function AssetRow<T extends { name: string; description?: string }>({
         {/* 操作按钮组 */}
         {!editingName && (
           <div className="flex items-center gap-1 shrink-0 ml-auto">
-            {conflict && action !== "skip" && (
+            {conflict && (
               <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
                 已存在
               </span>
