@@ -51,9 +51,9 @@ export function ScriptEmptyState({
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5 justify-center max-w-lg">
-          {chapters.slice(0, 12).map((ch) => (
+          {chapters.slice(0, 12).map((ch, idx) => (
             <Badge key={ch.id} variant="secondary" className="text-xs">
-              {formatChapterOrdinalLabel(ch.index)}
+              {formatChapterOrdinalLabel(idx)}
               {ch.title?.trim() ? ` ${ch.title.trim()}` : ""}
             </Badge>
           ))}

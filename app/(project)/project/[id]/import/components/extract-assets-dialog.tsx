@@ -477,7 +477,7 @@ export function ExtractAssetsDialog({
                 {rows.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">暂无可用章节</p>
                 ) : (
-                  rows.map((chapter) => {
+                  rows.map((chapter, idx) => {
                     const checked = selectedChapterIds.includes(chapter.id)
                     return (
                       <label
@@ -493,7 +493,7 @@ export function ExtractAssetsDialog({
                           <div className="flex items-center gap-2 min-w-0">
                             <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
                             <span className="text-sm font-medium truncate min-w-0 flex-1">
-                              {formatChapterOrdinalLabel(chapter.index)}
+                              {formatChapterOrdinalLabel(idx)}
                               {chapter.title?.trim() ? ` ${chapter.title.trim()}` : ""}
                             </span>
                             {chapter.wordCount != null && chapter.wordCount > 0 && (

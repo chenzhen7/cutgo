@@ -37,7 +37,7 @@ export function EpisodeOutlineDialog({
 
   interface ChapterRow {
     chapterId: string
-    chapterIndex: number
+    chapterOrdinalIndex: number
     chapterTitle: string | null
     hasEpisode: boolean
   }
@@ -53,11 +53,11 @@ export function EpisodeOutlineDialog({
 
     return [...chapters]
       .sort((a, b) => a.index - b.index)
-      .map((ch) => {
+      .map((ch, idx) => {
         const ids = touchCount.get(ch.id)
         return {
           chapterId: ch.id,
-          chapterIndex: ch.index,
+          chapterOrdinalIndex: idx,
           chapterTitle: ch.title,
           hasEpisode: (ids?.size ?? 0) > 0,
         }
@@ -161,7 +161,7 @@ export function EpisodeOutlineDialog({
                       <div className="flex items-center gap-2 min-w-0">
                         <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
                         <span className="text-sm font-medium truncate min-w-0 flex-1">
-                          {formatChapterOrdinalLabel(row.chapterIndex)}
+                          {formatChapterOrdinalLabel(row.chapterOrdinalIndex)}
                           {row.chapterTitle?.trim()
                             ? ` ${row.chapterTitle.trim()}`
                             : ""}

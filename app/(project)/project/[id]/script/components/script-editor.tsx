@@ -275,6 +275,7 @@ export function ScriptEditor({
   
   const episodeChapterIds = parseSourceChapterIds(episode)
   const sourceChapterCount = episodeChapterIds.length
+  const chapterOrderMap = new Map((chapters ?? []).map((ch, idx) => [ch.id, idx]))
   const sourceChapters = (chapters ?? [])
     .filter(c => episodeChapterIds.includes(c.id))
     .sort((a, b) => episodeChapterIds.indexOf(a.id) - episodeChapterIds.indexOf(b.id))
@@ -751,7 +752,7 @@ export function ScriptEditor({
                           className="bg-background/50 text-[10px] font-medium py-0.5 px-2 hover:bg-muted transition-colors cursor-default"
                           title={ch.title || undefined}
                         >
-                          <span className="text-muted-foreground mr-1">{formatChapterOrdinalLabel(ch.index)}</span>
+                          <span className="text-muted-foreground mr-1">{formatChapterOrdinalLabel(chapterOrderMap.get(ch.id) ?? 0)}</span>
                           {ch.title || "未命名"}
                         </Badge>
                       ))}
