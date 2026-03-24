@@ -107,10 +107,7 @@ export const useNovelStore = create<NovelState>((set, get) => ({
 
   deleteChapter: async (novelId, chapterId) => {
     await apiFetch(`/api/novels/${novelId}/chapters/${chapterId}`, { method: "DELETE" })
-    const updated = get().chapters
-      .filter((ch) => ch.id !== chapterId)
-      .map((ch, i) => ({ ...ch, index: i }))
-    set({ chapters: updated })
+    set({ chapters: get().chapters.filter((ch) => ch.id !== chapterId) })
   },
 
   reset: () => {

@@ -113,10 +113,12 @@ function AddChapterDialog({
 
 function ChapterEditor({
   chapter,
+  ordinal,
   onUpdate,
   onDelete,
 }: {
   chapter: Chapter
+  ordinal: number
   onUpdate: (chapterId: string, data: { title?: string; content?: string }) => Promise<void>
   onDelete: (chapterId: string) => Promise<void>
 }) {
@@ -204,7 +206,7 @@ function ChapterEditor({
       {/* 编辑区顶栏 */}
       <div className="flex items-center gap-2 px-4 py-3 border-b shrink-0 min-w-0">
         <span className="shrink-0 text-sm font-semibold text-muted-foreground tabular-nums">
-          {formatChapterOrdinalLabel(chapter.index)}
+          {formatChapterOrdinalLabel(ordinal)}
         </span>
         <Input
           value={title}
@@ -291,7 +293,7 @@ function ChapterEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>删除章节</AlertDialogTitle>
             <AlertDialogDescription>
-              {`确定要删除「${formatChapterOrdinalLabel(chapter.index)}${chapter.title?.trim() ? ` ${chapter.title.trim()}` : ""}」吗？此操作不可撤销。`}
+              {`确定要删除「${formatChapterOrdinalLabel(ordinal)}${chapter.title?.trim() ? ` ${chapter.title.trim()}` : ""}」吗？此操作不可撤销。`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -367,7 +369,7 @@ export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChapters
 
         <ScrollArea className="flex-1">
           <div className="flex flex-col py-1">
-            {chapters.map((ch) => (
+            {chapters.map((ch, idx) => (
               <button
                 key={ch.id}
                 onClick={() => setSelectedId(ch.id)}
@@ -382,7 +384,7 @@ export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChapters
                   "text-xs font-medium leading-snug line-clamp-2",
                   selectedChapter?.id === ch.id && "text-foreground"
                 )}>
-                  {formatChapterOrdinalLabel(ch.index)}
+                  {formatChapterOrdinalLabel(idx)}
                   {ch.title?.trim() ? ` ${ch.title.trim()}` : ""}
                 </span>
                 <span className="text-[10px] text-muted-foreground/70">
@@ -400,6 +402,7 @@ export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChapters
           <ChapterEditor
             key={selectedChapter.id}
             chapter={selectedChapter}
+            ordinal={chapters.indexOf(selectedChapter)}
             onUpdate={onUpdate}
             onDelete={async (id) => {
               await onDelete(id)

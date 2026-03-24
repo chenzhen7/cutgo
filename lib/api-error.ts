@@ -17,16 +17,16 @@ export interface ApiErrorBody {
 }
 
 export const API_ERRORS = {
-  MISSING_PARAMS:      { code: "MISSING_PARAMS",      status: 400, defaultMessage: "缺少必要参数" },
-  VALIDATION:          { code: "VALIDATION_ERROR",    status: 400, defaultMessage: "请求参数校验失败" },
-  NOT_FOUND:           { code: "NOT_FOUND",           status: 404, defaultMessage: "资源不存在" },
-  CONFLICT:            { code: "CONFLICT",            status: 409, defaultMessage: "资源名称已存在，请使用不同的名称" },
-  LLM_NOT_CONFIGURED:  { code: "LLM_NOT_CONFIGURED",  status: 422, defaultMessage: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
-  LLM_INVALID_RESPONSE:{ code: "LLM_INVALID_RESPONSE",status: 500, defaultMessage: "LLM 未返回有效内容，请重试" },
-  INTERNAL:            { code: "INTERNAL_ERROR",      status: 500, defaultMessage: "服务器内部错误，请稍后重试" },
+  MISSING_PARAMS: { code: "MISSING_PARAMS", status: 400, defaultMessage: "缺少必要参数" },
+  VALIDATION: { code: "VALIDATION_ERROR", status: 400, defaultMessage: "请求参数校验失败" },
+  NOT_FOUND: { code: "NOT_FOUND", status: 404, defaultMessage: "资源不存在" },
+  CONFLICT: { code: "CONFLICT", status: 409, defaultMessage: "资源名称已存在，请使用不同的名称" },
+  LLM_NOT_CONFIGURED: { code: "LLM_NOT_CONFIGURED", status: 422, defaultMessage: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
+  LLM_INVALID_RESPONSE: { code: "LLM_INVALID_RESPONSE", status: 500, defaultMessage: "LLM 未返回有效内容，请重试" },
+  INTERNAL: { code: "INTERNAL_ERROR", status: 500, defaultMessage: "服务器内部错误，请稍后重试" },
 } as const
 
-export type ApiErrorKey  = keyof typeof API_ERRORS
+export type ApiErrorKey = keyof typeof API_ERRORS
 export type ApiErrorCode = (typeof API_ERRORS)[ApiErrorKey]["code"]
 
 export class CutGoError extends Error {

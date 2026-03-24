@@ -44,17 +44,5 @@ export const DELETE = withError(async (
 
   await prisma.chapter.delete({ where: { id: chapterId } })
 
-  // 删除后对同一小说的剩余章节按 index 顺序重新编号
-  const remaining = await prisma.chapter.findMany({
-    where: { novelId: existing.novelId },
-    orderBy: { index: "asc" },
-    select: { id: true },
-  })
-  await Promise.all(
-    remaining.map((ch, i) =>
-      prisma.chapter.update({ where: { id: ch.id }, data: { index: i } })
-    )
-  )
-
   return NextResponse.json({ success: true })
 })
