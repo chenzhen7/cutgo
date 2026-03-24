@@ -15,13 +15,13 @@ alwaysApply: false
 
 ```ts
 import { getLLMProvider } from "@/lib/ai/llm"
-import { llmNotConfigured, llmInvalidResponse } from "@/lib/api-error"
+import { cutGoError, withError } from "@/lib/api-error"
 
 const llmProvider = await getLLMProvider()
 
-// 未配置时返回标准 422 错误
+// 未配置时抛出标准 422 错误，由 withError 统一处理
 if (!llmProvider) {
-  return llmNotConfigured()
+  throw cutGoError("LLM_NOT_CONFIGURED")
 }
 
 // 调用 LLM
@@ -50,11 +50,11 @@ const response = await fetch(`${baseUrl}/chat/completions`, {
 
 ## LLM 未配置的错误处理
 
-- 直接调用路径：`getLLMProvider()` 返回 `null` 时，直接 `return llmNotConfigured()`
-- 间接调用路径（内部函数中）：`throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)`，在外层 catch 中判断并返回
+- 直接调用路径：`getLLMProvider()` 返回 `null` 时，直接 `throw cutGoError("LLM_NOT_CONFIGURED")`
+- 间接调用路径（内部函数中）：`throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)`，在外层 catch 中判断并再次转换为 `cutGoError`
 
 ```ts
-import { API_ERRORS } from "@/lib/api-error"
+import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
 
 // 内部函数
 async function callLLM(...) {
@@ -66,9 +66,9 @@ async function callLLM(...) {
 // 外层 catch
 } catch (err) {
   if ((err as Error).message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-    return llmNotConfigured()
+    throw cutGoError("LLM_NOT_CONFIGURED")
   }
-  return internalError("调用失败", (err as Error).message)
+  throw cutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
 }
 ```
 
