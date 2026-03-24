@@ -57,9 +57,11 @@ export const cutGoError = (key: ApiErrorKey, message?: string): never => {
 // ── 全局异常兜底 (withError) ────────────────────────────────────────────────
 
 export function withError(
-  handler: (req: NextRequest, ctx?: unknown) => Promise<Response> | Response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler: (req: NextRequest, ctx?: any) => Promise<Response> | Response
 ) {
-  return async (req: NextRequest, ctx?: unknown) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (req: NextRequest, ctx?: any) => {
     try {
       return await handler(req, ctx)
     } catch (error: unknown) {
