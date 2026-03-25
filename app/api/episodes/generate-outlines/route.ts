@@ -174,9 +174,9 @@ export const POST = withError(async (request: NextRequest) => {
         keyConflict: item.core_conflict || null,
         cliffhanger: item.cliffhanger || null,
         duration: "3min",
-        episodeCharacters: resolveNamesToIds(item.characters, characterNameToId),
-        episodeScenes: resolveNamesToIds(item.scenes, sceneNameToId),
-        episodeProps: resolveNamesToIds(item.props, propNameToId),
+        characters: resolveNamesToIds(item.characters, characterNameToId),
+        scenes: resolveNamesToIds(item.scenes, sceneNameToId),
+        props: resolveNamesToIds(item.props, propNameToId),
       },
     })
 

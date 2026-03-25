@@ -23,20 +23,20 @@ export const PATCH = withError(async (
       ...(body.chapterIds !== undefined && {
         chapterIds: normalizeChapterIdsFromBody(body.chapterIds),
       }),
-      ...(body.episodeCharacters !== undefined && {
-        episodeCharacters: Array.isArray(body.episodeCharacters)
-          ? JSON.stringify(body.episodeCharacters)
-          : body.episodeCharacters,
+      ...(body.characters !== undefined && {
+        characters: Array.isArray(body.characters)
+          ? JSON.stringify(body.characters)
+          : body.characters,
       }),
-      ...(body.episodeScenes !== undefined && {
-        episodeScenes: Array.isArray(body.episodeScenes)
-          ? JSON.stringify(body.episodeScenes)
-          : body.episodeScenes,
+      ...(body.scenes !== undefined && {
+        scenes: Array.isArray(body.scenes)
+          ? JSON.stringify(body.scenes)
+          : body.scenes,
       }),
-      ...(body.episodeProps !== undefined && {
-        episodeProps: Array.isArray(body.episodeProps)
-          ? JSON.stringify(body.episodeProps)
-          : body.episodeProps,
+      ...(body.props !== undefined && {
+        props: Array.isArray(body.props)
+          ? JSON.stringify(body.props)
+          : body.props,
       }),
     },
   })

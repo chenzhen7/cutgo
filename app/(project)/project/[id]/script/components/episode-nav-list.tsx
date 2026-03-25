@@ -47,7 +47,6 @@ import type {
   ScriptGenerateStatus,
 } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
-import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 interface EpisodeNavListProps {
   projectId: string
@@ -61,7 +60,7 @@ interface EpisodeNavListProps {
   onSelectEpisode: (ep: Episode, script: Script | undefined) => void
   onDeleteEpisode?: (projectId: string, episodeId: string) => Promise<void>
   onReorderEpisodes?: (projectId: string, orderedIds: string[]) => Promise<void>
-  onCreateEpisodeScript?: (chapterIds: string[]) => Promise<void>
+  onCreateEpisodeScript?: (chapterId: string) => Promise<void>
 }
 
 interface SortableEpisodeItemProps {
@@ -283,8 +282,7 @@ export function EpisodeNavList({
     const lastEp = orderedEpisodes[orderedEpisodes.length - 1]
     setCreating(true)
     try {
-      const ids = parseSourceChapterIds(lastEp)
-      await onCreateEpisodeScript(ids)
+      await onCreateEpisodeScript(lastEp.chapterId)
       setLocalOrder(null)
     } finally {
       setCreating(false)
