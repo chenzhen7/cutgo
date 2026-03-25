@@ -4,7 +4,7 @@ import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
-  const projectId = searchParams.get("projectId")
+  const projectId = searchParams.get("projectId") ?? ""
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
