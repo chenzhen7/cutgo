@@ -1,11 +1,6 @@
 ---
 description: 规范前端页面、组件与状态管理中的 API 调用方式，优先使用 @/lib/api-client，避免直接裸调 fetch，统一错误语义与提示处理。
-globs:
-  - "app/**/*.tsx"
-  - "components/**/*.tsx"
-  - "store/**/*.ts"
-  - "lib/api-client.ts"
-alwaysApply: false
+alwaysApply: true
 ---
 
 ## 前端调用规范（api-client）
