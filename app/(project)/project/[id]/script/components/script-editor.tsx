@@ -169,26 +169,26 @@ export function ScriptEditor({
     setSaved(false)
   }
 
-  const handleToggleCharacter = async (name: string) => {
+  const handleToggleCharacter = async (characterId: string) => {
     if (!onUpdateEpisode) return
-    const next = characterIds.includes(name)
-      ? characterIds.filter((id) => id !== name)
-      : [...characterIds, name]
+    const next = characterIds.includes(characterId)
+      ? characterIds.filter((id) => id !== characterId)
+      : [...characterIds, characterId]
     await onUpdateEpisode({ characters: JSON.stringify(next) })
   }
 
-  const handleChangeScene = async (name: string) => {
+  const handleChangeScene = async (sceneId: string) => {
     if (!onUpdateEpisode) return
     await onUpdateEpisode({
-      scenes: name === "__none__" ? JSON.stringify([]) : JSON.stringify([name]),
+      scenes: sceneId === "__none__" ? JSON.stringify([]) : JSON.stringify([sceneId]),
     })
   }
 
-  const handleToggleProp = async (name: string) => {
+  const handleToggleProp = async (propId: string) => {
     if (!onUpdateEpisode) return
-    const next = propIds.includes(name)
-      ? propIds.filter((id) => id !== name)
-      : [...propIds, name]
+    const next = propIds.includes(propId)
+      ? propIds.filter((id) => id !== propId)
+      : [...propIds, propId]
     await onUpdateEpisode({ props: JSON.stringify(next) })
   }
 

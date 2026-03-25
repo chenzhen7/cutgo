@@ -29,7 +29,3 @@ try {
 }
 ```
 
-约定：
-- 用户提示优先使用 `ApiError.message`
-- 业务分支判断使用 `ApiError.code`（对应后端响应体 `error` 字段）
-- 对非关键链路可使用 `apiFetchSilent()`，失败返回 `null`

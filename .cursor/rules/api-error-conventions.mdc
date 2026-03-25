@@ -1,9 +1,6 @@
 ---
 description: 规范 API 路由中的错误响应写法，统一使用 cutGoError + withError，禁止手写 NextResponse.json 错误结构。
-globs:
-  - app/**/route.ts
-  - lib/api-error.ts
-alwaysApply: false
+alwaysApply: true
 ---
 
 # API 错误响应规范
