@@ -317,7 +317,6 @@ export default function ScriptPage() {
                           episodeDisplayNumber={
                             episodeDisplayMap.get(activeScript.episodeId) ?? 1
                           }
-                          projectId={projectId}
                           assetCharacters={assetCharacters}
                           assetScenes={assetScenes}
                           assetProps={assetProps}

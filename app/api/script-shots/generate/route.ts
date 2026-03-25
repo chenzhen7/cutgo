@@ -19,6 +19,16 @@ const scriptWithShotsInclude = {
   shots: { orderBy: { index: "asc" as const } },
 }
 
+function parseJsonArray(val: string | null | undefined): string[] {
+  if (!val) return []
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 function toScriptShotPlan(script: {
   id: string
   projectId: string
@@ -52,9 +62,9 @@ function toScriptShotPlan(script: {
 async function callAIGenerateScriptShots(
   scriptTitle: string,
   scriptContent: string,
-  scriptCharacters: string | null,
-  scriptProps: string | null,
-  scriptLocation: string | null,
+  episodeCharacters: string,
+  episodeProps: string,
+  episodeScenes: string,
   assetCharactersStr: string,
   assetScenesStr: string,
   platform: string,
@@ -78,9 +88,9 @@ async function callAIGenerateScriptShots(
 
 ## 剧本信息
 - 标题：${scriptTitle}
-- 关联地点：${scriptLocation || "未指定"}
-- 出场角色：${scriptCharacters || "无"}
-- 涉及道具：${scriptProps || "无"}
+- 关联场景：${episodeScenes || "未指定"}
+- 出场角色：${episodeCharacters || "无"}
+- 涉及道具：${episodeProps || "无"}
 
 ## 剧本内容
 ${scriptContent.slice(0, 6000)}
@@ -259,12 +269,24 @@ export const POST = withError(async (request: NextRequest) => {
 
   try {
     for (const script of targetScripts) {
+      const episodeCharacterIds = parseJsonArray(script.episode.characters)
+      const episodeSceneIds = parseJsonArray(script.episode.scenes)
+      const episodePropIds = parseJsonArray(script.episode.props)
+
+      const matchedCharacters = assetCharacters.filter((c) => episodeCharacterIds.includes(c.id))
+      const matchedCharacterIds = matchedCharacters.map((c) => c.id)
+      const matchedScene = episodeSceneIds.length > 0
+        ? assetScenes.find((s) => s.id === episodeSceneIds[0]) ?? null
+        : null
+      const matchedProps = assetProps.filter((p) => episodePropIds.includes(p.id))
+      const matchedPropIds = matchedProps.map((p) => p.id)
+
       const aiResult = await callAIGenerateScriptShots(
         script.title,
         script.content,
-        script.characters,
-        script.props,
-        script.location,
+        matchedCharacters.map((c) => c.name).join(", "),
+        matchedProps.map((p) => p.name).join(", "),
+        matchedScene?.name || "",
         assetCharactersStr,
         assetScenesStr,
         project.platform,
@@ -273,18 +295,6 @@ export const POST = withError(async (request: NextRequest) => {
         project.globalNegPrompt,
         previousShotStr
       )
-
-      const scriptCharacterNames: string[] = script.characters ? (() => { try { return JSON.parse(script.characters!) } catch { return [] } })() : []
-      const scriptPropNames: string[] = script.props ? (() => { try { return JSON.parse(script.props!) } catch { return [] } })() : []
-      const matchedCharacterIds = assetCharacters
-        .filter((c) => scriptCharacterNames.includes(c.name))
-        .map((c) => c.id)
-      const matchedScene = script.location
-        ? assetScenes.find((s) => s.name === script.location)
-        : null
-      const matchedPropIds = assetProps
-        .filter((p) => scriptPropNames.includes(p.name))
-        .map((p) => p.id)
 
       await prisma.shot.createMany({
         data: (aiResult.shots || []).map((shot, si) => ({

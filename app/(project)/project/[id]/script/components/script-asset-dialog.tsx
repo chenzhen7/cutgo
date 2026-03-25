@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -12,9 +13,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, Users, MapPin, Box, Check, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
+import { apiFetch, ApiError } from "@/lib/api-client"
 import type {
-  Script,
+  Episode,
   AssetCharacter,
   AssetScene,
   AssetProp,
@@ -23,31 +25,21 @@ import type {
 interface ScriptAssetDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  script: Script
+  episode: Episode
   projectId: string
   onSave: (data: {
     characters: string
-    location: string | undefined
+    scenes: string
     props: string
   }) => void
 }
 
-type AssetTab = "characters" | "location" | "props"
-
-function parseJsonArray(val: string | null | undefined): string[] {
-  if (!val) return []
-  try {
-    const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
+type AssetTab = "characters" | "scenes" | "props"
 
 export function ScriptAssetDialog({
   open,
   onOpenChange,
-  script,
+  episode,
   projectId,
   onSave,
 }: ScriptAssetDialogProps) {
@@ -58,20 +50,23 @@ export function ScriptAssetDialog({
   const [allScenes, setAllScenes] = useState<AssetScene[]>([])
   const [allProps, setAllProps] = useState<AssetProp[]>([])
 
-  const [selectedCharNames, setSelectedCharNames] = useState<string[]>([])
+  const [selectedCharIds, setSelectedCharIds] = useState<string[]>([])
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
-  const [selectedPropNames, setSelectedPropNames] = useState<string[]>([])
+  const [selectedPropIds, setSelectedPropIds] = useState<string[]>([])
 
   const fetchAssets = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/assets?projectId=${projectId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setAllCharacters(data.characters || [])
-        setAllScenes(data.scenes || [])
-        setAllProps(data.props || [])
-      }
+      const data = await apiFetch<{
+        characters: AssetCharacter[]
+        scenes: AssetScene[]
+        props: AssetProp[]
+      }>(`/api/assets?projectId=${projectId}`)
+      setAllCharacters(data.characters ?? [])
+      setAllScenes(data.scenes ?? [])
+      setAllProps(data.props ?? [])
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "加载资产失败，请稍后重试")
     } finally {
       setLoading(false)
     }
@@ -80,37 +75,37 @@ export function ScriptAssetDialog({
   useEffect(() => {
     if (open) {
       fetchAssets()
-      setSelectedCharNames(parseJsonArray(script.characters))
-      setSelectedLocation(script.location || null)
-      setSelectedPropNames(parseJsonArray(script.props))
+      setSelectedCharIds(parseJsonArray(episode.characters))
+      setSelectedLocation(parseJsonArray(episode.scenes)[0] || null)
+      setSelectedPropIds(parseJsonArray(episode.props))
     }
-  }, [open, script, fetchAssets])
+  }, [open, episode, fetchAssets])
 
   const toggleCharacter = (name: string) => {
-    setSelectedCharNames((prev) =>
+    setSelectedCharIds((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     )
   }
 
   const toggleProp = (name: string) => {
-    setSelectedPropNames((prev) =>
+    setSelectedPropIds((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     )
   }
 
   const handleSave = () => {
     onSave({
-      characters: JSON.stringify(selectedCharNames),
-      location: selectedLocation || undefined,
-      props: JSON.stringify(selectedPropNames),
+      characters: JSON.stringify(selectedCharIds),
+      scenes: selectedLocation ? JSON.stringify([selectedLocation]) : JSON.stringify([]),
+      props: JSON.stringify(selectedPropIds),
     })
     onOpenChange(false)
   }
 
   const TABS: { key: AssetTab; label: string; icon: typeof Users; count: number }[] = [
-    { key: "characters", label: "角色", icon: Users, count: selectedCharNames.length },
-    { key: "location", label: "场景", icon: MapPin, count: selectedLocation ? 1 : 0 },
-    { key: "props", label: "道具", icon: Box, count: selectedPropNames.length },
+    { key: "characters", label: "角色", icon: Users, count: selectedCharIds.length },
+    { key: "scenes", label: "场景", icon: MapPin, count: selectedLocation ? 1 : 0 },
+    { key: "props", label: "道具", icon: Box, count: selectedPropIds.length },
   ]
 
   const roleLabel = (role: string) => {
@@ -126,7 +121,7 @@ export function ScriptAssetDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>关联资产 — {script.title}</DialogTitle>
+          <DialogTitle>关联资产 — {episode.title}</DialogTitle>
         </DialogHeader>
 
         {loading ? (
@@ -173,11 +168,11 @@ export function ScriptAssetDialog({
                       </p>
                     ) : (
                       allCharacters.map((char) => {
-                        const selected = selectedCharNames.includes(char.name)
+                        const selected = selectedCharIds.includes(char.id)
                         return (
                           <button
                             key={char.id}
-                            onClick={() => toggleCharacter(char.name)}
+                            onClick={() => toggleCharacter(char.id)}
                             className={cn(
                               "w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
                               selected
@@ -225,7 +220,7 @@ export function ScriptAssetDialog({
                 )}
 
                 {/* Location (scene asset) */}
-                {tab === "location" && (
+                {tab === "scenes" && (
                   <div className="space-y-1.5">
                     {allScenes.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">
@@ -233,12 +228,12 @@ export function ScriptAssetDialog({
                       </p>
                     ) : (
                       allScenes.map((sc) => {
-                        const selected = selectedLocation === sc.name
+                        const selected = selectedLocation === sc.id
                         return (
                           <button
                             key={sc.id}
                             onClick={() =>
-                              setSelectedLocation(selected ? null : sc.name)
+                              setSelectedLocation(selected ? null : sc.id)
                             }
                             className={cn(
                               "w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
@@ -290,11 +285,11 @@ export function ScriptAssetDialog({
                       </p>
                     ) : (
                       allProps.map((prop) => {
-                        const selected = selectedPropNames.includes(prop.name)
+                        const selected = selectedPropIds.includes(prop.id)
                         return (
                           <button
                             key={prop.id}
-                            onClick={() => toggleProp(prop.name)}
+                            onClick={() => toggleProp(prop.id)}
                             className={cn(
                               "w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
                               selected
@@ -343,25 +338,28 @@ export function ScriptAssetDialog({
             {/* Summary bar */}
             <div className="border-t pt-3 -mx-6 px-6">
               <div className="flex flex-wrap gap-1.5 mb-3 min-h-[24px]">
-                {selectedCharNames.map((name) => (
-                  <Badge key={`char-${name}`} variant="default" className="gap-1 text-xs">
+                {selectedCharIds.map((id) => {
+                  const character = allCharacters.find((c) => c.id === id)
+                  const label = character?.name ?? id
+                  return (
+                  <Badge key={`char-${id}`} variant="default" className="gap-1 text-xs">
                     <Users className="size-2.5" />
-                    {name}
+                    {label}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleCharacter(name)
+                        toggleCharacter(id)
                       }}
                       className="ml-0.5 hover:text-destructive"
                     >
                       <X className="size-2.5" />
                     </button>
                   </Badge>
-                ))}
+                )})}
                 {selectedLocation && (
                   <Badge variant="secondary" className="gap-1 text-xs">
                     <MapPin className="size-2.5" />
-                    {selectedLocation}
+                    {allScenes.find((s) => s.id === selectedLocation)?.name ?? selectedLocation}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -373,24 +371,27 @@ export function ScriptAssetDialog({
                     </button>
                   </Badge>
                 )}
-                {selectedPropNames.map((name) => (
-                  <Badge key={`prop-${name}`} variant="outline" className="gap-1 text-xs">
+                {selectedPropIds.map((id) => {
+                  const prop = allProps.find((p) => p.id === id)
+                  const label = prop?.name ?? id
+                  return (
+                  <Badge key={`prop-${id}`} variant="outline" className="gap-1 text-xs">
                     <Box className="size-2.5" />
-                    {name}
+                    {label}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleProp(name)
+                        toggleProp(id)
                       }}
                       className="ml-0.5 hover:text-destructive"
                     >
                       <X className="size-2.5" />
                     </button>
                   </Badge>
-                ))}
-                {selectedCharNames.length === 0 &&
+                )})}
+                {selectedCharIds.length === 0 &&
                   !selectedLocation &&
-                  selectedPropNames.length === 0 && (
+                  selectedPropIds.length === 0 && (
                     <span className="text-xs text-muted-foreground">暂未关联任何资产</span>
                   )}
               </div>

@@ -46,9 +46,6 @@ interface ScriptState {
     title?: string
     content?: string
     status?: string
-    characters?: string
-    props?: string
-    location?: string
   }) => Promise<void>
   deleteScript: (scriptId: string) => Promise<void>
 

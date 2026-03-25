@@ -70,11 +70,11 @@ export interface Episode {
   keyConflict: string | null
   cliffhanger: string | null
   duration: string
-  /** JSON 字符串数组：本集涉及的角色资产名称列表（由 AI 大纲生成时关联） */
+  /** JSON 字符串数组：本集涉及的角色资产 id 列表 */
   characters: string | null
-  /** JSON 字符串数组：本集涉及的场景资产名称列表（由 AI 大纲生成时关联） */
+  /** JSON 字符串数组：本集涉及的场景资产 id 列表 */
   scenes: string | null
-  /** JSON 字符串数组：本集涉及的道具资产名称列表（由 AI 大纲生成时关联） */
+  /** JSON 字符串数组：本集涉及的道具资产 id 列表 */
   props: string | null
   createdAt: string
   updatedAt: string
@@ -95,9 +95,6 @@ export interface Script {
   title: string
   content: string
   status: "draft" | "generated" | "edited"
-  characters: string | null
-  props: string | null
-  location: string | null
   createdAt: string
   updatedAt: string
 }

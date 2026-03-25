@@ -34,16 +34,12 @@ export const PATCH = withError(async (
 ) => {
   const { id } = await params
   const body = await request.json()
-  const { title, content, status, characters, props, location } = body
+  const { title, content, status } = body
 
   const data: Record<string, unknown> = {}
   if (title !== undefined) data.title = title
   if (content !== undefined) data.content = content
   if (status !== undefined) data.status = status
-  if (characters !== undefined) data.characters = characters
-  if (props !== undefined) data.props = props
-  if (location !== undefined) data.location = location
-
   const script = await prisma.script.update({
     where: { id },
     data,

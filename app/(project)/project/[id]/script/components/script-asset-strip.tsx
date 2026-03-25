@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { User, MapPin, Package } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
 import {
   Tooltip,
   TooltipContent,
@@ -13,23 +13,13 @@ import type {
   AssetCharacter,
   AssetProp,
   AssetScene,
-  Script,
+  Episode,
 } from "@/lib/types"
-
-function parseJsonArray(val: string | null | undefined): string[] {
-  if (!val) return []
-  try {
-    const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
 
 export type ScriptAssetStripMode = "nav" | "editor"
 
 interface ScriptAssetStripProps {
-  script: Script
+  episode: Episode
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -37,34 +27,39 @@ interface ScriptAssetStripProps {
 }
 
 export function ScriptAssetStrip({
-  script,
+  episode,
   assetCharacters,
   assetScenes,
   assetProps,
   mode = "nav",
 }: ScriptAssetStripProps) {
-  const charByName = useMemo(
-    () => new Map(assetCharacters.map((c) => [c.name, c])),
+  const charById = useMemo(
+    () => new Map(assetCharacters.map((c) => [c.id, c])),
     [assetCharacters]
   )
-  const propByName = useMemo(
-    () => new Map(assetProps.map((p) => [p.name, p])),
+  const propById = useMemo(
+    () => new Map(assetProps.map((p) => [p.id, p])),
     [assetProps]
   )
+  const sceneById = useMemo(
+    () => new Map(assetScenes.map((s) => [s.id, s])),
+    [assetScenes]
+  )
 
-  const charNames = parseJsonArray(script.characters)
-  const propNames = parseJsonArray(script.props)
-  const loc = script.location?.trim() || ""
+  const characterIds = parseJsonArray(episode.characters)
+  const propIds = parseJsonArray(episode.props)
+  const sceneIds = parseJsonArray(episode.scenes)
+  const sceneId = sceneIds[0] || ""
 
-  const boundProps = propNames
-    .map((n) => propByName.get(n))
+  const boundProps = propIds
+    .map((id) => propById.get(id))
     .filter((p): p is AssetProp => !!p)
 
-  const boundScene = loc ? assetScenes.find((s) => s.name === loc) : null
-  const sceneLabel = loc
+  const boundScene = sceneId ? sceneById.get(sceneId) ?? null : null
+  const sceneLabel = boundScene?.name || ""
 
   const hasAny =
-    charNames.length > 0 || !!sceneLabel || propNames.length > 0
+    characterIds.length > 0 || !!sceneLabel || propIds.length > 0
   if (!hasAny) return null
 
   const isEditor = mode === "editor"
@@ -83,7 +78,7 @@ export function ScriptAssetStrip({
         mode === "nav" && "pt-0.5"
       )}
     >
-      {charNames.length > 0 && (
+      {characterIds.length > 0 && (
         <TooltipProvider delayDuration={200}>
           <div
             className={cn(
@@ -91,10 +86,11 @@ export function ScriptAssetStrip({
               isEditor ? "-space-x-2" : "-space-x-1.5"
             )}
           >
-            {charNames.slice(0, 5).map((name) => {
-              const c = charByName.get(name)
+            {characterIds.slice(0, 5).map((id) => {
+              const c = charById.get(id)
+              const label = c?.name ?? id
               return (
-                <Tooltip key={name}>
+                <Tooltip key={id}>
                   <TooltipTrigger asChild>
                     <div
                       className={cn(
@@ -105,7 +101,7 @@ export function ScriptAssetStrip({
                       {c?.imageUrl ? (
                         <img
                           src={c.imageUrl}
-                          alt={name}
+                          alt={label}
                           className="size-full object-cover"
                         />
                       ) : (
@@ -122,19 +118,19 @@ export function ScriptAssetStrip({
                     side="top"
                     className={isEditor ? "text-sm" : "text-xs"}
                   >
-                    {name}
+                    {label}
                   </TooltipContent>
                 </Tooltip>
               )
             })}
-            {charNames.length > 5 && (
+            {characterIds.length > 5 && (
               <div
                 className={cn(
                   "rounded-full bg-muted border-2 border-card flex items-center justify-center text-muted-foreground font-medium shrink-0",
                   isEditor ? "size-6 text-[9px]" : "size-5 text-[8px]"
                 )}
               >
-                +{charNames.length - 5}
+                +{characterIds.length - 5}
               </div>
             )}
           </div>
@@ -159,25 +155,23 @@ export function ScriptAssetStrip({
         </span>
       )}
 
-      {propNames.length > 0 &&
+      {propIds.length > 0 &&
         (isEditor ? (
-          propNames.map((name) => (
-            <span key={name} className={editorPropPillClass}>
+          boundProps.map((prop) => (
+            <span key={prop.id} className={editorPropPillClass}>
               <Package className="size-3 shrink-0" />
-              <span className="break-words">{name}</span>
+              <span className="break-words">{prop.name}</span>
             </span>
           ))
         ) : (
           <span className={`${navPropPillClass} max-w-[140px]`}>
             <Package className="size-2.5 shrink-0" />
             <span className="truncate">
-              {boundProps.length === propNames.length && boundProps.length > 0
+              {boundProps.length > 0
                 ? boundProps.length === 1
                   ? boundProps[0].name
                   : `${boundProps[0].name} +${boundProps.length - 1}`
-                : propNames.length === 1
-                  ? propNames[0]
-                  : `${propNames[0]} +${propNames.length - 1}`}
+                : `${propIds.length} 个道具`}
             </span>
           </span>
         ))}

@@ -45,15 +45,11 @@ interface ScriptEditorProps {
   chapters?: Chapter[]
   /** 全项目分集排序后的展示集序号（第 1、2… 集），非数据库 index 字段 */
   episodeDisplayNumber: number
-  projectId: string
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
   onUpdateScript: (data: {
     content?: string
-    characters?: string
-    props?: string
-    location?: string
   }) => Promise<void>
   onUpdateEpisode?: (data: {
     title?: string
@@ -61,6 +57,9 @@ interface ScriptEditorProps {
     goldenHook?: string | null
     keyConflict?: string | null
     cliffhanger?: string | null
+    characters?: string
+    scenes?: string
+    props?: string
   }) => Promise<void>
 }
 
@@ -69,7 +68,6 @@ export function ScriptEditor({
   episode,
   chapters = [],
   episodeDisplayNumber,
-  projectId,
   assetCharacters,
   assetScenes,
   assetProps,
@@ -96,12 +94,15 @@ export function ScriptEditor({
   const gutterRef = useRef<HTMLDivElement>(null)
   const isDirty = content !== (script.content ?? "")
 
-  const charNames = parseJsonArray(script.characters)
-  const propNames = parseJsonArray(script.props)
-  const loc = script.location?.trim() || ""
-  const boundScene = loc ? assetScenes.find((s) => s.name === loc) : null
-  const boundCharacters = assetCharacters.filter((c) => charNames.includes(c.name))
-  const boundProps = assetProps.filter((p) => propNames.includes(p.name))
+  const characterIds = parseJsonArray(episode.characters)
+  const sceneIds = parseJsonArray(episode.scenes)
+  const propIds = parseJsonArray(episode.props)
+  const selectedSceneId = sceneIds[0] || ""
+  const boundScene = selectedSceneId
+    ? assetScenes.find((s) => s.id === selectedSceneId) ?? null
+    : null
+  const boundCharacters = assetCharacters.filter((c) => characterIds.includes(c.id))
+  const boundProps = assetProps.filter((p) => propIds.includes(p.id))
 
   useEffect(() => {
     setContent(script.content ?? "")
@@ -169,21 +170,26 @@ export function ScriptEditor({
   }
 
   const handleToggleCharacter = async (name: string) => {
-    const next = charNames.includes(name)
-      ? charNames.filter((n) => n !== name)
-      : [...charNames, name]
-    await onUpdateScript({ characters: JSON.stringify(next) })
+    if (!onUpdateEpisode) return
+    const next = characterIds.includes(name)
+      ? characterIds.filter((id) => id !== name)
+      : [...characterIds, name]
+    await onUpdateEpisode({ characters: JSON.stringify(next) })
   }
 
   const handleChangeScene = async (name: string) => {
-    await onUpdateScript({ location: name === "__none__" ? undefined : name })
+    if (!onUpdateEpisode) return
+    await onUpdateEpisode({
+      scenes: name === "__none__" ? JSON.stringify([]) : JSON.stringify([name]),
+    })
   }
 
   const handleToggleProp = async (name: string) => {
-    const next = propNames.includes(name)
-      ? propNames.filter((n) => n !== name)
-      : [...propNames, name]
-    await onUpdateScript({ props: JSON.stringify(next) })
+    if (!onUpdateEpisode) return
+    const next = propIds.includes(name)
+      ? propIds.filter((id) => id !== name)
+      : [...propIds, name]
+    await onUpdateEpisode({ props: JSON.stringify(next) })
   }
 
   const handleTitleEdit = () => {
@@ -404,7 +410,7 @@ export function ScriptEditor({
                               onClick={() => handleChangeScene("__none__")}
                               className={cn(
                                 "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors",
-                                !script.location && "bg-muted font-medium"
+                                !selectedSceneId && "bg-muted font-medium"
                               )}
                             >
                               无
@@ -415,10 +421,10 @@ export function ScriptEditor({
                               assetScenes.map((s) => (
                                 <button
                                   key={s.id}
-                                  onClick={() => handleChangeScene(s.name)}
+                                  onClick={() => handleChangeScene(s.id)}
                                   className={cn(
                                     "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs text-left transition-colors",
-                                    script.location === s.name && "bg-muted font-medium text-primary"
+                                    selectedSceneId === s.id && "bg-muted font-medium text-primary"
                                   )}
                                 >
                                   <div className="flex items-center gap-2 min-w-0 text-[11px]">
@@ -453,7 +459,9 @@ export function ScriptEditor({
                       </div>
                     ) : (
                       <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
-                        <p className="text-[10px] text-muted-foreground/40 italic">{loc || "未绑定"}</p>
+                        <p className="text-[10px] text-muted-foreground/40 italic">
+                          {selectedSceneId || "未绑定"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -464,8 +472,8 @@ export function ScriptEditor({
                       <div className="flex items-center gap-1">
                         <User className="size-3 text-muted-foreground" />
                         <span className="text-[11px] font-medium">角色</span>
-                        {charNames.length > 0 && (
-                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{charNames.length}</Badge>
+                        {characterIds.length > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{characterIds.length}</Badge>
                         )}
                       </div>
                       <Popover>
@@ -480,8 +488,8 @@ export function ScriptEditor({
                               assetCharacters.map((c) => (
                                 <label key={c.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer transition-colors">
                                   <Checkbox
-                                    checked={charNames.includes(c.name)}
-                                    onCheckedChange={() => handleToggleCharacter(c.name)}
+                                    checked={characterIds.includes(c.id)}
+                                    onCheckedChange={() => handleToggleCharacter(c.id)}
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
                                     {c.imageUrl ? (
@@ -517,10 +525,10 @@ export function ScriptEditor({
                           </div>
                         ))}
                       </div>
-                    ) : charNames.length > 0 ? (
+                    ) : characterIds.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
-                        {charNames.map(name => (
-                          <Badge key={name} variant="outline" className="text-[9px] px-1.5">{name}</Badge>
+                        {characterIds.map((id) => (
+                          <Badge key={id} variant="outline" className="text-[9px] px-1.5">{id}</Badge>
                         ))}
                       </div>
                     ) : (
@@ -536,8 +544,8 @@ export function ScriptEditor({
                       <div className="flex items-center gap-1">
                         <Package className="size-3 text-muted-foreground" />
                         <span className="text-[11px] font-medium">道具</span>
-                        {propNames.length > 0 && (
-                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{propNames.length}</Badge>
+                        {propIds.length > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{propIds.length}</Badge>
                         )}
                       </div>
                       <Popover>
@@ -552,8 +560,8 @@ export function ScriptEditor({
                               assetProps.map((p) => (
                                 <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer transition-colors">
                                   <Checkbox
-                                    checked={propNames.includes(p.name)}
-                                    onCheckedChange={() => handleToggleProp(p.name)}
+                                    checked={propIds.includes(p.id)}
+                                    onCheckedChange={() => handleToggleProp(p.id)}
                                   />
                                   <span className="text-[11px] truncate">{p.name}</span>
                                 </label>
@@ -571,10 +579,10 @@ export function ScriptEditor({
                           </Badge>
                         ))}
                       </div>
-                    ) : propNames.length > 0 ? (
+                    ) : propIds.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
-                        {propNames.map(name => (
-                          <Badge key={name} variant="outline" className="text-[9px] px-1.5">{name}</Badge>
+                        {propIds.map((id) => (
+                          <Badge key={id} variant="outline" className="text-[9px] px-1.5">{id}</Badge>
                         ))}
                       </div>
                     ) : (

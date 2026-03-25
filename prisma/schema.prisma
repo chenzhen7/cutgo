@@ -170,13 +170,6 @@ model Script {
   content    String    @default("")
   /// 状态：draft | generated | edited
   status     String    @default("draft")
-  /// JSON 数组：引用的资产角色名称列表
-  characters String?
-  /// JSON 数组：引用的资产道具名称列表
-  props      String?
-  /// 主场景资产名称
-  location   String?
-
   shots Shot[]
 
   createdAt DateTime @default(now())
