@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import { buildExtractAssetsPrompt } from "@/lib/prompts"
-import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
+import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 
 interface AIAssetResult {
   characters: {
@@ -59,7 +59,7 @@ export const POST = withError(async (
   const { chapterIds } = body as { chapterIds: string[] }
 
   if (!chapterIds || chapterIds.length === 0) {
-    throw cutGoError("VALIDATION", "请至少选择一个章节")
+    throwCutGoError("VALIDATION", "请至少选择一个章节")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -67,7 +67,7 @@ export const POST = withError(async (
     select: { id: true, projectId: true },
   })
   if (!novel) {
-    throw cutGoError("NOT_FOUND", "小说不存在")
+    throwCutGoError("NOT_FOUND", "小说不存在")
   }
 
   const { projectId } = novel
@@ -79,7 +79,7 @@ export const POST = withError(async (
   })
 
   if (chapters.length === 0) {
-    throw cutGoError("VALIDATION", "未找到指定章节")
+    throwCutGoError("VALIDATION", "未找到指定章节")
   }
 
   // 查询已存在的名称，用于前端标注冲突
@@ -110,8 +110,8 @@ export const POST = withError(async (
     console.error("Asset extraction from chapters failed:", err)
     const message = err instanceof Error ? err.message : String(err)
     if (message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      throw cutGoError("LLM_NOT_CONFIGURED")
+      throwCutGoError("LLM_NOT_CONFIGURED")
     }
-    throw cutGoError("INTERNAL", `资产提取失败：${message}`)
+    throwCutGoError("INTERNAL", `资产提取失败：${message}`)
   }
 })

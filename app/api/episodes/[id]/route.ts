@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const PATCH = withError(async (
   request: NextRequest,
@@ -37,7 +37,7 @@ export const DELETE = withError(async (
 
   const episode = await prisma.episode.findUnique({ where: { id } })
   if (!episode) {
-    throw cutGoError("NOT_FOUND", "分集不存在")
+    throwCutGoError("NOT_FOUND", "分集不存在")
   }
 
   await prisma.episode.delete({ where: { id } })

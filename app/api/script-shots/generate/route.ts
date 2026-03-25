@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
+import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 
 interface AIShotResult {
   composition: string
@@ -189,12 +189,12 @@ export const POST = withError(async (request: NextRequest) => {
   const { projectId, episodeIds, scriptIds, mode = "skip_existing" } = body
 
   if (!projectId) {
-    throw cutGoError("MISSING_PARAMS", "projectId is required")
+    throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) {
-    throw cutGoError("NOT_FOUND", "项目不存在")
+    throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
   let targetScripts = await prisma.script.findMany({
@@ -209,7 +209,7 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   if (targetScripts.length === 0) {
-    throw cutGoError("VALIDATION", "没有可生成的剧本")
+    throwCutGoError("VALIDATION", "没有可生成的剧本")
   }
 
   const existingShotScriptIds = new Set(

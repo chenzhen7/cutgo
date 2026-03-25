@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 interface CharacterItem {
   name: string
@@ -34,7 +34,7 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   if (!projectId) {
-    throw cutGoError("MISSING_PARAMS", "projectId is required")
+    throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const project = await prisma.project.findUnique({
@@ -42,7 +42,7 @@ export const POST = withError(async (request: NextRequest) => {
     select: { id: true },
   })
   if (!project) {
-    throw cutGoError("NOT_FOUND", "项目不存在")
+    throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
   const [savedCharacters, savedScenes, savedProps] = await Promise.all([

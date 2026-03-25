@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const PATCH = withError(async (
   request: NextRequest,
@@ -16,7 +16,7 @@ export const PATCH = withError(async (
         where: { projectId_name: { projectId: current.projectId, name: body.name } },
       })
       if (dup) {
-        throw cutGoError("CONFLICT", `道具名「${body.name}」已存在，请使用不同的名称`)
+        throwCutGoError("CONFLICT", `道具名「${body.name}」已存在，请使用不同的名称`)
       }
     }
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const POST = withError(async (
   request: NextRequest,
@@ -11,7 +11,7 @@ export const POST = withError(async (
 
   const novel = await prisma.novel.findUnique({ where: { id } })
   if (!novel) {
-    throw cutGoError("NOT_FOUND", "小说不存在")
+    throwCutGoError("NOT_FOUND", "小说不存在")
   }
 
   const maxIndex = await prisma.chapter.aggregate({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
-import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
+import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -167,12 +167,12 @@ export const POST = withError(async (request: NextRequest) => {
   const { projectId, episodeIds, mode = "skip_existing" } = body
 
   if (!projectId) {
-    throw cutGoError("MISSING_PARAMS", "projectId is required")
+    throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) {
-    throw cutGoError("NOT_FOUND", "项目不存在")
+    throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -183,7 +183,7 @@ export const POST = withError(async (request: NextRequest) => {
   })
 
   if (!novel) {
-    throw cutGoError("VALIDATION", "请先导入小说并解析出章节")
+    throwCutGoError("VALIDATION", "请先导入小说并解析出章节")
   }
 
   let targetEpisodes = await prisma.episode.findMany({
@@ -196,7 +196,7 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   if (targetEpisodes.length === 0) {
-    throw cutGoError("VALIDATION", "没有可生成的分集")
+    throwCutGoError("VALIDATION", "没有可生成的分集")
   }
 
   const existingScriptEpisodeIds = new Set(

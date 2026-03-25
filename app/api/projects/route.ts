@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
@@ -42,7 +42,7 @@ export const POST = withError(async (request: NextRequest) => {
   const { name, description, tags, platform, aspectRatio, resolution, duration } = body
 
   if (!name || !name.trim()) {
-    throw cutGoError("VALIDATION", "项目名称不能为空")
+    throwCutGoError("VALIDATION", "项目名称不能为空")
   }
 
   const project = await prisma.project.create({

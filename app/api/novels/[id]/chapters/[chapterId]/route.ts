@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const PUT = withError(async (
   request: NextRequest,
@@ -11,7 +11,7 @@ export const PUT = withError(async (
 
   const existing = await prisma.chapter.findUnique({ where: { id: chapterId } })
   if (!existing) {
-    throw cutGoError("NOT_FOUND", "章节不存在")
+    throwCutGoError("NOT_FOUND", "章节不存在")
   }
 
   const data: Record<string, unknown> = {}
@@ -39,7 +39,7 @@ export const DELETE = withError(async (
 
   const existing = await prisma.chapter.findUnique({ where: { id: chapterId } })
   if (!existing) {
-    throw cutGoError("NOT_FOUND", "章节不存在")
+    throwCutGoError("NOT_FOUND", "章节不存在")
   }
 
   await prisma.chapter.delete({ where: { id: chapterId } })

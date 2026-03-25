@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@/lib/generated/prisma/client"
 import { countWords } from "@/lib/novel-utils"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const GET = withError(async (
   _request: NextRequest,
@@ -21,7 +21,7 @@ export const GET = withError(async (
   })
 
   if (!novel) {
-    throw cutGoError("NOT_FOUND", "小说不存在")
+    throwCutGoError("NOT_FOUND", "小说不存在")
   }
 
   return NextResponse.json(novel)
@@ -36,7 +36,7 @@ export const PATCH = withError(async (
 
   const existing = await prisma.novel.findUnique({ where: { id } })
   if (!existing) {
-    throw cutGoError("NOT_FOUND", "小说不存在")
+    throwCutGoError("NOT_FOUND", "小说不存在")
   }
 
   const data: Prisma.NovelUpdateInput = {}

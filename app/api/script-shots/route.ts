@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 const scriptWithShotsInclude = {
   episode: { select: { id: true, index: true, title: true } },
@@ -44,7 +44,7 @@ export const GET = withError(async (request: NextRequest) => {
   const episodeId = searchParams.get("episodeId")
 
   if (!projectId) {
-    throw cutGoError("MISSING_PARAMS", "projectId is required")
+    throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const where: Record<string, unknown> = { projectId }
@@ -68,14 +68,14 @@ export const POST = withError(async (request: NextRequest) => {
   const { projectId, scriptId } = await request.json()
 
   if (!projectId || !scriptId) {
-    throw cutGoError("MISSING_PARAMS", "projectId and scriptId are required")
+    throwCutGoError("MISSING_PARAMS", "projectId and scriptId are required")
   }
 
   const script = await prisma.script.findFirst({
     where: { id: scriptId, projectId },
     include: scriptWithShotsInclude,
   })
-  if (!script) throw cutGoError("NOT_FOUND", "script not found")
+  if (!script) throwCutGoError("NOT_FOUND", "script not found")
 
   return NextResponse.json(toScriptShotPlan(script))
 })

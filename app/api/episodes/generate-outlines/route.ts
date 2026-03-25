@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
-import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
+import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 
 interface OutlineItem {
   episode: number
@@ -37,7 +37,7 @@ export const POST = withError(async (request: NextRequest) => {
   const { projectId, chapterIds } = body as { projectId: string; chapterIds?: string[] }
 
   if (!projectId) {
-    throw cutGoError("MISSING_PARAMS", "projectId is required")
+    throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const novel = await prisma.novel.findUnique({
@@ -48,7 +48,7 @@ export const POST = withError(async (request: NextRequest) => {
   })
 
   if (!novel) {
-    throw cutGoError("VALIDATION", "请先导入小说并解析章节")
+    throwCutGoError("VALIDATION", "请先导入小说并解析章节")
   }
 
   const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
@@ -58,13 +58,13 @@ export const POST = withError(async (request: NextRequest) => {
     const idSet = new Set(chapterIds)
     selectedChapters = allSorted.filter((c) => idSet.has(c.id))
     if (selectedChapters.length === 0) {
-      throw cutGoError("VALIDATION", "未找到所选章节")
+      throwCutGoError("VALIDATION", "未找到所选章节")
     }
   } else {
     const hasAnySelected = allSorted.some((c) => c.selected)
     selectedChapters = hasAnySelected ? allSorted.filter((c) => c.selected) : allSorted
     if (selectedChapters.length === 0) {
-      throw cutGoError("VALIDATION", "暂无可用章节")
+      throwCutGoError("VALIDATION", "暂无可用章节")
     }
   }
 
@@ -87,13 +87,13 @@ export const POST = withError(async (request: NextRequest) => {
     outlines = parseOutlineJSON(result.content)
   } catch (err) {
     if ((err as Error).message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      throw cutGoError("LLM_NOT_CONFIGURED")
+      throwCutGoError("LLM_NOT_CONFIGURED")
     }
-    throw cutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
+    throwCutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
   }
 
   if (outlines.length === 0) {
-    throw cutGoError("LLM_INVALID_RESPONSE", "LLM 未返回有效的分集大纲")
+    throwCutGoError("LLM_INVALID_RESPONSE", "LLM 未返回有效的分集大纲")
   }
 
   const maxIndexResult = await prisma.episode.aggregate({

@@ -49,7 +49,7 @@ function jsonErrorResponse(key: ApiErrorKey, message?: string) {
   )
 }
 
-export const cutGoError = (key: ApiErrorKey, message?: string): never => {
+export const throwCutGoError = (key: ApiErrorKey, message?: string): never => {
   const { code, status, defaultMessage } = API_ERRORS[key]
   throw new CutGoError(code, status, message ?? defaultMessage)
 }
