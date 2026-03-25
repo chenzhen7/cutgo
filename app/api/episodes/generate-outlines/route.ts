@@ -4,6 +4,7 @@ import { callLLM } from "@/lib/ai/llm"
 import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
+import type { AssetsSummary } from "@/lib/prompts/episode-outline"
 
 interface OutlineItem {
   episode: number
@@ -14,6 +15,12 @@ interface OutlineItem {
   goldenHook?: string
   cliffhanger?: string
   chapters: number[]
+  /** AI 返回的角色名称列表（从 prompt 中的资产名称中选取） */
+  characters?: string[]
+  /** AI 返回的场景名称列表（从 prompt 中的资产名称中选取） */
+  scenes?: string[]
+  /** AI 返回的道具名称列表（从 prompt 中的资产名称中选取） */
+  props?: string[]
 }
 
 function parseOutlineJSON(raw: string): OutlineItem[] {
@@ -32,6 +39,22 @@ function parseOutlineJSON(raw: string): OutlineItem[] {
   return parsed as OutlineItem[]
 }
 
+/**
+ * 将 AI 返回的名称列表映射为 ID 列表（过滤掉 AI 编造的不存在名称），
+ * 序列化为 JSON 字符串存入数据库；无有效 ID 时返回 null。
+ */
+function resolveNamesToIds(
+  names: string[] | undefined,
+  nameToId: Map<string, string>
+): string | null {
+  if (!names || names.length === 0) return null
+  const ids = names.flatMap((n) => {
+    const id = nameToId.get(n)
+    return id ? [id] : []
+  })
+  return ids.length > 0 ? JSON.stringify(ids) : null
+}
+
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
   const { projectId, chapterIds } = body as { projectId: string; chapterIds?: string[] }
@@ -40,19 +63,38 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
-  const novel = await prisma.novel.findUnique({
-    where: { projectId },
-    include: {
-      chapters: { orderBy: { index: "asc" } },
-    },
-  })
+  const [novel, characters, scenes, props] = await Promise.all([
+    prisma.novel.findUnique({
+      where: { projectId },
+      include: {
+        chapters: { orderBy: { index: "asc" } },
+      },
+    }),
+    prisma.assetCharacter.findMany({
+      where: { projectId },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.assetScene.findMany({
+      where: { projectId },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.assetProp.findMany({
+      where: { projectId },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ])
 
   if (!novel) {
     throwCutGoError("VALIDATION", "请先导入小说并解析章节")
   }
 
-  const allSorted = [...novel.chapters].sort((a, b) => a.index - b.index)
-  let selectedChapters: typeof novel.chapters
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const novelData = novel!
+  const allSorted = [...novelData.chapters].sort((a, b) => a.index - b.index)
+  let selectedChapters: typeof allSorted
 
   if (chapterIds && chapterIds.length > 0) {
     const idSet = new Set(chapterIds)
@@ -78,8 +120,14 @@ export const POST = withError(async (request: NextRequest) => {
   // LLM 看到的是「第N章」，N = c.index + 1，因此用 c.index + 1 作为 key
   const indexToChapterId = new Map(selectedChapters.map((c) => [c.index + 1, c.id]))
 
-  const prompt = buildEpisodeOutlinePrompt(novelText)
-  let outlines: OutlineItem[]
+  // 构建资产摘要：prompt 中给 AI 看名称，服务端用 nameToId 映射回 ID
+  const assetsSummary: AssetsSummary = { characters, scenes, props }
+  const characterNameToId = new Map(characters.map((c) => [c.name, c.id]))
+  const sceneNameToId = new Map(scenes.map((s) => [s.name, s.id]))
+  const propNameToId = new Map(props.map((p) => [p.name, p.id]))
+
+  const prompt = buildEpisodeOutlinePrompt(novelText, { assets: assetsSummary })
+  let outlines: OutlineItem[] = []
   try {
     const result = await callLLM({
       messages: [{ role: "user", content: prompt }],
@@ -126,6 +174,9 @@ export const POST = withError(async (request: NextRequest) => {
         keyConflict: item.core_conflict || null,
         cliffhanger: item.cliffhanger || null,
         duration: "3min",
+        episodeCharacters: resolveNamesToIds(item.characters, characterNameToId),
+        episodeScenes: resolveNamesToIds(item.scenes, sceneNameToId),
+        episodeProps: resolveNamesToIds(item.props, propNameToId),
       },
     })
 

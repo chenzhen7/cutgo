@@ -70,6 +70,12 @@ export interface Episode {
   keyConflict: string | null
   cliffhanger: string | null
   duration: string
+  /** JSON 字符串数组：本集涉及的角色资产名称列表（由 AI 大纲生成时关联） */
+  episodeCharacters: string | null
+  /** JSON 字符串数组：本集涉及的场景资产名称列表（由 AI 大纲生成时关联） */
+  episodeScenes: string | null
+  /** JSON 字符串数组：本集涉及的道具资产名称列表（由 AI 大纲生成时关联） */
+  episodeProps: string | null
   createdAt: string
   updatedAt: string
 }
