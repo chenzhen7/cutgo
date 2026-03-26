@@ -171,7 +171,7 @@ function SortableEpisodeItem({
           )}
         </div>
 
-        {hasScript ? (
+        {hasScript || ep.outline?.trim() ? (
           <div className="flex flex-col gap-1 pl-5">
             {ep.outline?.trim() && (
               <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
@@ -186,10 +186,6 @@ function SortableEpisodeItem({
               mode="nav"
             />
           </div>
-        ) : ep.outline?.trim() ? (
-          <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2 pl-5">
-            {ep.outline}
-          </p>
         ) : null}
       </div>
     </div>
