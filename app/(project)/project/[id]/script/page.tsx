@@ -211,19 +211,6 @@ export default function ScriptPage() {
         </div>
       )}
 
-      {/* Generating progress */}
-      {isGenerating && activeEpisode && (
-        <div className="px-6 py-2 border-b bg-muted/30 shrink-0 flex items-center gap-3">
-          <Loader2 className="size-4 animate-spin text-primary" />
-          <div>
-            <p className="text-xs font-medium">正在生成剧本...</p>
-            <p className="text-xs text-muted-foreground">
-              AI 正按分集顺序依次生成剧本，请稍候
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Empty state */}
       {!showScriptWorkspace && !isGenerating && (
         <div className="flex-1 overflow-hidden">
