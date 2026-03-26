@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene, Episode } from "@/lib/types"
-import { Loader2, ListOrdered } from "lucide-react"
+import { Loader2, ListOrdered, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ScriptEmptyState } from "./components/script-empty-state"
@@ -40,6 +40,7 @@ export default function ScriptPage() {
     createEpisodeWithScript,
     updateEpisode,
     generateEpisodeOutlines,
+    clearGenerateError,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
@@ -201,13 +202,26 @@ export default function ScriptPage() {
       {/* Generate error */}
       {generateStatus === "error" && generateError && (
         <div className="px-6 py-2 border-b bg-destructive/5 shrink-0">
-          <p className="text-xs text-destructive">剧本生成失败: {generateError}</p>
-          <button
-            onClick={() => setShowEpisodeSelect(true)}
-            className="text-xs text-destructive underline hover:no-underline"
-          >
-            重新选择分集
-          </button>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-destructive break-all">剧本生成失败: {generateError}</p>
+              <button
+                onClick={() => setShowEpisodeSelect(true)}
+                className="text-xs text-destructive underline hover:no-underline"
+              >
+                重新选择分集
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={clearGenerateError}
+              className="text-destructive/80 hover:text-destructive"
+              aria-label="关闭错误提示"
+              title="关闭"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
       )}
 

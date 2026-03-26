@@ -37,6 +37,7 @@ interface ScriptState {
     episodeIds?: string[],
     mode?: "skip_existing" | "overwrite"
   ) => Promise<void>
+  clearGenerateError: () => void
 
   updateScript: (episodeId: string, data: { content?: string }) => Promise<void>
   clearScript: (episodeId: string) => Promise<void>
@@ -108,6 +109,14 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
         generateProgress: null,
       })
     }
+  },
+
+  clearGenerateError: () => {
+    const { generateStatus } = get()
+    set({
+      generateError: null,
+      generateStatus: generateStatus === "error" ? "idle" : generateStatus,
+    })
   },
 
   updateScript: async (episodeId, data) => {
