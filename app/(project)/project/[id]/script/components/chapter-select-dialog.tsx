@@ -81,12 +81,15 @@ export function ChapterSelectDialog({
     const orderedIds = sortedEpisodes
       .filter((ep) => set.has(ep.id))
       .map((ep) => ep.id)
+    if (orderedIds.length === 0) return
+
+    setSelectedEpisodeIds([])
+    onOpenChange(false)
+
     try {
       await onGenerate(orderedIds)
-      setSelectedEpisodeIds([])
-      onOpenChange(false)
     } catch {
-      /* 失败由页面 toast，保持弹窗 */
+      /* 失败由页面 toast 处理；弹窗已关闭 */
     }
   }
 
