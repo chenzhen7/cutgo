@@ -66,7 +66,6 @@ interface SortableEpisodeItemProps {
   displayEpisodeNumber: number
   hasScript: boolean
   isActive: boolean
-  isGenerating: boolean
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -80,7 +79,6 @@ function SortableEpisodeItem({
   displayEpisodeNumber,
   hasScript,
   isActive,
-  isGenerating,
   assetCharacters,
   assetScenes,
   assetProps,
@@ -138,9 +136,6 @@ function SortableEpisodeItem({
           </button>
 
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {isGenerating && (
-              <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
-            )}
             <span className="text-[10px] text-muted-foreground shrink-0">
               第{displayEpisodeNumber}集
             </span>
@@ -329,7 +324,6 @@ export function EpisodeNavList({
                       displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
                       hasScript={hasScript}
                       isActive={isActive}
-                      isGenerating={isGenerating}
                       assetCharacters={assetCharacters}
                       assetScenes={assetScenes}
                       assetProps={assetProps}

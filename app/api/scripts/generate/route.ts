@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
+import { buildEpisodeScriptPrompt } from "@/lib/prompts"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -25,55 +26,22 @@ async function callAIGenerateScript(
     return generateLocalScript(episodeTitle, episodeSynopsis)
   }
 
-  const prompt = `你是一位资深短剧编剧，擅长将分集梗概转化为高质量的竖屏短剧剧本。
-
-## 任务
-请基于以下分集信息，生成该集的完整剧本文本。
-
-## 当前分集信息
-- 集标题：${episodeTitle}
-- 剧情摘要：${episodeSynopsis}
-- 核心冲突：${keyConflict || "无"}
-- 结尾钩子：${cliffhanger || "无"}
-- 目标时长：${episodeDuration}
-
-## 大纲要点（结构参考）
-${scenesJson}
-
-## 来源章节原文（供参考，提取对白和描写素材）
-${chapterContent.slice(0, 8000)}
-
-## 全局上下文
-- 故事大纲：${novelSynopsis || "无"}
-- 角色列表（含性格描述）：${characters || "无"}
-- 场景库（可选地点）：${scenesInfo || "无"}
-- 道具库：${propsInfo || "无"}
-${previousContent ? `- 前一集剧本末尾：\n${previousContent.slice(-1000)}` : ""}
-
-## 目标参数
-- 目标平台：${platform}
-- 每集时长：${duration}
-
-## 要求
-1. 生成完整的剧本文本，包含对白、旁白、动作描写和转场指示
-2. 使用标准剧本格式：
-   - 场景标题用【场景N：标题】标记
-   - 对白格式：角色名（情绪/动作指示）："台词内容"
-   - 旁白格式：（旁白）内容
-   - 动作描写格式：[动作描写内容]
-   - 转场格式：——转场描述——
-3. 对白要求：
-   - 符合角色性格和身份
-   - 口语化、自然，避免书面语
-   - 有情感张力，推动冲突
-   - 每句台词控制在 15 字以内（适合字幕展示）
-4. 旁白要求：简洁有力，每句不超过 20 字
-5. 动作描写要有画面感，便于后续分镜设计
-6. 结尾场景必须体现 cliffhanger，制造悬念
-7. 所有场景的内容之和应覆盖目标时长
-
-## 输出格式
-直接输出剧本纯文本，不要包含 JSON 或 markdown 代码块。`
+  const prompt = buildEpisodeScriptPrompt({
+    episodeTitle,
+    episodeSynopsis,
+    keyConflict,
+    cliffhanger,
+    episodeDuration,
+    scenesJson,
+    chapterContent: chapterContent.slice(0, 8000),
+    novelSynopsis,
+    characters,
+    previousContent: previousContent?.slice(-1000) ?? null,
+    platform,
+    duration,
+    scenesInfo,
+    propsInfo,
+  })
 
   try {
     const result = await llmProvider.chat({

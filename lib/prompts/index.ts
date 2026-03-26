@@ -11,3 +11,10 @@ export {
   buildExtractAssetsPrompt,
   type BuildExtractAssetsPromptOptions,
 } from "./extract-assets"
+
+export {
+  DEFAULT_EPISODE_SCRIPT_PROMPT_TEMPLATE,
+  buildEpisodeScriptPrompt,
+  type BuildEpisodeScriptPromptInput,
+  type BuildEpisodeScriptPromptOptions,
+} from "./episode-script"

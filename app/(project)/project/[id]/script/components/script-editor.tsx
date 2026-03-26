@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Check, X, Pencil, MapPin, User, Package, ListOrdered, BookOpen, School } from "lucide-react"
+import { Check, X, Pencil, MapPin, User, Package, ListOrdered, BookOpen, School, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   AssetCharacter,
@@ -59,6 +59,7 @@ interface ScriptEditorProps {
     scenes?: string
     props?: string
   }) => Promise<void>
+  isGeneratingScript?: boolean
 }
 
 export function ScriptEditor({
@@ -70,6 +71,7 @@ export function ScriptEditor({
   assetProps,
   onUpdateScript,
   onUpdateEpisode,
+  isGeneratingScript = false,
 }: ScriptEditorProps) {
   const [content, setContent] = useState(episode.script ?? "")
   const [saving, setSaving] = useState(false)
@@ -766,7 +768,7 @@ export function ScriptEditor({
           <ResizableHandle withHandle />
 
           {/* 右侧：剧本编辑区 */}
-          <ResizablePanel className="min-w-0 flex flex-col">
+          <ResizablePanel className="relative min-w-0 flex flex-col">
             <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
               <div
                 ref={gutterRef}
@@ -791,6 +793,14 @@ export function ScriptEditor({
                 />
               </div>
             </div>
+            {isGeneratingScript && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-[1px]">
+                <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 shadow-sm">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span className="text-sm text-foreground">正在生成分集剧本...</span>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2 px-4 py-1.5 shrink-0 text-[11px] tabular-nums text-muted-foreground border-t">
               <span>{lineCount > 0 ? `${lineCount} 行` : "空内容"}</span>

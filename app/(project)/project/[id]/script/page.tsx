@@ -212,7 +212,7 @@ export default function ScriptPage() {
       )}
 
       {/* Generating progress */}
-      {isGenerating && (
+      {isGenerating && activeEpisode && (
         <div className="px-6 py-2 border-b bg-muted/30 shrink-0 flex items-center gap-3">
           <Loader2 className="size-4 animate-spin text-primary" />
           <div>
@@ -290,6 +290,7 @@ export default function ScriptPage() {
                       onUpdateEpisode={(data) =>
                         updateEpisode(activeEpisode.id, data)
                       }
+                      isGeneratingScript={isGenerating}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center p-8 max-w-md mx-auto">
