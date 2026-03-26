@@ -27,13 +27,13 @@ interface SceneSwimlaneProps {
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
   onSelectShot: (shotId: string) => void
-  onDuplicateShot: (scriptId: string, shotId: string) => void
-  onDeleteShot: (scriptId: string, shotId: string) => void
-  onAddShot: (scriptId: string) => void
-  onGenerateImage: (scriptId: string, shotId: string) => void
-  onGenerateVideo: (scriptId: string, shotId: string) => void
+  onDuplicateShot: (episodeId: string, shotId: string) => void
+  onDeleteShot: (episodeId: string, shotId: string) => void
+  onAddShot: (episodeId: string) => void
+  onGenerateImage: (episodeId: string, shotId: string) => void
+  onGenerateVideo: (episodeId: string, shotId: string) => void
   onPlayVideo: (shotId: string) => void
-  onRegenerateScript: (scriptId: string) => void
+  onRegenerateScript: (episodeId: string) => void
   onViewScript: (scriptShotPlan: ScriptShotPlan) => void
   onToggleShotDisplayMode: () => void
 }
@@ -60,7 +60,7 @@ export function SceneSwimlane({
   onViewScript,
   onToggleShotDisplayMode,
 }: SceneSwimlaneProps) {
-  const script = scriptShotPlan.script
+  const episode = scriptShotPlan.episode
   const shotsWithImage = scriptShotPlan.shots.filter((s) => s.imageUrl).length
   const shotsWithVideo = scriptShotPlan.shots.filter((s) => s.videoUrl).length
 
@@ -74,7 +74,7 @@ export function SceneSwimlane({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium truncate">
-              {script.title}
+              {episode.title}
             </span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
               第{episodeDisplayNumber}集
@@ -122,7 +122,7 @@ export function SceneSwimlane({
             variant="ghost"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => onRegenerateScript(script.id)}
+            onClick={() => onRegenerateScript(scriptShotPlan.episodeId)}
           >
             <RefreshCw className="size-3 mr-1" />
             重新生成
@@ -154,16 +154,16 @@ export function SceneSwimlane({
             assetScenes={assetScenes}
             assetProps={assetProps}
             onSelect={() => onSelectShot(shot.id)}
-            onDuplicate={() => onDuplicateShot(scriptShotPlan.id, shot.id)}
-            onDelete={() => onDeleteShot(scriptShotPlan.id, shot.id)}
-            onGenerateImage={() => onGenerateImage(scriptShotPlan.id, shot.id)}
-            onGenerateVideo={() => onGenerateVideo(scriptShotPlan.id, shot.id)}
+            onDuplicate={() => onDuplicateShot(scriptShotPlan.episodeId, shot.id)}
+            onDelete={() => onDeleteShot(scriptShotPlan.episodeId, shot.id)}
+            onGenerateImage={() => onGenerateImage(scriptShotPlan.episodeId, shot.id)}
+            onGenerateVideo={() => onGenerateVideo(scriptShotPlan.episodeId, shot.id)}
             onPlayVideo={() => onPlayVideo(shot.id)}
           />
         ))}
 
         <button
-          onClick={() => onAddShot(scriptShotPlan.id)}
+          onClick={() => onAddShot(scriptShotPlan.episodeId)}
           className="col-span-2 h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
         >
           <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />

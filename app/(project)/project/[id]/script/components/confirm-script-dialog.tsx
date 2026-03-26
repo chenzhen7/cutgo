@@ -13,21 +13,20 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import type { Script, Episode } from "@/lib/types"
+import type { Episode } from "@/lib/types"
 
 interface ConfirmScriptDialogProps {
-  scripts: Script[]
   episodes: Episode[]
   onConfirm: () => void
 }
 
 export function ConfirmScriptDialog({
-  scripts,
   episodes,
   onConfirm,
 }: ConfirmScriptDialogProps) {
-  const totalWords = scripts.reduce((sum, s) => sum + s.content.length, 0)
-  const disabled = scripts.length === 0
+  const episodesWithScript = episodes.filter((ep) => ep.script)
+  const totalWords = episodesWithScript.reduce((sum, ep) => sum + ep.script.length, 0)
+  const disabled = episodesWithScript.length === 0
 
   return (
     <AlertDialog>
@@ -44,7 +43,7 @@ export function ConfirmScriptDialog({
             <div className="space-y-2">
               <p>确认后将进入分镜生成阶段，当前剧本摘要：</p>
               <ul className="list-disc list-inside text-sm space-y-1">
-                <li>已生成剧本：{scripts.length}/{episodes.length} 集</li>
+                <li>已生成剧本：{episodesWithScript.length}/{episodes.length} 集</li>
                 <li>总字数：{totalWords} 字</li>
               </ul>
             </div>

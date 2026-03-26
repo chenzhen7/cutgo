@@ -9,8 +9,10 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
-  const scriptCount = await prisma.script.count({ where: { projectId } })
-  if (scriptCount === 0) {
+  const episodeWithScript = await prisma.episode.count({
+    where: { projectId, script: { not: "" } },
+  })
+  if (episodeWithScript === 0) {
     throwCutGoError("VALIDATION", "至少需要 1 个已生成的剧本")
   }
 

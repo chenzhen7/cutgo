@@ -1,26 +1,23 @@
 import { create } from "zustand"
 import type {
-  Script,
+  Episode,
   ScriptGenerateStatus,
   ScriptGenerateProgress,
-  Episode,
   Chapter,
 } from "@/lib/types"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { apiFetch } from "@/lib/api-client"
 
 interface ScriptState {
-  scripts: Script[]
   episodes: Episode[]
   chapters: Chapter[]
   generateStatus: ScriptGenerateStatus
   generateError: string | null
   generateProgress: ScriptGenerateProgress | null
 
-  activeScriptId: string | null
+  activeEpisodeId: string | null
   filterChapterIds: string[]
 
-  fetchScripts: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<void>
   fetchChapters: (projectId: string) => Promise<void>
   deleteEpisode: (projectId: string, episodeId: string) => Promise<void>
@@ -41,21 +38,16 @@ interface ScriptState {
     mode?: "skip_existing" | "overwrite"
   ) => Promise<void>
 
-  createScript: (projectId: string, episodeId: string, title: string) => Promise<void>
-  updateScript: (scriptId: string, data: {
-    title?: string
-    content?: string
-    status?: string
-  }) => Promise<void>
-  deleteScript: (scriptId: string) => Promise<void>
+  updateScript: (episodeId: string, data: { content?: string }) => Promise<void>
+  clearScript: (episodeId: string) => Promise<void>
 
-  setActiveScriptId: (scriptId: string | null) => void
+  setActiveEpisodeId: (episodeId: string | null) => void
   setFilterChapterIds: (chapterIds: string[]) => void
 
   confirmScripts: (projectId: string) => Promise<void>
 
-  filteredScripts: () => Script[]
-  activeScript: () => Script | null
+  filteredEpisodes: () => Episode[]
+  activeEpisode: () => Episode | null
   episodeScriptStatus: (episodeId: string) => "none" | "generated" | "generating" | "error"
   scriptStats: () => {
     scriptCount: number
@@ -67,26 +59,13 @@ interface ScriptState {
 }
 
 export const useScriptStore = create<ScriptState>((set, get) => ({
-  scripts: [],
   episodes: [],
   chapters: [],
   generateStatus: "idle",
   generateError: null,
   generateProgress: null,
-  activeScriptId: null,
+  activeEpisodeId: null,
   filterChapterIds: [],
-
-  fetchScripts: async (projectId, episodeId) => {
-    try {
-      const url = episodeId
-        ? `/api/scripts?projectId=${projectId}&episodeId=${episodeId}`
-        : `/api/scripts?projectId=${projectId}`
-      const data = await apiFetch<Script[]>(url)
-      set({ scripts: data || [] })
-    } catch {
-      // 非关键数据加载，静默失败
-    }
-  },
 
   fetchEpisodes: async (projectId) => {
     try {
@@ -109,12 +88,12 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   generateScripts: async (projectId, episodeIds, mode = "skip_existing") => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
-      const data = await apiFetch<{ scripts?: Script[] }>("/api/scripts/generate", {
+      const data = await apiFetch<{ episodes?: Episode[] }>("/api/scripts/generate", {
         method: "POST",
         body: { projectId, episodeIds, mode },
       })
       set({
-        scripts: data.scripts || [],
+        episodes: data.episodes || [],
         generateStatus: "completed",
         generateProgress: null,
       })
@@ -127,25 +106,21 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     }
   },
 
-  createScript: async (projectId, episodeId, title) => {
-    const script = await apiFetch<Script>("/api/scripts", {
-      method: "POST",
-      body: { projectId, episodeId, title },
-    })
-    set({ scripts: [...get().scripts, script] })
-  },
-
-  updateScript: async (scriptId, data) => {
-    const updated = await apiFetch<Script>(`/api/scripts/${scriptId}`, {
+  updateScript: async (episodeId, data) => {
+    const updated = await apiFetch<Episode>(`/api/scripts/${episodeId}`, {
       method: "PATCH",
       body: data,
     })
-    set({ scripts: get().scripts.map((s) => (s.id === scriptId ? updated : s)) })
+    set({ episodes: get().episodes.map((ep) => (ep.id === episodeId ? updated : ep)) })
   },
 
-  deleteScript: async (scriptId) => {
-    await apiFetch(`/api/scripts/${scriptId}`, { method: "DELETE" })
-    set({ scripts: get().scripts.filter((s) => s.id !== scriptId) })
+  clearScript: async (episodeId) => {
+    await apiFetch(`/api/scripts/${episodeId}`, { method: "DELETE" })
+    set({
+      episodes: get().episodes.map((ep) =>
+        ep.id === episodeId ? { ...ep, script: "" } : ep
+      ),
+    })
   },
 
   updateEpisode: async (episodeId, data) => {
@@ -169,11 +144,10 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     const remaining = await apiFetch<Episode[]>(`/api/episodes/${episodeId}`, { method: "DELETE" })
     set({
       episodes: remaining,
-      scripts: get().scripts.filter((s) => s.episodeId !== episodeId),
     })
-    const { activeScriptId, scripts } = get()
-    if (activeScriptId && !scripts.find((s) => s.id === activeScriptId)) {
-      set({ activeScriptId: scripts[0]?.id ?? null })
+    const { activeEpisodeId } = get()
+    if (activeEpisodeId === episodeId) {
+      set({ activeEpisodeId: remaining[0]?.id ?? null })
     }
   },
 
@@ -182,13 +156,8 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
       method: "POST",
       body: { projectId, chapterIds },
     })
-    const script = await apiFetch<Script>("/api/scripts", {
-      method: "POST",
-      body: { projectId, episodeId: episode.id, title: episode.title },
-    })
     await get().fetchEpisodes(projectId)
-    await get().fetchScripts(projectId)
-    set({ activeScriptId: script.id })
+    set({ activeEpisodeId: episode.id })
   },
 
   reorderEpisodes: async (projectId, orderedIds) => {
@@ -210,7 +179,7 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     }
   },
 
-  setActiveScriptId: (scriptId) => set({ activeScriptId: scriptId }),
+  setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
   setFilterChapterIds: (chapterIds) => set({ filterChapterIds: chapterIds }),
 
   confirmScripts: async (projectId) => {
@@ -220,47 +189,47 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     })
   },
 
-  filteredScripts: () => {
-    const { scripts, filterChapterIds } = get()
-    if (filterChapterIds.length === 0) return scripts
-    return scripts.filter((s) => {
-      const ids = parseSourceChapterIds(s.episode)
+  filteredEpisodes: () => {
+    const { episodes, filterChapterIds } = get()
+    if (filterChapterIds.length === 0) return episodes
+    return episodes.filter((ep) => {
+      const ids = parseSourceChapterIds(ep)
       return ids.some((id) => filterChapterIds.includes(id))
     })
   },
 
-  activeScript: () => {
-    const { scripts, activeScriptId } = get()
-    return scripts.find((s) => s.id === activeScriptId) || null
+  activeEpisode: () => {
+    const { episodes, activeEpisodeId } = get()
+    return episodes.find((ep) => ep.id === activeEpisodeId) || null
   },
 
   episodeScriptStatus: (episodeId) => {
-    const { scripts, generateStatus } = get()
-    const script = scripts.find((s) => s.episodeId === episodeId)
-    if (script) return "generated"
+    const { episodes, generateStatus } = get()
+    const episode = episodes.find((ep) => ep.id === episodeId)
+    if (episode?.script) return "generated"
     if (generateStatus === "generating") return "generating"
     return "none"
   },
 
   scriptStats: () => {
-    const { scripts, episodes } = get()
-    const totalWordCount = scripts.reduce((sum, s) => sum + s.content.length, 0)
+    const { episodes } = get()
+    const episodesWithScript = episodes.filter((ep) => ep.script)
+    const totalWordCount = episodesWithScript.reduce((sum, ep) => sum + ep.script.length, 0)
     return {
-      scriptCount: scripts.length,
+      scriptCount: episodesWithScript.length,
       totalWordCount,
-      coverage: `${scripts.length}/${episodes.length}`,
+      coverage: `${episodesWithScript.length}/${episodes.length}`,
     }
   },
 
   reset: () => {
     set({
-      scripts: [],
       episodes: [],
       chapters: [],
       generateStatus: "idle",
       generateError: null,
       generateProgress: null,
-      activeScriptId: null,
+      activeEpisodeId: null,
       filterChapterIds: [],
     })
   },

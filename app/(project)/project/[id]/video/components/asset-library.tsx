@@ -27,7 +27,7 @@ export function AssetLibrary() {
 
   const assets = useMemo<AssetItem[]>(() => {
     const filteredSbs = activeEpisodeId
-      ? scriptShotPlans.filter((sb) => sb.script?.episode?.id === activeEpisodeId)
+      ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
       : scriptShotPlans
 
     const shots = filteredSbs

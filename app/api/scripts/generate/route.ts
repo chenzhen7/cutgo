@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
+import { getLLMProvider } from "@/lib/ai/llm"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -19,11 +20,8 @@ async function callAIGenerateScript(
   scenesInfo: string,
   propsInfo: string
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
-
-  if (!apiKey) {
+  const llmProvider = await getLLMProvider()
+  if (!llmProvider) {
     return generateLocalScript(episodeTitle, episodeSynopsis)
   }
 
@@ -78,29 +76,10 @@ ${previousContent ? `- 前一集剧本末尾：\n${previousContent.slice(-1000)}
 直接输出剧本纯文本，不要包含 JSON 或 markdown 代码块。`
 
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.4,
-      }),
+    const result = await llmProvider.chat({
+      messages: [{ role: "user", content: prompt }],
     })
-
-    if (!response.ok) {
-      console.error("AI API error:", response.status)
-      return generateLocalScript(episodeTitle, episodeSynopsis)
-    }
-
-    const data = await response.json()
-    const content = data.choices?.[0]?.message?.content
-    if (!content) return generateLocalScript(episodeTitle, episodeSynopsis)
-
-    return content.trim()
+    return result.content?.trim() || generateLocalScript(episodeTitle, episodeSynopsis)
   } catch (err) {
     console.error("AI script generation failed, falling back to local:", err)
     return generateLocalScript(episodeTitle, episodeSynopsis)
@@ -148,18 +127,7 @@ function generateLocalScript(
 
 （旁白）一切才刚刚开始...
 
-（本地生成的示例剧本，建议配置 AI API Key 获取更好的结果）`
-}
-
-const scriptInclude = {
-  episode: {
-    select: {
-      id: true,
-      index: true,
-      title: true,
-      chapterIds: true,
-    },
-  },
+（本地生成的示例剧本，建议配置 AI 模型获取更好的结果）`
 }
 
 export const POST = withError(async (request: NextRequest) => {
@@ -186,6 +154,8 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "请先导入小说并解析出章节")
   }
 
+  const novelData = novel!
+
   let targetEpisodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
@@ -199,26 +169,21 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "没有可生成的分集")
   }
 
-  const existingScriptEpisodeIds = new Set(
-    (await prisma.script.findMany({
-      where: { projectId },
-      select: { episodeId: true },
-    })).map((s) => s.episodeId)
-  )
-
   let skippedEpisodes = 0
 
   if (mode === "skip_existing") {
     const before = targetEpisodes.length
-    targetEpisodes = targetEpisodes.filter((ep) => !existingScriptEpisodeIds.has(ep.id))
+    targetEpisodes = targetEpisodes.filter((ep) => !ep.script)
     skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
+    // overwrite 模式：清空已有剧本内容
     const overwriteIds = targetEpisodes
-      .filter((ep) => existingScriptEpisodeIds.has(ep.id))
+      .filter((ep) => ep.script)
       .map((ep) => ep.id)
     if (overwriteIds.length > 0) {
-      await prisma.script.deleteMany({
-        where: { projectId, episodeId: { in: overwriteIds } },
+      await prisma.episode.updateMany({
+        where: { id: { in: overwriteIds } },
+        data: { script: "" },
       })
     }
   }
@@ -245,18 +210,20 @@ export const POST = withError(async (request: NextRequest) => {
     : ""
 
   const chapterMap = new Map<string, string>()
-  for (const ch of novel.chapters) {
+  for (const ch of novelData.chapters) {
     chapterMap.set(ch.id, ch.content)
   }
 
-  let previousContent: string | null = null
-  const lastScript = await prisma.script.findFirst({
+  // 取上一集的剧本作为上下文
+  const sortedAll = await prisma.episode.findMany({
     where: { projectId },
-    orderBy: { createdAt: "desc" },
-    select: { content: true },
+    orderBy: { index: "asc" },
   })
-  if (lastScript?.content) {
-    previousContent = lastScript.content
+  let previousContent: string | null = null
+  const firstTargetIndex = targetEpisodes[0]?.index ?? 0
+  const prevEpisode = sortedAll.filter((ep) => ep.index < firstTargetIndex && ep.script).pop()
+  if (prevEpisode?.script) {
+    previousContent = prevEpisode.script
   }
 
   try {
@@ -273,10 +240,7 @@ export const POST = withError(async (request: NextRequest) => {
 
       const sourceIds = parseSourceChapterIds(episode)
       const chapterContent = sourceIds
-        .map((id) => {
-          const text = chapterMap.get(id) || ""
-          return text
-        })
+        .map((id) => chapterMap.get(id) || "")
         .filter(Boolean)
         .join("\n\n---\n\n")
 
@@ -291,48 +255,41 @@ export const POST = withError(async (request: NextRequest) => {
         null,
         charactersStr,
         previousContent,
-        project.platform,
-        project.duration,
+        project!.platform,
+        project!.duration,
         scenesStr,
         propsStr
       )
 
-      await prisma.script.create({
-        data: {
-          projectId,
-          episodeId: episode.id,
-          title: episode.title,
-          content: scriptContent,
-          status: "generated",
-        },
+      await prisma.episode.update({
+        where: { id: episode.id },
+        data: { script: scriptContent },
       })
 
       previousContent = scriptContent
     }
 
-    const allScripts = await prisma.script.findMany({
+    const allEpisodes = await prisma.episode.findMany({
       where: { projectId },
-      orderBy: { createdAt: "asc" },
-      include: scriptInclude,
+      orderBy: { index: "asc" },
     })
 
     return NextResponse.json({
-      scripts: allScripts,
+      episodes: allEpisodes,
       stats: {
-        scriptCount: allScripts.length,
+        scriptCount: allEpisodes.filter((ep) => ep.script).length,
         generatedEpisodes: targetEpisodes.length,
         skippedEpisodes,
       },
     })
   } catch (err) {
     console.error("Script generation failed:", err)
-    const allScripts = await prisma.script.findMany({
+    const allEpisodes = await prisma.episode.findMany({
       where: { projectId },
-      orderBy: { createdAt: "asc" },
-      include: scriptInclude,
+      orderBy: { index: "asc" },
     })
     return NextResponse.json(
-      { error: API_ERRORS.INTERNAL.code, message: "部分分集生成失败", scripts: allScripts },
+      { error: API_ERRORS.INTERNAL.code, message: "部分分集生成失败", episodes: allEpisodes },
       { status: API_ERRORS.INTERNAL.status }
     )
   }

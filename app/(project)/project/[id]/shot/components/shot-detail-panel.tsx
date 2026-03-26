@@ -55,7 +55,7 @@ interface ShotDetailPanelProps {
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onUpdate: (scriptId: string, shotId: string, data: Partial<ShotInput>) => void
+  onUpdate: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
   onGenerateImage: () => void
   onClearImage: () => void
   onGenerateVideo: () => void
@@ -122,9 +122,9 @@ export function ShotDetailPanel({
 
   const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
-      onUpdate(scriptShotPlan.id, shot.id, data)
+      onUpdate(scriptShotPlan.episodeId, shot.id, data)
     },
-    [onUpdate, scriptShotPlan.id, shot.id]
+    [onUpdate, scriptShotPlan.episodeId, shot.id]
   )
 
   const debouncedUpdate = useMemo(
@@ -133,11 +133,11 @@ export function ShotDetailPanel({
       return (data: Partial<ShotInput>) => {
         clearTimeout(timer)
         timer = setTimeout(() => {
-          onUpdate(scriptShotPlan.id, shot.id, data)
+          onUpdate(scriptShotPlan.episodeId, shot.id, data)
         }, 500)
       }
     },
-    [onUpdate, scriptShotPlan.id, shot.id]
+    [onUpdate, scriptShotPlan.episodeId, shot.id]
   )
 
   const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
@@ -205,7 +205,7 @@ export function ShotDetailPanel({
   const imageType = shot.imageType || "keyframe"
   const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const hasImage = !!shot.imageUrl
-  const script = scriptShotPlan.script
+  const episode = scriptShotPlan.episode
   const currentGridLayout = GRID_LAYOUT_OPTIONS.find((o) => o.value === (shot.gridLayout || "2x2")) || GRID_LAYOUT_OPTIONS[0]
 
   return (
@@ -765,11 +765,11 @@ export function ShotDetailPanel({
         </Tabs>
 
         {/* Related script */}
-        {script && (
+        {episode && (
           <div>
             <Label className="text-xs">关联剧本</Label>
             <div className="mt-1 text-xs rounded bg-muted/50 px-2 py-1.5 text-muted-foreground">
-              {script.title} · 第{episodeDisplayNumber}集
+              {episode.title} · 第{episodeDisplayNumber}集
             </div>
           </div>
         )}

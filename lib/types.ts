@@ -76,28 +76,16 @@ export interface Episode {
   scenes: string | null
   /** JSON 字符串数组：本集涉及的道具资产 id 列表 */
   props: string | null
+  /** 剧本正文，不为空说明该分集存在剧本 */
+  script: string
   createdAt: string
   updatedAt: string
 }
 
-// ── Script Types ──
+// ── Script Types（Script 已合并入 Episode，以下为兼容层）──
 
-export interface Script {
-  id: string
-  projectId: string
-  episodeId: string
-  episode: {
-    id: string
-    index: number
-    title: string
-    chapterIds: string | null
-  }
-  title: string
-  content: string
-  status: "draft" | "generated" | "edited"
-  createdAt: string
-  updatedAt: string
-}
+/** @deprecated 使用 Episode 代替，script 内容存于 episode.script */
+export type Script = Episode
 
 export type ScriptGenerateStatus = "idle" | "generating" | "completed" | "error"
 
@@ -108,7 +96,7 @@ export interface ScriptGenerateProgress {
 }
 
 export interface ScriptGenerateResult {
-  scripts: Script[]
+  episodes: Episode[]
   stats: {
     scriptCount: number
     generatedEpisodes: number
@@ -340,7 +328,7 @@ export const GRID_LAYOUT_OPTIONS: { value: GridLayout; label: string; cols: numb
 
 export interface Shot {
   id: string
-  scriptId: string
+  episodeId: string
   index: number
   shotSize: ShotSize
   cameraMovement: CameraMovement
@@ -381,17 +369,12 @@ export const VIDEO_MOTION_OPTIONS: { value: string; label: string }[] = [
 export interface ScriptShotPlan {
   id: string
   projectId: string
-  scriptId: string
-  script: {
+  episodeId: string
+  episode: {
     id: string
+    index: number
     title: string
-    content: string
-    episodeId: string
-    episode: {
-      id: string
-      index: number
-      title: string
-    }
+    script: string
   }
   status: ScriptShotPlanStatus
   shots: Shot[]
@@ -438,11 +421,11 @@ export interface ShotInput {
 export interface ScriptShotGenerateResult {
   scriptShotPlans: ScriptShotPlan[]
   stats: {
-    scriptCount: number
+    episodeCount: number
     totalShots: number
-    avgShotsPerScript: number
-    generatedScenes: number
-    skippedScenes: number
+    avgShotsPerEpisode: number
+    generatedEpisodes: number
+    skippedEpisodes: number
   }
 }
 

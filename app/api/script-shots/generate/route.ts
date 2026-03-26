@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
+import { getLLMProvider } from "@/lib/ai/llm"
 
 interface AIShotResult {
   composition: string
@@ -14,8 +15,7 @@ interface AIScriptShotResult {
   shots: AIShotResult[]
 }
 
-const scriptWithShotsInclude = {
-  episode: { select: { id: true, index: true, title: true } },
+const episodeWithShotsInclude = {
   shots: { orderBy: { index: "asc" as const } },
 }
 
@@ -29,38 +29,35 @@ function parseJsonArray(val: string | null | undefined): string[] {
   }
 }
 
-function toScriptShotPlan(script: {
+function toScriptShotPlan(episode: {
   id: string
   projectId: string
+  index: number
   title: string
-  content: string
-  episodeId: string
-  status: string
+  script: string
   createdAt: Date
   updatedAt: Date
-  episode: { id: string; index: number; title: string }
   shots: unknown[]
 }) {
   return {
-    id: script.id,
-    projectId: script.projectId,
-    scriptId: script.id,
-    script: {
-      id: script.id,
-      title: script.title,
-      content: script.content,
-      episodeId: script.episodeId,
-      episode: script.episode,
+    id: episode.id,
+    projectId: episode.projectId,
+    episodeId: episode.id,
+    episode: {
+      id: episode.id,
+      index: episode.index,
+      title: episode.title,
+      script: episode.script,
     },
-    status: script.status,
-    shots: script.shots,
-    createdAt: script.createdAt,
-    updatedAt: script.updatedAt,
+    status: episode.script ? "generated" : "draft",
+    shots: episode.shots,
+    createdAt: episode.createdAt,
+    updatedAt: episode.updatedAt,
   }
 }
 
 async function callAIGenerateScriptShots(
-  scriptTitle: string,
+  episodeTitle: string,
   scriptContent: string,
   episodeCharacters: string,
   episodeProps: string,
@@ -73,12 +70,9 @@ async function callAIGenerateScriptShots(
   globalNegPrompt: string | null,
   previousShotStr: string | null
 ): Promise<AIScriptShotResult> {
-  const apiKey = process.env.OPENAI_API_KEY
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
-
-  if (!apiKey) {
-    return generateLocalScriptShots(scriptTitle, scriptContent)
+  const llmProvider = await getLLMProvider()
+  if (!llmProvider) {
+    return generateLocalScriptShots(episodeTitle, scriptContent)
   }
 
   const prompt = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的画面描述提示词。
@@ -87,7 +81,7 @@ async function callAIGenerateScriptShots(
 请基于以下剧本内容，为每个关键画面生成高质量的图像生成提示词（Prompt）。
 
 ## 剧本信息
-- 标题：${scriptTitle}
+- 标题：${episodeTitle}
 - 关联场景：${episodeScenes || "未指定"}
 - 出场角色：${episodeCharacters || "无"}
 - 涉及道具：${episodeProps || "无"}
@@ -107,7 +101,7 @@ ${assetScenesStr || "无"}
 - 视觉风格：${stylePreset || "电影感"}
 - 全局负面提示词：${globalNegPrompt || "blurry, low quality, distorted"}
 
-${previousShotStr ? `## 前一个剧本最后一个镜头信息\n${previousShotStr}（确保衔接）` : ""}
+${previousShotStr ? `## 前一个分集最后一个镜头信息\n${previousShotStr}（确保衔接）` : ""}
 
 ## 要求
 1. 将剧本内容转化为具体的画面序列，通常一个剧本拆分为 4-12 个画面
@@ -144,39 +138,21 @@ ${previousShotStr ? `## 前一个剧本最后一个镜头信息\n${previousShotS
 注意：不要在 shots 中包含 index 字段，系统会自动计算编号。`
 
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.4,
-        response_format: { type: "json_object" },
-      }),
+    const result = await llmProvider.chat({
+      messages: [{ role: "user", content: prompt }],
     })
-
-    if (!response.ok) {
-      console.error("AI API error:", response.status)
-      return generateLocalScriptShots(scriptTitle, scriptContent)
-    }
-
-    const data = await response.json()
-    const content = data.choices?.[0]?.message?.content
-    if (!content) return generateLocalScriptShots(scriptTitle, scriptContent)
-
-    const parsed = JSON.parse(content)
+    let text = result.content?.trim() || ""
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
+    const parsed = JSON.parse(text)
     return { shots: parsed.shots || [] }
   } catch (err) {
     console.error("AI script-shot generation failed, falling back to local:", err)
-    return generateLocalScriptShots(scriptTitle, scriptContent)
+    return generateLocalScriptShots(episodeTitle, scriptContent)
   }
 }
 
 function generateLocalScriptShots(
-  scriptTitle: string,
+  episodeTitle: string,
   scriptContent: string
 ): AIScriptShotResult {
   const contentLength = scriptContent.length
@@ -185,8 +161,8 @@ function generateLocalScriptShots(
   const shots: AIShotResult[] = []
   for (let i = 0; i < shotCount; i++) {
     shots.push({
-      composition: `${scriptTitle} - 画面 ${i + 1}（本地生成，建议配置 AI API Key 获得更好效果）`,
-      prompt: `Scene from "${scriptTitle}", shot ${i + 1}, cinematic lighting, 9:16 vertical frame, photorealistic, detailed environment, dramatic atmosphere. (Local fallback - configure AI API Key for better results)`,
+      composition: `${episodeTitle} - 画面 ${i + 1}（本地生成，建议配置 AI 模型获得更好效果）`,
+      prompt: `Scene from "${episodeTitle}", shot ${i + 1}, cinematic lighting, 9:16 vertical frame, photorealistic, detailed environment, dramatic atmosphere. (Local fallback - configure AI for better results)`,
       negativePrompt: "blurry, low quality, distorted face, extra limbs, watermark, text",
     })
   }
@@ -196,7 +172,7 @@ function generateLocalScriptShots(
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
-  const { projectId, episodeIds, scriptIds, mode = "skip_existing" } = body
+  const { projectId, episodeIds, mode = "skip_existing" } = body
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
@@ -207,42 +183,41 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
-  let targetScripts = await prisma.script.findMany({
-    where: { projectId },
-    include: { episode: true },
+  let targetEpisodes = await prisma.episode.findMany({
+    where: { projectId, script: { not: "" } },
+    include: { shots: true },
+    orderBy: { index: "asc" },
   })
 
-  if (scriptIds?.length) {
-    targetScripts = targetScripts.filter((s) => scriptIds.includes(s.id))
-  } else if (episodeIds?.length) {
-    targetScripts = targetScripts.filter((s) => episodeIds.includes(s.episodeId))
+  if (episodeIds?.length) {
+    targetEpisodes = targetEpisodes.filter((ep) => episodeIds.includes(ep.id))
   }
 
-  if (targetScripts.length === 0) {
-    throwCutGoError("VALIDATION", "没有可生成的剧本")
+  if (targetEpisodes.length === 0) {
+    throwCutGoError("VALIDATION", "没有可生成分镜的剧本（请先生成剧本）")
   }
 
-  const existingShotScriptIds = new Set(
+  const existingShotEpisodeIds = new Set(
     (await prisma.shot.findMany({
-      where: { script: { projectId } },
-      select: { scriptId: true },
-      distinct: ["scriptId"],
-    })).map((item) => item.scriptId)
+      where: { episode: { projectId } },
+      select: { episodeId: true },
+      distinct: ["episodeId"],
+    })).map((item) => item.episodeId)
   )
 
-  let skippedScripts = 0
+  let skippedEpisodes = 0
 
   if (mode === "skip_existing") {
-    const before = targetScripts.length
-    targetScripts = targetScripts.filter((s) => !existingShotScriptIds.has(s.id))
-    skippedScripts = before - targetScripts.length
+    const before = targetEpisodes.length
+    targetEpisodes = targetEpisodes.filter((ep) => !existingShotEpisodeIds.has(ep.id))
+    skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
-    const overwriteIds = targetScripts
-      .filter((s) => existingShotScriptIds.has(s.id))
-      .map((s) => s.id)
+    const overwriteIds = targetEpisodes
+      .filter((ep) => existingShotEpisodeIds.has(ep.id))
+      .map((ep) => ep.id)
     if (overwriteIds.length > 0) {
       await prisma.shot.deleteMany({
-        where: { scriptId: { in: overwriteIds } },
+        where: { episodeId: { in: overwriteIds } },
       })
     }
   }
@@ -268,10 +243,10 @@ export const POST = withError(async (request: NextRequest) => {
   let previousShotStr: string | null = null
 
   try {
-    for (const script of targetScripts) {
-      const episodeCharacterIds = parseJsonArray(script.episode.characters)
-      const episodeSceneIds = parseJsonArray(script.episode.scenes)
-      const episodePropIds = parseJsonArray(script.episode.props)
+    for (const episode of targetEpisodes) {
+      const episodeCharacterIds = parseJsonArray(episode.characters)
+      const episodeSceneIds = parseJsonArray(episode.scenes)
+      const episodePropIds = parseJsonArray(episode.props)
 
       const matchedCharacters = assetCharacters.filter((c) => episodeCharacterIds.includes(c.id))
       const matchedCharacterIds = matchedCharacters.map((c) => c.id)
@@ -282,23 +257,23 @@ export const POST = withError(async (request: NextRequest) => {
       const matchedPropIds = matchedProps.map((p) => p.id)
 
       const aiResult = await callAIGenerateScriptShots(
-        script.title,
-        script.content,
+        episode.title,
+        episode.script,
         matchedCharacters.map((c) => c.name).join(", "),
         matchedProps.map((p) => p.name).join(", "),
         matchedScene?.name || "",
         assetCharactersStr,
         assetScenesStr,
-        project.platform,
-        project.aspectRatio,
-        project.stylePreset,
-        project.globalNegPrompt,
+        project!.platform,
+        project!.aspectRatio,
+        project!.stylePreset,
+        project!.globalNegPrompt,
         previousShotStr
       )
 
       await prisma.shot.createMany({
         data: (aiResult.shots || []).map((shot, si) => ({
-          scriptId: script.id,
+          episodeId: episode.id,
           index: si,
           shotSize: "medium",
           cameraMovement: "static",
@@ -314,10 +289,6 @@ export const POST = withError(async (request: NextRequest) => {
           propIds: matchedPropIds.length > 0 ? JSON.stringify(matchedPropIds) : null,
         })),
       })
-      await prisma.script.update({
-        where: { id: script.id },
-        data: { status: "generated" },
-      })
 
       if (aiResult.shots?.length) {
         const lastShot = aiResult.shots[aiResult.shots.length - 1]
@@ -325,12 +296,12 @@ export const POST = withError(async (request: NextRequest) => {
       }
     }
 
-    const scriptsWithShots = await prisma.script.findMany({
+    const episodesWithShots = await prisma.episode.findMany({
       where: { projectId },
-      orderBy: { createdAt: "asc" },
-      include: scriptWithShotsInclude,
+      orderBy: { index: "asc" },
+      include: episodeWithShotsInclude,
     })
-    const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
+    const allScriptShotPlans = episodesWithShots.map(toScriptShotPlan)
 
     const totalShots = allScriptShotPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
     const generatedPlans = allScriptShotPlans.filter((sb) => sb.shots.length > 0)
@@ -338,25 +309,25 @@ export const POST = withError(async (request: NextRequest) => {
     return NextResponse.json({
       scriptShotPlans: allScriptShotPlans,
       stats: {
-        scriptCount: generatedPlans.length,
+        episodeCount: generatedPlans.length,
         totalShots,
-        avgShotsPerScript: generatedPlans.length > 0 ? Math.round(totalShots / generatedPlans.length * 10) / 10 : 0,
-        generatedScripts: targetScripts.length,
-        skippedScripts,
+        avgShotsPerEpisode: generatedPlans.length > 0 ? Math.round(totalShots / generatedPlans.length * 10) / 10 : 0,
+        generatedEpisodes: targetEpisodes.length,
+        skippedEpisodes,
       },
     })
   } catch (err) {
     console.error("Script-shot generation failed:", err)
-    const scriptsWithShots = await prisma.script.findMany({
+    const episodesWithShots = await prisma.episode.findMany({
       where: { projectId },
-      orderBy: { createdAt: "asc" },
-      include: scriptWithShotsInclude,
+      orderBy: { index: "asc" },
+      include: episodeWithShotsInclude,
     })
-    const allScriptShotPlans = scriptsWithShots.map(toScriptShotPlan)
+    const allScriptShotPlans = episodesWithShots.map(toScriptShotPlan)
     return NextResponse.json(
       {
         error: API_ERRORS.INTERNAL.code,
-        message: "部分剧本生成失败",
+        message: "部分分镜生成失败",
         scriptShotPlans: allScriptShotPlans,
       },
       { status: API_ERRORS.INTERNAL.status }

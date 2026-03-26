@@ -3,12 +3,11 @@
 import { useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { CheckCircle2, Circle, Clock } from "lucide-react"
-import type { Episode, Script, ScriptShotPlan } from "@/lib/types"
+import type { Episode, ScriptShotPlan } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 interface EpisodeNavListProps {
   episodes: Episode[]
-  scripts: Script[]
   scriptShotPlans: ScriptShotPlan[]
   activeEpisodeId: string | null
   onSelectEpisode: (episodeId: string) => void
@@ -16,7 +15,6 @@ interface EpisodeNavListProps {
 
 export function EpisodeNavList({
   episodes,
-  scripts,
   scriptShotPlans,
   activeEpisodeId,
   onSelectEpisode,
@@ -26,19 +24,16 @@ export function EpisodeNavList({
     [episodes]
   )
 
-  const getEpisodeInfo = (episodeId: string) => {
-    const epScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const scriptIds = epScripts.map((s) => s.id)
-    const episodePlans = scriptShotPlans.filter(
-      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
-    )
-    const shotCount = episodePlans.reduce((sum, sb) => sum + sb.shots.length, 0)
+  const getEpisodeInfo = (episode: Episode) => {
+    const plan = scriptShotPlans.find((sb) => sb.episodeId === episode.id)
+    const shotCount = plan?.shots.length ?? 0
+    const hasScript = !!episode.script
 
     let status: "none" | "partial" | "generated" = "none"
-    if (episodePlans.length > 0 && episodePlans.length >= scriptIds.length) status = "generated"
-    else if (episodePlans.length > 0) status = "partial"
+    if (shotCount > 0) status = "generated"
+    else if (hasScript) status = "partial"
 
-    return { scriptCount: scriptIds.length, shotCount, status }
+    return { hasScript, shotCount, status }
   }
 
   return (
@@ -48,7 +43,7 @@ export function EpisodeNavList({
       </div>
       <div className="flex-1 overflow-y-auto py-1 pb-12">
         {episodes.map((ep) => {
-          const info = getEpisodeInfo(ep.id)
+          const info = getEpisodeInfo(ep)
           const isActive = activeEpisodeId === ep.id
           const displayN = displayNumberById.get(ep.id) ?? 1
 
@@ -80,7 +75,7 @@ export function EpisodeNavList({
               </p>
               <div className="flex items-center gap-2 mt-1 ml-5">
                 <span className="text-xs text-muted-foreground">
-                  {info.scriptCount}集剧本
+                  {info.hasScript ? `${ep.script.length}字剧本` : "无剧本"}
                 </span>
                 {info.shotCount > 0 && (
                   <>

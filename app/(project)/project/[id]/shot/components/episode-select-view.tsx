@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { CheckCircle2, Circle, Clock, ChevronRight, Film } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Episode, Script, ScriptShotPlan } from "@/lib/types"
+import type { Episode, ScriptShotPlan } from "@/lib/types"
 import {
   buildEpisodeDisplayNumberMap,
   sortEpisodesByChapterAndIndex,
@@ -11,14 +11,12 @@ import {
 
 interface EpisodeSelectViewProps {
   episodes: Episode[]
-  scripts: Script[]
   scriptShotPlans: ScriptShotPlan[]
   onSelectEpisode: (episodeId: string) => void
 }
 
 export function EpisodeSelectView({
   episodes,
-  scripts,
   scriptShotPlans,
   onSelectEpisode,
 }: EpisodeSelectViewProps) {
@@ -32,18 +30,15 @@ export function EpisodeSelectView({
   )
 
   const getEpisodeInfo = (episodeId: string) => {
-    const epScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const scriptIds = epScripts.map((s) => s.id)
-    const episodePlans = scriptShotPlans.filter(
-      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
-    )
-    const shotCount = episodePlans.reduce((sum, sb) => sum + sb.shots.length, 0)
+    const plan = scriptShotPlans.find((sb) => sb.episodeId === episodeId)
+    const shotCount = plan?.shots.length ?? 0
+    const hasScript = !!episodes.find((ep) => ep.id === episodeId)?.script
 
     let status: "none" | "partial" | "generated" = "none"
-    if (episodePlans.length > 0 && episodePlans.length >= scriptIds.length) status = "generated"
-    else if (episodePlans.length > 0) status = "partial"
+    if (shotCount > 0) status = "generated"
+    else if (hasScript) status = "partial"
 
-    return { scriptCount: scriptIds.length, shotCount, status }
+    return { hasScript, shotCount, status }
   }
 
   const statusConfig = {
@@ -55,7 +50,7 @@ export function EpisodeSelectView({
     },
     partial: {
       icon: Clock,
-      label: "部分生成",
+      label: "有剧本",
       className: "text-yellow-600",
       badgeClass: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800",
     },
@@ -132,7 +127,7 @@ export function EpisodeSelectView({
                 {/* Stats */}
                 <div className="flex items-center gap-3 mt-auto pt-3 border-t border-border/60">
                   <span className="text-xs text-muted-foreground">
-                    {info.scriptCount} 个场景
+                    {info.hasScript ? `${ep.script.length}字剧本` : "无剧本"}
                   </span>
                   {info.shotCount > 0 && (
                     <>

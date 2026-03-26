@@ -2,17 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
-const scriptInclude = {
-  episode: {
-    select: {
-      id: true,
-      index: true,
-      title: true,
-      chapterIds: true,
-    },
-  },
-}
-
 export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
@@ -22,35 +11,29 @@ export const GET = withError(async (request: NextRequest) => {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
-  const where: Record<string, string> = { projectId }
-  if (episodeId) where.episodeId = episodeId
+  const where: Record<string, string> = { projectId: projectId! }
+  if (episodeId) where.id = episodeId
 
-  const scripts = await prisma.script.findMany({
+  const episodes = await prisma.episode.findMany({
     where,
-    orderBy: { createdAt: "asc" },
-    include: scriptInclude,
+    orderBy: { index: "asc" },
   })
 
-  return NextResponse.json(scripts)
+  return NextResponse.json(episodes)
 })
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
-  const { projectId, episodeId, title } = body
+  const { projectId, episodeId } = body
 
-  if (!projectId || !episodeId || !title) {
-    throwCutGoError("MISSING_PARAMS", "projectId, episodeId, title are required")
+  if (!projectId || !episodeId) {
+    throwCutGoError("MISSING_PARAMS", "projectId, episodeId are required")
   }
 
-  const existing = await prisma.script.findUnique({ where: { episodeId } })
-  if (existing) {
-    throwCutGoError("CONFLICT", "该分集已有剧本")
+  const episode = await prisma.episode.findUnique({ where: { id: episodeId } })
+  if (!episode) {
+    throwCutGoError("NOT_FOUND", "分集不存在")
   }
 
-  const script = await prisma.script.create({
-    data: { projectId, episodeId, title },
-    include: scriptInclude,
-  })
-
-  return NextResponse.json(script, { status: 201 })
+  return NextResponse.json(episode, { status: 201 })
 })

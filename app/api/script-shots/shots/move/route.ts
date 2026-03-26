@@ -2,26 +2,26 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
-  const { shotId, sourceScriptId, targetScriptId, targetIndex } = await request.json()
+  const { shotId, sourceEpisodeId, targetEpisodeId, targetIndex } = await request.json()
 
-  if (!shotId || !sourceScriptId || !targetScriptId || targetIndex === undefined) {
+  if (!shotId || !sourceEpisodeId || !targetEpisodeId || targetIndex === undefined) {
     return NextResponse.json(
-      { error: "shotId, sourceScriptId, targetScriptId, targetIndex are required" },
+      { error: "shotId, sourceEpisodeId, targetEpisodeId, targetIndex are required" },
       { status: 400 }
     )
   }
 
-  if (sourceScriptId === targetScriptId) {
-    return NextResponse.json({ error: "源和目标剧本相同，请使用 reorder 接口" }, { status: 400 })
+  if (sourceEpisodeId === targetEpisodeId) {
+    return NextResponse.json({ error: "源和目标分集相同，请使用 reorder 接口" }, { status: 400 })
   }
 
   await prisma.shot.update({
     where: { id: shotId },
-    data: { scriptId: targetScriptId, index: -1 },
+    data: { episodeId: targetEpisodeId, index: -1 },
   })
 
   const sourceShots = await prisma.shot.findMany({
-    where: { scriptId: sourceScriptId },
+    where: { episodeId: sourceEpisodeId },
     orderBy: { index: "asc" },
   })
   for (let i = 0; i < sourceShots.length; i++) {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   const targetShots = await prisma.shot.findMany({
-    where: { scriptId: targetScriptId, id: { not: shotId } },
+    where: { episodeId: targetEpisodeId, id: { not: shotId } },
     orderBy: { index: "asc" },
   })
   const shotsToShift = targetShots.filter((s) => s.index >= targetIndex)
@@ -51,16 +51,16 @@ export async function POST(request: NextRequest) {
   })
 
   const finalSource = await prisma.shot.findMany({
-    where: { scriptId: sourceScriptId },
+    where: { episodeId: sourceEpisodeId },
     orderBy: { index: "asc" },
   })
   const finalTarget = await prisma.shot.findMany({
-    where: { scriptId: targetScriptId },
+    where: { episodeId: targetEpisodeId },
     orderBy: { index: "asc" },
   })
 
   return NextResponse.json({
-    source: { id: sourceScriptId, shots: finalSource },
-    target: { id: targetScriptId, shots: finalTarget },
+    source: { id: sourceEpisodeId, shots: finalSource },
+    target: { id: targetEpisodeId, shots: finalTarget },
   })
 }

@@ -18,7 +18,6 @@ import type {
   AssetProp,
   AssetScene,
   Episode,
-  Script,
   Chapter,
 } from "@/lib/types"
 import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
@@ -40,7 +39,6 @@ function parseJsonArray(val: string | null | undefined): string[] {
 }
 
 interface ScriptEditorProps {
-  script: Script
   episode: Episode
   chapters?: Chapter[]
   /** 全项目分集排序后的展示集序号（第 1、2… 集），非数据库 index 字段 */
@@ -64,7 +62,6 @@ interface ScriptEditorProps {
 }
 
 export function ScriptEditor({
-  script,
   episode,
   chapters = [],
   episodeDisplayNumber,
@@ -74,7 +71,7 @@ export function ScriptEditor({
   onUpdateScript,
   onUpdateEpisode,
 }: ScriptEditorProps) {
-  const [content, setContent] = useState(script.content ?? "")
+  const [content, setContent] = useState(episode.script ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -92,7 +89,7 @@ export function ScriptEditor({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const gutterRef = useRef<HTMLDivElement>(null)
-  const isDirty = content !== (script.content ?? "")
+  const isDirty = content !== (episode.script ?? "")
 
   const characterIds = parseJsonArray(episode.characters)
   const sceneIds = parseJsonArray(episode.scenes)
@@ -105,9 +102,9 @@ export function ScriptEditor({
   const boundProps = assetProps.filter((p) => propIds.includes(p.id))
 
   useEffect(() => {
-    setContent(script.content ?? "")
+    setContent(episode.script ?? "")
     setSaved(false)
-  }, [script.id, script.content])
+  }, [episode.id, episode.script])
 
   useEffect(() => {
     setTitleValue(episode.title)
@@ -129,7 +126,7 @@ export function ScriptEditor({
         clearTimeout(saveTimerRef.current)
         saveTimerRef.current = null
       }
-      const server = script.content ?? ""
+      const server = episode.script ?? ""
       if (newContent === server) return
       saveTimerRef.current = setTimeout(async () => {
         setSaving(true)
@@ -142,7 +139,7 @@ export function ScriptEditor({
         }
       }, 800)
     },
-    [script.content, onUpdateScript]
+    [episode.script, onUpdateScript]
   )
 
   const handleContentChange = (v: string) => {
@@ -165,7 +162,7 @@ export function ScriptEditor({
 
   const handleDiscard = () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    setContent(script.content ?? "")
+    setContent(episode.script ?? "")
     setSaved(false)
   }
 
@@ -237,7 +234,7 @@ export function ScriptEditor({
     const trimmedKeyConflict = keyConflictValue.trim()
     const trimmedCliffhanger = cliffhangerValue.trim()
 
-    const hasChanged = 
+    const hasChanged =
       trimmedOutline !== (episode.outline ?? "").trim() ||
       trimmedGoldenHook !== (episode.goldenHook ?? "").trim() ||
       trimmedKeyConflict !== (episode.keyConflict ?? "").trim() ||
@@ -250,7 +247,7 @@ export function ScriptEditor({
 
     setSavingOutline(true)
     try {
-      await onUpdateEpisode?.({ 
+      await onUpdateEpisode?.({
         outline: trimmedOutline || null,
         goldenHook: trimmedGoldenHook || null,
         keyConflict: trimmedKeyConflict || null,
@@ -278,7 +275,7 @@ export function ScriptEditor({
 
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
-  
+
   const episodeChapterIds = parseSourceChapterIds(episode)
   const sourceChapterCount = episodeChapterIds.length
   const chapterOrderMap = new Map((chapters ?? []).map((ch, idx) => [ch.id, idx]))
@@ -384,13 +381,11 @@ export function ScriptEditor({
             <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
               {/* 资产区 */}
               <div className="mb-4 space-y-2.5">
-                {/* <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label> */}
                 <div className="px-4 py-2 bg-muted/20 border-b flex items-center justify-between">
                   <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
                     <School className="size-3" />
-                    关联资产 
+                    关联资产
                   </Label>
-
                 </div>
                 <div className="grid grid-cols-3 gap-3 px-4">
                   {/* Scene */}
@@ -594,7 +589,7 @@ export function ScriptEditor({
                 </div>
               </div>
 
-              
+
               {/* 大纲区块 */}
               <div className="shrink-0 space-y-4 pb-6">
                 <div className="px-4 py-2 bg-muted/20 border-y flex items-center justify-between">
@@ -615,7 +610,7 @@ export function ScriptEditor({
                   )}
                 </div>
 
-                {/* 详细大纲 (放在最上面，去掉颜色) */}
+                {/* 详细大纲 */}
                 <div className="px-4 group/outline relative">
                   <div className="flex items-center justify-between mb-1.5">
                     <Label className="text-xs font-semibold text-muted-foreground">大纲详情</Label>
@@ -640,9 +635,8 @@ export function ScriptEditor({
                   )}
                 </div>
 
-                {/* 黄金钩子 & 核心冲突 (左右布局) */}
+                {/* 黄金钩子 & 核心冲突 */}
                 <div className="px-4 grid grid-cols-2 gap-4">
-                  {/* 黄金钩子 */}
                   <div className="group/goldenHook relative">
                     <div className="flex items-center justify-between mb-1.5">
                       <Label className="text-xs font-semibold text-amber-600 dark:text-amber-400">黄金钩子</Label>
@@ -666,7 +660,6 @@ export function ScriptEditor({
                     )}
                   </div>
 
-                  {/* 核心冲突 */}
                   <div className="group/conflict relative">
                     <div className="flex items-center justify-between mb-1.5">
                       <Label className="text-xs font-semibold text-rose-600 dark:text-rose-400">核心冲突</Label>
@@ -691,7 +684,7 @@ export function ScriptEditor({
                   </div>
                 </div>
 
-                {/* 结尾悬念 (放下面) */}
+                {/* 结尾悬念 */}
                 <div className="px-4 group/cliffhanger relative">
                   <div className="flex items-center justify-between mb-1.5">
                     <Label className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">结尾悬念</Label>
@@ -749,25 +742,23 @@ export function ScriptEditor({
                     <BookOpen className="size-3" />
                     关联章节 ({sourceChapters.length})
                   </Label>
-
                 </div>
                 {sourceChapters.length > 0 && (
-                    <div className="px-4 flex flex-wrap gap-1.5">
-                      {sourceChapters.map((ch) => (
-                        <Badge 
-                          key={ch.id} 
-                          variant="outline" 
-                          className="bg-background/50 text-[10px] font-medium py-0.5 px-2 hover:bg-muted transition-colors cursor-default"
-                          title={ch.title || undefined}
-                        >
-                          <span className="text-muted-foreground mr-1">{formatChapterOrdinalLabel(chapterOrderMap.get(ch.id) ?? 0)}</span>
-                          {ch.title || "未命名"}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  <div className="px-4 flex flex-wrap gap-1.5">
+                    {sourceChapters.map((ch) => (
+                      <Badge
+                        key={ch.id}
+                        variant="outline"
+                        className="bg-background/50 text-[10px] font-medium py-0.5 px-2 hover:bg-muted transition-colors cursor-default"
+                        title={ch.title || undefined}
+                      >
+                        <span className="text-muted-foreground mr-1">{formatChapterOrdinalLabel(chapterOrderMap.get(ch.id) ?? 0)}</span>
+                        {ch.title || "未命名"}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
-            
 
             </div>
           </ResizablePanel>

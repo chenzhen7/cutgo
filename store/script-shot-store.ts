@@ -6,7 +6,6 @@ import type {
   ScriptShotGenerateStatus,
   ScriptShotGenerateProgress,
   Episode,
-  Script,
   AssetCharacter,
   AssetScene,
   AssetProp,
@@ -16,7 +15,6 @@ import { apiFetch } from "@/lib/api-client"
 interface ScriptShotState {
   scriptShotPlans: ScriptShotPlan[]
   episodes: Episode[]
-  scripts: Script[]
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -35,38 +33,36 @@ interface ScriptShotState {
 
   fetchScriptShotPlans: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<Episode[]>
-  fetchScripts: (projectId: string) => Promise<void>
   fetchAssets: (projectId: string) => Promise<void>
 
   generateScriptShots: (
     projectId: string,
     episodeIds?: string[],
-    scriptIds?: string[],
     mode?: "skip_existing" | "overwrite"
   ) => Promise<void>
 
-  createScriptShotPlan: (projectId: string, scriptId: string) => Promise<void>
-  updateScriptShotPlan: (scriptId: string, data: { status?: string }) => Promise<void>
-  deleteScriptShotPlan: (scriptId: string) => Promise<void>
+  createScriptShotPlan: (projectId: string, episodeId: string) => Promise<void>
+  updateScriptShotPlan: (episodeId: string, data: { status?: string }) => Promise<void>
+  deleteScriptShotPlan: (episodeId: string) => Promise<void>
 
-  addShot: (scriptId: string, data: ShotInput) => Promise<void>
-  updateShot: (scriptId: string, shotId: string, data: Partial<ShotInput>) => Promise<void>
-  deleteShot: (scriptId: string, shotId: string) => Promise<void>
-  duplicateShot: (scriptId: string, shotId: string) => Promise<void>
-  reorderShots: (scriptId: string, orderedIds: string[]) => Promise<void>
+  addShot: (episodeId: string, data: ShotInput) => Promise<void>
+  updateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => Promise<void>
+  deleteShot: (episodeId: string, shotId: string) => Promise<void>
+  duplicateShot: (episodeId: string, shotId: string) => Promise<void>
+  reorderShots: (episodeId: string, orderedIds: string[]) => Promise<void>
 
   moveShot: (
     shotId: string,
-    sourceScriptId: string,
-    targetScriptId: string,
+    sourceEpisodeId: string,
+    targetEpisodeId: string,
     targetIndex: number
   ) => Promise<void>
 
-  optimizePrompt: (scriptId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
+  optimizePrompt: (episodeId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
 
-  generateImage: (scriptId: string, shotId: string) => Promise<void>
+  generateImage: (episodeId: string, shotId: string) => Promise<void>
   generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
-  clearImage: (scriptId: string, shotId: string) => Promise<void>
+  clearImage: (episodeId: string, shotId: string) => Promise<void>
 
   setActiveEpisodeId: (episodeId: string | null) => void
   setActiveShotId: (shotId: string | null) => void
@@ -82,11 +78,11 @@ interface ScriptShotState {
   prevShot: () => { shot: Shot; scriptShotPlan: ScriptShotPlan } | null
   episodeScriptShotStatus: (episodeId: string) => "none" | "partial" | "generated" | "generating" | "error"
   scriptShotStats: () => {
-    scriptCount: number
+    episodeCount: number
     totalShots: number
-    avgShotsPerScript: number
+    avgShotsPerEpisode: number
     coverage: string
-    totalScripts: number
+    totalEpisodes: number
   }
 
   reset: () => void
@@ -95,7 +91,6 @@ interface ScriptShotState {
 export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   scriptShotPlans: [],
   episodes: [],
-  scripts: [],
   assetCharacters: [],
   assetScenes: [],
   assetProps: [],
@@ -133,15 +128,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  fetchScripts: async (projectId) => {
-    try {
-      const data = await apiFetch<Script[]>(`/api/scripts?projectId=${projectId}`)
-      set({ scripts: data || [] })
-    } catch {
-      // 非关键数据加载，静默失败
-    }
-  },
-
   fetchAssets: async (projectId) => {
     try {
       const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(
@@ -157,12 +143,12 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  generateScriptShots: async (projectId, episodeIds, scriptIds, mode = "skip_existing") => {
+  generateScriptShots: async (projectId, episodeIds, mode = "skip_existing") => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
       const data = await apiFetch<{ scriptShotPlans?: ScriptShotPlan[] }>("/api/script-shots/generate", {
         method: "POST",
-        body: { projectId, episodeIds, scriptIds, mode },
+        body: { projectId, episodeIds, mode },
       })
       set({
         scriptShotPlans: data.scriptShotPlans || [],
@@ -178,69 +164,69 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  createScriptShotPlan: async (projectId, scriptId) => {
+  createScriptShotPlan: async (projectId, episodeId) => {
     const sb = await apiFetch<ScriptShotPlan>("/api/script-shots", {
       method: "POST",
-      body: { projectId, scriptId },
+      body: { projectId, episodeId },
     })
     set({ scriptShotPlans: [...get().scriptShotPlans, sb] })
   },
 
-  updateScriptShotPlan: async (scriptId, data) => {
-    const updated = await apiFetch<ScriptShotPlan>(`/api/script-shots/${scriptId}`, {
+  updateScriptShotPlan: async (episodeId, data) => {
+    const updated = await apiFetch<ScriptShotPlan>(`/api/script-shots/${episodeId}`, {
       method: "PATCH",
       body: data,
     })
-    set({ scriptShotPlans: get().scriptShotPlans.map((sb) => (sb.id === scriptId ? { ...sb, ...updated } : sb)) })
+    set({ scriptShotPlans: get().scriptShotPlans.map((sb) => (sb.id === episodeId ? { ...sb, ...updated } : sb)) })
   },
 
-  deleteScriptShotPlan: async (scriptId) => {
-    await apiFetch(`/api/script-shots/${scriptId}`, { method: "DELETE" })
-    set({ scriptShotPlans: get().scriptShotPlans.filter((sb) => sb.id !== scriptId) })
+  deleteScriptShotPlan: async (episodeId) => {
+    await apiFetch(`/api/script-shots/${episodeId}`, { method: "DELETE" })
+    set({ scriptShotPlans: get().scriptShotPlans.map((sb) => sb.id === episodeId ? { ...sb, shots: [] } : sb) })
   },
 
-  addShot: async (scriptId, data) => {
-    const shots = await apiFetch<Shot[]>(`/api/script-shots/${scriptId}/shots`, {
+  addShot: async (episodeId, data) => {
+    const shots = await apiFetch<Shot[]>(`/api/script-shots/${episodeId}/shots`, {
       method: "POST",
       body: data,
     })
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === scriptId ? { ...sb, shots, status: "edited" as const } : sb
+        sb.id === episodeId ? { ...sb, shots } : sb
       ),
     })
   },
 
-  updateShot: async (scriptId, shotId, data) => {
-    const updated = await apiFetch<Shot>(`/api/script-shots/${scriptId}/shots/${shotId}`, {
+  updateShot: async (episodeId, shotId, data) => {
+    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
       method: "PATCH",
       body: data,
     })
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === scriptId
-          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)), status: "edited" as const }
+        sb.id === episodeId
+          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
           : sb
       ),
     })
   },
 
-  deleteShot: async (scriptId, shotId) => {
-    const shots = await apiFetch<Shot[]>(`/api/script-shots/${scriptId}/shots/${shotId}`, {
+  deleteShot: async (episodeId, shotId) => {
+    const shots = await apiFetch<Shot[]>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
       method: "DELETE",
     })
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === scriptId ? { ...sb, shots } : sb
+        sb.id === episodeId ? { ...sb, shots } : sb
       ),
     })
   },
 
-  duplicateShot: async (scriptId, shotId) => {
-    const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
+  duplicateShot: async (episodeId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
-    await get().addShot(scriptId, {
+    await get().addShot(episodeId, {
       shotSize: "medium",
       composition: shot.composition,
       prompt: shot.prompt,
@@ -255,47 +241,47 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     })
   },
 
-  reorderShots: async (scriptId, orderedIds) => {
-    const shots = await apiFetch<Shot[]>(`/api/script-shots/${scriptId}/shots/reorder`, {
+  reorderShots: async (episodeId, orderedIds) => {
+    const shots = await apiFetch<Shot[]>(`/api/script-shots/${episodeId}/shots/reorder`, {
       method: "PUT",
       body: { orderedIds },
     })
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === scriptId ? { ...sb, shots } : sb
+        sb.id === episodeId ? { ...sb, shots } : sb
       ),
     })
   },
 
-  moveShot: async (shotId, sourceScriptId, targetScriptId, targetIndex) => {
+  moveShot: async (shotId, sourceEpisodeId, targetEpisodeId, targetIndex) => {
     const { source, target } = await apiFetch<{ source: { shots: Shot[] }; target: { shots: Shot[] } }>(
       "/api/script-shots/shots/move",
       {
         method: "POST",
-        body: { shotId, sourceScriptId, targetScriptId, targetIndex },
+        body: { shotId, sourceEpisodeId, targetEpisodeId, targetIndex },
       }
     )
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) => {
-        if (sb.id === sourceScriptId) return { ...sb, shots: source.shots }
-        if (sb.id === targetScriptId) return { ...sb, shots: target.shots }
+        if (sb.id === sourceEpisodeId) return { ...sb, shots: source.shots }
+        if (sb.id === targetEpisodeId) return { ...sb, shots: target.shots }
         return sb
       }),
     })
   },
 
-  optimizePrompt: async (scriptId, shotId) => {
-    const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
+  optimizePrompt: async (episodeId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) throw new Error("镜头不存在")
     return apiFetch<{ optimizedPrompt: string; negativePrompt: string }>(
-      `/api/script-shots/${scriptId}/shots/${shotId}/optimize-prompt`,
+      `/api/script-shots/${episodeId}/shots/${shotId}/optimize-prompt`,
       { method: "POST", body: { currentPrompt: shot.prompt } }
     )
   },
 
-  generateImage: async (scriptId, shotId) => {
-    const sb = get().scriptShotPlans.find((s) => s.id === scriptId)
+  generateImage: async (episodeId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
 
@@ -326,7 +312,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
 
       set({
         scriptShotPlans: get().scriptShotPlans.map((s) =>
-          s.id === scriptId
+          s.id === episodeId
             ? { ...s, shots: s.shots.map((sh) => (sh.id === shotId ? updatedShot : sh)) }
             : s
         ),
@@ -381,14 +367,14 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  clearImage: async (scriptId, shotId) => {
-    const updated = await apiFetch<Shot>(`/api/script-shots/${scriptId}/shots/${shotId}`, {
+  clearImage: async (episodeId, shotId) => {
+    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
       method: "PATCH",
       body: { imageUrl: null, imageUrls: null },
     })
     set({
       scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === scriptId
+        sb.id === episodeId
           ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
           : sb
       ),
@@ -421,9 +407,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   activeEpisodeScriptShots: () => {
     const { scriptShotPlans, activeEpisodeId } = get()
     if (!activeEpisodeId) return scriptShotPlans
-    return scriptShotPlans.filter(
-      (sb) => sb.script?.episodeId === activeEpisodeId
-    )
+    return scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
   },
 
   activeShot: () => {
@@ -440,7 +424,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const { scriptShotPlans, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
     const episodeSbs = activeEpisodeId
-      ? scriptShotPlans.filter((sb) => sb.script?.episodeId === activeEpisodeId)
+      ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
       : scriptShotPlans
     const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, scriptShotPlan: sb })))
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
@@ -451,7 +435,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const { scriptShotPlans, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
     const episodeSbs = activeEpisodeId
-      ? scriptShotPlans.filter((sb) => sb.script?.episodeId === activeEpisodeId)
+      ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
       : scriptShotPlans
     const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, scriptShotPlan: sb })))
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
@@ -459,30 +443,24 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   episodeScriptShotStatus: (episodeId) => {
-    const { scriptShotPlans, scripts, generateStatus } = get()
+    const { scriptShotPlans, generateStatus } = get()
     if (generateStatus === "generating") return "generating"
-    const episodeScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const scriptIds = episodeScripts.map((s) => s.id)
-    if (scriptIds.length === 0) return "none"
-    const generatedCount = scriptShotPlans.filter(
-      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
-    ).length
-    if (generatedCount === 0) return "none"
-    if (generatedCount < scriptIds.length) return "partial"
+    const plan = scriptShotPlans.find((sb) => sb.episodeId === episodeId)
+    if (!plan || plan.shots.length === 0) return "none"
     return "generated"
   },
 
   scriptShotStats: () => {
-    const { scriptShotPlans, scripts } = get()
-    const totalScripts = scripts.length
+    const { scriptShotPlans, episodes } = get()
+    const totalEpisodes = episodes.length
     const generatedSbs = scriptShotPlans.filter((sb) => sb.shots.length > 0)
     const totalShots = scriptShotPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
     return {
-      scriptCount: generatedSbs.length,
+      episodeCount: generatedSbs.length,
       totalShots,
-      avgShotsPerScript: generatedSbs.length > 0 ? Math.round((totalShots / generatedSbs.length) * 10) / 10 : 0,
-      coverage: `${generatedSbs.length}/${totalScripts}`,
-      totalScripts,
+      avgShotsPerEpisode: generatedSbs.length > 0 ? Math.round((totalShots / generatedSbs.length) * 10) / 10 : 0,
+      coverage: `${generatedSbs.length}/${totalEpisodes}`,
+      totalEpisodes,
     }
   },
 
@@ -490,7 +468,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     set({
       scriptShotPlans: [],
       episodes: [],
-      scripts: [],
       assetCharacters: [],
       assetScenes: [],
       assetProps: [],

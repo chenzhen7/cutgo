@@ -13,14 +13,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertTriangle, Film, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import type { Episode, Script } from "@/lib/types"
+import type { Episode } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 interface ChapterSelectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   episodes: Episode[]
-  scripts: Script[]
   /** 按列表顺序传递所选分集 ID */
   onGenerate: (episodeIdsOrdered: string[]) => void | Promise<void>
 }
@@ -29,15 +28,9 @@ export function ChapterSelectDialog({
   open,
   onOpenChange,
   episodes,
-  scripts,
   onGenerate,
 }: ChapterSelectDialogProps) {
   const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<string[]>([])
-
-  const scriptEpisodeIds = useMemo(
-    () => new Set(scripts.map((s) => s.episodeId)),
-    [scripts]
-  )
 
   const sortedEpisodes = useMemo(
     () => [...episodes].sort((a, b) => a.index - b.index),
@@ -57,10 +50,8 @@ export function ChapterSelectDialog({
 
   const hasOverwriteRisk = useMemo(() => {
     const set = new Set(selectedEpisodeIds)
-    return sortedEpisodes.some(
-      (ep) => set.has(ep.id) && scriptEpisodeIds.has(ep.id)
-    )
-  }, [sortedEpisodes, selectedEpisodeIds, scriptEpisodeIds])
+    return sortedEpisodes.some((ep) => set.has(ep.id) && !!ep.script)
+  }, [sortedEpisodes, selectedEpisodeIds])
 
   const toggleEpisode = (episodeId: string) => {
     setSelectedEpisodeIds((prev) =>
@@ -80,7 +71,7 @@ export function ChapterSelectDialog({
   const selectUngenerated = () => {
     setSelectedEpisodeIds(
       sortedEpisodes
-        .filter((ep) => !scriptEpisodeIds.has(ep.id))
+        .filter((ep) => !ep.script)
         .map((ep) => ep.id)
     )
   }
@@ -125,7 +116,7 @@ export function ChapterSelectDialog({
             ) : (
               sortedEpisodes.map((ep) => {
                 const checked = selectedEpisodeIds.includes(ep.id)
-                const hasScript = scriptEpisodeIds.has(ep.id)
+                const hasScript = !!ep.script
                 const displayNum = episodeDisplayMap.get(ep.id) ?? 1
                 return (
                   <label

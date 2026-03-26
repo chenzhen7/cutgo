@@ -5,7 +5,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: scriptId } = await params
+  const { id: episodeId } = await params
   const { orderedIds } = await request.json()
 
   if (!Array.isArray(orderedIds)) {
@@ -20,7 +20,7 @@ export async function PUT(
   }
 
   const shots = await prisma.shot.findMany({
-    where: { scriptId },
+    where: { episodeId },
     orderBy: { index: "asc" },
   })
 

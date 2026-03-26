@@ -183,7 +183,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
 
   initFromScriptShotPlans: (scriptShotPlans, episodes, episodeId) => {
     const filteredPlans = episodeId
-      ? scriptShotPlans.filter((sb) => sb.script?.episode?.id === episodeId)
+      ? scriptShotPlans.filter((sb) => sb.episodeId === episodeId)
       : scriptShotPlans
 
     const shotsWithVideo = filteredPlans

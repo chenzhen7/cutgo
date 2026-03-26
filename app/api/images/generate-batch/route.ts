@@ -60,7 +60,7 @@ async function generateForShot(shot: {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { projectId, episodeId, scriptId, mode = "missing_only" } = body
+  const { projectId, episodeId, mode = "missing_only" } = body
 
   if (!projectId) {
     return NextResponse.json({ error: "projectId is required" }, { status: 400 })
@@ -71,12 +71,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 })
   }
 
-  const where: Record<string, unknown> = { script: { projectId } }
+  const where: Record<string, unknown> = { episode: { projectId } }
 
-  if (scriptId) {
-    where.scriptId = scriptId
-  } else if (episodeId) {
-    where.script = { projectId, episodeId }
+  if (episodeId) {
+    where.episodeId = episodeId
   }
 
   if (mode === "missing_only") {
@@ -85,7 +83,7 @@ export async function POST(request: NextRequest) {
 
   const shots = await prisma.shot.findMany({
     where,
-    orderBy: [{ scriptId: "asc" }, { index: "asc" }],
+    orderBy: [{ episodeId: "asc" }, { index: "asc" }],
     select: {
       id: true,
       prompt: true,

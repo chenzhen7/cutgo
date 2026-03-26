@@ -2,45 +2,40 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
-const scriptWithShotsInclude = {
-  episode: { select: { id: true, index: true, title: true } },
+const episodeWithShotsInclude = {
   shots: { orderBy: { index: "asc" as const } },
 }
 
-function toScriptShotPlan(script: {
+function toScriptShotPlan(episode: {
   id: string
   projectId: string
-  status: string
+  index: number
+  title: string
+  script: string
   createdAt: Date
   updatedAt: Date
-  title: string
-  content: string
-  episodeId: string
-  episode: { id: string; index: number; title: string }
   shots: unknown[]
 }) {
   return {
-    id: script.id,
-    projectId: script.projectId,
-    scriptId: script.id,
-    script: {
-      id: script.id,
-      title: script.title,
-      content: script.content,
-      episodeId: script.episodeId,
-      episode: script.episode,
+    id: episode.id,
+    projectId: episode.projectId,
+    episodeId: episode.id,
+    episode: {
+      id: episode.id,
+      index: episode.index,
+      title: episode.title,
+      script: episode.script,
     },
-    status: script.status,
-    shots: script.shots,
-    createdAt: script.createdAt,
-    updatedAt: script.updatedAt,
+    status: episode.script ? "generated" : "draft",
+    shots: episode.shots,
+    createdAt: episode.createdAt,
+    updatedAt: episode.updatedAt,
   }
 }
 
 export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get("projectId")
-  const scriptId = searchParams.get("scriptId")
   const episodeId = searchParams.get("episodeId")
 
   if (!projectId) {
@@ -48,34 +43,29 @@ export const GET = withError(async (request: NextRequest) => {
   }
 
   const where: Record<string, unknown> = { projectId }
+  if (episodeId) where.id = episodeId
 
-  if (scriptId) {
-    where.id = scriptId
-  } else if (episodeId) {
-    where.episodeId = episodeId
-  }
-
-  const scripts = await prisma.script.findMany({
+  const episodes = await prisma.episode.findMany({
     where,
-    include: scriptWithShotsInclude,
-    orderBy: { createdAt: "asc" },
+    include: episodeWithShotsInclude,
+    orderBy: { index: "asc" },
   })
 
-  return NextResponse.json(scripts.map(toScriptShotPlan))
+  return NextResponse.json(episodes.map(toScriptShotPlan))
 })
 
 export const POST = withError(async (request: NextRequest) => {
-  const { projectId, scriptId } = await request.json()
+  const { projectId, episodeId } = await request.json()
 
-  if (!projectId || !scriptId) {
-    throwCutGoError("MISSING_PARAMS", "projectId and scriptId are required")
+  if (!projectId || !episodeId) {
+    throwCutGoError("MISSING_PARAMS", "projectId and episodeId are required")
   }
 
-  const script = await prisma.script.findFirst({
-    where: { id: scriptId, projectId },
-    include: scriptWithShotsInclude,
+  const episode = await prisma.episode.findFirst({
+    where: { id: episodeId, projectId },
+    include: episodeWithShotsInclude,
   })
-  if (!script) throwCutGoError("NOT_FOUND", "script not found")
+  if (!episode) throwCutGoError("NOT_FOUND", "分集不存在")
 
-  return NextResponse.json(toScriptShotPlan(script))
+  return NextResponse.json(toScriptShotPlan(episode!))
 })

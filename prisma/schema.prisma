@@ -45,7 +45,6 @@ model Project {
 
   novel    Novel?
   episodes Episode[]
-  scripts  Script[]
 
   assetCharacters   AssetCharacter[]
   assetScenes       AssetScene[]
@@ -148,33 +147,16 @@ model Episode {
   /// JSON 字符串数组：本集涉及的道具资产id列表
   props      String?
 
-  script            Script?
+  /// 剧本正文（不为空说明该分集存在剧本）
+  script String @default("")
+
+  shots             Shot[]
   videoCompositions VideoComposition[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-/// 分集剧本（与 Episode 一对一）
-model Script {
-  id        String  @id @default(cuid())
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  episodeId String  @unique
-  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
-  /// 剧本标题
-  title      String
-  /// 剧本文本正文
-  content    String    @default("")
-  /// 状态：draft | generated | edited
-  status     String    @default("draft")
-  shots Shot[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 // ── Asset Models ──
 
@@ -282,9 +264,9 @@ model VideoComposition {
 
 /// 分镜镜头
 model Shot {
-  id       String @id @default(cuid())
-  scriptId String
-  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  episodeId String
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
   /// 镜头序号
   index           Int

@@ -40,7 +40,6 @@ export default function ScriptShotPage() {
   const {
     scriptShotPlans,
     episodes,
-    scripts,
     assetCharacters,
     assetScenes,
     assetProps,
@@ -55,7 +54,6 @@ export default function ScriptShotPage() {
     batchImageProgress,
     fetchScriptShotPlans,
     fetchEpisodes,
-    fetchScripts,
     fetchAssets,
     generateScriptShots,
     addShot,
@@ -77,7 +75,7 @@ export default function ScriptShotPage() {
 
   const [view, setView] = useState<"episode-select" | "script-shot-list">("script-shot-list")
   const [loading, setLoading] = useState(true)
-  const [deletingShotInfo, setDeletingShotInfo] = useState<{ scriptId: string; shotId: string } | null>(null)
+  const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   // Video generation mock state
@@ -92,7 +90,6 @@ export default function ScriptShotPage() {
       setLoading(true)
       const [eps] = await Promise.all([
         fetchEpisodes(projectId),
-        fetchScripts(projectId),
         fetchScriptShotPlans(projectId),
         fetchAssets(projectId),
       ])
@@ -125,28 +122,28 @@ export default function ScriptShotPage() {
 
   const handleGenerateAll = useCallback(
     async (mode: "skip_existing" | "overwrite") => {
-      await generateScriptShots(projectId, undefined, undefined, mode)
+      await generateScriptShots(projectId, undefined, mode)
     },
     [projectId, generateScriptShots]
   )
 
   const handleGenerateEpisodes = useCallback(
     async (episodeIds: string[]) => {
-      await generateScriptShots(projectId, episodeIds, undefined, "overwrite")
+      await generateScriptShots(projectId, episodeIds, "overwrite")
     },
     [projectId, generateScriptShots]
   )
 
   const handleRegenerateScript = useCallback(
-    async (scriptId: string) => {
-      await generateScriptShots(projectId, undefined, [scriptId], "overwrite")
+    async (episodeId: string) => {
+      await generateScriptShots(projectId, [episodeId], "overwrite")
     },
     [projectId, generateScriptShots]
   )
 
   const handleDeleteShot = useCallback(
-    async (scriptId: string, shotId: string) => {
-      await deleteShot(scriptId, shotId)
+    async (episodeId: string, shotId: string) => {
+      await deleteShot(episodeId, shotId)
       setDeletingShotInfo(null)
       if (activeShotId === shotId) {
         setActiveShotId(null)
@@ -156,8 +153,8 @@ export default function ScriptShotPage() {
   )
 
   const handleAddShot = useCallback(
-    async (scriptId: string) => {
-      await addShot(scriptId, {
+    async (episodeId: string) => {
+      await addShot(episodeId, {
         shotSize: "medium",
         composition: "新画面描述",
         prompt: "Cinematic scene, detailed environment, dramatic lighting, photorealistic",
@@ -167,8 +164,8 @@ export default function ScriptShotPage() {
   )
 
   const handleUpdateShot = useCallback(
-    (scriptId: string, shotId: string, data: Partial<ShotInput>) => {
-      updateShot(scriptId, shotId, data)
+    (episodeId: string, shotId: string, data: Partial<ShotInput>) => {
+      updateShot(episodeId, shotId, data)
     },
     [updateShot]
   )
@@ -191,8 +188,8 @@ export default function ScriptShotPage() {
   }, [nextShot, setActiveShotId])
 
   const handleGenerateImage = useCallback(
-    (scriptId: string, shotId: string) => {
-      generateImage(scriptId, shotId)
+    (episodeId: string, shotId: string) => {
+      generateImage(episodeId, shotId)
     },
     [generateImage]
   )
@@ -213,7 +210,7 @@ export default function ScriptShotPage() {
   const handleClearImage = useCallback(() => {
     const active = activeShot()
     if (active) {
-      clearImage(active.scriptShotPlan.id, active.shot.id)
+      clearImage(active.scriptShotPlan.episodeId, active.shot.id)
     }
   }, [activeShot, clearImage])
 
@@ -253,7 +250,7 @@ export default function ScriptShotPage() {
   const handleBatchGenerateVideos = useCallback(
     (mode: "all" | "missing_only") => {
       const allShots = scriptShotPlans.flatMap((plan) =>
-        plan.shots.filter((s) => s.imageUrl).map((s) => ({ scriptId: plan.id, shot: s }))
+        plan.shots.filter((s) => s.imageUrl).map((s) => ({ episodeId: plan.id, shot: s }))
       )
       const targets = mode === "missing_only"
         ? allShots.filter((s) => !s.shot.videoUrl)
@@ -272,7 +269,7 @@ export default function ScriptShotPage() {
             next.delete(target.shot.id)
             return next
           })
-          updateShot(target.scriptId, target.shot.id, {
+          updateShot(target.episodeId, target.shot.id, {
             videoUrl: `/testVideo.mp4`,
             videoStatus: "completed",
             videoDuration: "5s",
@@ -293,16 +290,16 @@ export default function ScriptShotPage() {
 
   const handleBatchGenerateEpisodeVideos = useCallback(() => {
     if (!activeEpisodeId) return
-    const episodePlans = scriptShotPlans.filter((plan) => plan.script.episode.id === activeEpisodeId)
+    const episodePlans = scriptShotPlans.filter((plan) => plan.episodeId === activeEpisodeId)
     const targets = episodePlans.flatMap((plan) =>
-      plan.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ scriptId: plan.id, shot: s }))
+      plan.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ episodeId: plan.id, shot: s }))
     )
     if (targets.length === 0) return
 
     setBatchVideoStatus("generating")
     setBatchVideoProgress({ current: 0, total: targets.length })
 
-    targets.forEach((target, i) => {
+      targets.forEach((target, i) => {
       const delay = (i + 1) * 1500 + Math.random() * 1000
       setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
       setTimeout(() => {
@@ -311,7 +308,7 @@ export default function ScriptShotPage() {
           next.delete(target.shot.id)
           return next
         })
-        updateShot(target.scriptId, target.shot.id, {
+        updateShot(target.episodeId, target.shot.id, {
           videoUrl: `/testVideo.mp4`,
           videoStatus: "completed",
           videoDuration: "5s",
@@ -367,13 +364,13 @@ export default function ScriptShotPage() {
         e.preventDefault()
         const active = activeShot()
         if (active) {
-          setDeletingShotInfo({ scriptId: active.scriptShotPlan.id, shotId: active.shot.id })
+          setDeletingShotInfo({ episodeId: active.scriptShotPlan.episodeId, shotId: active.shot.id })
         }
       }
       if (e.ctrlKey && e.key === "d" && activeShotId) {
         e.preventDefault()
         const active = activeShot()
-        if (active) duplicateShot(active.scriptShotPlan.id, active.shot.id)
+        if (active) duplicateShot(active.scriptShotPlan.episodeId, active.shot.id)
       }
     }
     window.addEventListener("keydown", handler)
@@ -416,7 +413,6 @@ export default function ScriptShotPage() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto custom-scrollbar">
         <EpisodeSelectView
           episodes={episodes}
-          scripts={scripts}
           scriptShotPlans={scriptShotPlans}
           onSelectEpisode={handleEnterEpisode}
         />
@@ -469,7 +465,7 @@ export default function ScriptShotPage() {
             </Button>
           </div>
           <ScriptShotEmptyState
-            scripts={scripts}
+            episodes={episodes}
             onGenerateAll={() => handleGenerateAll("skip_existing")}
             onSelectEpisodes={handleBackToEpisodeSelect}
             onGoToScript={() => router.push(`/project/${projectId}/script`)}
@@ -536,7 +532,7 @@ export default function ScriptShotPage() {
                           key={plan.id}
                           scriptShotPlan={plan}
                           episodeDisplayNumber={
-                            episodeDisplayMap.get(plan.script.episodeId) ?? 1
+                            episodeDisplayMap.get(plan.episodeId) ?? 1
                           }
                           activeShotId={activeShotId}
                           selectedShotIds={selectedShotIds}
@@ -547,8 +543,8 @@ export default function ScriptShotPage() {
                           assetScenes={assetScenes}
                           assetProps={assetProps}
                           onSelectShot={handleSelectShot}
-                          onDuplicateShot={(scriptId, shotId) => duplicateShot(scriptId, shotId)}
-                          onDeleteShot={(scriptId, shotId) => setDeletingShotInfo({ scriptId, shotId })}
+                          onDuplicateShot={(episodeId, shotId) => duplicateShot(episodeId, shotId)}
+                          onDeleteShot={(episodeId, shotId) => setDeletingShotInfo({ episodeId, shotId })}
                           onAddShot={handleAddShot}
                           onGenerateImage={handleGenerateImage}
                           onGenerateVideo={handleGenerateVideo}
@@ -595,7 +591,7 @@ export default function ScriptShotPage() {
                         scriptShotPlan={currentActiveShot.scriptShotPlan}
                         episodeDisplayNumber={
                           episodeDisplayMap.get(
-                            currentActiveShot.scriptShotPlan.script.episodeId
+                            currentActiveShot.scriptShotPlan.episodeId
                           ) ?? 1
                         }
                         isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
@@ -604,9 +600,9 @@ export default function ScriptShotPage() {
                         assetScenes={assetScenes}
                         assetProps={assetProps}
                         onUpdate={handleUpdateShot}
-                        onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.id, currentActiveShot.shot.id)}
+                        onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
                         onClearImage={handleClearImage}
-                        onGenerateVideo={() => handleGenerateVideo(currentActiveShot.scriptShotPlan.id, currentActiveShot.shot.id)}
+                        onGenerateVideo={() => handleGenerateVideo(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
                         onClearVideo={handleClearVideo}
                         onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
                         onPrev={prevShot() ? handlePrevShot : null}
@@ -647,7 +643,7 @@ export default function ScriptShotPage() {
             <AlertDialogAction
               onClick={() => {
                 if (deletingShotInfo) {
-                  handleDeleteShot(deletingShotInfo.scriptId, deletingShotInfo.shotId)
+                  handleDeleteShot(deletingShotInfo.episodeId, deletingShotInfo.shotId)
                 }
               }}
             >

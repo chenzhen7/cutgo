@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import type { Episode, ScriptShotPlan, Script } from "@/lib/types"
+import type { Episode, ScriptShotPlan } from "@/lib/types"
 import {
   buildEpisodeDisplayNumberMap,
   sortEpisodesByChapterAndIndex,
@@ -22,7 +22,6 @@ interface EpisodeSelectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   episodes: Episode[]
-  scripts: Script[]
   scriptShotPlans: ScriptShotPlan[]
   onGenerate: (episodeIds: string[]) => void
 }
@@ -31,7 +30,6 @@ export function EpisodeSelectDialog({
   open,
   onOpenChange,
   episodes,
-  scripts,
   scriptShotPlans,
   onGenerate,
 }: EpisodeSelectDialogProps) {
@@ -55,27 +53,18 @@ export function EpisodeSelectDialog({
   const selectAll = () => setSelectedIds(episodes.map((e) => e.id))
   const selectUngenerated = () => {
     const ungeneratedIds = episodes.filter((ep) => {
-      const epScripts = scripts.filter((s) => s.episodeId === ep.id)
-      const scriptIds = epScripts.map((s) => s.id)
-      const generatedCount = scriptShotPlans.filter(
-        (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
-      ).length
-      return generatedCount === 0
+      const plan = scriptShotPlans.find((sb) => sb.episodeId === ep.id)
+      return !plan || plan.shots.length === 0
     }).map((e) => e.id)
     setSelectedIds(ungeneratedIds)
   }
 
-  const getEpisodeStatus = (episodeId: string) => {
-    const epScripts = scripts.filter((s) => s.episodeId === episodeId)
-    const scriptIds = epScripts.map((s) => s.id)
-    if (scriptIds.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: 0 }
-    const generatedPlans = scriptShotPlans.filter(
-      (sb) => scriptIds.includes(sb.scriptId) && sb.shots.length > 0
-    )
-    const shotCount = generatedPlans.reduce((sum, sb) => sum + sb.shots.length, 0)
-    if (generatedPlans.length === 0) return { status: "none" as const, shotCount: 0, scriptCount: scriptIds.length }
-    if (generatedPlans.length < scriptIds.length) return { status: "partial" as const, shotCount, scriptCount: scriptIds.length }
-    return { status: "generated" as const, shotCount, scriptCount: scriptIds.length }
+  const getEpisodeStatus = (episode: Episode) => {
+    const plan = scriptShotPlans.find((sb) => sb.episodeId === episode.id)
+    const shotCount = plan?.shots.length ?? 0
+    if (shotCount > 0) return { status: "generated" as const, shotCount }
+    if (episode.script) return { status: "partial" as const, shotCount: 0 }
+    return { status: "none" as const, shotCount: 0 }
   }
 
   const handleGenerate = () => {
@@ -85,7 +74,10 @@ export function EpisodeSelectDialog({
     setSelectedIds([])
   }
 
-  const hasGeneratedSelected = selectedIds.some((id) => getEpisodeStatus(id).status !== "none")
+  const hasGeneratedSelected = selectedIds.some((id) => {
+    const ep = episodes.find((e) => e.id === id)
+    return ep ? getEpisodeStatus(ep).status !== "none" : false
+  })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,7 +100,7 @@ export function EpisodeSelectDialog({
 
         <div className="max-h-64 overflow-y-auto space-y-2">
           {orderedEpisodes.map((ep) => {
-            const info = getEpisodeStatus(ep.id)
+            const info = getEpisodeStatus(ep)
             const displayN = displayNumberById.get(ep.id) ?? 1
             return (
               <label
@@ -124,7 +116,7 @@ export function EpisodeSelectDialog({
                     第{displayN}集 · {ep.title}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {info.scriptCount} 集剧本
+                    {ep.script ? `${ep.script.length}字剧本` : "无剧本"}
                   </p>
                 </div>
                 <div>
@@ -135,7 +127,7 @@ export function EpisodeSelectDialog({
                   )}
                   {info.status === "partial" && (
                     <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                      部分生成 {info.shotCount}镜头
+                      有剧本
                     </Badge>
                   )}
                   {info.status === "none" && (

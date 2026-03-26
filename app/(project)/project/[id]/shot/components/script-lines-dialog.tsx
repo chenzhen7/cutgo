@@ -21,21 +21,21 @@ export function ScriptLinesDialog({
   scriptShotPlan,
 }: ScriptLinesDialogProps) {
   if (!scriptShotPlan) return null
-  const script = scriptShotPlan.script
+  const episode = scriptShotPlan.episode
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[70vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            剧本内容 · {script.title}
+            剧本内容 · {episode.title}
           </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">
-          {script.content ? (
+          {episode.script ? (
             <div className="text-sm leading-relaxed whitespace-pre-wrap font-mono p-1">
-              {script.content}
+              {episode.script}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">

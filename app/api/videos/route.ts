@@ -66,16 +66,16 @@ export async function POST(request: NextRequest) {
 
     const mergedConfig = { ...DEFAULT_VIDEO_COMPOSITION_CONFIG, ...config }
 
-    const scriptsWithShots = await prisma.script.findMany({
+    const episodesWithShots = await prisma.episode.findMany({
       where: { projectId },
       include: { shots: true },
     })
 
     let totalShots = 0
     let missingImages = 0
-    for (const script of scriptsWithShots) {
-      totalShots += script.shots.length
-      missingImages += script.shots.filter((s) => !s.imageUrl).length
+    for (const ep of episodesWithShots) {
+      totalShots += ep.shots.length
+      missingImages += ep.shots.filter((s) => !s.imageUrl).length
     }
 
     const createdTasks = []

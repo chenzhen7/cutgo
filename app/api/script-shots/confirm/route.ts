@@ -10,10 +10,9 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   const shotCount = await prisma.shot.count({
-    where: { script: { projectId } },
+    where: { episode: { projectId } },
   })
-  const hasShots = shotCount > 0
-  if (!hasShots) {
+  if (shotCount === 0) {
     throwCutGoError("VALIDATION", "至少需要 1 个已生成的分镜")
   }
 

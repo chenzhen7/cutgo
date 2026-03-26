@@ -1,20 +1,20 @@
 "use client"
 
 import { Film, BarChart3, FileText } from "lucide-react"
-import type { Script, Episode } from "@/lib/types"
+import type { Episode } from "@/lib/types"
 
 interface ScriptStatsPanelProps {
-  scripts: Script[]
   episodes: Episode[]
 }
 
-export function ScriptStatsPanel({ scripts, episodes }: ScriptStatsPanelProps) {
-  const totalWords = scripts.reduce((sum, s) => sum + s.content.length, 0)
+export function ScriptStatsPanel({ episodes }: ScriptStatsPanelProps) {
+  const episodesWithScript = episodes.filter((ep) => ep.script)
+  const totalWords = episodesWithScript.reduce((sum, ep) => sum + ep.script.length, 0)
 
   const stats = [
-    { label: "已生成", value: `${scripts.length}/${episodes.length}`, icon: Film },
+    { label: "已生成", value: `${episodesWithScript.length}/${episodes.length}`, icon: Film },
     { label: "总字数", value: `${totalWords}字`, icon: FileText },
-    { label: "生成覆盖", value: `${Math.round((scripts.length / Math.max(episodes.length, 1)) * 100)}%`, icon: BarChart3 },
+    { label: "生成覆盖", value: `${Math.round((episodesWithScript.length / Math.max(episodes.length, 1)) * 100)}%`, icon: BarChart3 },
   ]
 
   return (

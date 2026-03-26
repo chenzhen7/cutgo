@@ -35,7 +35,7 @@ export function EpisodeSelector() {
 
   const getEpisodeVideoCount = (episodeId: string) => {
     return scriptShotPlans
-      .filter((sb) => sb.script?.episode?.id === episodeId)
+      .filter((sb) => sb.episodeId === episodeId)
       .flatMap((sb) => sb.shots)
       .filter((s) => s.videoUrl)
       .length

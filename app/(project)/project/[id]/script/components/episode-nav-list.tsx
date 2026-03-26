@@ -42,7 +42,6 @@ import type {
   AssetProp,
   AssetScene,
   Episode,
-  Script,
   ScriptGenerateStatus,
 } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
@@ -51,13 +50,12 @@ import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 interface EpisodeNavListProps {
   projectId: string
   episodes: Episode[]
-  scripts: Script[]
   activeEpisodeId: string | null
   generateStatus: ScriptGenerateStatus
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onSelectEpisode: (ep: Episode, script: Script | undefined) => void
+  onSelectEpisode: (ep: Episode) => void
   onDeleteEpisode?: (projectId: string, episodeId: string) => Promise<void>
   onReorderEpisodes?: (projectId: string, orderedIds: string[]) => Promise<void>
   onCreateEpisodeScript?: (chapterIds: string[]) => Promise<void>
@@ -66,14 +64,13 @@ interface EpisodeNavListProps {
 interface SortableEpisodeItemProps {
   ep: Episode
   displayEpisodeNumber: number
-  script: Script | undefined
   hasScript: boolean
   isActive: boolean
   isGenerating: boolean
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onSelectEpisode: (ep: Episode, script: Script | undefined) => void
+  onSelectEpisode: (ep: Episode) => void
   onDeleteEpisode?: (episodeId: string) => void
   canDelete: boolean
 }
@@ -81,7 +78,6 @@ interface SortableEpisodeItemProps {
 function SortableEpisodeItem({
   ep,
   displayEpisodeNumber,
-  script,
   hasScript,
   isActive,
   isGenerating,
@@ -122,7 +118,7 @@ function SortableEpisodeItem({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => {
-        onSelectEpisode(ep, script)
+        onSelectEpisode(ep)
       }}
     >
       <div className="flex flex-col gap-1 py-2.5 pl-1 pr-2">
@@ -195,7 +191,6 @@ function SortableEpisodeItem({
 export function EpisodeNavList({
   projectId,
   episodes,
-  scripts,
   activeEpisodeId,
   generateStatus,
   assetCharacters,
@@ -213,17 +208,6 @@ export function EpisodeNavList({
         .sort((a, b) => a.index - b.index),
     [episodes, projectId]
   )
-
-  const scriptsForProject = useMemo(
-    () => scripts.filter((s) => s.projectId === projectId),
-    [scripts, projectId]
-  )
-
-  const scriptMap = useMemo(() => {
-    const map = new Map<string, Script>()
-    for (const s of scriptsForProject) map.set(s.episodeId, s)
-    return map
-  }, [scriptsForProject])
 
   const episodeDisplayMap = useMemo(
     () => buildEpisodeDisplayNumberMap(episodesForProject),
@@ -335,8 +319,7 @@ export function EpisodeNavList({
                 strategy={verticalListSortingStrategy}
               >
                 {orderedEpisodes.map((ep) => {
-                  const script = scriptMap.get(ep.id)
-                  const hasScript = !!script
+                  const hasScript = !!ep.script
                   const isActive = ep.id === activeEpisodeId
 
                   return (
@@ -344,7 +327,6 @@ export function EpisodeNavList({
                       key={ep.id}
                       ep={ep}
                       displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
-                      script={script}
                       hasScript={hasScript}
                       isActive={isActive}
                       isGenerating={isGenerating}
