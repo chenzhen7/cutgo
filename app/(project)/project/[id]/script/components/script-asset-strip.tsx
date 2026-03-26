@@ -63,6 +63,7 @@ export function ScriptAssetStrip({
   if (!hasAny) return null
 
   const isEditor = mode === "editor"
+  const maxVisibleCharacters = isEditor ? 5 : 2
 
   const navPropPillClass =
     "inline-flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium"
@@ -86,7 +87,7 @@ export function ScriptAssetStrip({
               isEditor ? "-space-x-2" : "-space-x-1.5"
             )}
           >
-            {characterIds.slice(0, 5).map((id) => {
+            {characterIds.slice(0, maxVisibleCharacters).map((id) => {
               const c = charById.get(id)
               const label = c?.name ?? id
               return (
@@ -123,14 +124,14 @@ export function ScriptAssetStrip({
                 </Tooltip>
               )
             })}
-            {characterIds.length > 5 && (
+            {characterIds.length > maxVisibleCharacters && (
               <div
                 className={cn(
                   "rounded-full bg-muted border-2 border-card flex items-center justify-center text-muted-foreground font-medium shrink-0",
                   isEditor ? "size-6 text-[9px]" : "size-5 text-[8px]"
                 )}
               >
-                +{characterIds.length - 5}
+                +{characterIds.length - maxVisibleCharacters}
               </div>
             )}
           </div>
