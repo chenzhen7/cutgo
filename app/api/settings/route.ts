@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import {
+  clearImageProviderCache,
+  clearLLMProviderCache,
+  clearVideoProviderCache,
+} from "@/lib/ai"
 
 /** GET /api/settings — 读取全局设置 */
 export async function GET() {
@@ -45,6 +50,10 @@ export async function PUT(req: Request) {
         ...(activeTTSConfigId !== undefined && { activeTTSConfigId }),
       },
     })
+
+    if (activeLLMConfigId !== undefined) clearLLMProviderCache()
+    if (activeImageConfigId !== undefined) clearImageProviderCache()
+    if (activeVideoConfigId !== undefined) clearVideoProviderCache()
 
     return NextResponse.json(settings)
   } catch (error) {

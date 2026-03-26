@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import {
+  clearImageProviderCache,
+  clearLLMProviderCache,
+  clearVideoProviderCache,
+} from "@/lib/ai"
 
 /** GET /api/settings/ai-configs/[id] — 获取单条配置 */
 export async function GET(
@@ -60,6 +65,8 @@ export async function PUT(
       await syncActiveConfig(existing.type, id)
     }
 
+    clearProviderCacheByType(existing.type)
+
     return NextResponse.json({ ...updated, config: JSON.parse(updated.config) })
   } catch (error) {
     console.error("[ai-configs/:id PUT]", error)
@@ -103,6 +110,8 @@ export async function DELETE(
       }
     }
 
+    clearProviderCacheByType(existing.type)
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[ai-configs/:id DELETE]", error)
@@ -125,4 +134,10 @@ async function syncActiveConfig(type: string, configId: string | null) {
     create: { id: "global", [field]: configId },
     update: { [field]: configId },
   })
+}
+
+function clearProviderCacheByType(type: string) {
+  if (type === "llm") clearLLMProviderCache()
+  if (type === "image") clearImageProviderCache()
+  if (type === "video") clearVideoProviderCache()
 }

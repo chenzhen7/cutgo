@@ -20,7 +20,7 @@ export interface LLMProviderRuntimeConfig {
  */
 export async function getLLMProvider(): Promise<LLMProvider | null> {
   if (cachedProvider) return cachedProvider
-  
+
   const config = await getLLMConfig()
   if (!config) return null
   cachedProvider = createLLMProviderFromConfig(config)
@@ -32,7 +32,7 @@ export async function getLLMProvider(): Promise<LLMProvider | null> {
  * 该函数不读取数据库，也不写入全局缓存，适合“测试连接”等场景。
  */
 export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): LLMProvider | null {
-  
+
   if (config.provider === "google") {
     return new GoogleLLMProvider({
       apiKey: config.apiKey,
