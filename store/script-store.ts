@@ -98,9 +98,13 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
         generateProgress: null,
       })
     } catch (err) {
+      const errorMessage =
+        err instanceof Error && err.message.trim().length > 0
+          ? err.message
+          : "剧本生成失败，请稍后重试"
       set({
         generateStatus: "error",
-        generateError: (err as Error).message,
+        generateError: errorMessage,
         generateProgress: null,
       })
     }

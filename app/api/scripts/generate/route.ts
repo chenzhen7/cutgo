@@ -215,9 +215,16 @@ export const POST = withError(async (request: NextRequest) => {
       where: { projectId },
       orderBy: { index: "asc" },
     })
+    const error = err as { code?: string; status?: number; message?: string }
+    const errorCode = typeof error.code === "string" ? error.code : API_ERRORS.INTERNAL.code
+    const errorStatus = typeof error.status === "number" ? error.status : API_ERRORS.INTERNAL.status
+    const errorMessage =
+      typeof error.message === "string" && error.message.trim().length > 0
+        ? error.message
+        : API_ERRORS.INTERNAL.defaultMessage
     return NextResponse.json(
-      { error: API_ERRORS.INTERNAL.code, message: "部分分集生成失败", episodes: allEpisodes },
-      { status: API_ERRORS.INTERNAL.status }
+      { error: errorCode, message: errorMessage, episodes: allEpisodes },
+      { status: errorStatus }
     )
   }
 })
