@@ -22,8 +22,9 @@ async function callAIGenerateScript(
   propsInfo: string
 ): Promise<string> {
   const llmProvider = await getLLMProvider()
+
   if (!llmProvider) {
-    return generateLocalScript(episodeTitle, episodeSynopsis)
+    throwCutGoError("LLM_NOT_CONFIGURED")
   }
 
   const prompt = buildEpisodeScriptPrompt({
@@ -43,60 +44,18 @@ async function callAIGenerateScript(
     propsInfo,
   })
 
-  try {
-    const result = await llmProvider.chat({
-      messages: [{ role: "user", content: prompt }],
-    })
-    return result.content?.trim() || generateLocalScript(episodeTitle, episodeSynopsis)
-  } catch (err) {
-    console.error("AI script generation failed, falling back to local:", err)
-    return generateLocalScript(episodeTitle, episodeSynopsis)
+  const result = await llmProvider.chat({
+    messages: [{ role: "user", content: prompt }],
+  })
+
+  if (!result.content) {
+    throwCutGoError("LLM_INVALID_RESPONSE", "LLM 未返回有效剧本内容")
   }
+
+  return result.content?.trim()
+
 }
 
-function generateLocalScript(
-  episodeTitle: string,
-  episodeSynopsis: string
-): string {
-  return `【场景1：开场】
-
-（旁白）${episodeSynopsis.slice(0, 60) || "故事开始了。"}
-
-[角色走入画面，环境光线柔和]
-
-角色A（平静）："一切都变了。"
-
-——画面渐暗——
-
-【场景2：发展】
-
-[紧张的氛围，角色面对面对峙]
-
-角色A（紧张）："你到底想怎样？"
-角色B（冷笑）："你很快就会知道。"
-
-（旁白）${episodeSynopsis.slice(60, 120) || "剧情持续发展。"}
-
-——转场——
-
-【场景3：高潮】
-
-[冲突爆发，情绪激烈]
-
-角色A（愤怒）："够了！"
-
-（旁白）${episodeSynopsis.slice(120, 180) || "冲突达到顶峰。"}
-
-——画面定格——
-
-【场景4：结尾】
-
-[悬念留白]
-
-（旁白）一切才刚刚开始...
-
-（本地生成的示例剧本，建议配置 AI 模型获取更好的结果）`
-}
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()

@@ -49,11 +49,13 @@ function jsonErrorResponse(key: ApiErrorKey, message?: string) {
   )
 }
 
-export const throwCutGoError = (key: ApiErrorKey, message?: string): never => {
+export function throwCutGoError(
+    key: ApiErrorKey,
+    message?: string
+): never {
   const { code, status, defaultMessage } = API_ERRORS[key]
   throw new CutGoError(code, status, message ?? defaultMessage)
 }
-
 // ── 全局异常兜底 (withError) ────────────────────────────────────────────────
 
 export function withError(
