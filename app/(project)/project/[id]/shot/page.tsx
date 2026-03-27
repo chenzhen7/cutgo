@@ -382,7 +382,7 @@ export default function ScriptShotPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full max-h-[100dvh] min-h-0 flex-1 flex-col overflow-hidden">
       {/* Generate error — 全宽贴边条 */}
       {generateStatus === "error" && generateError && (
         <div className="shrink-0 border-b border-destructive/30 bg-destructive/5">
@@ -441,7 +441,7 @@ export default function ScriptShotPage() {
           <div className="min-h-0 flex-1">
             <ResizablePanelGroup orientation="horizontal" className="h-full">
               {/* Center: Timeline editor */}
-              <ResizablePanel defaultSize={60} minSize={30}>
+              <ResizablePanel defaultSize={60} minSize="450px">
                 <div
                   className={cn(
                     "custom-scrollbar h-full min-w-0 space-y-3 overflow-y-auto  pb-12 ",
@@ -516,7 +516,7 @@ export default function ScriptShotPage() {
               {detailPanelOpen && currentActiveShot && (
                 <>
                   <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={40} minSize={20}>
+                  <ResizablePanel defaultSize={40} minSize="450px">
                     <div className="h-full shrink-0 overflow-hidden border-r border-border bg-card">
                       <ShotDetailPanel
                         shot={currentActiveShot.shot}

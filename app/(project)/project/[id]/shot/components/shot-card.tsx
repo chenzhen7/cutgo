@@ -211,7 +211,7 @@ export function ShotCard({
         <div className="flex-1 min-w-0 flex flex-col gap-1.5 2xl:gap-2">
           {displayMode === "composition" ? (
             <p className={cn(
-              "text-[12px] leading-relaxed line-clamp-4 2xl:text-[13px]",
+              "text-[12px] leading-relaxed line-clamp-2 md:line-clamp-4 2xl:text-[13px]",
               shot.composition ? "text-foreground font-medium" : "text-muted-foreground/60 italic"
             )}>
               {shot.composition || "暂无画面描述"}
@@ -223,7 +223,7 @@ export function ShotCard({
                   <Type className="size-2.5 mr-0.5" />
                   生图
                 </Badge>
-                <p className="text-[9px] text-muted-foreground line-clamp-3 leading-relaxed 2xl:text-[10px]">
+                <p className="text-[9px] text-muted-foreground line-clamp-2 md:line-clamp-3 leading-relaxed 2xl:text-[10px]">
                   {shot.prompt || "暂无生图提示词"}
                 </p>
               </div>
@@ -232,7 +232,7 @@ export function ShotCard({
                   <Film className="size-2.5 mr-0.5" />
                   视频
                 </Badge>
-                <p className="text-[9px] text-muted-foreground line-clamp-3 leading-relaxed 2xl:text-[10px]">
+                <p className="text-[9px] text-muted-foreground line-clamp-2 md:line-clamp-3 leading-relaxed 2xl:text-[10px]">
                   {shot.videoPrompt || "暂无视频提示词"}
                 </p>
               </div>
