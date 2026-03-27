@@ -61,6 +61,7 @@ export default function ScriptShotPage() {
     generateImage,
     generateBatchImages,
     clearImage,
+    reorderShots,
     setActiveEpisodeId,
     setActiveShotId,
     setDetailPanelOpen,
@@ -233,6 +234,13 @@ export default function ScriptShotPage() {
       duplicateShot(episodeId, shotId)
     },
     [duplicateShot]
+  )
+
+  const handleReorderShots = useCallback(
+    (episodeId: string, orderedIds: string[]) => {
+      reorderShots(episodeId, orderedIds)
+    },
+    [reorderShots]
   )
 
   const handleConfirmDeleteShot = useCallback(
@@ -562,6 +570,7 @@ export default function ScriptShotPage() {
                           onRegenerateScript={handleRegenerateScript}
                           onViewScript={handleViewScript}
                           onToggleShotDisplayMode={handleToggleShotDisplayMode}
+                          onReorderShots={handleReorderShots}
                         />
                       ))}
                     </div>

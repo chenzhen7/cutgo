@@ -9,7 +9,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush, Video, Play, Type, Film } from "lucide-react"
+import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush, Video, Play, Type, Film, GripVertical } from "lucide-react"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { SHOT_SIZE_OPTIONS, CAMERA_MOVEMENT_OPTIONS, CAMERA_ANGLE_OPTIONS, IMAGE_TYPE_OPTIONS } from "@/lib/types"
 import type { Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
@@ -41,6 +43,7 @@ interface ShotCardProps {
   isGeneratingVideo: boolean
   displayMode: ShotCardDisplayMode
   layout?: ShotCardLayout
+  isDragging?: boolean
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -158,6 +161,7 @@ export const ShotCard = memo(function ShotCard({
   isGeneratingVideo,
   displayMode,
   layout = "list",
+  isDragging = false,
   assetCharacters,
   assetScenes,
   assetProps,
@@ -168,6 +172,14 @@ export const ShotCard = memo(function ShotCard({
   onGenerateVideo,
   onPlayVideo,
 }: ShotCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ id: shot.id })
   const handleSelect = useCallback(() => onSelect(shot.id), [onSelect, shot.id])
   const handleDuplicate = useCallback(() => onDuplicate(episodeId, shot.id), [onDuplicate, episodeId, shot.id])
   const handleDelete = useCallback(() => onDelete(episodeId, shot.id), [onDelete, episodeId, shot.id])
@@ -194,14 +206,24 @@ export const ShotCard = memo(function ShotCard({
 
   const hasAssets = boundCharacters.length > 0 || boundScene || boundProps.length > 0
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isSortableDragging ? 0.4 : 1,
+    zIndex: isSortableDragging ? 50 : undefined,
+  }
+
   if (layout === "grid") {
     return (
       <div
+        ref={setNodeRef}
+        style={style}
         onClick={handleSelect}
         className={cn(
           "group relative rounded-xl border bg-card cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex flex-col overflow-hidden",
           isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
-          isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400"
+          isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400",
+          isDragging && "shadow-2xl ring-2 ring-primary/50"
         )}
       >
         {/* Thumbnail — 正方形 */}
@@ -230,6 +252,17 @@ export const ShotCard = memo(function ShotCard({
               : "bg-black/50 text-white"
           )}>
             {shot.index + 1}
+          </div>
+
+          {/* Drag handle */}
+          <div
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-1.5 left-7 z-20 size-6 rounded-md bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing"
+            title="拖拽排序"
+          >
+            <GripVertical className="size-3 text-white" />
           </div>
 
           {/* Hover actions */}
@@ -273,13 +306,27 @@ export const ShotCard = memo(function ShotCard({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       onClick={handleSelect}
       className={cn(
         "group relative rounded-xl border bg-card p-2.5 cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex gap-2.5 @[640px]:gap-3 @[640px]:p-3 @[900px]:gap-3.5 @[900px]:p-3.5",
         isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
-        isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400"
+        isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400",
+        isDragging && "shadow-2xl ring-2 ring-primary/50"
       )}
     >
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="flex items-center self-stretch shrink-0 opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing -ml-1 mr-0 pr-0.5"
+        title="拖拽排序"
+      >
+        <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground" />
+      </div>
+
       {/* Left: Thumbnail */}
       <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} />
 

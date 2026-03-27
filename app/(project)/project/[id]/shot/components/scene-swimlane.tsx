@@ -1,6 +1,6 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,9 +11,25 @@ import {
   Type,
   Film,
 } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable"
 import { ShotCard } from "./shot-card"
 import type { ShotCardDisplayMode, ShotCardLayout } from "./shot-card"
-import type { ScriptShotPlan, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
+import type { ScriptShotPlan, Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
   scriptShotPlan: ScriptShotPlan
@@ -38,6 +54,7 @@ interface SceneSwimlaneProps {
   onRegenerateScript: (episodeId: string) => void
   onViewScript: (scriptShotPlan: ScriptShotPlan) => void
   onToggleShotDisplayMode: () => void
+  onReorderShots: (episodeId: string, orderedIds: string[]) => void
 }
 
 export const SceneSwimlane = memo(function SceneSwimlane({
@@ -62,10 +79,56 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   onRegenerateScript,
   onViewScript,
   onToggleShotDisplayMode,
+  onReorderShots,
 }: SceneSwimlaneProps) {
   const episode = scriptShotPlan.episode
-  const shotsWithImage = scriptShotPlan.shots.filter((s) => s.imageUrl).length
-  const shotsWithVideo = scriptShotPlan.shots.filter((s) => s.videoUrl).length
+
+  // 乐观本地顺序：拖拽结束后立即更新，不等 API 返回
+  const [localShots, setLocalShots] = useState<Shot[]>(scriptShotPlan.shots)
+  const isDraggingRef = useRef(false)
+
+  // 当 store 里的 shots 变化时（非拖拽引起），同步到本地
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setLocalShots(scriptShotPlan.shots)
+    }
+  }, [scriptShotPlan.shots])
+
+  const shotsWithImage = localShots.filter((s) => s.imageUrl).length
+  const shotsWithVideo = localShots.filter((s) => s.videoUrl).length
+
+  const [activeDragShot, setActiveDragShot] = useState<Shot | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  )
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    isDraggingRef.current = true
+    const shot = localShots.find((s) => s.id === event.active.id)
+    setActiveDragShot(shot ?? null)
+  }, [localShots])
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    isDraggingRef.current = false
+    setActiveDragShot(null)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = localShots.findIndex((s) => s.id === active.id)
+    const newIndex = localShots.findIndex((s) => s.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(localShots, oldIndex, newIndex)
+    // 立即更新本地顺序（乐观更新）
+    setLocalShots(reordered)
+    // 异步同步到后端
+    onReorderShots(scriptShotPlan.id, reordered.map((s) => s.id))
+  }, [localShots, scriptShotPlan.id, onReorderShots])
+
+  const shotIds = localShots.map((s) => s.id)
 
   return (
     <div className="@container bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none">
@@ -140,48 +203,85 @@ export const SceneSwimlane = memo(function SceneSwimlane({
       </div>
 
       {/* Shots */}
-      <div className={cn(
-        "p-2.5 @[640px]:p-3",
-        layout === "grid"
-          ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
-          : "flex flex-col gap-2.5 @[640px]:gap-3"
-      )}>
-        {scriptShotPlan.shots.map((shot) => (
-          <ShotCard
-            key={shot.id}
-            shot={shot}
-            episodeId={scriptShotPlan.episodeId}
-            isActive={activeShotId === shot.id}
-            isSelected={selectedShotIds.has(shot.id)}
-            isGeneratingImage={imageGeneratingIds.has(shot.id)}
-            isGeneratingVideo={videoGeneratingIds.has(shot.id)}
-            displayMode={shotDisplayMode}
-            layout={layout}
-            assetCharacters={assetCharacters}
-            assetScenes={assetScenes}
-            assetProps={assetProps}
-            onSelect={onSelectShot}
-            onDuplicate={onDuplicateShot}
-            onDelete={onDeleteShot}
-            onGenerateImage={onGenerateImage}
-            onGenerateVideo={onGenerateVideo}
-            onPlayVideo={onPlayVideo}
-          />
-        ))}
-
-        <button
-          onClick={() => onAddShot(scriptShotPlan.episodeId)}
-          className={cn(
-            "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
-            layout === "grid" ? "aspect-square" : "h-10 @[640px]:h-12"
-          )}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={shotIds}
+          strategy={layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy}
         >
-          <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
-          {layout === "list" && (
-            <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
+          <div className={cn(
+            "p-2.5 @[640px]:p-3",
+            layout === "grid"
+              ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
+              : "flex flex-col gap-2.5 @[640px]:gap-3"
+          )}>
+            {localShots.map((shot) => (
+              <ShotCard
+                key={shot.id}
+                shot={shot}
+                episodeId={scriptShotPlan.episodeId}
+                isActive={activeShotId === shot.id}
+                isSelected={selectedShotIds.has(shot.id)}
+                isGeneratingImage={imageGeneratingIds.has(shot.id)}
+                isGeneratingVideo={videoGeneratingIds.has(shot.id)}
+                displayMode={shotDisplayMode}
+                layout={layout}
+                assetCharacters={assetCharacters}
+                assetScenes={assetScenes}
+                assetProps={assetProps}
+                onSelect={onSelectShot}
+                onDuplicate={onDuplicateShot}
+                onDelete={onDeleteShot}
+                onGenerateImage={onGenerateImage}
+                onGenerateVideo={onGenerateVideo}
+                onPlayVideo={onPlayVideo}
+              />
+            ))}
+
+            <button
+              onClick={() => onAddShot(scriptShotPlan.episodeId)}
+              className={cn(
+                "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
+                layout === "grid" ? "aspect-square" : "h-10 @[640px]:h-12"
+              )}
+            >
+              <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
+              {layout === "list" && (
+                <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
+              )}
+            </button>
+          </div>
+        </SortableContext>
+
+        <DragOverlay>
+          {activeDragShot && (
+            <ShotCard
+              shot={activeDragShot}
+              episodeId={scriptShotPlan.episodeId}
+              isActive={false}
+              isSelected={false}
+              isGeneratingImage={false}
+              isGeneratingVideo={false}
+              displayMode={shotDisplayMode}
+              layout={layout}
+              isDragging={true}
+              assetCharacters={assetCharacters}
+              assetScenes={assetScenes}
+              assetProps={assetProps}
+              onSelect={onSelectShot}
+              onDuplicate={onDuplicateShot}
+              onDelete={onDeleteShot}
+              onGenerateImage={onGenerateImage}
+              onGenerateVideo={onGenerateVideo}
+              onPlayVideo={onPlayVideo}
+            />
           )}
-        </button>
-      </div>
+        </DragOverlay>
+      </DndContext>
     </div>
   )
 })
