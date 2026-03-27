@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
 import { Loader2, LayoutGrid, ArrowLeft } from "lucide-react"
@@ -21,7 +21,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { ScriptShotEmptyState } from "./components/script-shot-empty-state"
 import { ScriptShotToolbar } from "./components/script-shot-toolbar"
 import { EpisodeSelectView } from "./components/episode-select-view"
 import { SceneSwimlane } from "./components/scene-swimlane"
@@ -34,7 +33,6 @@ import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/l
 
 export default function ScriptShotPage() {
   const params = useParams()
-  const router = useRouter()
   const projectId = params.id as string
 
   const {
@@ -73,7 +71,7 @@ export default function ScriptShotPage() {
     prevShot,
   } = useScriptShotsStore()
 
-  const [view, setView] = useState<"episode-select" | "script-shot-list">("script-shot-list")
+  const [view, setView] = useState<"episode-select" | "script-shot-list">("episode-select")
   const [loading, setLoading] = useState(true)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
@@ -105,8 +103,6 @@ export default function ScriptShotPage() {
     init()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
-
-  // 默认进入分镜列表页面，如果已有分集则选中第一个
 
   const handleEnterEpisode = useCallback(
     (episodeId: string) => {
@@ -379,7 +375,6 @@ export default function ScriptShotPage() {
 
   const currentScriptShotPlans = activeEpisodeScriptShots()
   const currentActiveShot = activeShot()
-  const hasScriptShots = scriptShotPlans.some((plan) => plan.shots.length > 0)
   const isGenerating = generateStatus === "generating"
 
   const imageStats = useMemo(() => {
@@ -450,32 +445,8 @@ export default function ScriptShotPage() {
         </div>
       )}
 
-      {/* Empty state */}
-      {!hasScriptShots && !isGenerating && (
-        <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pt-3 pb-6 sm:px-3">
-          <div className="mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToEpisodeSelect}
-              className="-ml-1.5 gap-1.5 text-muted-foreground hover:text-foreground sm:-ml-2"
-            >
-              <ArrowLeft className="size-4" />
-              分集
-            </Button>
-          </div>
-          <ScriptShotEmptyState
-            episodes={episodes}
-            onGenerateAll={() => handleGenerateAll("skip_existing")}
-            onSelectEpisodes={handleBackToEpisodeSelect}
-            onGoToScript={() => router.push(`/project/${projectId}/script`)}
-          />
-        </div>
-      )}
-
       {/* Main content */}
-      {(hasScriptShots || isGenerating) && (
-        <>
+      <>
           {/* Toolbar — 顶栏全宽贴边 */}
           <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
             <div className="flex min-w-0 items-center gap-2">
@@ -616,8 +587,7 @@ export default function ScriptShotPage() {
             </ResizablePanelGroup>
           </div>
 
-        </>
-      )}
+      </>
 
       {/* Script lines dialog */}
       <ScriptLinesDialog
