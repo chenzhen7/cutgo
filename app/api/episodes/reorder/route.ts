@@ -12,7 +12,7 @@ export const PUT = withError(async (request: NextRequest) => {
   for (let i = 0; i < orderedIds.length; i++) {
     await prisma.episode.update({
       where: { id: orderedIds[i] },
-      data: { index: i + 1 },
+      data: { index: i },
     })
   }
 

@@ -62,5 +62,16 @@ export const DELETE = withError(async (
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
   })
 
+  // 维护 index 连续性
+  for (let i = 0; i < remaining.length; i++) {
+    if (remaining[i].index !== i) {
+      await prisma.episode.update({
+        where: { id: remaining[i].id },
+        data: { index: i },
+      })
+      remaining[i].index = i
+    }
+  }
+
   return NextResponse.json(remaining)
 })

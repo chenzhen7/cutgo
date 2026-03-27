@@ -16,8 +16,7 @@ function sortEpisodesByGlobalIndex(episodes: Episode[]): Episode[] {
 
 /** 按全局顺序得到「第几集」展示序号（从 1 起），与拖拽排序后的分集 index 一致 */
 export function buildEpisodeDisplayNumberMap(episodes: Episode[]): Map<string, number> {
-  const sorted = sortEpisodesByGlobalIndex(episodes)
   const map = new Map<string, number>()
-  sorted.forEach((ep, i) => map.set(ep.id, i + 1))
+  episodes.forEach((ep) => map.set(ep.id, ep.index + 1))
   return map
 }

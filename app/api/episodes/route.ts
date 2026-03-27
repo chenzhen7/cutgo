@@ -45,7 +45,7 @@ export const POST = withError(async (request: NextRequest) => {
       where: { projectId },
       _max: { index: true },
     })
-    episodeIndex = (maxIndex._max.index ?? 0) + 1
+    episodeIndex = (maxIndex._max.index ?? -1) + 1
   }
 
   const episode = await prisma.episode.create({
@@ -53,7 +53,7 @@ export const POST = withError(async (request: NextRequest) => {
       projectId,
       chapterIds: chapterIdsJson,
       index: episodeIndex,
-      title: title || `第${episodeIndex}集`,
+      title: title || `第${episodeIndex + 1}集`,
       outline: outline || null,
       goldenHook: goldenHook || null,
       keyConflict: keyConflict || null,

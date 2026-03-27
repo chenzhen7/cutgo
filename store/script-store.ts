@@ -175,7 +175,7 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
 
   reorderEpisodes: async (projectId, orderedIds) => {
     const prevEpisodes = get().episodes
-    const newIndexById = new Map(orderedIds.map((id, i) => [id, i + 1]))
+    const newIndexById = new Map(orderedIds.map((id, i) => [id, i]))
     const merged = prevEpisodes.map((ep) => {
       const ni = newIndexById.get(ep.id)
       return ni !== undefined ? { ...ep, index: ni } : ep
