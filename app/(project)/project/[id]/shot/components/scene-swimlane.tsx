@@ -27,6 +27,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { ShotCard } from "./shot-card"
 import type { ShotCardDisplayMode, ShotCardLayout } from "./shot-card"
 import type { ScriptShotPlan, Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
@@ -131,7 +132,8 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   const shotIds = localShots.map((s) => s.id)
 
   return (
-    <div className="@container bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none">
+    <TooltipProvider delayDuration={300}>
+      <div className="@container bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none">
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 @[640px]:px-3">
         <div className="flex-1 min-w-0">
@@ -283,5 +285,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
         </DragOverlay>
       </DndContext>
     </div>
+    </TooltipProvider>
   )
 })

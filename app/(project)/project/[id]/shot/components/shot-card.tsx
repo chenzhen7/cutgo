@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush, Video, Play, Type, Film, GripVertical } from "lucide-react"
@@ -220,7 +219,8 @@ export const ShotCard = memo(function ShotCard({
         style={style}
         onClick={handleSelect}
         className={cn(
-          "group relative rounded-xl border bg-card cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex flex-col overflow-hidden",
+          "group relative rounded-xl border bg-card cursor-pointer hover:shadow-md hover:border-border/80 flex flex-col overflow-hidden",
+          !isSortableDragging && "transition-all",
           isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
           isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400",
           isDragging && "shadow-2xl ring-2 ring-primary/50"
@@ -259,7 +259,7 @@ export const ShotCard = memo(function ShotCard({
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-1.5 left-7 z-20 size-6 rounded-md bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing"
+            className="absolute top-1.5 left-7 z-20 size-6 rounded-md bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
             title="拖拽排序"
           >
             <GripVertical className="size-3 text-white" />
@@ -310,7 +310,8 @@ export const ShotCard = memo(function ShotCard({
       style={style}
       onClick={handleSelect}
       className={cn(
-        "group relative rounded-xl border bg-card p-2.5 cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex gap-2.5 @[640px]:gap-3 @[640px]:p-3 @[900px]:gap-3.5 @[900px]:p-3.5",
+        "group relative rounded-xl border bg-card p-2.5 cursor-pointer hover:shadow-md hover:border-border/80 flex gap-2.5 @[640px]:gap-3 @[640px]:p-3 @[900px]:gap-3.5 @[900px]:p-3.5",
+        !isSortableDragging && "transition-all",
         isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
         isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400",
         isDragging && "shadow-2xl ring-2 ring-primary/50"
@@ -321,7 +322,7 @@ export const ShotCard = memo(function ShotCard({
         {...attributes}
         {...listeners}
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center self-stretch shrink-0 opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing -ml-1 mr-0 pr-0.5"
+        className="flex items-center self-stretch shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing -ml-1 mr-0 pr-0.5"
         title="拖拽排序"
       >
         <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground" />
@@ -395,7 +396,6 @@ export const ShotCard = memo(function ShotCard({
 
             <div className="flex items-center gap-2 flex-wrap">
               {boundCharacters.length > 0 && (
-                <TooltipProvider delayDuration={200}>
                   <div className="flex items-center -space-x-1.5">
                     {boundCharacters.slice(0, 5).map((c) => (
                       <Tooltip key={c.id}>
@@ -417,7 +417,6 @@ export const ShotCard = memo(function ShotCard({
                       </div>
                     )}
                   </div>
-                </TooltipProvider>
               )}
 
               {boundScene && (
@@ -449,8 +448,7 @@ export const ShotCard = memo(function ShotCard({
         >
           <Paintbrush className="size-3.5 text-primary/70 hover:text-primary" />
         </button>
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
+        <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) handleGenerateVideo() }}
@@ -473,7 +471,6 @@ export const ShotCard = memo(function ShotCard({
               <TooltipContent side="left" className="text-xs">请先生成画面</TooltipContent>
             )}
           </Tooltip>
-        </TooltipProvider>
         <button
           onClick={(e) => { e.stopPropagation(); handleDuplicate() }}
           className="rounded-lg p-2 hover:bg-muted transition-colors"
