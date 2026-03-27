@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
-import { Loader2, LayoutGrid } from "lucide-react"
+import { Loader2, LayoutGrid, LayoutList } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   AlertDialog,
@@ -27,7 +27,7 @@ import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
-import type { ShotCardDisplayMode } from "./components/shot-card"
+import type { ShotCardDisplayMode, ShotCardLayout } from "./components/shot-card"
 import type { ScriptShotPlan, ShotInput, Shot } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 
@@ -81,6 +81,7 @@ export default function ScriptShotPage() {
   const [batchVideoProgress, setBatchVideoProgress] = useState<{ current: number; total: number } | null>(null)
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
   const [shotDisplayMode, setShotDisplayMode] = useState<ShotCardDisplayMode>("composition")
+  const [shotLayout, setShotLayout] = useState<ShotCardLayout>("list")
 
   const runBatchVideoGeneration = useCallback(
     (targets: Array<{ episodeId: string; shot: Shot }>) => {
@@ -423,7 +424,38 @@ export default function ScriptShotPage() {
               <EpisodeSelector />
             </div>
 
-            <ScriptShotToolbar
+            <div className="flex items-center gap-2">
+              {/* Layout toggle */}
+              <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
+                <button
+                  onClick={() => setShotLayout("list")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all",
+                    shotLayout === "list"
+                      ? "bg-background text-foreground shadow-sm font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="列表视图"
+                >
+                  <LayoutList className="size-3.5" />
+                  列表
+                </button>
+                <button
+                  onClick={() => setShotLayout("grid")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all",
+                    shotLayout === "grid"
+                      ? "bg-background text-foreground shadow-sm font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="网格视图"
+                >
+                  <LayoutGrid className="size-3.5" />
+                  网格
+                </button>
+              </div>
+
+              <ScriptShotToolbar
               generateStatus={generateStatus}
               batchImageStatus={batchImageStatus}
               batchImageProgress={batchImageProgress}
@@ -435,6 +467,7 @@ export default function ScriptShotPage() {
               onBatchGenerateVideos={handleBatchGenerateVideos}
               onBatchGenerateEpisodeVideos={handleBatchGenerateEpisodeVideos}
             />
+            </div>
           </div>
 
           {/* Two-column layout — 主区水平贴边 */}
@@ -471,6 +504,7 @@ export default function ScriptShotPage() {
                           imageGeneratingIds={imageGeneratingIds}
                           videoGeneratingIds={videoGeneratingIds}
                           shotDisplayMode={shotDisplayMode}
+                          layout={shotLayout}
                           assetCharacters={assetCharacters}
                           assetScenes={assetScenes}
                           assetProps={assetProps}

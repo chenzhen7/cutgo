@@ -30,6 +30,7 @@ function matchKeywords(text: string): string[] {
 }
 
 export type ShotCardDisplayMode = "composition" | "prompts"
+export type ShotCardLayout = "list" | "grid"
 
 interface ShotCardProps {
   shot: Shot
@@ -38,6 +39,7 @@ interface ShotCardProps {
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
   displayMode: ShotCardDisplayMode
+  layout?: ShotCardLayout
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -153,6 +155,7 @@ export function ShotCard({
   isGeneratingImage,
   isGeneratingVideo,
   displayMode,
+  layout = "list",
   assetCharacters,
   assetScenes,
   assetProps,
@@ -182,6 +185,99 @@ export function ShotCard({
   )
 
   const hasAssets = boundCharacters.length > 0 || boundScene || boundProps.length > 0
+
+  if (layout === "grid") {
+    return (
+      <div
+        onClick={onSelect}
+        className={cn(
+          "group relative rounded-xl border bg-card cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex flex-col overflow-hidden",
+          isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
+          isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400"
+        )}
+      >
+        {/* Thumbnail — 正方形 */}
+        <div className="relative w-full aspect-square bg-muted/30 overflow-hidden">
+          {isGeneratingImage ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+              <Loader2 className="size-5 animate-spin text-primary" />
+              <span className="text-[8px] text-muted-foreground">生成中</span>
+            </div>
+          ) : shot.imageUrl ? (
+            <img src={shot.imageUrl} alt="分镜" className="size-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+              <ImageIcon className="size-6 text-muted-foreground/25" />
+            </div>
+          )}
+
+          {/* Video overlay */}
+          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+
+          {/* Index badge */}
+          <div className={cn(
+            "absolute top-1.5 left-1.5 size-5 rounded-md flex items-center justify-center text-[9px] font-bold z-20",
+            isActive
+              ? "bg-primary text-primary-foreground"
+              : "bg-black/50 text-white"
+          )}>
+            {shot.index + 1}
+          </div>
+
+          {/* Hover actions */}
+          <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              onClick={(e) => { e.stopPropagation(); onGenerateImage() }}
+              className="size-6 rounded-md bg-black/60 hover:bg-primary/80 flex items-center justify-center transition-colors"
+              title={shot.imageUrl ? "重新生成画面" : "生成画面"}
+            >
+              <Paintbrush className="size-3 text-white" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDuplicate() }}
+              className="size-6 rounded-md bg-black/60 hover:bg-white/20 flex items-center justify-center transition-colors"
+              title="复制"
+            >
+              <Copy className="size-3 text-white" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="size-6 rounded-md bg-black/60 hover:bg-destructive/80 flex items-center justify-center transition-colors"
+              title="删除"
+            >
+              <Trash2 className="size-3 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom info */}
+        <div className="px-2 py-1.5 flex flex-col gap-0.5">
+          <p className={cn(
+            "text-[10px] leading-relaxed line-clamp-2",
+            shot.composition ? "text-foreground" : "text-muted-foreground/60 italic"
+          )}>
+            {shot.composition || "暂无画面描述"}
+          </p>
+          {hasAssets && (
+            <div className="flex items-center gap-1 flex-wrap mt-0.5">
+              {boundScene && (
+                <span className="inline-flex items-center gap-0.5 text-[8px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-1 py-0 font-medium">
+                  <MapPin className="size-2 shrink-0" />
+                  {boundScene.name}
+                </span>
+              )}
+              {boundCharacters.length > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-[8px] bg-muted/60 text-muted-foreground rounded-full px-1 py-0 font-medium">
+                  <User className="size-2 shrink-0" />
+                  {boundCharacters.length}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div

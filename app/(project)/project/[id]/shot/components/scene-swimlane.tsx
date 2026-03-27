@@ -11,7 +11,7 @@ import {
   Film,
 } from "lucide-react"
 import { ShotCard } from "./shot-card"
-import type { ShotCardDisplayMode } from "./shot-card"
+import type { ShotCardDisplayMode, ShotCardLayout } from "./shot-card"
 import type { ScriptShotPlan, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
@@ -23,6 +23,7 @@ interface SceneSwimlaneProps {
   imageGeneratingIds: Set<string>
   videoGeneratingIds: Set<string>
   shotDisplayMode: ShotCardDisplayMode
+  layout?: ShotCardLayout
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -46,6 +47,7 @@ export function SceneSwimlane({
   imageGeneratingIds,
   videoGeneratingIds,
   shotDisplayMode,
+  layout = "list",
   assetCharacters,
   assetScenes,
   assetProps,
@@ -66,7 +68,8 @@ export function SceneSwimlane({
 
   return (
     <div className={cn(
-      "bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none"
+      "bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none",
+      layout === "grid" && "@container"
     )}>
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 xl:px-3"
@@ -140,7 +143,12 @@ export function SceneSwimlane({
       </div>
 
       {/* Shots */}
-      <div className="flex flex-col gap-2.5 p-2.5 xl:gap-3 xl:p-3">
+      <div className={cn(
+        "p-2.5",
+        layout === "grid"
+          ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
+          : "flex flex-col gap-2.5"
+      )}>
         {scriptShotPlan.shots.map((shot) => (
           <ShotCard
             key={shot.id}
@@ -150,6 +158,7 @@ export function SceneSwimlane({
             isGeneratingImage={imageGeneratingIds.has(shot.id)}
             isGeneratingVideo={videoGeneratingIds.has(shot.id)}
             displayMode={shotDisplayMode}
+            layout={layout}
             assetCharacters={assetCharacters}
             assetScenes={assetScenes}
             assetProps={assetProps}
@@ -164,10 +173,15 @@ export function SceneSwimlane({
 
         <button
           onClick={() => onAddShot(scriptShotPlan.episodeId)}
-          className="col-span-2 h-10 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group xl:h-12"
+          className={cn(
+            "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
+            layout === "grid" ? "aspect-square" : "h-10 xl:h-12"
+          )}
         >
           <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
-          <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
+          {layout === "list" && (
+            <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
+          )}
         </button>
       </div>
     </div>
