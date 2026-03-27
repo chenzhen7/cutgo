@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
-import { Loader2, LayoutGrid, ArrowLeft } from "lucide-react"
+import { Loader2, LayoutGrid } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   AlertDialog,
@@ -22,7 +22,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { ScriptShotToolbar } from "./components/script-shot-toolbar"
-import { EpisodeSelectView } from "./components/episode-select-view"
+import { EpisodeSelector } from "./components/episode-selector"
 import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
@@ -71,7 +71,6 @@ export default function ScriptShotPage() {
     prevShot,
   } = useScriptShotsStore()
 
-  const [view, setView] = useState<"episode-select" | "script-shot-list">("episode-select")
   const [loading, setLoading] = useState(true)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
@@ -103,18 +102,6 @@ export default function ScriptShotPage() {
     init()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
-
-  const handleEnterEpisode = useCallback(
-    (episodeId: string) => {
-      setActiveEpisodeId(episodeId)
-      setView("script-shot-list")
-    },
-    [setActiveEpisodeId]
-  )
-
-  const handleBackToEpisodeSelect = useCallback(() => {
-    setView("episode-select")
-  }, [])
 
   const handleGenerateAll = useCallback(
     async (mode: "skip_existing" | "overwrite") => {
@@ -402,19 +389,6 @@ export default function ScriptShotPage() {
     )
   }
 
-  // 分集选择视图
-  if (view === "episode-select") {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto custom-scrollbar">
-        <EpisodeSelectView
-          episodes={episodes}
-          scriptShotPlans={scriptShotPlans}
-          onSelectEpisode={handleEnterEpisode}
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Generate error — 全宽贴边条 */}
@@ -450,20 +424,11 @@ export default function ScriptShotPage() {
           {/* Toolbar — 顶栏全宽贴边 */}
           <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
             <div className="flex min-w-0 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToEpisodeSelect}
-                className="-ml-1.5 shrink-0 gap-1.5 text-muted-foreground hover:text-foreground sm:-ml-2"
-              >
-                <ArrowLeft className="size-4" />
-                分集
-              </Button>
-              <div className="h-4 w-px shrink-0 bg-border" />
-
               <h2 className="truncate text-xl font-semibold text-foreground">
                 分镜生成
               </h2>
+              <div className="h-4 w-px shrink-0 bg-border" />
+              <EpisodeSelector />
             </div>
 
             <ScriptShotToolbar
