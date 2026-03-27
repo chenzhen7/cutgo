@@ -14,6 +14,16 @@ import { apiFetch } from "@/lib/api-client"
 
 let scriptShotPlansFetchToken = 0
 
+type ShotWithPlan = { shot: Shot; scriptShotPlan: ScriptShotPlan }
+
+function flattenShotsByActiveEpisode(scriptShotPlans: ScriptShotPlan[], activeEpisodeId: string | null): ShotWithPlan[] {
+  const episodeSbs = activeEpisodeId
+    ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
+    : scriptShotPlans
+
+  return episodeSbs.flatMap((sb) => sb.shots.map((shot) => ({ shot, scriptShotPlan: sb })))
+}
+
 interface ScriptShotState {
   scriptShotPlans: ScriptShotPlan[]
   episodes: Episode[]
@@ -435,10 +445,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   nextShot: () => {
     const { scriptShotPlans, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
-    const episodeSbs = activeEpisodeId
-      ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
-      : scriptShotPlans
-    const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, scriptShotPlan: sb })))
+    const allShots = flattenShotsByActiveEpisode(scriptShotPlans, activeEpisodeId)
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
     return idx >= 0 && idx < allShots.length - 1 ? allShots[idx + 1] : null
   },
@@ -446,10 +453,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   prevShot: () => {
     const { scriptShotPlans, activeShotId, activeEpisodeId } = get()
     if (!activeShotId) return null
-    const episodeSbs = activeEpisodeId
-      ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
-      : scriptShotPlans
-    const allShots = episodeSbs.flatMap((sb) => sb.shots.map((s) => ({ shot: s, scriptShotPlan: sb })))
+    const allShots = flattenShotsByActiveEpisode(scriptShotPlans, activeEpisodeId)
     const idx = allShots.findIndex((item) => item.shot.id === activeShotId)
     return idx > 0 ? allShots[idx - 1] : null
   },

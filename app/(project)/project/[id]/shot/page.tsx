@@ -64,7 +64,6 @@ export default function ScriptShotPage() {
     setActiveEpisodeId,
     setActiveShotId,
     setDetailPanelOpen,
-    confirmScriptShots,
     activeEpisodeScriptShots,
     activeShot,
     nextShot,
@@ -82,6 +81,41 @@ export default function ScriptShotPage() {
   const [batchVideoProgress, setBatchVideoProgress] = useState<{ current: number; total: number } | null>(null)
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
   const [shotDisplayMode, setShotDisplayMode] = useState<ShotCardDisplayMode>("composition")
+
+  const runBatchVideoGeneration = useCallback(
+    (targets: Array<{ episodeId: string; shot: Shot }>) => {
+      if (targets.length === 0) return
+
+      setBatchVideoStatus("generating")
+      setBatchVideoProgress({ current: 0, total: targets.length })
+
+      targets.forEach((target, i) => {
+        const delay = (i + 1) * 1500 + Math.random() * 1000
+        setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
+        setTimeout(() => {
+          setVideoGeneratingIds((prev) => {
+            const next = new Set(prev)
+            next.delete(target.shot.id)
+            return next
+          })
+          updateShot(target.episodeId, target.shot.id, {
+            videoUrl: `/testVideo.mp4`,
+            videoStatus: "completed",
+            videoDuration: "5s",
+          } as Partial<ShotInput>)
+          setBatchVideoProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null)
+          if (i === targets.length - 1) {
+            setBatchVideoStatus("completed")
+            setTimeout(() => {
+              setBatchVideoStatus("idle")
+              setBatchVideoProgress(null)
+            }, 2000)
+          }
+        }, delay)
+      })
+    },
+    [updateShot]
+  )
 
   useEffect(() => {
     const init = async () => {
@@ -260,37 +294,9 @@ export default function ScriptShotPage() {
       const targets = mode === "missing_only"
         ? allShots.filter((s) => !s.shot.videoUrl)
         : allShots
-      if (targets.length === 0) return
-
-      setBatchVideoStatus("generating")
-      setBatchVideoProgress({ current: 0, total: targets.length })
-
-      targets.forEach((target, i) => {
-        const delay = (i + 1) * 1500 + Math.random() * 1000
-        setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
-        setTimeout(() => {
-          setVideoGeneratingIds((prev) => {
-            const next = new Set(prev)
-            next.delete(target.shot.id)
-            return next
-          })
-          updateShot(target.episodeId, target.shot.id, {
-            videoUrl: `/testVideo.mp4`,
-            videoStatus: "completed",
-            videoDuration: "5s",
-          } as Partial<ShotInput>)
-          setBatchVideoProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null)
-          if (i === targets.length - 1) {
-            setBatchVideoStatus("completed")
-            setTimeout(() => {
-              setBatchVideoStatus("idle")
-              setBatchVideoProgress(null)
-            }, 2000)
-          }
-        }, delay)
-      })
+      runBatchVideoGeneration(targets)
     },
-    [scriptShotPlans, updateShot]
+    [scriptShotPlans, runBatchVideoGeneration]
   )
 
   const handleBatchGenerateEpisodeVideos = useCallback(() => {
@@ -299,36 +305,8 @@ export default function ScriptShotPage() {
     const targets = episodePlans.flatMap((plan) =>
       plan.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ episodeId: plan.id, shot: s }))
     )
-    if (targets.length === 0) return
-
-    setBatchVideoStatus("generating")
-    setBatchVideoProgress({ current: 0, total: targets.length })
-
-      targets.forEach((target, i) => {
-      const delay = (i + 1) * 1500 + Math.random() * 1000
-      setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
-      setTimeout(() => {
-        setVideoGeneratingIds((prev) => {
-          const next = new Set(prev)
-          next.delete(target.shot.id)
-          return next
-        })
-        updateShot(target.episodeId, target.shot.id, {
-          videoUrl: `/testVideo.mp4`,
-          videoStatus: "completed",
-          videoDuration: "5s",
-        } as Partial<ShotInput>)
-        setBatchVideoProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null)
-        if (i === targets.length - 1) {
-          setBatchVideoStatus("completed")
-          setTimeout(() => {
-            setBatchVideoStatus("idle")
-            setBatchVideoProgress(null)
-          }, 2000)
-        }
-      }, delay)
-    })
-  }, [activeEpisodeId, scriptShotPlans, updateShot])
+    runBatchVideoGeneration(targets)
+  }, [activeEpisodeId, scriptShotPlans, runBatchVideoGeneration])
 
   const handlePlayVideo = useCallback(
     (shotId: string) => {
@@ -385,14 +363,6 @@ export default function ScriptShotPage() {
   const currentScriptShotPlans = activeEpisodeScriptShots()
   const currentActiveShot = activeShot()
   const isGenerating = generateStatus === "generating"
-
-  const imageStats = useMemo(() => {
-    const allShots = scriptShotPlans.flatMap((plan) => plan.shots)
-    return {
-      withImage: allShots.filter((s) => s.imageUrl).length,
-      total: allShots.length,
-    }
-  }, [scriptShotPlans])
 
   const episodesForProject = useMemo(
     () => episodes.filter((e) => e.projectId === projectId),
