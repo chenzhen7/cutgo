@@ -258,22 +258,6 @@ export function ShotCard({
           )}>
             {shot.composition || "暂无画面描述"}
           </p>
-          {hasAssets && (
-            <div className="flex items-center gap-1 flex-wrap mt-0.5">
-              {boundScene && (
-                <span className="inline-flex items-center gap-0.5 text-[8px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-1 py-0 font-medium">
-                  <MapPin className="size-2 shrink-0" />
-                  {boundScene.name}
-                </span>
-              )}
-              {boundCharacters.length > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[8px] bg-muted/60 text-muted-foreground rounded-full px-1 py-0 font-medium">
-                  <User className="size-2 shrink-0" />
-                  {boundCharacters.length}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </div>
     )
