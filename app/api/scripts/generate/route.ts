@@ -10,13 +10,9 @@ async function callAIGenerateScript(
   episodeSynopsis: string,
   keyConflict: string | null,
   cliffhanger: string | null,
-  episodeDuration: string,
-  scenesJson: string,
   chapterContent: string,
-  novelSynopsis: string | null,
   characters: string,
   previousContent: string | null,
-  platform: string,
   duration: string,
   scenesInfo: string,
   propsInfo: string
@@ -32,13 +28,9 @@ async function callAIGenerateScript(
     episodeSynopsis,
     keyConflict,
     cliffhanger,
-    episodeDuration,
-    scenesJson,
     chapterContent: chapterContent.slice(0, 8000),
-    novelSynopsis,
     characters,
     previousContent: previousContent?.slice(-1000) ?? null,
-    platform,
     duration,
     scenesInfo,
     propsInfo,
@@ -155,16 +147,6 @@ export const POST = withError(async (request: NextRequest) => {
 
   try {
     for (const episode of targetEpisodes) {
-      const scenesJson = JSON.stringify([
-        {
-          title: episode.title,
-          summary: episode.outline ?? "",
-          duration: episode.duration,
-          characters: null,
-          emotion: null,
-        },
-      ])
-
       const sourceIds = parseSourceChapterIds(episode)
       const chapterContent = sourceIds
         .map((id) => chapterMap.get(id) || "")
@@ -176,14 +158,10 @@ export const POST = withError(async (request: NextRequest) => {
         episode.outline ?? "",
         episode.keyConflict,
         episode.cliffhanger,
-        episode.duration,
-        scenesJson,
         chapterContent,
-        null,
         charactersStr,
         previousContent,
-        project!.platform,
-        project!.duration,
+        project.duration,
         scenesStr,
         propsStr
       )

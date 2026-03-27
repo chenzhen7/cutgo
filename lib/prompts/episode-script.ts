@@ -3,18 +3,14 @@
  */
 
 export const EPISODE_SCRIPT_TITLE_PLACEHOLDER = "{EPISODE_TITLE}" as const
-export const EPISODE_SCRIPT_SYNOPSIS_PLACEHOLDER = "{EPISODE_SYNOPSIS}" as const
+export const EPISODE_SCRIPT_OUTLINE_PLACEHOLDER = "{EPISODE_OUTLINE}" as const
 export const EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER = "{KEY_CONFLICT}" as const
 export const EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER = "{CLIFFHANGER}" as const
-export const EPISODE_SCRIPT_DURATION_PLACEHOLDER = "{EPISODE_DURATION}" as const
-export const EPISODE_SCRIPT_SCENES_JSON_PLACEHOLDER = "{SCENES_JSON}" as const
 export const EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER = "{CHAPTER_CONTENT}" as const
-export const EPISODE_SCRIPT_NOVEL_SYNOPSIS_PLACEHOLDER = "{NOVEL_SYNOPSIS}" as const
 export const EPISODE_SCRIPT_CHARACTERS_PLACEHOLDER = "{CHARACTERS}" as const
 export const EPISODE_SCRIPT_SCENES_INFO_PLACEHOLDER = "{SCENES_INFO}" as const
 export const EPISODE_SCRIPT_PROPS_INFO_PLACEHOLDER = "{PROPS_INFO}" as const
 export const EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER = "{PREVIOUS_CONTENT}" as const
-export const EPISODE_SCRIPT_PLATFORM_PLACEHOLDER = "{PLATFORM}" as const
 export const EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER = "{PROJECT_DURATION}" as const
 
 export const DEFAULT_EPISODE_SCRIPT_PROMPT_TEMPLATE = `你是一位资深短剧编剧，擅长将分集梗概转化为高质量的竖屏短剧剧本。
@@ -24,26 +20,20 @@ export const DEFAULT_EPISODE_SCRIPT_PROMPT_TEMPLATE = `你是一位资深短剧�
 
 ## 当前分集信息
 - 集标题：${EPISODE_SCRIPT_TITLE_PLACEHOLDER}
-- 剧情摘要：${EPISODE_SCRIPT_SYNOPSIS_PLACEHOLDER}
+- 剧情摘要：${EPISODE_SCRIPT_OUTLINE_PLACEHOLDER}
 - 核心冲突：${EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER}
 - 结尾钩子：${EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER}
-- 目标时长：${EPISODE_SCRIPT_DURATION_PLACEHOLDER}
-
-## 大纲要点（结构参考）
-${EPISODE_SCRIPT_SCENES_JSON_PLACEHOLDER}
 
 ## 来源章节原文（供参考，提取对白和描写素材）
 ${EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER}
 
 ## 全局上下文
-- 故事大纲：${EPISODE_SCRIPT_NOVEL_SYNOPSIS_PLACEHOLDER}
 - 角色列表（含性格描述）：${EPISODE_SCRIPT_CHARACTERS_PLACEHOLDER}
 - 场景库（可选地点）：${EPISODE_SCRIPT_SCENES_INFO_PLACEHOLDER}
 - 道具库：${EPISODE_SCRIPT_PROPS_INFO_PLACEHOLDER}
 ${EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER}
 
 ## 目标参数
-- 目标平台：${EPISODE_SCRIPT_PLATFORM_PLACEHOLDER}
 - 每集时长：${EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER}
 
 ## 要求
@@ -72,13 +62,10 @@ export interface BuildEpisodeScriptPromptInput {
   episodeSynopsis: string
   keyConflict?: string | null
   cliffhanger?: string | null
-  episodeDuration: string
-  scenesJson: string
   chapterContent: string
   novelSynopsis?: string | null
   characters?: string
   previousContent?: string | null
-  platform: string
   duration: string
   scenesInfo?: string
   propsInfo?: string
@@ -107,18 +94,14 @@ export function buildEpisodeScriptPrompt(
     : DEFAULT_EPISODE_SCRIPT_PROMPT_TEMPLATE
 
   const hasTitlePlaceholder = raw.includes(EPISODE_SCRIPT_TITLE_PLACEHOLDER)
-  const hasSynopsisPlaceholder = raw.includes(EPISODE_SCRIPT_SYNOPSIS_PLACEHOLDER)
+  const hasOutlinePlaceholder = raw.includes(EPISODE_SCRIPT_OUTLINE_PLACEHOLDER)
   const hasKeyConflictPlaceholder = raw.includes(EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER)
   const hasCliffhangerPlaceholder = raw.includes(EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER)
-  const hasEpisodeDurationPlaceholder = raw.includes(EPISODE_SCRIPT_DURATION_PLACEHOLDER)
-  const hasScenesJsonPlaceholder = raw.includes(EPISODE_SCRIPT_SCENES_JSON_PLACEHOLDER)
   const hasChapterContentPlaceholder = raw.includes(EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER)
-  const hasNovelSynopsisPlaceholder = raw.includes(EPISODE_SCRIPT_NOVEL_SYNOPSIS_PLACEHOLDER)
   const hasCharactersPlaceholder = raw.includes(EPISODE_SCRIPT_CHARACTERS_PLACEHOLDER)
   const hasScenesInfoPlaceholder = raw.includes(EPISODE_SCRIPT_SCENES_INFO_PLACEHOLDER)
   const hasPropsInfoPlaceholder = raw.includes(EPISODE_SCRIPT_PROPS_INFO_PLACEHOLDER)
   const hasPreviousContentPlaceholder = raw.includes(EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER)
-  const hasPlatformPlaceholder = raw.includes(EPISODE_SCRIPT_PLATFORM_PLACEHOLDER)
   const hasProjectDurationPlaceholder = raw.includes(EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER)
 
   const previousContentBlock = input.previousContent?.trim()
@@ -127,33 +110,25 @@ export function buildEpisodeScriptPrompt(
 
   let result = raw
   result = replaceAll(result, EPISODE_SCRIPT_TITLE_PLACEHOLDER, input.episodeTitle)
-  result = replaceAll(result, EPISODE_SCRIPT_SYNOPSIS_PLACEHOLDER, input.episodeSynopsis)
+  result = replaceAll(result, EPISODE_SCRIPT_OUTLINE_PLACEHOLDER, input.episodeSynopsis)
   result = replaceAll(result, EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER, input.keyConflict || "无")
   result = replaceAll(result, EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER, input.cliffhanger || "无")
-  result = replaceAll(result, EPISODE_SCRIPT_DURATION_PLACEHOLDER, input.episodeDuration)
-  result = replaceAll(result, EPISODE_SCRIPT_SCENES_JSON_PLACEHOLDER, input.scenesJson)
   result = replaceAll(result, EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER, input.chapterContent)
-  result = replaceAll(result, EPISODE_SCRIPT_NOVEL_SYNOPSIS_PLACEHOLDER, input.novelSynopsis || "无")
   result = replaceAll(result, EPISODE_SCRIPT_CHARACTERS_PLACEHOLDER, input.characters || "无")
   result = replaceAll(result, EPISODE_SCRIPT_SCENES_INFO_PLACEHOLDER, input.scenesInfo || "无")
   result = replaceAll(result, EPISODE_SCRIPT_PROPS_INFO_PLACEHOLDER, input.propsInfo || "无")
   result = replaceAll(result, EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER, previousContentBlock)
-  result = replaceAll(result, EPISODE_SCRIPT_PLATFORM_PLACEHOLDER, input.platform)
   result = replaceAll(result, EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER, input.duration)
 
   result = appendIfMissing(hasTitlePlaceholder, result, `\n- 集标题：${input.episodeTitle}`)
-  result = appendIfMissing(hasSynopsisPlaceholder, result, `\n- 剧情摘要：${input.episodeSynopsis}`)
+  result = appendIfMissing(hasOutlinePlaceholder, result, `\n- 剧情摘要：${input.episodeSynopsis}`)
   result = appendIfMissing(hasKeyConflictPlaceholder, result, `\n- 核心冲突：${input.keyConflict || "无"}`)
   result = appendIfMissing(hasCliffhangerPlaceholder, result, `\n- 结尾钩子：${input.cliffhanger || "无"}`)
-  result = appendIfMissing(hasEpisodeDurationPlaceholder, result, `\n- 目标时长：${input.episodeDuration}`)
-  result = appendIfMissing(hasScenesJsonPlaceholder, result, `\n## 大纲要点\n${input.scenesJson}`)
   result = appendIfMissing(hasChapterContentPlaceholder, result, `\n## 来源章节原文\n${input.chapterContent}`)
-  result = appendIfMissing(hasNovelSynopsisPlaceholder, result, `\n- 故事大纲：${input.novelSynopsis || "无"}`)
   result = appendIfMissing(hasCharactersPlaceholder, result, `\n- 角色列表：${input.characters || "无"}`)
   result = appendIfMissing(hasScenesInfoPlaceholder, result, `\n- 场景库：${input.scenesInfo || "无"}`)
   result = appendIfMissing(hasPropsInfoPlaceholder, result, `\n- 道具库：${input.propsInfo || "无"}`)
   result = appendIfMissing(hasPreviousContentPlaceholder, result, previousContentBlock ? `\n${previousContentBlock}` : "")
-  result = appendIfMissing(hasPlatformPlaceholder, result, `\n- 目标平台：${input.platform}`)
   result = appendIfMissing(hasProjectDurationPlaceholder, result, `\n- 每集时长：${input.duration}`)
 
   return result.trim()
