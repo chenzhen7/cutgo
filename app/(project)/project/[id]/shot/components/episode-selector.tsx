@@ -38,10 +38,9 @@ export function EpisodeSelector() {
     : undefined
 
   const getEpisodeShotCount = (episodeId: string) => {
-    return scriptShotPlans
-      .filter((plan) => plan.episodeId === episodeId)
-      .flatMap((plan) => plan.shots)
-      .length
+    const plans = scriptShotPlans.filter((plan) => plan.episodeId === episodeId)
+    if (plans.length === 0) return null
+    return plans.flatMap((plan) => plan.shots).length
   }
 
   if (episodes.length === 0) return null
@@ -75,7 +74,7 @@ export function EpisodeSelector() {
                 第{displayN}集 · {episode.title}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground">
-                {shotCount} 个镜头
+                {shotCount === null ? "--" : `${shotCount} 个镜头`}
               </span>
             </DropdownMenuItem>
           )

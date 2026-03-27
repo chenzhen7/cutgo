@@ -12,6 +12,8 @@ import type {
 } from "@/lib/types"
 import { apiFetch } from "@/lib/api-client"
 
+let scriptShotPlansFetchToken = 0
+
 interface ScriptShotState {
   scriptShotPlans: ScriptShotPlan[]
   episodes: Episode[]
@@ -107,11 +109,21 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   batchImageProgress: null,
 
   fetchScriptShotPlans: async (projectId, episodeId) => {
+    const currentFetchToken = ++scriptShotPlansFetchToken
     try {
       const url = episodeId
         ? `/api/script-shots?projectId=${projectId}&episodeId=${episodeId}`
         : `/api/script-shots?projectId=${projectId}`
+
+      if (episodeId) {
+        set({ scriptShotPlans: [] })
+      }
+
       const data = await apiFetch<ScriptShotPlan[]>(url)
+
+      if (currentFetchToken !== scriptShotPlansFetchToken) {
+        return
+      }
       set({ scriptShotPlans: data || [] })
     } catch {
       // 非关键数据加载，静默失败

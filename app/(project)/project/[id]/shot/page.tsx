@@ -71,7 +71,8 @@ export default function ScriptShotPage() {
     prevShot,
   } = useScriptShotsStore()
 
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [episodeLoading, setEpisodeLoading] = useState(false)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
@@ -84,24 +85,45 @@ export default function ScriptShotPage() {
 
   useEffect(() => {
     const init = async () => {
-      setLoading(true)
+      setInitialLoading(true)
       const [eps] = await Promise.all([
         fetchEpisodes(projectId),
-        fetchScriptShotPlans(projectId),
         fetchAssets(projectId),
       ])
 
       // 如果没有选中的分集，且有分集数据，默认选中第一个
-      if (!activeEpisodeId && eps && eps.length > 0) {
+      if (eps && eps.length > 0) {
         const sorted = sortEpisodesByChapterAndIndex(eps)
         setActiveEpisodeId(sorted[0].id)
       }
 
-      setLoading(false)
+      setInitialLoading(false)
     }
     init()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
+
+  useEffect(() => {
+    if (!activeEpisodeId) return
+
+    let cancelled = false
+    const loadActiveEpisode = async () => {
+      setEpisodeLoading(true)
+      setActiveShotId(null)
+      try {
+        await fetchScriptShotPlans(projectId, activeEpisodeId)
+      } finally {
+        if (!cancelled) {
+          setEpisodeLoading(false)
+        }
+      }
+    }
+
+    loadActiveEpisode()
+    return () => {
+      cancelled = true
+    }
+  }, [projectId, activeEpisodeId, fetchScriptShotPlans, setActiveShotId])
 
   const handleGenerateAll = useCallback(
     async (mode: "skip_existing" | "overwrite") => {
@@ -381,7 +403,7 @@ export default function ScriptShotPage() {
     [episodesForProject]
   )
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -458,7 +480,11 @@ export default function ScriptShotPage() {
                       : "border-border border-b bg-background"
                   )}
                 >
-                  {currentScriptShotPlans.length > 0 ? (
+                  {episodeLoading ? (
+                    <div className="flex min-h-[240px] items-center justify-center">
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : currentScriptShotPlans.length > 0 ? (
                     <div className={cn(
                       "space-y-3",
                       detailPanelOpen ? "p-0" : ""
