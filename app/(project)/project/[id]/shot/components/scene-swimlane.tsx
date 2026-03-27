@@ -67,19 +67,15 @@ export function SceneSwimlane({
   const shotsWithVideo = scriptShotPlan.shots.filter((s) => s.videoUrl).length
 
   return (
-    <div className={cn(
-      "bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none",
-      layout === "grid" && "@container"
-    )}>
+    <div className="@container bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none">
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 xl:px-3"
-      >
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 @[640px]:px-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium truncate 2xl:text-sm">
+            <span className="text-[13px] font-medium truncate @[900px]:text-sm">
               {episode.title}
             </span>
-            <Badge variant="outline" className="text-[9px] px-1.5 py-0 2xl:text-[10px]">
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 @[900px]:text-[10px]">
               第{episodeDisplayNumber}集
             </Badge>
           </div>
@@ -144,10 +140,10 @@ export function SceneSwimlane({
 
       {/* Shots */}
       <div className={cn(
-        "p-2.5",
+        "p-2.5 @[640px]:p-3",
         layout === "grid"
           ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
-          : "flex flex-col gap-2.5"
+          : "flex flex-col gap-2.5 @[640px]:gap-3"
       )}>
         {scriptShotPlan.shots.map((shot) => (
           <ShotCard
@@ -175,7 +171,7 @@ export function SceneSwimlane({
           onClick={() => onAddShot(scriptShotPlan.episodeId)}
           className={cn(
             "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
-            layout === "grid" ? "aspect-square" : "h-10 xl:h-12"
+            layout === "grid" ? "aspect-square" : "h-10 @[640px]:h-12"
           )}
         >
           <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />

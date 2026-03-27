@@ -95,27 +95,27 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
 
   if (isGeneratingImage) {
     return (
-      <div className="relative size-[92px] rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden xl:size-[100px] 2xl:size-[116px]">
-        <Loader2 className="size-[18px] animate-spin text-primary 2xl:size-5" />
-        <span className="absolute bottom-1 text-[8px] text-muted-foreground 2xl:text-[9px]">{typeLabel}</span>
+      <div className="relative size-[92px] rounded-lg bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden @[640px]:size-[100px] @[900px]:size-[116px]">
+        <Loader2 className="size-[18px] animate-spin text-primary @[900px]:size-5" />
+        <span className="absolute bottom-1 text-[8px] text-muted-foreground @[900px]:text-[9px]">{typeLabel}</span>
       </div>
     )
   }
 
   if (!hasImage) {
     return (
-      <div className="relative size-[92px] rounded-lg bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center shrink-0 gap-1.5 xl:size-[100px] 2xl:size-[116px]">
-        <ImageIcon className="size-[18px] text-muted-foreground/25 2xl:size-5" />
-        <span className="text-[8px] text-muted-foreground/40 2xl:text-[9px]">{typeLabel}</span>
+      <div className="relative size-[92px] rounded-lg bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center shrink-0 gap-1.5 @[640px]:size-[100px] @[900px]:size-[116px]">
+        <ImageIcon className="size-[18px] text-muted-foreground/25 @[900px]:size-5" />
+        <span className="text-[8px] text-muted-foreground/40 @[900px]:text-[9px]">{typeLabel}</span>
       </div>
     )
   }
 
   if (imageType === "first_last" && imageUrls.length >= 2) {
     return (
-      <div className="relative h-[92px] w-[92px] rounded-lg overflow-hidden shrink-0 flex flex-col gap-0.5 xl:h-[100px] xl:w-[100px] 2xl:h-[116px] 2xl:w-[116px]">
-        <img src={imageUrls[0]} alt="首帧" className="h-[45px] w-full object-cover rounded-t-lg xl:h-[49px] 2xl:h-[57px]" />
-        <img src={imageUrls[1]} alt="尾帧" className="h-[45px] w-full object-cover rounded-b-lg xl:h-[49px] 2xl:h-[57px]" />
+      <div className="relative h-[92px] w-[92px] rounded-lg overflow-hidden shrink-0 flex flex-col gap-0.5 @[640px]:h-[100px] @[640px]:w-[100px] @[900px]:h-[116px] @[900px]:w-[116px]">
+        <img src={imageUrls[0]} alt="首帧" className="h-[45px] w-full object-cover rounded-t-lg @[640px]:h-[49px] @[900px]:h-[57px]" />
+        <img src={imageUrls[1]} alt="尾帧" className="h-[45px] w-full object-cover rounded-b-lg @[640px]:h-[49px] @[900px]:h-[57px]" />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
         </div>
@@ -126,7 +126,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
 
   if (imageType === "multi_grid") {
     return (
-      <div className="relative size-[92px] rounded-lg overflow-hidden shrink-0 xl:size-[100px] 2xl:size-[116px]">
+      <div className="relative size-[92px] rounded-lg overflow-hidden shrink-0 @[640px]:size-[100px] @[900px]:size-[116px]">
         <img src={shot.imageUrl!} alt="多宫格" className="size-full object-cover" />
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
@@ -141,7 +141,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   }
 
   return (
-    <div className="relative size-[92px] rounded-lg overflow-hidden shrink-0 xl:size-[100px] 2xl:size-[116px]">
+    <div className="relative size-[92px] rounded-lg overflow-hidden shrink-0 @[640px]:size-[100px] @[900px]:size-[116px]">
       <img src={shot.imageUrl!} alt="关键帧" className="size-full object-cover" />
       <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
     </div>
@@ -267,7 +267,7 @@ export function ShotCard({
     <div
       onClick={onSelect}
       className={cn(
-        "group relative rounded-xl border bg-card p-2.5 cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex gap-2.5 xl:gap-3 xl:p-3 2xl:gap-3.5 2xl:p-3.5",
+        "group relative rounded-xl border bg-card p-2.5 cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex gap-2.5 @[640px]:gap-3 @[640px]:p-3 @[900px]:gap-3.5 @[900px]:p-3.5",
         isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
         isSelected && !isActive && "ring-2 ring-blue-400 border-blue-400"
       )}
@@ -276,10 +276,10 @@ export function ShotCard({
       <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
 
       {/* Center: Index + Content */}
-      <div className="flex-1 min-w-0 flex gap-2 xl:gap-2.5">
+      <div className="flex-1 min-w-0 flex gap-2 @[640px]:gap-2.5">
         <div className="flex flex-col items-center shrink-0">
           <div className={cn(
-            "size-[22px] rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors xl:size-6 xl:text-[10px] 2xl:size-[26px] 2xl:text-[10px]",
+            "size-[22px] rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors @[640px]:size-6 @[640px]:text-[10px] @[900px]:size-[26px]",
             isActive
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground group-hover:bg-muted/80"
@@ -288,10 +288,10 @@ export function ShotCard({
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5 2xl:gap-2">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5 @[900px]:gap-2">
           {displayMode === "composition" ? (
             <p className={cn(
-              "text-[12px] leading-relaxed line-clamp-2 md:line-clamp-4 2xl:text-[13px]",
+              "text-[12px] leading-relaxed line-clamp-2 @[480px]:line-clamp-4 @[900px]:text-[13px]",
               shot.composition ? "text-foreground font-medium" : "text-muted-foreground/60 italic"
             )}>
               {shot.composition || "暂无画面描述"}
@@ -299,20 +299,20 @@ export function ShotCard({
           ) : (
             <div className="flex flex-col gap-2">
               <div className="flex items-start gap-1.5">
-                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 2xl:text-[9px]">
+                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
                   <Type className="size-2.5 mr-0.5" />
                   生图
                 </Badge>
-                <p className="text-[9px] text-muted-foreground line-clamp-2 md:line-clamp-3 leading-relaxed 2xl:text-[10px]">
+                <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
                   {shot.prompt || "暂无生图提示词"}
                 </p>
               </div>
               <div className="flex items-start gap-1.5">
-                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 2xl:text-[9px]">
+                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
                   <Film className="size-2.5 mr-0.5" />
                   视频
                 </Badge>
-                <p className="text-[9px] text-muted-foreground line-clamp-2 md:line-clamp-3 leading-relaxed 2xl:text-[10px]">
+                <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
                   {shot.videoPrompt || "暂无视频提示词"}
                 </p>
               </div>
@@ -326,7 +326,7 @@ export function ShotCard({
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="text-[8px] font-normal px-1.5 py-0 rounded-full bg-muted/60 2xl:text-[9px]"
+                    className="text-[8px] font-normal px-1.5 py-0 rounded-full bg-muted/60 @[900px]:text-[9px]"
                   >
                     {tag}
                   </Badge>
@@ -345,7 +345,7 @@ export function ShotCard({
                     {boundCharacters.slice(0, 5).map((c) => (
                       <Tooltip key={c.id}>
                         <TooltipTrigger asChild>
-                          <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 2xl:size-5">
+                          <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[900px]:size-5">
                             {c.imageUrl ? (
                               <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                             ) : (
@@ -357,7 +357,7 @@ export function ShotCard({
                       </Tooltip>
                     ))}
                     {boundCharacters.length > 5 && (
-                      <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0 2xl:size-5 2xl:text-[8px]">
+                      <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0 @[900px]:size-5">
                         +{boundCharacters.length - 5}
                       </div>
                     )}
@@ -366,14 +366,14 @@ export function ShotCard({
               )}
 
               {boundScene && (
-                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-1.5 py-0.5 font-medium 2xl:text-[10px]">
+                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-1.5 py-0.5 font-medium @[900px]:text-[10px]">
                   <MapPin className="size-3 shrink-0" />
                   {boundScene.name}
                 </span>
               )}
 
               {boundProps.length > 0 && (
-                <span className="inline-flex items-center gap-1 text-[9px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-1.5 py-0.5 font-medium 2xl:text-[10px]">
+                <span className="inline-flex items-center gap-1 text-[9px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-1.5 py-0.5 font-medium @[900px]:text-[10px]">
                   <Package className="size-3 shrink-0" />
                   {boundProps.length === 1
                     ? boundProps[0].name
