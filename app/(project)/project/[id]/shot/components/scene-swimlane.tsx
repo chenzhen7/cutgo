@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +40,7 @@ interface SceneSwimlaneProps {
   onToggleShotDisplayMode: () => void
 }
 
-export function SceneSwimlane({
+export const SceneSwimlane = memo(function SceneSwimlane({
   scriptShotPlan,
   episodeDisplayNumber,
   activeShotId,
@@ -149,6 +150,7 @@ export function SceneSwimlane({
           <ShotCard
             key={shot.id}
             shot={shot}
+            episodeId={scriptShotPlan.episodeId}
             isActive={activeShotId === shot.id}
             isSelected={selectedShotIds.has(shot.id)}
             isGeneratingImage={imageGeneratingIds.has(shot.id)}
@@ -158,12 +160,12 @@ export function SceneSwimlane({
             assetCharacters={assetCharacters}
             assetScenes={assetScenes}
             assetProps={assetProps}
-            onSelect={() => onSelectShot(shot.id)}
-            onDuplicate={() => onDuplicateShot(scriptShotPlan.episodeId, shot.id)}
-            onDelete={() => onDeleteShot(scriptShotPlan.episodeId, shot.id)}
-            onGenerateImage={() => onGenerateImage(scriptShotPlan.episodeId, shot.id)}
-            onGenerateVideo={() => onGenerateVideo(scriptShotPlan.episodeId, shot.id)}
-            onPlayVideo={() => onPlayVideo(shot.id)}
+            onSelect={onSelectShot}
+            onDuplicate={onDuplicateShot}
+            onDelete={onDeleteShot}
+            onGenerateImage={onGenerateImage}
+            onGenerateVideo={onGenerateVideo}
+            onPlayVideo={onPlayVideo}
           />
         ))}
 
@@ -182,4 +184,4 @@ export function SceneSwimlane({
       </div>
     </div>
   )
-}
+})

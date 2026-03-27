@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { memo, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -34,6 +34,7 @@ export type ShotCardLayout = "list" | "grid"
 
 interface ShotCardProps {
   shot: Shot
+  episodeId: string
   isActive: boolean
   isSelected: boolean
   isGeneratingImage: boolean
@@ -43,12 +44,12 @@ interface ShotCardProps {
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
-  onSelect: () => void
-  onDuplicate: () => void
-  onDelete: () => void
-  onGenerateImage: () => void
-  onGenerateVideo: () => void
-  onPlayVideo?: () => void
+  onSelect: (shotId: string) => void
+  onDuplicate: (episodeId: string, shotId: string) => void
+  onDelete: (episodeId: string, shotId: string) => void
+  onGenerateImage: (episodeId: string, shotId: string) => void
+  onGenerateVideo: (episodeId: string, shotId: string) => void
+  onPlayVideo: (shotId: string) => void
 }
 
 function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; isGeneratingVideo: boolean; onPlayVideo?: () => void }) {
@@ -148,8 +149,9 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   )
 }
 
-export function ShotCard({
+export const ShotCard = memo(function ShotCard({
   shot,
+  episodeId,
   isActive,
   isSelected,
   isGeneratingImage,
@@ -166,6 +168,12 @@ export function ShotCard({
   onGenerateVideo,
   onPlayVideo,
 }: ShotCardProps) {
+  const handleSelect = useCallback(() => onSelect(shot.id), [onSelect, shot.id])
+  const handleDuplicate = useCallback(() => onDuplicate(episodeId, shot.id), [onDuplicate, episodeId, shot.id])
+  const handleDelete = useCallback(() => onDelete(episodeId, shot.id), [onDelete, episodeId, shot.id])
+  const handleGenerateImage = useCallback(() => onGenerateImage(episodeId, shot.id), [onGenerateImage, episodeId, shot.id])
+  const handleGenerateVideo = useCallback(() => onGenerateVideo(episodeId, shot.id), [onGenerateVideo, episodeId, shot.id])
+  const handlePlayVideo = useCallback(() => onPlayVideo(shot.id), [onPlayVideo, shot.id])
   const matchedTags = useMemo(() => matchKeywords(shot.composition), [shot.composition])
 
   const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
@@ -189,7 +197,7 @@ export function ShotCard({
   if (layout === "grid") {
     return (
       <div
-        onClick={onSelect}
+        onClick={handleSelect}
         className={cn(
           "group relative rounded-xl border bg-card cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex flex-col overflow-hidden",
           isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
@@ -212,7 +220,7 @@ export function ShotCard({
           )}
 
           {/* Video overlay */}
-          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} />
 
           {/* Index badge */}
           <div className={cn(
@@ -227,21 +235,21 @@ export function ShotCard({
           {/* Hover actions */}
           <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
             <button
-              onClick={(e) => { e.stopPropagation(); onGenerateImage() }}
+              onClick={(e) => { e.stopPropagation(); handleGenerateImage() }}
               className="size-6 rounded-md bg-black/60 hover:bg-primary/80 flex items-center justify-center transition-colors"
               title={shot.imageUrl ? "重新生成画面" : "生成画面"}
             >
               <Paintbrush className="size-3 text-white" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onDuplicate() }}
+              onClick={(e) => { e.stopPropagation(); handleDuplicate() }}
               className="size-6 rounded-md bg-black/60 hover:bg-white/20 flex items-center justify-center transition-colors"
               title="复制"
             >
               <Copy className="size-3 text-white" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              onClick={(e) => { e.stopPropagation(); handleDelete() }}
               className="size-6 rounded-md bg-black/60 hover:bg-destructive/80 flex items-center justify-center transition-colors"
               title="删除"
             >
@@ -265,7 +273,7 @@ export function ShotCard({
 
   return (
     <div
-      onClick={onSelect}
+      onClick={handleSelect}
       className={cn(
         "group relative rounded-xl border bg-card p-2.5 cursor-pointer transition-all hover:shadow-md hover:border-border/80 flex gap-2.5 @[640px]:gap-3 @[640px]:p-3 @[900px]:gap-3.5 @[900px]:p-3.5",
         isActive && "ring-2 ring-primary border-primary shadow-sm bg-primary/[0.02]",
@@ -273,7 +281,7 @@ export function ShotCard({
       )}
     >
       {/* Left: Thumbnail */}
-      <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+      <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} />
 
       {/* Center: Index + Content */}
       <div className="flex-1 min-w-0 flex gap-2 @[640px]:gap-2.5">
@@ -388,7 +396,7 @@ export function ShotCard({
       {/* Right Actions */}
       <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
         <button
-          onClick={(e) => { e.stopPropagation(); onGenerateImage() }}
+          onClick={(e) => { e.stopPropagation(); handleGenerateImage() }}
           className="rounded-lg p-2 hover:bg-primary/10 transition-colors"
           title={shot.imageUrl ? "重新生成画面" : "生成画面"}
         >
@@ -398,7 +406,7 @@ export function ShotCard({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) onGenerateVideo() }}
+                onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) handleGenerateVideo() }}
                 className={cn(
                   "rounded-lg p-2 transition-colors",
                   shot.imageUrl
@@ -420,14 +428,14 @@ export function ShotCard({
           </Tooltip>
         </TooltipProvider>
         <button
-          onClick={(e) => { e.stopPropagation(); onDuplicate() }}
+          onClick={(e) => { e.stopPropagation(); handleDuplicate() }}
           className="rounded-lg p-2 hover:bg-muted transition-colors"
           title="复制"
         >
           <Copy className="size-3.5 text-muted-foreground hover:text-foreground" />
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          onClick={(e) => { e.stopPropagation(); handleDelete() }}
           className="rounded-lg p-2 hover:bg-destructive/10 transition-colors"
           title="删除"
         >
@@ -436,4 +444,4 @@ export function ShotCard({
       </div>
     </div>
   )
-}
+})
