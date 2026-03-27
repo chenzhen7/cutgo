@@ -102,7 +102,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
+      activationConstraint: { distance: 3 },
     })
   )
 
