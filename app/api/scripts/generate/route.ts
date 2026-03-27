@@ -28,7 +28,7 @@ async function callAIGenerateScript(
     episodeSynopsis,
     keyConflict,
     cliffhanger,
-    chapterContent: chapterContent.slice(0, 8000),
+    chapterContent: chapterContent,
     characters,
     previousContent: previousContent?.slice(-1000) ?? null,
     duration,
@@ -95,16 +95,7 @@ export const POST = withError(async (request: NextRequest) => {
     targetEpisodes = targetEpisodes.filter((ep) => !ep.script)
     skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
-    // overwrite 模式：清空已有剧本内容
-    const overwriteIds = targetEpisodes
-      .filter((ep) => ep.script)
-      .map((ep) => ep.id)
-    if (overwriteIds.length > 0) {
-      await prisma.episode.updateMany({
-        where: { id: { in: overwriteIds } },
-        data: { script: "" },
-      })
-    }
+    // overwrite 模式：直接覆盖写入，避免生成失败时丢失原有内容
   }
 
   const assetCharacters = await prisma.assetCharacter.findMany({ where: { projectId } })

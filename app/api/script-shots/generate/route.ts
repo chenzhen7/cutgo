@@ -212,14 +212,7 @@ export const POST = withError(async (request: NextRequest) => {
     targetEpisodes = targetEpisodes.filter((ep) => !existingShotEpisodeIds.has(ep.id))
     skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
-    const overwriteIds = targetEpisodes
-      .filter((ep) => existingShotEpisodeIds.has(ep.id))
-      .map((ep) => ep.id)
-    if (overwriteIds.length > 0) {
-      await prisma.shot.deleteMany({
-        where: { episodeId: { in: overwriteIds } },
-      })
-    }
+    // overwrite 模式：在每集生成完成后再删除旧分镜并写入新数据，避免生成失败时丢失原有内容
   }
 
   const assetCharacters = await prisma.assetCharacter.findMany({ where: { projectId } })
@@ -270,6 +263,11 @@ export const POST = withError(async (request: NextRequest) => {
         project!.globalNegPrompt,
         previousShotStr
       )
+
+      // 生成成功后再删除旧分镜，避免生成失败时丢失原有内容
+      if (mode === "overwrite" && existingShotEpisodeIds.has(episode.id)) {
+        await prisma.shot.deleteMany({ where: { episodeId: episode.id } })
+      }
 
       await prisma.shot.createMany({
         data: (aiResult.shots || []).map((shot, si) => ({
