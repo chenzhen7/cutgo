@@ -69,14 +69,14 @@ export function SceneSwimlane({
       "bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none"
     )}>
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2 border-b bg-card"
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 xl:px-3"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium truncate">
+            <span className="text-[13px] font-medium truncate 2xl:text-sm">
               {episode.title}
             </span>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 2xl:text-[10px]">
               第{episodeDisplayNumber}集
             </Badge>
           </div>
@@ -140,7 +140,7 @@ export function SceneSwimlane({
       </div>
 
       {/* Shots */}
-      <div className="flex flex-col gap-3 p-3">
+      <div className="flex flex-col gap-2.5 p-2.5 xl:gap-3 xl:p-3">
         {scriptShotPlan.shots.map((shot) => (
           <ShotCard
             key={shot.id}
@@ -164,7 +164,7 @@ export function SceneSwimlane({
 
         <button
           onClick={() => onAddShot(scriptShotPlan.episodeId)}
-          className="col-span-2 h-12 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+          className="col-span-2 h-10 rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group xl:h-12"
         >
           <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
           <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
