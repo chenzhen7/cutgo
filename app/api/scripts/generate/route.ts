@@ -11,11 +11,8 @@ async function callAIGenerateScript(
   keyConflict: string | null,
   cliffhanger: string | null,
   chapterContent: string,
-  characters: string,
   previousContent: string | null,
-  duration: string,
-  scenesInfo: string,
-  propsInfo: string
+  duration: string
 ): Promise<string> {
   const llmProvider = await getLLMProvider()
 
@@ -29,11 +26,8 @@ async function callAIGenerateScript(
     keyConflict,
     cliffhanger,
     chapterContent: chapterContent,
-    characters,
     previousContent: previousContent?.slice(-1000) ?? null,
     duration,
-    scenesInfo,
-    propsInfo,
   })
 
   const result = await llmProvider.chat({
@@ -98,27 +92,6 @@ export const POST = withError(async (request: NextRequest) => {
     // overwrite 模式：直接覆盖写入，避免生成失败时丢失原有内容
   }
 
-  const assetCharacters = await prisma.assetCharacter.findMany({ where: { projectId } })
-  const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
-  const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
-
-  const charactersStr = assetCharacters
-    .map((c) => {
-      const parts = [`${c.name}(${c.role})`]
-      if (c.description) parts.push(c.description)
-      if (c.personality) parts.push(`性格: ${c.personality}`)
-      return parts.join(", ")
-    })
-    .join("; ")
-
-  const scenesStr = assetScenes.length > 0
-    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}`).join("; ")
-    : ""
-
-  const propsStr = assetProps.length > 0
-    ? assetProps.map((p) => `${p.name}: ${p.description || ""}`).join("; ")
-    : ""
-
   const chapterMap = new Map<string, string>()
   for (const ch of novelData.chapters) {
     chapterMap.set(ch.id, ch.content)
@@ -150,11 +123,8 @@ export const POST = withError(async (request: NextRequest) => {
         episode.keyConflict,
         episode.cliffhanger,
         chapterContent,
-        charactersStr,
         previousContent,
-        project.duration,
-        scenesStr,
-        propsStr
+        project.duration
       )
 
       await prisma.episode.update({
