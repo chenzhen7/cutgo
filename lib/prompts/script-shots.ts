@@ -7,12 +7,6 @@ export const SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER = "{EPISODE_SCENES}" as con
 export const SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER = "{EPISODE_CHARACTERS}" as const
 export const SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER = "{EPISODE_PROPS}" as const
 export const SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER = "{SCRIPT_CONTENT}" as const
-export const SCRIPT_SHOTS_ASSET_CHARACTERS_PLACEHOLDER = "{ASSET_CHARACTERS}" as const
-export const SCRIPT_SHOTS_ASSET_SCENES_PLACEHOLDER = "{ASSET_SCENES}" as const
-export const SCRIPT_SHOTS_PLATFORM_PLACEHOLDER = "{PLATFORM}" as const
-export const SCRIPT_SHOTS_ASPECT_RATIO_PLACEHOLDER = "{ASPECT_RATIO}" as const
-export const SCRIPT_SHOTS_STYLE_PRESET_PLACEHOLDER = "{STYLE_PRESET}" as const
-export const SCRIPT_SHOTS_GLOBAL_NEG_PROMPT_PLACEHOLDER = "{GLOBAL_NEG_PROMPT}" as const
 export const SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER = "{PREVIOUS_SHOT}" as const
 
 export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的分镜提示词。
@@ -29,18 +23,6 @@ export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `你是一位资深分镜师
 ## 剧本内容
 ${SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER}
 
-## 角色资产（用于分镜提示词中的角色设定描述）
-${SCRIPT_SHOTS_ASSET_CHARACTERS_PLACEHOLDER}
-
-## 场景资产（用于分镜提示词中的环境描述）
-${SCRIPT_SHOTS_ASSET_SCENES_PLACEHOLDER}
-
-## 全局参数
-- 目标平台：${SCRIPT_SHOTS_PLATFORM_PLACEHOLDER}
-- 画幅比例：${SCRIPT_SHOTS_ASPECT_RATIO_PLACEHOLDER}
-- 视觉风格：${SCRIPT_SHOTS_STYLE_PRESET_PLACEHOLDER}
-- 全局负面提示词：${SCRIPT_SHOTS_GLOBAL_NEG_PROMPT_PLACEHOLDER}
-
 ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
 
 ## 要求
@@ -56,7 +38,6 @@ ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
    - 角色描述要具体：外貌特征、服装、表情、动作姿态
    - 环境描述要丰富：时间、天气、光线方向、材质细节
    - 可以加入风格关键词：cinematic, photorealistic, dramatic lighting 等
-   - 画幅比例 ${SCRIPT_SHOTS_ASPECT_RATIO_PLACEHOLDER} 的构图特点要体现在 prompt 中
 4. 镜头之间应有叙事连贯性，覆盖剧本的关键情节
 
 ## 输出格式
@@ -72,8 +53,7 @@ ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
     }
   ]
 }
-
-注意：不要在 shots 中包含 index 字段，系统会自动计算编号。`
+`
 
 export interface BuildScriptShotsPromptInput {
   episodeTitle: string
@@ -81,12 +61,6 @@ export interface BuildScriptShotsPromptInput {
   episodeCharacters: string
   episodeProps: string
   scriptContent: string
-  assetCharacters: string
-  assetScenes: string
-  platform: string
-  aspectRatio: string
-  stylePreset: string | null
-  globalNegPrompt: string | null
   previousShot: string | null
 }
 
@@ -117,12 +91,6 @@ export function buildScriptShotsPrompt(
   const hasEpisodeCharactersPlaceholder = raw.includes(SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER)
   const hasEpisodePropsPlaceholder = raw.includes(SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER)
   const hasScriptContentPlaceholder = raw.includes(SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER)
-  const hasAssetCharactersPlaceholder = raw.includes(SCRIPT_SHOTS_ASSET_CHARACTERS_PLACEHOLDER)
-  const hasAssetScenesPlaceholder = raw.includes(SCRIPT_SHOTS_ASSET_SCENES_PLACEHOLDER)
-  const hasPlatformPlaceholder = raw.includes(SCRIPT_SHOTS_PLATFORM_PLACEHOLDER)
-  const hasAspectRatioPlaceholder = raw.includes(SCRIPT_SHOTS_ASPECT_RATIO_PLACEHOLDER)
-  const hasStylePresetPlaceholder = raw.includes(SCRIPT_SHOTS_STYLE_PRESET_PLACEHOLDER)
-  const hasGlobalNegPromptPlaceholder = raw.includes(SCRIPT_SHOTS_GLOBAL_NEG_PROMPT_PLACEHOLDER)
   const hasPreviousShotPlaceholder = raw.includes(SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER)
 
   const previousShotBlock = input.previousShot?.trim()
@@ -135,16 +103,6 @@ export function buildScriptShotsPrompt(
   result = replaceAll(result, SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER, input.episodeCharacters || "无")
   result = replaceAll(result, SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER, input.episodeProps || "无")
   result = replaceAll(result, SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER, input.scriptContent)
-  result = replaceAll(result, SCRIPT_SHOTS_ASSET_CHARACTERS_PLACEHOLDER, input.assetCharacters || "无")
-  result = replaceAll(result, SCRIPT_SHOTS_ASSET_SCENES_PLACEHOLDER, input.assetScenes || "无")
-  result = replaceAll(result, SCRIPT_SHOTS_PLATFORM_PLACEHOLDER, input.platform)
-  result = replaceAll(result, SCRIPT_SHOTS_ASPECT_RATIO_PLACEHOLDER, input.aspectRatio)
-  result = replaceAll(result, SCRIPT_SHOTS_STYLE_PRESET_PLACEHOLDER, input.stylePreset || "电影感")
-  result = replaceAll(
-    result,
-    SCRIPT_SHOTS_GLOBAL_NEG_PROMPT_PLACEHOLDER,
-    input.globalNegPrompt || "blurry, low quality, distorted"
-  )
   result = replaceAll(result, SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER, previousShotBlock)
 
   result = appendIfMissing(hasEpisodeTitlePlaceholder, result, `\n- 标题：${input.episodeTitle}`)
@@ -156,24 +114,6 @@ export function buildScriptShotsPrompt(
   )
   result = appendIfMissing(hasEpisodePropsPlaceholder, result, `\n- 涉及道具：${input.episodeProps || "无"}`)
   result = appendIfMissing(hasScriptContentPlaceholder, result, `\n## 剧本内容\n${input.scriptContent}`)
-  result = appendIfMissing(
-    hasAssetCharactersPlaceholder,
-    result,
-    `\n## 角色资产（用于分镜提示词中的角色设定描述）\n${input.assetCharacters || "无"}`
-  )
-  result = appendIfMissing(
-    hasAssetScenesPlaceholder,
-    result,
-    `\n## 场景资产（用于分镜提示词中的环境描述）\n${input.assetScenes || "无"}`
-  )
-  result = appendIfMissing(hasPlatformPlaceholder, result, `\n- 目标平台：${input.platform}`)
-  result = appendIfMissing(hasAspectRatioPlaceholder, result, `\n- 画幅比例：${input.aspectRatio}`)
-  result = appendIfMissing(hasStylePresetPlaceholder, result, `\n- 视觉风格：${input.stylePreset || "电影感"}`)
-  result = appendIfMissing(
-    hasGlobalNegPromptPlaceholder,
-    result,
-    `\n- 全局负面提示词：${input.globalNegPrompt || "blurry, low quality, distorted"}`
-  )
   result = appendIfMissing(hasPreviousShotPlaceholder, result, previousShotBlock ? `\n${previousShotBlock}` : "")
 
   return result.trim()

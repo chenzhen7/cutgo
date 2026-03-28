@@ -62,12 +62,6 @@ async function callAIGenerateScriptShots(
   episodeCharacters: string,
   episodeProps: string,
   episodeScenes: string,
-  assetCharactersStr: string,
-  assetScenesStr: string,
-  platform: string,
-  aspectRatio: string,
-  stylePreset: string | null,
-  globalNegPrompt: string | null,
   previousShotStr: string | null
 ): Promise<AIScriptShotResult> {
   const llmProvider = await getLLMProvider()
@@ -81,12 +75,6 @@ async function callAIGenerateScriptShots(
     episodeCharacters,
     episodeProps,
     scriptContent: scriptContent.slice(0, 6000),
-    assetCharacters: assetCharactersStr,
-    assetScenes: assetScenesStr,
-    platform,
-    aspectRatio,
-    stylePreset,
-    globalNegPrompt,
     previousShot: previousShotStr,
   })
 
@@ -153,20 +141,6 @@ export const POST = withError(async (request: NextRequest) => {
   const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
   const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
 
-  const assetCharactersStr = assetCharacters.length > 0
-    ? assetCharacters
-        .map((c) => {
-          const parts = [`${c.name}(${c.role})`]
-          if (c.description) parts.push(c.description)
-          return parts.join(", ")
-        })
-        .join("; ")
-    : ""
-
-  const assetScenesStr = assetScenes.length > 0
-    ? assetScenes.map((s) => `${s.name}: ${s.description || ""}`).join("; ")
-    : ""
-
   let previousShotStr: string | null = null
 
   try {
@@ -189,12 +163,6 @@ export const POST = withError(async (request: NextRequest) => {
         matchedCharacters.map((c) => c.name).join(", "),
         matchedProps.map((p) => p.name).join(", "),
         matchedScene?.name || "",
-        assetCharactersStr,
-        assetScenesStr,
-        project!.platform,
-        project!.aspectRatio,
-        project!.stylePreset,
-        project!.globalNegPrompt,
         previousShotStr
       )
 
