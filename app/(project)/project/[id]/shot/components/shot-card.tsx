@@ -259,34 +259,28 @@ export const ShotCard = memo(function ShotCard({
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-1.5 left-7 z-20 size-6 rounded-md bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+            className="absolute bottom-1.5 left-1.5 z-20 rounded-lg p-1.5 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
             title="拖拽排序"
           >
-            <GripVertical className="size-3 text-white" />
+            <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground" />
           </div>
 
           {/* Hover actions */}
-          <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleGenerateImage() }}
-              className="size-6 rounded-md bg-black/60 hover:bg-primary/80 flex items-center justify-center transition-colors"
-              title={shot.imageUrl ? "重新生成画面" : "生成画面"}
-            >
-              <Paintbrush className="size-3 text-white" />
-            </button>
+          <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
             <button
               onClick={(e) => { e.stopPropagation(); handleDuplicate() }}
-              className="size-6 rounded-md bg-black/60 hover:bg-white/20 flex items-center justify-center transition-colors"
+              className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
               title="复制"
             >
-              <Copy className="size-3 text-white" />
+              <Copy className="size-3.5 text-muted-foreground hover:text-foreground" />
             </button>
+
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete() }}
-              className="size-6 rounded-md bg-black/60 hover:bg-destructive/80 flex items-center justify-center transition-colors"
+              className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-destructive/10 transition-colors"
               title="删除"
             >
-              <Trash2 className="size-3 text-white" />
+              <Trash2 className="size-3.5 text-destructive/70 hover:text-destructive" />
             </button>
           </div>
         </div>
