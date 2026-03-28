@@ -172,10 +172,6 @@ export interface BuildScriptShotsPromptInput {
   previousShot: string | null
 }
 
-interface BuildScriptShotsPromptOptions {
-  /** 自定义模板；若缺失占位符字段，会在末尾追加对应段落 */
-  template?: string
-}
 
 export interface BuildScriptShotsSystemPromptOptions {
   /** 自定义系统提示词模板 */
@@ -196,17 +192,7 @@ function appendIfMissing(hasPlaceholder: boolean, result: string, fallbackBlock:
   return `${result}\n${fallbackBlock}`
 }
 
-/**
- * 兼容旧调用的单一 Prompt 构建函数
- */
-function buildScriptShotsPrompt(
-  input: BuildScriptShotsPromptInput,
-  options?: BuildScriptShotsPromptOptions
-): string {
-  const systemPrompt = buildScriptShotsSystemPrompt()
-  const userPrompt = buildScriptShotsUserPrompt(input, options)
-  return `${systemPrompt}\n\n${userPrompt}`.trim()
-}
+
 
 export function buildScriptShotsSystemPrompt(options?: BuildScriptShotsSystemPromptOptions): string {
   const raw = options?.template?.trim()
