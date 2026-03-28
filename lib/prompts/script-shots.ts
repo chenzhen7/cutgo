@@ -151,7 +151,7 @@ const DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE = `你是一位资深分镜师
 
 `
 
-export const DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE = `## 剧本信息
+const DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE = `## 剧本信息
 - 标题：${SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER}
 - 关联场景：${SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER}
 - 出场角色：${SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER}
@@ -163,10 +163,6 @@ ${SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER}
 ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
 `
 
-export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `${DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE}
-
-${DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE}` as const
-
 export interface BuildScriptShotsPromptInput {
   episodeTitle: string
   episodeScenes: string
@@ -176,7 +172,7 @@ export interface BuildScriptShotsPromptInput {
   previousShot: string | null
 }
 
-export interface BuildScriptShotsPromptOptions {
+interface BuildScriptShotsPromptOptions {
   /** 自定义模板；若缺失占位符字段，会在末尾追加对应段落 */
   template?: string
 }
@@ -200,7 +196,10 @@ function appendIfMissing(hasPlaceholder: boolean, result: string, fallbackBlock:
   return `${result}\n${fallbackBlock}`
 }
 
-export function buildScriptShotsPrompt(
+/**
+ * 兼容旧调用的单一 Prompt 构建函数
+ */
+function buildScriptShotsPrompt(
   input: BuildScriptShotsPromptInput,
   options?: BuildScriptShotsPromptOptions
 ): string {
