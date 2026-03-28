@@ -57,4 +57,4 @@ export const POST = withError(async (request: NextRequest) => {
 ## 新增错误码
 
 在 `lib/api-error.ts` 的 `API_ERRORS` 对象中新增一项（`code` / `status` / `defaultMessage`），
-调用端直接使用 `throw cutGoError("NEW_KEY", "message")` 即可，无需新增快捷函数。
+调用端直接使用 `throwCutGoError("NEW_KEY` 即可，无需新增快捷函数。
