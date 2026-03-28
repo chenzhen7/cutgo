@@ -1,7 +1,7 @@
 /**
  * API 统一错误码与响应构造
  *
- * 后端 route.ts 使用 `throw cutGoError("KEY", message?)`，由 `withError` 捕获并返回 JSON。
+ * 后端 route.ts 使用 `throwCutGoError("KEY", message?)`，由 `withError` 捕获并返回 JSON。
  * 前端通过 api-client.ts 的 ApiError.code 做分支判断，ApiError.message 展示用户提示。
  */
 

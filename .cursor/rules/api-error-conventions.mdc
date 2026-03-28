@@ -1,15 +1,20 @@
----
-description: 规范 API 路由中的错误响应写法，统一使用 cutGoError + withError，禁止手写 NextResponse.json 错误结构。
+description: 规范项目错误处理写法，统一使用 throwCutGoError + withError，默认中文错误文案，禁止直接 throw new Error。
 alwaysApply: true
 ---
 
 # API 错误响应规范
 
 所有 `route.ts` 必须统一使用：
-- `throw cutGoError("KEY", message?)` 抛出业务错误
+- `throwCutGoError("KEY", message?)` 抛出业务错误
 - `withError(...)` 包装路由处理函数并统一返回错误响应
 
 **禁止**手写 `NextResponse.json({ error: "..." }, { status: xxx })`。
+
+## 统一异常约束（新增）
+
+- `lib/` 业务层与 `route.ts` 都应优先抛 `throwCutGoError(...)`，不要直接 `throw new Error(...)`
+- 错误 `message` 默认使用中文，便于前端直接展示
+- 仅在底层三方 SDK 抛出非结构化异常时，允许捕获后转换为 `throwCutGoError(...)`
 
 ## 响应格式
 
@@ -21,13 +26,13 @@ alwaysApply: true
 
 | 场景 | 写法 | 状态码 |
 |---|---|---|
-| 缺少必要参数 | `throw cutGoError("MISSING_PARAMS", message?)` | 400 |
-| 业务校验不通过 | `throw cutGoError("VALIDATION", message?)` | 400 |
-| 资源不存在 | `throw cutGoError("NOT_FOUND", message?)` | 404 |
-| 名称/唯一键冲突 | `throw cutGoError("CONFLICT", message?)` | 409 |
-| LLM 未配置 | `throw cutGoError("LLM_NOT_CONFIGURED")` | 422 |
-| LLM 返回内容无效 | `throw cutGoError("LLM_INVALID_RESPONSE", message?)` | 500 |
-| 服务端内部错误 | `throw cutGoError("INTERNAL", message?)` | 500 |
+| 缺少必要参数 | `throwCutGoError("MISSING_PARAMS", message?)` | 400 |
+| 业务校验不通过 | `throwCutGoError("VALIDATION", message?)` | 400 |
+| 资源不存在 | `throwCutGoError("NOT_FOUND", message?)` | 404 |
+| 名称/唯一键冲突 | `throwCutGoError("CONFLICT", message?)` | 409 |
+| LLM 未配置 | `throwCutGoError("LLM_NOT_CONFIGURED")` | 422 |
+| LLM 返回内容无效 | `throwCutGoError("LLM_INVALID_RESPONSE", message?)` | 500 |
+| 服务端内部错误 | `throwCutGoError("INTERNAL", message?)` | 500 |
 
 需要附加业务数据时，手动构造（保持 `error`/`message` 字段）：
 ```ts
@@ -45,16 +50,16 @@ return NextResponse.json(
 return NextResponse.json({ error: "项目不存在" }, { status: 404 })
 
 // ✅ 正确
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const POST = withError(async (request: NextRequest) => {
   const { projectId } = await request.json()
-  if (!projectId) throw cutGoError("MISSING_PARAMS", "projectId is required")
-  throw cutGoError("NOT_FOUND", "项目不存在")
+  if (!projectId) throwCutGoError("MISSING_PARAMS", "缺少 projectId 参数")
+  throwCutGoError("NOT_FOUND", "项目不存在")
 })
 ```
 
 ## 新增错误码
 
 在 `lib/api-error.ts` 的 `API_ERRORS` 对象中新增一项（`code` / `status` / `defaultMessage`），
-调用端直接使用 `throwCutGoError("NEW_KEY` 即可，无需新增快捷函数。
+调用端直接使用 `throwCutGoError("NEW_KEY")` 即可，无需新增快捷函数。

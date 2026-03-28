@@ -15,13 +15,13 @@ alwaysApply: false
 
 ```ts
 import { getLLMProvider } from "@/lib/ai/llm"
-import { cutGoError, withError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 
 const llmProvider = await getLLMProvider()
 
 // 未配置时抛出标准 422 错误，由 withError 统一处理
 if (!llmProvider) {
-  throw cutGoError("LLM_NOT_CONFIGURED")
+  throwCutGoError("LLM_NOT_CONFIGURED")
 }
 
 // 调用 LLM

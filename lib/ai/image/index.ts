@@ -1,8 +1,9 @@
 import { getImageConfig } from "../config"
+import { throwCutGoError } from "@/lib/api-error"
+import { DoubaoImageProvider } from "./doubao"
 import { PlaceholderImageProvider } from "./placeholder"
 import { StabilityImageProvider } from "./stability"
 import type { ImageGenerateOptions, ImageGenerateResult, ImageProvider } from "../types"
-import { API_ERRORS } from "@/lib/api-error"
 
 /** 图像模型配置运行时参数定义 */
 export interface ImageProviderRuntimeConfig {
@@ -34,6 +35,13 @@ export function createImageProviderFromConfig(
 ): ImageProvider | null {
   if (!config.apiKey && config.provider !== "comfyui") return null
 
+  if (config.provider === "doubao") {
+    return new DoubaoImageProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model,
+    })
+  }
 
   if (config.provider === "stability") {
     return new StabilityImageProvider({
@@ -56,12 +64,12 @@ export async function callImage(
 ): Promise<ImageGenerateResult | ImageGenerateResult[]> {
   const config = await getImageConfig()
   if (!config) {
-    throw new Error(API_ERRORS.IMAGE_NOT_CONFIGURED.code)
+    throwCutGoError("IMAGE_NOT_CONFIGURED")
   }
 
   const provider = createImageProviderFromConfig(config)
   if (!provider) {
-    throw new Error(API_ERRORS.IMAGE_NOT_CONFIGURED.code)
+    throwCutGoError("IMAGE_NOT_CONFIGURED")
   }
 
   return provider.generate(options)
