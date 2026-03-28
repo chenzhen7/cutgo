@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Sparkles, ChevronDown, Loader2, Paintbrush, Video } from "lucide-react"
+import { Clapperboard , ChevronDown, Loader2, Paintbrush, Video } from "lucide-react"
 import type { ScriptShotGenerateStatus } from "@/lib/types"
 
 interface ScriptShotToolbarProps {
@@ -84,8 +84,8 @@ export function ScriptShotToolbar({
           size="sm"
           onClick={onGenerateCurrentEpisode}
         >
-          {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Sparkles className="size-4 mr-2" />}
-          {isGenerating ? "生成中..." : "AI 生成分镜"}
+          {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Clapperboard  className="size-4 mr-2" />}
+          {isGenerating ? "生成中..." : "生成分镜"}
         </Button>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
-import { Loader2, LayoutGrid } from "lucide-react"
+import { Loader2, Clapperboard } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   AlertDialog,
@@ -99,6 +99,7 @@ export default function ScriptShotPage() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [episodeLoading, setEpisodeLoading] = useState(false)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
+  const [showGenerateConfirm, setShowGenerateConfirm] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   // Video generation mock state
@@ -187,8 +188,23 @@ export default function ScriptShotPage() {
 
   const handleGenerateCurrentEpisode = useCallback(async () => {
     if (!activeEpisodeId) return
+
+    // 如果该分集已经有了分镜，则弹窗确认
+    const hasShots = currentScriptShotPlans.length > 0 && currentScriptShotPlans.some(p => p.shots.length > 0)
+    if (hasShots) {
+      setShowGenerateConfirm(true)
+      return
+    }
+
     await generateScriptShots(projectId, [activeEpisodeId])
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
+    await fetchScriptShotPlans(projectId, activeEpisodeId)
+  }, [projectId, activeEpisodeId, currentScriptShotPlans, generateScriptShots, fetchScriptShotPlans])
+
+  const handleConfirmGenerate = useCallback(async () => {
+    if (!activeEpisodeId) return
+    setShowGenerateConfirm(false)
+    await generateScriptShots(projectId, [activeEpisodeId])
     await fetchScriptShotPlans(projectId, activeEpisodeId)
   }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans])
 
@@ -525,7 +541,7 @@ export default function ScriptShotPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                    <LayoutGrid className="size-12 text-muted-foreground mb-4" />
+                    <Clapperboard className="size-12 text-muted-foreground mb-4" />
                     <h3 className="text-base font-medium mb-2">
                       {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
                     </h3>
@@ -615,6 +631,30 @@ export default function ScriptShotPage() {
               }}
             >
               确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Generate storyboard confirmation */}
+      <AlertDialog
+        open={showGenerateConfirm}
+        onOpenChange={setShowGenerateConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>重新生成分镜</AlertDialogTitle>
+            <AlertDialogDescription>
+              当前分集已存在生成的分镜。重新生成将<span className="font-bold text-destructive">永久删除</span>现有的所有镜头、已生成的画面和视频，且无法恢复。确定要继续吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleConfirmGenerate}
+            >
+              确认重新生成
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
