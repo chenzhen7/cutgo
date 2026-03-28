@@ -53,7 +53,10 @@ export class DoubaoImageProvider implements ImageProvider {
         size: `${options.width}x${options.height}`,
         response_format: "url",
       }),
-    })
+      signal: AbortSignal.timeout(300_000),
+    }
+  
+  )
 
     if (!res.ok) {
       const errorText = await res.text()

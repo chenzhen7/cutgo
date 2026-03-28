@@ -76,10 +76,10 @@ async function testLLM({
         model,
         messages: [{ role: "user", content: "hi" }],
         maxTokens: 10,
-        timeoutMs: 1000 * 100
+        timeoutMs: 1000 * 20
       }),
       new Promise((_, reject) =>
-        setTimeout(() => reject("timeout"), 100_000)
+        setTimeout(() => reject("timeout"), 300_000)
       ),
     ])
 
@@ -106,6 +106,7 @@ async function testImage({
   apiKey: string
   baseUrl: string
 }) {
+
   if (provider === "comfyui") {
     const url = baseUrl || "http://127.0.0.1:8188"
     const res = await fetch(`${url.replace(/\/$/, "")}/system_stats`, {
@@ -147,7 +148,7 @@ async function testImage({
         height: 512,
       }),
       new Promise((_, reject) =>
-        setTimeout(() => reject("timeout"), 100_000)
+        setTimeout(() => reject("timeout"), 300_000)
       ),
     ])
 
