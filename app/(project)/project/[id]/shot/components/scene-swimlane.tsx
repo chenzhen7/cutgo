@@ -166,25 +166,27 @@ export const SceneSwimlane = memo(function SceneSwimlane({
           </div>
 
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-           
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={onToggleShotDisplayMode}
-            >
-              {shotDisplayMode === "composition" ? (
-                <>
-                  <Type className="size-3 mr-1" />
-                  画面描述
-                </>
-              ) : (
-                <>
-                  <Film className="size-3 mr-1" />
-                  提示词
-                </>
-              )}
-            </Button>
+
+            {layout !== "grid" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={onToggleShotDisplayMode}
+              >
+                {shotDisplayMode === "composition" ? (
+                  <>
+                    <Type className="size-3 mr-1" />
+                    画面描述
+                  </>
+                ) : (
+                  <>
+                    <Film className="size-3 mr-1" />
+                    提示词
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -195,7 +197,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
               剧本
             </Button>
 
-             <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
+            <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
               <button
                 onClick={() => onShotLayoutChange("list")}
                 className={cn(

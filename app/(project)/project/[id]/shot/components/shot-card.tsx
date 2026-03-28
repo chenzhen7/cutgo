@@ -390,27 +390,27 @@ export const ShotCard = memo(function ShotCard({
 
             <div className="flex items-center gap-2 flex-wrap">
               {boundCharacters.length > 0 && (
-                  <div className="flex items-center -space-x-1.5">
-                    {boundCharacters.slice(0, 5).map((c) => (
-                      <Tooltip key={c.id}>
-                        <TooltipTrigger asChild>
-                          <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[900px]:size-5">
-                            {c.imageUrl ? (
-                              <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
-                            ) : (
-                              <User className="size-3 text-muted-foreground" />
-                            )}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">{c.name}</TooltipContent>
-                      </Tooltip>
-                    ))}
-                    {boundCharacters.length > 5 && (
-                      <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0 @[900px]:size-5">
-                        +{boundCharacters.length - 5}
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center -space-x-1.5">
+                  {boundCharacters.slice(0, 5).map((c) => (
+                    <Tooltip key={c.id}>
+                      <TooltipTrigger asChild>
+                        <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[900px]:size-5">
+                          {c.imageUrl ? (
+                            <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                          ) : (
+                            <User className="size-3 text-muted-foreground" />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">{c.name}</TooltipContent>
+                    </Tooltip>
+                  ))}
+                  {boundCharacters.length > 5 && (
+                    <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0 @[900px]:size-5">
+                      +{boundCharacters.length - 5}
+                    </div>
+                  )}
+                </div>
               )}
 
               {boundScene && (
@@ -443,28 +443,28 @@ export const ShotCard = memo(function ShotCard({
           <Paintbrush className="size-3.5 text-primary/70 hover:text-primary" />
         </button>
         <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) handleGenerateVideo() }}
-                className={cn(
-                  "rounded-lg p-2 transition-colors",
-                  shot.imageUrl
-                    ? "hover:bg-violet-500/10"
-                    : "opacity-40 cursor-not-allowed"
-                )}
-                title={shot.videoUrl ? "重新生成视频" : "生成视频"}
-                disabled={!shot.imageUrl || isGeneratingVideo}
-              >
-                <Video className={cn(
-                  "size-3.5",
-                  shot.imageUrl ? "text-violet-500/70 hover:text-violet-500" : "text-muted-foreground/40"
-                )} />
-              </button>
-            </TooltipTrigger>
-            {!shot.imageUrl && (
-              <TooltipContent side="left" className="text-xs">请先生成画面</TooltipContent>
-            )}
-          </Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) handleGenerateVideo() }}
+              className={cn(
+                "rounded-lg p-2 transition-colors",
+                shot.imageUrl
+                  ? "hover:bg-violet-500/10"
+                  : "opacity-40 cursor-not-allowed"
+              )}
+              title={shot.videoUrl ? "重新生成视频" : "生成视频"}
+              disabled={!shot.imageUrl || isGeneratingVideo}
+            >
+              <Video className={cn(
+                "size-3.5",
+                shot.imageUrl ? "text-violet-500/70 hover:text-violet-500" : "text-muted-foreground/40"
+              )} />
+            </button>
+          </TooltipTrigger>
+          {!shot.imageUrl && (
+            <TooltipContent side="left" className="text-xs">请先生成画面</TooltipContent>
+          )}
+        </Tooltip>
         <button
           onClick={(e) => { e.stopPropagation(); handleDuplicate() }}
           className="rounded-lg p-2 hover:bg-muted transition-colors"
