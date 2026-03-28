@@ -184,9 +184,6 @@ export const POST = withError(async (request: NextRequest) => {
 
   try {
     for (const episode of targetEpisodes) {
-      // 新规则：每次生成前先清空当前分集已有分镜
-      await prisma.shot.deleteMany({ where: { episodeId: episode.id } })
-
       const episodeCharacterIds = parseJsonArray(episode.characters)
       const episodeSceneIds = parseJsonArray(episode.scenes)
       const episodePropIds = parseJsonArray(episode.props)
@@ -245,9 +242,11 @@ export const POST = withError(async (request: NextRequest) => {
         })
         .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
+      const txOperations: any[] = [prisma.shot.deleteMany({ where: { episodeId: episode.id } })]
       if (shotData.length > 0) {
-        await prisma.shot.createMany({ data: shotData })
+        txOperations.push(prisma.shot.createMany({ data: shotData }))
       }
+      await prisma.$transaction(txOperations)
 
       if (aiResult.shots?.length) {
         const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.prompt?.trim() || ""

@@ -196,17 +196,19 @@ export default function ScriptShotPage() {
       return
     }
 
+    setDetailPanelOpen(false)
     await generateScriptShots(projectId, [activeEpisodeId])
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
     await fetchScriptShotPlans(projectId, activeEpisodeId)
-  }, [projectId, activeEpisodeId, currentScriptShotPlans, generateScriptShots, fetchScriptShotPlans])
+  }, [projectId, activeEpisodeId, currentScriptShotPlans, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
 
   const handleConfirmGenerate = useCallback(async () => {
     if (!activeEpisodeId) return
     setShowGenerateConfirm(false)
+    setDetailPanelOpen(false)
     await generateScriptShots(projectId, [activeEpisodeId])
     await fetchScriptShotPlans(projectId, activeEpisodeId)
-  }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans])
+  }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
 
   const handleDeleteShot = useCallback(
     async (episodeId: string, shotId: string) => {
@@ -507,11 +509,24 @@ export default function ScriptShotPage() {
                     <Loader2 className="size-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : currentScriptShotPlans.length > 0 ? (
-                  <div className={cn(
-                    "space-y-3",
-                    detailPanelOpen ? "p-0" : ""
-                  )}>
-                    {currentScriptShotPlans.map((plan) => (
+                  <div className="relative min-h-full">
+                    {isGenerating && (
+                      <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
+                        <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-background p-6 shadow-lg border">
+                          <Loader2 className="size-8 animate-spin text-primary" />
+                          <div className="text-center">
+                            <p className="text-sm font-medium">正在生成分镜</p>
+                            <p className="text-xs text-muted-foreground mt-1">这可能需要几十秒时间...</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className={cn(
+                      "space-y-3",
+                      detailPanelOpen ? "p-0" : "",
+                      isGenerating ? "pointer-events-none opacity-60" : ""
+                    )}>
+                      {currentScriptShotPlans.map((plan) => (
                       <SceneSwimlane
                         key={plan.id}
                         scriptShotPlan={plan}
@@ -538,6 +553,7 @@ export default function ScriptShotPage() {
                         onReorderShots={handleReorderShots}
                       />
                     ))}
+                  </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8">
