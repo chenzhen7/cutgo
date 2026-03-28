@@ -147,8 +147,8 @@ export const POST = withError(async (request: NextRequest) => {
       const aiResult = await callAIGenerateScriptShots(
         episode.title,
         episode.script,
-        matchedCharacters.map((c) => c.name).join(", "),
-        matchedProps.map((p) => p.name).join(", "),
+        matchedCharacters.map((c) => c.name).join("; "),
+        matchedProps.map((p) => p.name).join("; "),
         matchedScene?.name || "",
         previousShotStr
       )
