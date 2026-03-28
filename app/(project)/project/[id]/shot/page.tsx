@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
-import { Loader2, LayoutGrid, LayoutList } from "lucide-react"
+import { Loader2, LayoutGrid } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   AlertDialog,
@@ -196,13 +196,6 @@ export default function ScriptShotPage() {
   const handleGenerateEpisodes = useCallback(
     async (episodeIds: string[]) => {
       await generateScriptShots(projectId, episodeIds, "overwrite")
-    },
-    [projectId, generateScriptShots]
-  )
-
-  const handleRegenerateScript = useCallback(
-    async (episodeId: string) => {
-      await generateScriptShots(projectId, [episodeId], "overwrite")
     },
     [projectId, generateScriptShots]
   )
@@ -466,48 +459,18 @@ export default function ScriptShotPage() {
 
       {/* Main content */}
       <>
-          {/* Toolbar — 顶栏全宽贴边 */}
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <h2 className="truncate text-xl font-semibold text-foreground">
-                分镜生成
-              </h2>
-              <div className="h-4 w-px shrink-0 bg-border" />
-              <EpisodeSelector />
-            </div>
+        {/* Toolbar — 顶栏全宽贴边 */}
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="truncate text-xl font-semibold text-foreground">
+              分镜生成
+            </h2>
+            <div className="h-4 w-px shrink-0 bg-border" />
+            <EpisodeSelector />
+          </div>
 
-            <div className="flex items-center gap-2">
-              {/* Layout toggle */}
-              <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
-                <button
-                  onClick={() => setShotLayout("list")}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all",
-                    shotLayout === "list"
-                      ? "bg-background text-foreground shadow-sm font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  title="列表视图"
-                >
-                  <LayoutList className="size-3.5" />
-                  列表
-                </button>
-                <button
-                  onClick={() => setShotLayout("grid")}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all",
-                    shotLayout === "grid"
-                      ? "bg-background text-foreground shadow-sm font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  title="网格视图"
-                >
-                  <LayoutGrid className="size-3.5" />
-                  网格
-                </button>
-              </div>
-
-              <ScriptShotToolbar
+          <div className="flex items-center gap-2">
+            <ScriptShotToolbar
               generateStatus={generateStatus}
               batchImageStatus={batchImageStatus}
               batchImageProgress={batchImageProgress}
@@ -519,121 +482,121 @@ export default function ScriptShotPage() {
               onBatchGenerateVideos={handleBatchGenerateVideos}
               onBatchGenerateEpisodeVideos={handleBatchGenerateEpisodeVideos}
             />
-            </div>
           </div>
+        </div>
 
-          {/* Two-column layout — 主区水平贴边 */}
-          <div className="min-h-0 flex-1">
-            <ResizablePanelGroup orientation="horizontal" className="h-full">
-              {/* Center: Timeline editor */}
-              <ResizablePanel defaultSize={60} minSize="450px">
-                <div
-                  className={cn(
-                    "custom-scrollbar h-full min-w-0 space-y-3 overflow-y-auto  pb-12 ",
-                    detailPanelOpen
-                      ? "bg-muted/10"
-                      : "border-border border-b bg-background"
-                  )}
-                >
-                  {episodeLoading ? (
-                    <div className="flex min-h-[240px] items-center justify-center">
-                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : currentScriptShotPlans.length > 0 ? (
-                    <div className={cn(
-                      "space-y-3",
-                      detailPanelOpen ? "p-0" : ""
-                    )}>
-                      {currentScriptShotPlans.map((plan) => (
-                        <SceneSwimlane
-                          key={plan.id}
-                          scriptShotPlan={plan}
-                          episodeDisplayNumber={
-                            episodeDisplayMap.get(plan.episodeId) ?? 1
-                          }
-                          activeShotId={activeShotId}
-                          selectedShotIds={selectedShotIds}
-                          imageGeneratingIds={imageGeneratingIds}
-                          videoGeneratingIds={videoGeneratingIds}
-                          shotDisplayMode={shotDisplayMode}
-                          layout={shotLayout}
-                          assetCharacters={assetCharacters}
-                          assetScenes={assetScenes}
-                          assetProps={assetProps}
-                          onSelectShot={handleSelectShot}
-                          onDuplicateShot={handleDuplicateShot}
-                          onDeleteShot={handleConfirmDeleteShot}
-                          onAddShot={handleAddShot}
-                          onGenerateImage={handleGenerateImage}
-                          onGenerateVideo={handleGenerateVideo}
-                          onPlayVideo={handlePlayVideo}
-                          onRegenerateScript={handleRegenerateScript}
-                          onViewScript={handleViewScript}
-                          onToggleShotDisplayMode={handleToggleShotDisplayMode}
-                          onReorderShots={handleReorderShots}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                      <LayoutGrid className="size-12 text-muted-foreground mb-4" />
-                      <h3 className="text-base font-medium mb-2">
-                        {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {activeEpisodeId
-                          ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
-                          : "从上方选择一个分集进行查看和编辑"}
-                      </p>
-                      {activeEpisodeId && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleGenerateEpisodes([activeEpisodeId])}
-                          disabled={isGenerating}
-                        >
-                          生成该集分镜
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </ResizablePanel>
-
-              {/* Right: Shot detail panel */}
-              {detailPanelOpen && currentActiveShot && (
-                <>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={40} minSize="450px">
-                    <div className="h-full shrink-0 overflow-hidden border-r border-border bg-card">
-                      <ShotDetailPanel
-                        shot={currentActiveShot.shot}
-                        scriptShotPlan={currentActiveShot.scriptShotPlan}
+        {/* Two-column layout — 主区水平贴边 */}
+        <div className="min-h-0 flex-1">
+          <ResizablePanelGroup orientation="horizontal" className="h-full">
+            {/* Center: Timeline editor */}
+            <ResizablePanel defaultSize={60} minSize="450px">
+              <div
+                className={cn(
+                  "custom-scrollbar h-full min-w-0 space-y-3 overflow-y-auto  pb-12 ",
+                  detailPanelOpen
+                    ? "bg-muted/10"
+                    : "border-border border-b bg-background"
+                )}
+              >
+                {episodeLoading ? (
+                  <div className="flex min-h-[240px] items-center justify-center">
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : currentScriptShotPlans.length > 0 ? (
+                  <div className={cn(
+                    "space-y-3",
+                    detailPanelOpen ? "p-0" : ""
+                  )}>
+                    {currentScriptShotPlans.map((plan) => (
+                      <SceneSwimlane
+                        key={plan.id}
+                        scriptShotPlan={plan}
                         episodeDisplayNumber={
-                          episodeDisplayMap.get(
-                            currentActiveShot.scriptShotPlan.episodeId
-                          ) ?? 1
+                          episodeDisplayMap.get(plan.episodeId) ?? 1
                         }
-                        isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
-                        isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
+                        activeShotId={activeShotId}
+                        selectedShotIds={selectedShotIds}
+                        imageGeneratingIds={imageGeneratingIds}
+                        videoGeneratingIds={videoGeneratingIds}
+                        shotDisplayMode={shotDisplayMode}
+                        layout={shotLayout}
                         assetCharacters={assetCharacters}
                         assetScenes={assetScenes}
                         assetProps={assetProps}
-                        onUpdate={handleUpdateShot}
-                        onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
-                        onClearImage={handleClearImage}
-                        onGenerateVideo={() => handleGenerateVideo(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
-                        onClearVideo={handleClearVideo}
-                        onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
-                        onPrev={hasPrevShot ? handlePrevShot : null}
-                        onNext={hasNextShot ? handleNextShot : null}
-                        onClose={() => setDetailPanelOpen(false)}
+                        onSelectShot={handleSelectShot}
+                        onDuplicateShot={handleDuplicateShot}
+                        onDeleteShot={handleConfirmDeleteShot}
+                        onAddShot={handleAddShot}
+                        onGenerateImage={handleGenerateImage}
+                        onGenerateVideo={handleGenerateVideo}
+                        onPlayVideo={handlePlayVideo}
+                        onViewScript={handleViewScript}
+                        onToggleShotDisplayMode={handleToggleShotDisplayMode}
+                        onShotLayoutChange={setShotLayout}
+                        onReorderShots={handleReorderShots}
                       />
-                    </div>
-                  </ResizablePanel>
-                </>
-              )}
-            </ResizablePanelGroup>
-          </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                    <LayoutGrid className="size-12 text-muted-foreground mb-4" />
+                    <h3 className="text-base font-medium mb-2">
+                      {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {activeEpisodeId
+                        ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
+                        : "从上方选择一个分集进行查看和编辑"}
+                    </p>
+                    {activeEpisodeId && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleGenerateEpisodes([activeEpisodeId])}
+                        disabled={isGenerating}
+                      >
+                        生成该集分镜
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </ResizablePanel>
+
+            {/* Right: Shot detail panel */}
+            {detailPanelOpen && currentActiveShot && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={40} minSize="450px">
+                  <div className="h-full shrink-0 overflow-hidden border-r border-border bg-card">
+                    <ShotDetailPanel
+                      shot={currentActiveShot.shot}
+                      scriptShotPlan={currentActiveShot.scriptShotPlan}
+                      episodeDisplayNumber={
+                        episodeDisplayMap.get(
+                          currentActiveShot.scriptShotPlan.episodeId
+                        ) ?? 1
+                      }
+                      isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
+                      isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
+                      assetCharacters={assetCharacters}
+                      assetScenes={assetScenes}
+                      assetProps={assetProps}
+                      onUpdate={handleUpdateShot}
+                      onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
+                      onClearImage={handleClearImage}
+                      onGenerateVideo={() => handleGenerateVideo(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
+                      onClearVideo={handleClearVideo}
+                      onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
+                      onPrev={hasPrevShot ? handlePrevShot : null}
+                      onNext={hasNextShot ? handleNextShot : null}
+                      onClose={() => setDetailPanelOpen(false)}
+                    />
+                  </div>
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
+        </div>
 
       </>
 

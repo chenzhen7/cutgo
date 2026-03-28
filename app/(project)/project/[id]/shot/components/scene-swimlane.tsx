@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  RefreshCw,
   BookOpen,
   Plus,
   Type,
   Film,
+  LayoutGrid,
+  LayoutList,
 } from "lucide-react"
 import {
   DndContext,
@@ -52,9 +53,9 @@ interface SceneSwimlaneProps {
   onGenerateImage: (episodeId: string, shotId: string) => void
   onGenerateVideo: (episodeId: string, shotId: string) => void
   onPlayVideo: (shotId: string) => void
-  onRegenerateScript: (episodeId: string) => void
   onViewScript: (scriptShotPlan: ScriptShotPlan) => void
   onToggleShotDisplayMode: () => void
+  onShotLayoutChange: (layout: ShotCardLayout) => void
   onReorderShots: (episodeId: string, orderedIds: string[]) => void
 }
 
@@ -77,9 +78,9 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   onGenerateImage,
   onGenerateVideo,
   onPlayVideo,
-  onRegenerateScript,
   onViewScript,
   onToggleShotDisplayMode,
+  onShotLayoutChange,
   onReorderShots,
 }: SceneSwimlaneProps) {
   const episode = scriptShotPlan.episode
@@ -134,104 +135,164 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="@container bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none">
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 @[640px]:px-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium truncate @[900px]:text-sm">
-              {episode.title}
-            </span>
-            <Badge variant="outline" className="text-[9px] px-1.5 py-0 @[900px]:text-[10px]">
-              第{episodeDisplayNumber}集
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">
-              {scriptShotPlan.shots.length} 个画面
-            </span>
-            {scriptShotPlan.shots.length > 0 && (
-              <>
-                <span className="text-xs text-muted-foreground">
-                  · {shotsWithImage}/{scriptShotPlan.shots.length} 已生图
-                </span>
-                {shotsWithVideo > 0 && (
-                  <span className="text-xs text-violet-600 dark:text-violet-400">
-                    · {shotsWithVideo} 已生视频
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-card px-2.5 py-2 @[640px]:px-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-medium truncate @[900px]:text-sm">
+                {episode.title}
+              </span>
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 @[900px]:text-[10px]">
+                第{episodeDisplayNumber}集
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-muted-foreground">
+                {scriptShotPlan.shots.length} 个画面
+              </span>
+              {scriptShotPlan.shots.length > 0 && (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    · {shotsWithImage}/{scriptShotPlan.shots.length} 已生图
                   </span>
+                  {shotsWithVideo > 0 && (
+                    <span className="text-xs text-violet-600 dark:text-violet-400">
+                      · {shotsWithVideo} 已生视频
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+           
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={onToggleShotDisplayMode}
+            >
+              {shotDisplayMode === "composition" ? (
+                <>
+                  <Type className="size-3 mr-1" />
+                  画面描述
+                </>
+              ) : (
+                <>
+                  <Film className="size-3 mr-1" />
+                  提示词
+                </>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => onViewScript(scriptShotPlan)}
+            >
+              <BookOpen className="size-3 mr-1" />
+              剧本
+            </Button>
+
+             <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
+              <button
+                onClick={() => onShotLayoutChange("list")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all",
+                  layout === "list"
+                    ? "bg-background text-foreground shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
-              </>
-            )}
+                title="列表视图"
+              >
+                <LayoutList className="size-3.5" />
+                列表
+              </button>
+              <button
+                onClick={() => onShotLayoutChange("grid")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all",
+                  layout === "grid"
+                    ? "bg-background text-foreground shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="网格视图"
+              >
+                <LayoutGrid className="size-3.5" />
+                网格
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={onToggleShotDisplayMode}
-          >
-            {shotDisplayMode === "composition" ? (
-              <>
-                <Type className="size-3 mr-1" />
-                画面描述
-              </>
-            ) : (
-              <>
-                <Film className="size-3 mr-1" />
-                提示词
-              </>
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => onRegenerateScript(scriptShotPlan.episodeId)}
-          >
-            <RefreshCw className="size-3 mr-1" />
-            重新生成
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => onViewScript(scriptShotPlan)}
-          >
-            <BookOpen className="size-3 mr-1" />
-            剧本
-          </Button>
-        </div>
-      </div>
-
-      {/* Shots */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={shotIds}
-          strategy={layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy}
+        {/* Shots */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
         >
-          <div className={cn(
-            "p-2.5 @[640px]:p-3",
-            layout === "grid"
-              ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
-              : "flex flex-col gap-2.5 @[640px]:gap-3"
-          )}>
-            {localShots.map((shot) => (
+          <SortableContext
+            items={shotIds}
+            strategy={layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy}
+          >
+            <div className={cn(
+              "p-2.5 @[640px]:p-3",
+              layout === "grid"
+                ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
+                : "flex flex-col gap-2.5 @[640px]:gap-3"
+            )}>
+              {localShots.map((shot) => (
+                <ShotCard
+                  key={shot.id}
+                  shot={shot}
+                  episodeId={scriptShotPlan.episodeId}
+                  isActive={activeShotId === shot.id}
+                  isSelected={selectedShotIds.has(shot.id)}
+                  isGeneratingImage={imageGeneratingIds.has(shot.id)}
+                  isGeneratingVideo={videoGeneratingIds.has(shot.id)}
+                  displayMode={shotDisplayMode}
+                  layout={layout}
+                  assetCharacters={assetCharacters}
+                  assetScenes={assetScenes}
+                  assetProps={assetProps}
+                  onSelect={onSelectShot}
+                  onDuplicate={onDuplicateShot}
+                  onDelete={onDeleteShot}
+                  onGenerateImage={onGenerateImage}
+                  onGenerateVideo={onGenerateVideo}
+                  onPlayVideo={onPlayVideo}
+                />
+              ))}
+
+              <button
+                onClick={() => onAddShot(scriptShotPlan.episodeId)}
+                className={cn(
+                  "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
+                  layout === "grid" ? "aspect-square" : "h-10 @[640px]:h-12"
+                )}
+              >
+                <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
+                {layout === "list" && (
+                  <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
+                )}
+              </button>
+            </div>
+          </SortableContext>
+
+          <DragOverlay>
+            {activeDragShot && (
               <ShotCard
-                key={shot.id}
-                shot={shot}
+                shot={activeDragShot}
                 episodeId={scriptShotPlan.episodeId}
-                isActive={activeShotId === shot.id}
-                isSelected={selectedShotIds.has(shot.id)}
-                isGeneratingImage={imageGeneratingIds.has(shot.id)}
-                isGeneratingVideo={videoGeneratingIds.has(shot.id)}
+                isActive={false}
+                isSelected={false}
+                isGeneratingImage={false}
+                isGeneratingVideo={false}
                 displayMode={shotDisplayMode}
                 layout={layout}
+                isDragging={true}
                 assetCharacters={assetCharacters}
                 assetScenes={assetScenes}
                 assetProps={assetProps}
@@ -242,49 +303,10 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                 onGenerateVideo={onGenerateVideo}
                 onPlayVideo={onPlayVideo}
               />
-            ))}
-
-            <button
-              onClick={() => onAddShot(scriptShotPlan.episodeId)}
-              className={cn(
-                "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
-                layout === "grid" ? "aspect-square" : "h-10 @[640px]:h-12"
-              )}
-            >
-              <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
-              {layout === "list" && (
-                <span className="text-xs text-muted-foreground/50 group-hover:text-primary/70">添加镜头</span>
-              )}
-            </button>
-          </div>
-        </SortableContext>
-
-        <DragOverlay>
-          {activeDragShot && (
-            <ShotCard
-              shot={activeDragShot}
-              episodeId={scriptShotPlan.episodeId}
-              isActive={false}
-              isSelected={false}
-              isGeneratingImage={false}
-              isGeneratingVideo={false}
-              displayMode={shotDisplayMode}
-              layout={layout}
-              isDragging={true}
-              assetCharacters={assetCharacters}
-              assetScenes={assetScenes}
-              assetProps={assetProps}
-              onSelect={onSelectShot}
-              onDuplicate={onDuplicateShot}
-              onDelete={onDeleteShot}
-              onGenerateImage={onGenerateImage}
-              onGenerateVideo={onGenerateVideo}
-              onPlayVideo={onPlayVideo}
-            />
-          )}
-        </DragOverlay>
-      </DndContext>
-    </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      </div>
     </TooltipProvider>
   )
 })
