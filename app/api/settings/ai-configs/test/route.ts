@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
 import { createLLMProviderFromConfig } from "@/lib/ai/llm"
+import { createImageProviderFromConfig } from "@/lib/ai/image"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
 /**
@@ -96,6 +97,7 @@ async function testLLM({
 /** 测试图像生成接口连通性（仅验证 API Key 有效性） */
 async function testImage({
   provider,
+  model,
   apiKey,
   baseUrl,
 }: {
@@ -116,22 +118,53 @@ async function testImage({
     return NextResponse.json({ success: true, message: "ComfyUI 连接成功" })
   }
 
-  // OpenAI / 其他兼容接口：尝试获取模型列表
   const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
-  if (!resolvedBaseUrl || !apiKey) {
-    throwCutGoError("MISSING_PARAMS", "缺少 API Key 或 Base URL")
+  if (!resolvedBaseUrl) {
+    throwCutGoError("MISSING_PARAMS", "缺少 Base URL")
+  }
+  if (!apiKey) {
+    throwCutGoError("MISSING_PARAMS", "缺少 API Key")
   }
 
-  const res = await fetch(`${resolvedBaseUrl.replace(/\/$/, "")}/models`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(8_000),
+  const imageProvider = createImageProviderFromConfig({
+    provider,
+    model,
+    apiKey,
+    baseUrl: resolvedBaseUrl,
   })
 
-  if (!res.ok) {
-    throwCutGoError("VALIDATION", `API Key 验证失败 (${res.status})`)
+  if (!imageProvider) {
+    throwCutGoError("VALIDATION", `当前暂不支持该图片 Provider 的在线测试：${provider}`)
   }
 
-  return NextResponse.json({ success: true, message: "连接成功" })
+  console.log("[ai-configs/test][image] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model, "imageProvider:", imageProvider.id)
+
+  try {
+    const result = await Promise.race([
+      imageProvider.generate({
+        prompt: "test image",
+        width: 512,
+        height: 512,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject("timeout"), 100_000)
+      ),
+    ])
+
+    const first = Array.isArray(result) ? result[0] : result
+    if (!first?.url) {
+      throwCutGoError("VALIDATION", "图片生成成功但未返回有效结果")
+    }
+
+    return NextResponse.json({ success: true, message: "连接成功" })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message === "timeout") {
+      throwCutGoError("VALIDATION", "连接超时，请检查网络或 Base URL")
+    }
+
+    throwCutGoError("VALIDATION", `API 调用失败: ${message.slice(0, 200)}`)
+  }
 }
 
 /** 测试 TTS 接口连通性 */

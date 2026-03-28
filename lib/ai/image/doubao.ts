@@ -23,7 +23,9 @@ interface DoubaoImageResponse {
 export class DoubaoImageProvider implements ImageProvider {
   readonly id = "doubao"
 
-  constructor(private readonly config: DoubaoImageConfig) {}
+  constructor(private readonly config: DoubaoImageConfig) {
+    
+  }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
     const { numOutputs = 1 } = options
@@ -32,7 +34,6 @@ export class DoubaoImageProvider implements ImageProvider {
     }
 
     const tasks = Array.from({ length: numOutputs }, () => this.generateSingle(options))
-    
     return Promise.all(tasks)
   }
 

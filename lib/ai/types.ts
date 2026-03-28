@@ -75,7 +75,7 @@ export interface ImageGenerateOptions {
   width: number
   height: number
   stylePreset?: string
-  /** 生成图片的数量 */
+  /** 生成图片的数量 默认1 */
   numOutputs?: number
 }
 
