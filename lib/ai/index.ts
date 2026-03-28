@@ -24,6 +24,8 @@ export { getLLMConfig, getImageConfig, getVideoConfig, getTTSConfig, getActiveCo
 export type { AIModelConfig } from "./types"
 
 // 导出各能力的 Provider 获取函数
-export { getLLMProvider } from "./llm"
-export { getImageProvider } from "./image"
+export { getLLMProvider, createLLMProviderFromConfig } from "./llm"
+export type { LLMProviderRuntimeConfig } from "./llm"
+export { getImageProvider, createImageProviderFromConfig, callImage } from "./image"
+export type { ImageProviderRuntimeConfig } from "./image"
 export { getVideoProvider } from "./video"

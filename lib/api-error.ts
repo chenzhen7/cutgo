@@ -23,6 +23,7 @@ export const API_ERRORS = {
   CONFLICT: { code: "CONFLICT", status: 409, defaultMessage: "资源名称已存在，请使用不同的名称" },
   LLM_NOT_CONFIGURED: { code: "LLM_NOT_CONFIGURED", status: 422, defaultMessage: "尚未配置语言模型，请先前往设置页面配置 LLM API" },
   LLM_INVALID_RESPONSE: { code: "LLM_INVALID_RESPONSE", status: 500, defaultMessage: "LLM 未返回有效内容，请重试" },
+  IMAGE_NOT_CONFIGURED: { code: "IMAGE_NOT_CONFIGURED", status: 422, defaultMessage: "尚未配置生图模型，请先前往设置页面配置图像 API" },
   INTERNAL: { code: "INTERNAL_ERROR", status: 500, defaultMessage: "服务器内部错误，请稍后重试" },
 } as const
 
@@ -85,6 +86,9 @@ export function withError(
       }
       if (e.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
         return jsonErrorResponse("LLM_NOT_CONFIGURED")
+      }
+      if (e.message === API_ERRORS.IMAGE_NOT_CONFIGURED.code) {
+        return jsonErrorResponse("IMAGE_NOT_CONFIGURED")
       }
 
       const fallback =

@@ -1,8 +1,8 @@
-import { getLLMConfig } from "../config"
+import { getLLMConfig } from "@/lib/ai"
 import { GoogleLLMProvider } from "./google"
 import { OpenAILLMProvider } from "./openai"
 import type { LLMGenerateOptions, LLMGenerateResult, LLMProvider } from "../types"
-import { API_ERRORS } from "@/lib/api-error"
+import {throwCutGoError} from "@/lib/api-error"
 
 // 模型配置运行时参数定义
 export interface LLMProviderRuntimeConfig {
@@ -65,7 +65,7 @@ export async function callLLM(
 ): Promise<LLMGenerateResult> {
   const llmProvider = await getLLMProvider()
   if (!llmProvider) {
-    throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)
+    throwCutGoError("LLM_NOT_CONFIGURED")
   }
   return llmProvider.chat(options)
 }
