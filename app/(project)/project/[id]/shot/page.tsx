@@ -188,7 +188,9 @@ export default function ScriptShotPage() {
   const handleGenerateCurrentEpisode = useCallback(async () => {
     if (!activeEpisodeId) return
     await generateScriptShots(projectId, [activeEpisodeId])
-  }, [projectId, activeEpisodeId, generateScriptShots])
+    // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
+    await fetchScriptShotPlans(projectId, activeEpisodeId)
+  }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans])
 
   const handleDeleteShot = useCallback(
     async (episodeId: string, shotId: string) => {
