@@ -449,19 +449,6 @@ export default function ScriptShotPage() {
         </div>
       )}
 
-      {/* Generating progress */}
-      {isGenerating && (
-        <div className="flex shrink-0 items-center gap-3 border-b bg-muted/30 px-2.5 py-2.5 sm:px-3">
-          <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium">正在生成分镜...</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              AI 正在为每个场景生成分镜设计，请稍候
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Main content */}
       <>
         {/* Toolbar — 顶栏全宽贴边 */}
@@ -527,33 +514,33 @@ export default function ScriptShotPage() {
                       isGenerating ? "pointer-events-none opacity-60" : ""
                     )}>
                       {currentScriptShotPlans.map((plan) => (
-                      <SceneSwimlane
-                        key={plan.id}
-                        scriptShotPlan={plan}
-                        episodeDisplayNumber={
-                          episodeDisplayMap.get(plan.episodeId) ?? 1
-                        }
-                        activeShotId={activeShotId}
-                        selectedShotIds={selectedShotIds}
-                        imageGeneratingIds={imageGeneratingIds}
-                        videoGeneratingIds={videoGeneratingIds}
-                        layout={shotLayout}
-                        assetCharacters={assetCharacters}
-                        assetScenes={assetScenes}
-                        assetProps={assetProps}
-                        onSelectShot={handleSelectShot}
-                        onDuplicateShot={handleDuplicateShot}
-                        onDeleteShot={handleConfirmDeleteShot}
-                        onAddShot={handleAddShot}
-                        onGenerateImage={handleGenerateImage}
-                        onGenerateVideo={handleGenerateVideo}
-                        onPlayVideo={handlePlayVideo}
-                        onViewScript={handleViewScript}
-                        onShotLayoutChange={setShotLayout}
-                        onReorderShots={handleReorderShots}
-                      />
-                    ))}
-                  </div>
+                        <SceneSwimlane
+                          key={plan.id}
+                          scriptShotPlan={plan}
+                          episodeDisplayNumber={
+                            episodeDisplayMap.get(plan.episodeId) ?? 1
+                          }
+                          activeShotId={activeShotId}
+                          selectedShotIds={selectedShotIds}
+                          imageGeneratingIds={imageGeneratingIds}
+                          videoGeneratingIds={videoGeneratingIds}
+                          layout={shotLayout}
+                          assetCharacters={assetCharacters}
+                          assetScenes={assetScenes}
+                          assetProps={assetProps}
+                          onSelectShot={handleSelectShot}
+                          onDuplicateShot={handleDuplicateShot}
+                          onDeleteShot={handleConfirmDeleteShot}
+                          onAddShot={handleAddShot}
+                          onGenerateImage={handleGenerateImage}
+                          onGenerateVideo={handleGenerateVideo}
+                          onPlayVideo={handlePlayVideo}
+                          onViewScript={handleViewScript}
+                          onShotLayoutChange={setShotLayout}
+                          onReorderShots={handleReorderShots}
+                        />
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8">
