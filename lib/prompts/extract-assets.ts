@@ -6,13 +6,9 @@
 export const EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER = "{CHAPTERS_TEXT}" as const
 
 /**
- * 默认资产提取模板（含占位符 {@link EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}）
- * 后续可从数据库或用户设置读取后传入 {@link buildExtractAssetsPrompt}
+ * 默认资产提取系统提示词模板
  */
-export const DEFAULT_EXTRACT_ASSETS_PROMPT_TEMPLATE = `你是一位专业的短剧制作资产管理专家。请根据以下小说章节内容，提取并整理出该项目所需的全部资产。
-
-## 小说章节内容
-${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
+export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业的短剧制作资产管理专家。请根据以下小说章节内容，提取并整理出该项目所需的全部资产。
 
 ## 任务
 请从以上内容中提取三类资产：
@@ -59,21 +55,46 @@ ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
 }
 `
 
-export interface BuildExtractAssetsPromptOptions {
-  /** 自定义模板；须包含占位符 {@link EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}，否则将追加在末尾 */
+/**
+ * 默认资产提取用户提示词模板
+ */
+export const DEFAULT_EXTRACT_ASSETS_USER_PROMPT_TEMPLATE = `
+## 小说章节内容
+${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
+`
+
+export interface BuildExtractAssetsSystemPromptOptions {
+  /** 自定义系统提示词模板 */
   template?: string
+}
+
+export interface BuildExtractAssetsUserPromptOptions {
+  /** 自定义用户提示词模板；须包含占位符，否则将追加在末尾 */
+  template?: string
+}
+
+/**
+ * 构建系统提示词
+ */
+export function buildExtractAssetsSystemPrompt(
+  options?: BuildExtractAssetsSystemPromptOptions
+): string {
+  const raw = options?.template?.trim()
+    ? options.template
+    : DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE
+  return raw.trim()
 }
 
 /**
  * 将章节内容注入模板，得到发给 LLM 的完整 user prompt。
  */
-export function buildExtractAssetsPrompt(
+export function buildExtractAssetsUserPrompt(
   chaptersText: string,
-  options?: BuildExtractAssetsPromptOptions
+  options?: BuildExtractAssetsUserPromptOptions
 ): string {
   const raw = options?.template?.trim()
     ? options.template
-    : DEFAULT_EXTRACT_ASSETS_PROMPT_TEMPLATE
+    : DEFAULT_EXTRACT_ASSETS_USER_PROMPT_TEMPLATE
 
   if (raw.includes(EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER)) {
     return raw.split(EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER).join(chaptersText)
@@ -81,4 +102,18 @@ export function buildExtractAssetsPrompt(
 
   // 兼容用户误删占位符：在末尾追加章节内容块
   return `${raw}\n\n## 小说章节内容\n${chaptersText}`
+}
+
+/**
+ * @deprecated 请改用 buildExtractAssetsSystemPrompt 和 buildExtractAssetsUserPrompt
+ */
+export function buildExtractAssetsPrompt(
+  chaptersText: string,
+  options?: any
+): string {
+  return (
+    buildExtractAssetsSystemPrompt() +
+    "\n\n" +
+    buildExtractAssetsUserPrompt(chaptersText, options)
+  )
 }

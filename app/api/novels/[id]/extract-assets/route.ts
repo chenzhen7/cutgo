@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
-import { buildExtractAssetsPrompt } from "@/lib/prompts"
+import {
+  buildExtractAssetsSystemPrompt,
+  buildExtractAssetsUserPrompt,
+} from "@/lib/prompts"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 
 interface AIAssetResult {
@@ -41,10 +44,14 @@ async function callLLMExtractAssetsFromChapters(
     .map((ch, i) => `【第${i + 1}章${ch.title ? ` ${ch.title}` : ""}】\n${ch.content}`)
     .join("\n\n---\n\n")
 
-  const prompt = buildExtractAssetsPrompt(chaptersText)
+  const systemPrompt = buildExtractAssetsSystemPrompt()
+  const userPrompt = buildExtractAssetsUserPrompt(chaptersText)
 
   const result = await callLLM({
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
   })
 
   return parseAssetsJSON(result.content)

@@ -10,26 +10,15 @@ export const EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER = "{CHAPTER_CONTENT}" as
 export const EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER = "{PREVIOUS_CONTENT}" as const
 export const EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER = "{PROJECT_DURATION}" as const
 
-export const DEFAULT_EPISODE_SCRIPT_PROMPT_TEMPLATE = `
+/**
+ * 默认分集剧本生成系统提示词模板
+ */
+export const DEFAULT_EPISODE_SCRIPT_SYSTEM_PROMPT_TEMPLATE = `
 # 角色定位
 你是顶级网文短剧分镜剧本创作专家，擅长将结构化大纲转化为**可直接用于分镜绘制**的专业视觉脚本。
 
 ## 任务
 请基于以下分集信息，生成该集的完整剧本文本。
-
-## 当前分集信息
-- 集标题：${EPISODE_SCRIPT_TITLE_PLACEHOLDER}
-- 剧情摘要：${EPISODE_SCRIPT_OUTLINE_PLACEHOLDER}
-- 核心冲突：${EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER}
-- 结尾钩子：${EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER}
-
-## 来源章节原文（供参考，提取对白和描写素材）
-${EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER}
-
-${EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER}
-
-## 目标参数
-- 每集时长：${EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER}
 
 ---
 ## 核心原则（强制执行）
@@ -336,6 +325,25 @@ endingHook + 【黑屏】
 ## 输出格式
 直接输出剧本纯文本，不要包含 JSON 或 markdown 代码块。`
 
+/**
+ * 默认分集剧本生成用户提示词模板
+ */
+export const DEFAULT_EPISODE_SCRIPT_USER_PROMPT_TEMPLATE = `
+## 当前分集信息
+- 集标题：${EPISODE_SCRIPT_TITLE_PLACEHOLDER}
+- 剧情摘要：${EPISODE_SCRIPT_OUTLINE_PLACEHOLDER}
+- 核心冲突：${EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER}
+- 结尾钩子：${EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER}
+
+## 来源章节原文（供参考，提取对白和描写素材）
+${EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER}
+
+${EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER}
+
+## 目标参数
+- 每集时长：${EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER}
+`
+
 export interface BuildEpisodeScriptPromptInput {
   episodeTitle: string
   episodeSynopsis: string
@@ -347,8 +355,13 @@ export interface BuildEpisodeScriptPromptInput {
   duration: string
 }
 
-export interface BuildEpisodeScriptPromptOptions {
-  /** 自定义模板；若缺失占位符字段，会在末尾追加对应段落 */
+export interface BuildEpisodeScriptSystemPromptOptions {
+  /** 自定义系统提示词模板 */
+  template?: string
+}
+
+export interface BuildEpisodeScriptUserPromptOptions {
+  /** 自定义用户提示词模板；若缺失占位符字段，会在末尾追加对应段落 */
   template?: string
 }
 
@@ -361,13 +374,28 @@ function appendIfMissing(hasPlaceholder: boolean, result: string, fallbackBlock:
   return `${result}\n${fallbackBlock}`
 }
 
-export function buildEpisodeScriptPrompt(
-  input: BuildEpisodeScriptPromptInput,
-  options?: BuildEpisodeScriptPromptOptions
+/**
+ * 构建系统提示词
+ */
+export function buildEpisodeScriptSystemPrompt(
+  options?: BuildEpisodeScriptSystemPromptOptions
 ): string {
   const raw = options?.template?.trim()
     ? options.template
-    : DEFAULT_EPISODE_SCRIPT_PROMPT_TEMPLATE
+    : DEFAULT_EPISODE_SCRIPT_SYSTEM_PROMPT_TEMPLATE
+  return raw.trim()
+}
+
+/**
+ * 构建用户提示词
+ */
+export function buildEpisodeScriptUserPrompt(
+  input: BuildEpisodeScriptPromptInput,
+  options?: BuildEpisodeScriptUserPromptOptions
+): string {
+  const raw = options?.template?.trim()
+    ? options.template
+    : DEFAULT_EPISODE_SCRIPT_USER_PROMPT_TEMPLATE
 
   const hasTitlePlaceholder = raw.includes(EPISODE_SCRIPT_TITLE_PLACEHOLDER)
   const hasOutlinePlaceholder = raw.includes(EPISODE_SCRIPT_OUTLINE_PLACEHOLDER)
@@ -399,4 +427,18 @@ export function buildEpisodeScriptPrompt(
   result = appendIfMissing(hasProjectDurationPlaceholder, result, `\n- 每集时长：${input.duration}`)
 
   return result.trim()
+}
+
+/**
+ * @deprecated 请改用 buildEpisodeScriptSystemPrompt 和 buildEpisodeScriptUserPrompt
+ */
+export function buildEpisodeScriptPrompt(
+  input: BuildEpisodeScriptPromptInput,
+  options?: any
+): string {
+  return (
+    buildEpisodeScriptSystemPrompt() +
+    "\n\n" +
+    buildEpisodeScriptUserPrompt(input, options)
+  )
 }

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
-import { buildEpisodeOutlinePrompt } from "@/lib/prompts"
+import {
+  buildEpisodeOutlineSystemPrompt,
+  buildEpisodeOutlineUserPrompt,
+} from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import type { AssetsSummary } from "@/lib/prompts/episode-outline"
@@ -126,11 +129,15 @@ export const POST = withError(async (request: NextRequest) => {
   const sceneNameToId = new Map(scenes.map((s) => [s.name, s.id]))
   const propNameToId = new Map(props.map((p) => [p.name, p.id]))
 
-  const prompt = buildEpisodeOutlinePrompt(novelText, { assets: assetsSummary })
+  const systemPrompt = buildEpisodeOutlineSystemPrompt()
+  const userPrompt = buildEpisodeOutlineUserPrompt(novelText, { assets: assetsSummary })
   let outlines: OutlineItem[] = []
   try {
     const result = await callLLM({
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
     })
     outlines = parseOutlineJSON(result.content)
   } catch (err) {

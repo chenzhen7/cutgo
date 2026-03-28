@@ -3,7 +3,10 @@ import { prisma } from "@/lib/db"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
-import { buildEpisodeScriptPrompt } from "@/lib/prompts"
+import {
+  buildEpisodeScriptSystemPrompt,
+  buildEpisodeScriptUserPrompt,
+} from "@/lib/prompts"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -20,18 +23,22 @@ async function callAIGenerateScript(
     throwCutGoError("LLM_NOT_CONFIGURED")
   }
 
-  const prompt = buildEpisodeScriptPrompt({
+  const systemPrompt = buildEpisodeScriptSystemPrompt()
+  const userPrompt = buildEpisodeScriptUserPrompt({
     episodeTitle,
     episodeSynopsis,
     keyConflict,
     cliffhanger,
-    chapterContent: chapterContent,
+    chapterContent,
     previousContent: previousContent?.slice(-1000) ?? null,
     duration,
   })
 
   const result = await llmProvider.chat({
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
   })
 
   if (!result.content) {

@@ -9,10 +9,9 @@ export const EPISODE_OUTLINE_NOVEL_PLACEHOLDER = "{NOVEL_TEXT}" as const
 export const EPISODE_OUTLINE_ASSETS_PLACEHOLDER = "{ASSETS_LIST}" as const
 
 /**
- * 默认分集大纲生成模板（含占位符 {@link EPISODE_OUTLINE_NOVEL_PLACEHOLDER} 和 {@link EPISODE_OUTLINE_ASSETS_PLACEHOLDER}）
- * 后续可从数据库或用户设置读取后传入 {@link buildEpisodeOutlinePrompt}
+ * 默认分集大纲系统提示词模板
  */
-export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视编剧 + 短剧工业化制作专家，擅长将我提供的小说内容改编为适合短视频平台的连续短剧内容，并能够适配 AI 自动化生产流程。
+export const DEFAULT_EPISODE_OUTLINE_SYSTEM_PROMPT_TEMPLATE = `你是一名资深影视编剧 + 短剧工业化制作专家，擅长将我提供的小说内容改编为适合短视频平台的连续短剧内容，并能够适配 AI 自动化生产流程。
 
 请根据我提供的【小说原文】，并结合以下参数配置，完成短剧改编与剧本生成。
 
@@ -40,11 +39,7 @@ export const DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE = `你是一名资深影视
 
 ---
 
-${EPISODE_OUTLINE_ASSETS_PLACEHOLDER}
-
----
-
- ## 输出格式
+## 输出格式
   /** 字段说明：title 为集标题；goldenHook 为黄金钩子；core_conflict 为核心冲突；summary 为详细大纲；cliffhanger 为结尾悬念；chapters 为关联章节编号；characters 为本集出场的角色名称列表（从资产列表中选取）；scenes 为本集涉及的场景名称列表（从资产列表中选取）；props 为本集涉及的道具名称列表（从资产列表中选取）。 */
 
 [
@@ -62,11 +57,18 @@ ${EPISODE_OUTLINE_ASSETS_PLACEHOLDER}
   }
 ]
 ---
-严格按照上述 JSON 格式输出，不要包含任何额外说明、注释或 markdown 代码块标记，直接输出 JSON 数组。
+严格按照上述 JSON 格式输出，不要包含任何额外说明、注释或 markdown 代码块标记，直接输出 JSON 数组。`
+
+/**
+ * 默认分集大纲用户提示词模板
+ */
+export const DEFAULT_EPISODE_OUTLINE_USER_PROMPT_TEMPLATE = `
+${EPISODE_OUTLINE_ASSETS_PLACEHOLDER}
+
+---
 
 【小说原文】：
 ${EPISODE_OUTLINE_NOVEL_PLACEHOLDER}
-
 `
 
 export interface AssetItem {
@@ -80,8 +82,13 @@ export interface AssetsSummary {
   props: AssetItem[]
 }
 
-export interface BuildEpisodeOutlinePromptOptions {
-  /** 自定义模板；须包含占位符 {@link EPISODE_OUTLINE_NOVEL_PLACEHOLDER}，否则将追加在末尾 */
+export interface BuildEpisodeOutlineSystemPromptOptions {
+  /** 自定义系统提示词模板 */
+  template?: string
+}
+
+export interface BuildEpisodeOutlineUserPromptOptions {
+  /** 自定义用户提示词模板；须包含占位符，否则将追加在末尾 */
   template?: string
   /** 项目资产列表；有值时注入到 prompt，引导 AI 关联每集所用资产 */
   assets?: AssetsSummary
@@ -119,13 +126,27 @@ function buildAssetsSection(assets: AssetsSummary): string {
 }
 
 /**
+ * 构建系统提示词
+ */
+export function buildEpisodeOutlineSystemPrompt(
+  options?: BuildEpisodeOutlineSystemPromptOptions
+): string {
+  const raw = options?.template?.trim()
+    ? options.template
+    : DEFAULT_EPISODE_OUTLINE_SYSTEM_PROMPT_TEMPLATE
+  return raw.trim()
+}
+
+/**
  * 将所选章节合并后的原文注入模板，得到发给 LLM 的完整 user prompt。
  */
-export function buildEpisodeOutlinePrompt(
+export function buildEpisodeOutlineUserPrompt(
   novelText: string,
-  options?: BuildEpisodeOutlinePromptOptions
+  options?: BuildEpisodeOutlineUserPromptOptions
 ): string {
-  const raw = options?.template?.trim() ? options.template : DEFAULT_EPISODE_OUTLINE_PROMPT_TEMPLATE
+  const raw = options?.template?.trim()
+    ? options.template
+    : DEFAULT_EPISODE_OUTLINE_USER_PROMPT_TEMPLATE
 
   const assetsSection = options?.assets ? buildAssetsSection(options.assets) : ""
 
@@ -138,9 +159,30 @@ export function buildEpisodeOutlinePrompt(
 
   // 替换小说原文占位符
   if (result.includes(EPISODE_OUTLINE_NOVEL_PLACEHOLDER)) {
-    return result.split(EPISODE_OUTLINE_NOVEL_PLACEHOLDER).join(novelText)
+    result = result.split(EPISODE_OUTLINE_NOVEL_PLACEHOLDER).join(novelText)
+  } else {
+    // 兼容未来用户误删占位符：在末尾追加原文块
+    result = `${result}\n\n【小说原文】：\n${novelText}`
   }
 
-  // 兼容未来用户误删占位符：在末尾追加原文块
-  return `${result}\n\n【小说原文】：\n${novelText}`
+  // 如果占位符不存在且 assetsSection 有内容，也追加一下
+  if (!raw.includes(EPISODE_OUTLINE_ASSETS_PLACEHOLDER) && assetsSection) {
+    result = `${result}\n\n${assetsSection}`
+  }
+
+  return result.trim()
+}
+
+/**
+ * @deprecated 请改用 buildEpisodeOutlineSystemPrompt 和 buildEpisodeOutlineUserPrompt
+ */
+export function buildEpisodeOutlinePrompt(
+  novelText: string,
+  options?: any
+): string {
+  return (
+    buildEpisodeOutlineSystemPrompt() +
+    "\n\n" +
+    buildEpisodeOutlineUserPrompt(novelText, options)
+  )
 }
