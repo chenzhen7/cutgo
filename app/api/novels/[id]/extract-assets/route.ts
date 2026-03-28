@@ -5,7 +5,7 @@ import {
   buildExtractAssetsSystemPrompt,
   buildExtractAssetsUserPrompt,
 } from "@/lib/prompts"
-import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
+import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 
 interface AIAssetResult {
   characters: {
@@ -115,10 +115,10 @@ export const POST = withError(async (
     })
   } catch (err) {
     console.error("Asset extraction from chapters failed:", err)
-    const message = err instanceof Error ? err.message : String(err)
-    if (message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      throwCutGoError("LLM_NOT_CONFIGURED")
+    if (err instanceof CutGoError) {
+      throw err
     }
+    const message = err instanceof Error ? err.message : String(err)
     throwCutGoError("INTERNAL", `资产提取失败：${message}`)
   }
 })

@@ -84,13 +84,6 @@ export function withError(
       if (e.code === "P2002") {
         return jsonErrorResponse("CONFLICT", "资源已存在")
       }
-      if (e.message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-        return jsonErrorResponse("LLM_NOT_CONFIGURED")
-      }
-      if (e.message === API_ERRORS.IMAGE_NOT_CONFIGURED.code) {
-        return jsonErrorResponse("IMAGE_NOT_CONFIGURED")
-      }
-
       const fallback =
         error instanceof Error && error.message
           ? error.message

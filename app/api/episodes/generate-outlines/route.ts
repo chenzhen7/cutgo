@@ -6,7 +6,7 @@ import {
   buildEpisodeOutlineUserPrompt,
 } from "@/lib/prompts"
 import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
-import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
+import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 import type { AssetsSummary } from "@/lib/prompts/episode-outline"
 
 interface OutlineItem {
@@ -141,8 +141,8 @@ export const POST = withError(async (request: NextRequest) => {
     })
     outlines = parseOutlineJSON(result.content)
   } catch (err) {
-    if ((err as Error).message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-      throwCutGoError("LLM_NOT_CONFIGURED")
+    if (err instanceof CutGoError) {
+      throw err
     }
     throwCutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
   }

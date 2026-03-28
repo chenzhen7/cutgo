@@ -50,25 +50,23 @@ const response = await fetch(`${baseUrl}/chat/completions`, {
 
 ## LLM 未配置的错误处理
 
-- 直接调用路径：`getLLMProvider()` 返回 `null` 时，直接 `throw cutGoError("LLM_NOT_CONFIGURED")`
-- 间接调用路径（内部函数中）：`throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)`，在外层 catch 中判断并再次转换为 `cutGoError`
+- 统一调用路径：使用 `callLLM()`，当 LLM 未配置时它会直接抛出 `throwCutGoError("LLM_NOT_CONFIGURED")`
+- 若业务层需要兜底 `catch`（例如 JSON 解析），应优先透传 `CutGoError`，避免把 `LLM_NOT_CONFIGURED` 包装成其他错误
 
 ```ts
-import { API_ERRORS, cutGoError, withError } from "@/lib/api-error"
+import { callLLM } from "@/lib/ai/llm"
+import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 
-// 内部函数
-async function callLLM(...) {
-  const llmProvider = await getLLMProvider()
-  if (!llmProvider) throw new Error(API_ERRORS.LLM_NOT_CONFIGURED.code)
-  ...
-}
-
-// 外层 catch
+try {
+  const result = await callLLM({
+    messages: [{ role: "user", content: prompt }],
+  })
+  const text = result.content
 } catch (err) {
-  if ((err as Error).message === API_ERRORS.LLM_NOT_CONFIGURED.code) {
-    throw cutGoError("LLM_NOT_CONFIGURED")
+  if (err instanceof CutGoError) {
+    throw err
   }
-  throw cutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
+  throwCutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
 }
 ```
 
