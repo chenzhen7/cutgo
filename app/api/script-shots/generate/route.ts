@@ -5,7 +5,12 @@ import { getLLMProvider } from "@/lib/ai/llm"
 import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/prompts"
 
 interface AIScriptShotResult {
-  prompts: string[]
+  shots: Array<{
+    shot: string
+    characters: string[]
+    scene: string
+    props: string[]
+  }>
 }
 
 const episodeWithShotsInclude = {
@@ -86,8 +91,52 @@ async function callAIGenerateScriptShots(
     if (!Array.isArray(parsed)) {
       throw new Error("invalid script shots structure")
     }
+    const shots = parsed
+      .map((item) => {
+        if (typeof item === "string") {
+          // 兼容历史输出结构：["镜头1", "镜头2"]
+          return {
+            shot: item.trim(),
+            characters: [],
+            scene: "",
+            props: [],
+          }
+        }
+        if (!item || typeof item !== "object") return null
+        const raw = item as {
+          shot?: unknown
+          characters?: unknown
+          scene?: unknown
+          props?: unknown
+        }
+        const shot = typeof raw.shot === "string" ? raw.shot.trim() : ""
+        if (!shot) return null
+        const characters = Array.isArray(raw.characters)
+          ? raw.characters
+            .filter((v): v is string => typeof v === "string")
+            .map((v) => v.trim())
+            .filter(Boolean)
+          : []
+        const scene = typeof raw.scene === "string" ? raw.scene.trim() : ""
+        const props = Array.isArray(raw.props)
+          ? raw.props
+            .filter((v): v is string => typeof v === "string")
+            .map((v) => v.trim())
+            .filter(Boolean)
+          : []
+        return {
+          shot,
+          characters,
+          scene,
+          props,
+        }
+      })
+      .filter(
+        (item): item is { shot: string; characters: string[]; scene: string; props: string[] } =>
+          Boolean(item)
+      )
     return {
-      prompts: parsed.filter((item): item is string => typeof item === "string").map((item) => item.trim()),
+      shots,
     }
   } catch {
     throwCutGoError("LLM_INVALID_RESPONSE", "LLM 返回的分镜结果不是有效 JSON")
@@ -137,12 +186,10 @@ export const POST = withError(async (request: NextRequest) => {
       const episodePropIds = parseJsonArray(episode.props)
 
       const matchedCharacters = assetCharacters.filter((c) => episodeCharacterIds.includes(c.id))
-      const matchedCharacterIds = matchedCharacters.map((c) => c.id)
       const matchedScene = episodeSceneIds.length > 0
         ? assetScenes.find((s) => s.id === episodeSceneIds[0]) ?? null
         : null
       const matchedProps = assetProps.filter((p) => episodePropIds.includes(p.id))
-      const matchedPropIds = matchedProps.map((p) => p.id)
 
       const aiResult = await callAIGenerateScriptShots(
         episode.title,
@@ -153,29 +200,54 @@ export const POST = withError(async (request: NextRequest) => {
         previousShotStr
       )
 
-      const shotData = (aiResult.prompts || [])
-        .map((prompt) => prompt.trim())
-        .filter((prompt) => prompt.length > 0)
-        .map((prompt, si) => ({
-          episodeId: episode.id,
-          index: si,
-          prompt,
-          negativePrompt: null,
-          duration: "3s",
-          dialogueText: null,
-          actionNote: null,
-          characterIds: matchedCharacterIds.length > 0 ? JSON.stringify(matchedCharacterIds) : null,
-          sceneId: matchedScene?.id || null,
-          propIds: matchedPropIds.length > 0 ? JSON.stringify(matchedPropIds) : null,
-        }))
+      const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
+      const projectCharacterMap = new Map(assetCharacters.map((c) => [c.name.trim(), c.id]))
+      const episodePropMap = new Map(matchedProps.map((p) => [p.name.trim(), p.id]))
+      const projectPropMap = new Map(assetProps.map((p) => [p.name.trim(), p.id]))
+      const episodeSceneMap = new Map(
+        (matchedScene ? [matchedScene] : [])
+          .map((s) => [s.name.trim(), s.id] as const)
+      )
+      const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
+
+      const shotData = (aiResult.shots || [])
+        .map((item, si) => {
+          const prompt = item.shot.trim()
+          if (!prompt) return null
+          const characterIds = item.characters
+            .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
+            .filter((id): id is string => Boolean(id))
+          const propIds = item.props
+            .map((name) => episodePropMap.get(name) ?? projectPropMap.get(name))
+            .filter((id): id is string => Boolean(id))
+          const sceneId =
+            (item.scene ? (episodeSceneMap.get(item.scene) ?? projectSceneMap.get(item.scene)) : null)
+            ?? matchedScene?.id
+            ?? null
+          return {
+            episodeId: episode.id,
+            index: si,
+            prompt,
+            negativePrompt: null,
+            duration: "3s",
+            dialogueText: null,
+            actionNote: null,
+            characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
+            sceneId,
+            propIds: propIds.length > 0 ? JSON.stringify(propIds) : null,
+          }
+        })
+        .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
       if (shotData.length > 0) {
         await prisma.shot.createMany({ data: shotData })
       }
 
-      if (aiResult.prompts?.length) {
-        const lastPrompt = aiResult.prompts[aiResult.prompts.length - 1]
-        previousShotStr = `分镜提示词: ${lastPrompt}`
+      if (aiResult.shots?.length) {
+        const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.shot?.trim() || ""
+        if (lastPrompt) {
+          previousShotStr = `分镜提示词: ${lastPrompt}`
+        }
       }
     }
 
