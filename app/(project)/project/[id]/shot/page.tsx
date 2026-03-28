@@ -187,7 +187,7 @@ export default function ScriptShotPage() {
 
   const handleGenerateCurrentEpisode = useCallback(async () => {
     if (!activeEpisodeId) return
-    await generateScriptShots(projectId, [activeEpisodeId], "overwrite")
+    await generateScriptShots(projectId, [activeEpisodeId])
   }, [projectId, activeEpisodeId, generateScriptShots])
 
   const handleDeleteShot = useCallback(

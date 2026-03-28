@@ -385,7 +385,6 @@ export interface ScriptShotGenerateResult {
     totalShots: number
     avgShotsPerEpisode: number
     generatedEpisodes: number
-    skippedEpisodes: number
   }
 }
 

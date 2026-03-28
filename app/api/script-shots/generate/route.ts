@@ -4,15 +4,8 @@ import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
 import { buildScriptShotsPrompt } from "@/lib/prompts"
 
-interface AIShotResult {
-  prompt: string
-  negativePrompt: string
-  dialogueText?: string
-  actionNote?: string
-}
-
 interface AIScriptShotResult {
-  shots: AIShotResult[]
+  prompts: string[]
 }
 
 const episodeWithShotsInclude = {
@@ -85,8 +78,13 @@ async function callAIGenerateScriptShots(
   text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
 
   try {
-    const parsed = JSON.parse(text) as { shots?: AIShotResult[] }
-    return { shots: parsed.shots || [] }
+    const parsed = JSON.parse(text) as unknown
+    if (!Array.isArray(parsed)) {
+      throw new Error("invalid script shots structure")
+    }
+    return {
+      prompts: parsed.filter((item): item is string => typeof item === "string").map((item) => item.trim()),
+    }
   } catch {
     throwCutGoError("LLM_INVALID_RESPONSE", "LLM 返回的分镜结果不是有效 JSON")
   }
@@ -94,7 +92,7 @@ async function callAIGenerateScriptShots(
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
-  const { projectId, episodeIds, mode = "skip_existing" } = body
+  const { projectId, episodeIds } = body
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
@@ -119,24 +117,6 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "没有可生成分镜的剧本（请先生成剧本）")
   }
 
-  const existingShotEpisodeIds = new Set(
-    (await prisma.shot.findMany({
-      where: { episode: { projectId } },
-      select: { episodeId: true },
-      distinct: ["episodeId"],
-    })).map((item) => item.episodeId)
-  )
-
-  let skippedEpisodes = 0
-
-  if (mode === "skip_existing") {
-    const before = targetEpisodes.length
-    targetEpisodes = targetEpisodes.filter((ep) => !existingShotEpisodeIds.has(ep.id))
-    skippedEpisodes = before - targetEpisodes.length
-  } else if (mode === "overwrite") {
-    // overwrite 模式：在每集生成完成后再删除旧分镜并写入新数据，避免生成失败时丢失原有内容
-  }
-
   const assetCharacters = await prisma.assetCharacter.findMany({ where: { projectId } })
   const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
   const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
@@ -145,6 +125,9 @@ export const POST = withError(async (request: NextRequest) => {
 
   try {
     for (const episode of targetEpisodes) {
+      // 新规则：每次生成前先清空当前分集已有分镜
+      await prisma.shot.deleteMany({ where: { episodeId: episode.id } })
+
       const episodeCharacterIds = parseJsonArray(episode.characters)
       const episodeSceneIds = parseJsonArray(episode.scenes)
       const episodePropIds = parseJsonArray(episode.props)
@@ -166,29 +149,29 @@ export const POST = withError(async (request: NextRequest) => {
         previousShotStr
       )
 
-      // 生成成功后再删除旧分镜，避免生成失败时丢失原有内容
-      if (mode === "overwrite" && existingShotEpisodeIds.has(episode.id)) {
-        await prisma.shot.deleteMany({ where: { episodeId: episode.id } })
-      }
-
-      await prisma.shot.createMany({
-        data: (aiResult.shots || []).map((shot, si) => ({
+      const shotData = (aiResult.prompts || [])
+        .map((prompt) => prompt.trim())
+        .filter((prompt) => prompt.length > 0)
+        .map((prompt, si) => ({
           episodeId: episode.id,
           index: si,
-          prompt: shot.prompt || "",
-          negativePrompt: shot.negativePrompt || null,
+          prompt,
+          negativePrompt: null,
           duration: "3s",
-          dialogueText: shot.dialogueText || null,
-          actionNote: shot.actionNote || null,
+          dialogueText: null,
+          actionNote: null,
           characterIds: matchedCharacterIds.length > 0 ? JSON.stringify(matchedCharacterIds) : null,
           sceneId: matchedScene?.id || null,
           propIds: matchedPropIds.length > 0 ? JSON.stringify(matchedPropIds) : null,
-        })),
-      })
+        }))
 
-      if (aiResult.shots?.length) {
-        const lastShot = aiResult.shots[aiResult.shots.length - 1]
-        previousShotStr = `分镜提示词: ${lastShot.prompt}`
+      if (shotData.length > 0) {
+        await prisma.shot.createMany({ data: shotData })
+      }
+
+      if (aiResult.prompts?.length) {
+        const lastPrompt = aiResult.prompts[aiResult.prompts.length - 1]
+        previousShotStr = `分镜提示词: ${lastPrompt}`
       }
     }
 
@@ -209,7 +192,6 @@ export const POST = withError(async (request: NextRequest) => {
         totalShots,
         avgShotsPerEpisode: generatedPlans.length > 0 ? Math.round(totalShots / generatedPlans.length * 10) / 10 : 0,
         generatedEpisodes: targetEpisodes.length,
-        skippedEpisodes,
       },
     })
   } catch (err) {

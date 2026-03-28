@@ -49,8 +49,7 @@ interface ScriptShotState {
 
   generateScriptShots: (
     projectId: string,
-    episodeIds?: string[],
-    mode?: "skip_existing" | "overwrite"
+    episodeIds?: string[]
   ) => Promise<void>
 
   createScriptShotPlan: (projectId: string, episodeId: string) => Promise<void>
@@ -165,12 +164,12 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  generateScriptShots: async (projectId, episodeIds, mode = "skip_existing") => {
+  generateScriptShots: async (projectId, episodeIds) => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
       const data = await apiFetch<{ scriptShotPlans?: ScriptShotPlan[] }>("/api/script-shots/generate", {
         method: "POST",
-        body: { projectId, episodeIds, mode },
+        body: { projectId, episodeIds },
       })
       set({
         scriptShotPlans: data.scriptShotPlans || [],
