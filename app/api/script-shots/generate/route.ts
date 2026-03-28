@@ -73,7 +73,7 @@ async function callAIGenerateScriptShots(
 ): Promise<AIScriptShotResult> {
   const llmProvider = await getLLMProvider()
   if (!llmProvider) {
-    return generateLocalScriptShots(episodeTitle, scriptContent)
+    throwCutGoError("LLM_NOT_CONFIGURED")
   }
 
   const prompt = buildScriptShotsPrompt({
@@ -276,13 +276,20 @@ export const POST = withError(async (request: NextRequest) => {
       include: episodeWithShotsInclude,
     })
     const allScriptShotPlans = episodesWithShots.map(toScriptShotPlan)
+    const error = err as { code?: string; status?: number; message?: string }
+    const errorCode = typeof error.code === "string" ? error.code : API_ERRORS.INTERNAL.code
+    const errorStatus = typeof error.status === "number" ? error.status : API_ERRORS.INTERNAL.status
+    const errorMessage =
+      typeof error.message === "string" && error.message.trim().length > 0
+        ? error.message
+        : API_ERRORS.INTERNAL.defaultMessage
     return NextResponse.json(
       {
-        error: API_ERRORS.INTERNAL.code,
-        message: "部分分镜生成失败",
+        error: errorCode,
+        message: errorMessage,
         scriptShotPlans: allScriptShotPlans,
       },
-      { status: API_ERRORS.INTERNAL.status }
+      { status: errorStatus }
     )
   }
 })
