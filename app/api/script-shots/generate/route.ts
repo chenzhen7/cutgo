@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
+import { buildScriptShotsPrompt } from "@/lib/prompts"
 
 interface AIShotResult {
   composition: string
@@ -75,67 +76,20 @@ async function callAIGenerateScriptShots(
     return generateLocalScriptShots(episodeTitle, scriptContent)
   }
 
-  const prompt = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的画面描述提示词。
-
-## 任务
-请基于以下剧本内容，为每个关键画面生成高质量的图像生成提示词（Prompt）。
-
-## 剧本信息
-- 标题：${episodeTitle}
-- 关联场景：${episodeScenes || "未指定"}
-- 出场角色：${episodeCharacters || "无"}
-- 涉及道具：${episodeProps || "无"}
-
-## 剧本内容
-${scriptContent.slice(0, 6000)}
-
-## 角色资产（用于画面 Prompt 中的角色设定描述）
-${assetCharactersStr || "无"}
-
-## 场景资产（用于画面 Prompt 中的环境描述）
-${assetScenesStr || "无"}
-
-## 全局参数
-- 目标平台：${platform}
-- 画幅比例：${aspectRatio}
-- 视觉风格：${stylePreset || "电影感"}
-- 全局负面提示词：${globalNegPrompt || "blurry, low quality, distorted"}
-
-${previousShotStr ? `## 前一个分集最后一个镜头信息\n${previousShotStr}（确保衔接）` : ""}
-
-## 要求
-1. 将剧本内容转化为具体的画面序列，通常一个剧本拆分为 4-12 个画面
-2. 每个画面需包含：
-   - composition：画面描述（中文，简洁描述这个画面表现的内容和氛围）
-   - prompt：英文图像生成提示词（用于 AI 图像生成模型）
-   - negativePrompt：英文负面提示词
-   - dialogueText：该画面期间的台词/旁白文本（如有）
-   - actionNote：动作/情节备注（如有）
-3. prompt 编写指南：
-   - 使用英文，详细且具体
-   - 包含：主体描述、场景环境、光影氛围、色调风格、画面构图
-   - 角色描述要具体：外貌特征、服装、表情、动作姿态
-   - 环境描述要丰富：时间、天气、光线方向、材质细节
-   - 可以加入风格关键词：cinematic, photorealistic, dramatic lighting 等
-   - 画幅比例 ${aspectRatio} 的构图特点要体现在 prompt 中
-4. 画面之间应有叙事连贯性，覆盖剧本的关键情节
-
-## 输出格式
-请严格按以下 JSON 格式输出：
-
-{
-  "shots": [
-    {
-      "composition": "画面中文描述",
-      "prompt": "English image generation prompt...",
-      "negativePrompt": "blurry, low quality...",
-      "dialogueText": "台词文本",
-      "actionNote": "动作备注"
-    }
-  ]
-}
-
-注意：不要在 shots 中包含 index 字段，系统会自动计算编号。`
+  const prompt = buildScriptShotsPrompt({
+    episodeTitle,
+    episodeScenes,
+    episodeCharacters,
+    episodeProps,
+    scriptContent: scriptContent.slice(0, 6000),
+    assetCharacters: assetCharactersStr,
+    assetScenes: assetScenesStr,
+    platform,
+    aspectRatio,
+    stylePreset,
+    globalNegPrompt,
+    previousShot: previousShotStr,
+  })
 
   try {
     const result = await llmProvider.chat({

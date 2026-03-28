@@ -18,3 +18,10 @@ export {
   type BuildEpisodeScriptPromptInput,
   type BuildEpisodeScriptPromptOptions,
 } from "./episode-script"
+
+export {
+  DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE,
+  buildScriptShotsPrompt,
+  type BuildScriptShotsPromptInput,
+  type BuildScriptShotsPromptOptions,
+} from "./script-shots"
