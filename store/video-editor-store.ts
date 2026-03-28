@@ -204,7 +204,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
         trimEnd: 0,
         videoUrl: shot.videoUrl!,
         thumbnailUrl: shot.imageUrl,
-        label: shot.composition?.slice(0, 20) || `镜头 ${shot.index + 1}`,
+        label: shot.prompt?.slice(0, 20) || `镜头 ${shot.index + 1}`,
         volume: 100,
         speed: 1,
         transition: "none",

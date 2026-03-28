@@ -250,7 +250,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     if (!shot) return
     await get().addShot(episodeId, {
       shotSize: "medium",
-      composition: shot.composition,
       prompt: shot.prompt,
       negativePrompt: shot.negativePrompt || undefined,
       scriptLineIds: shot.scriptLineIds || undefined,

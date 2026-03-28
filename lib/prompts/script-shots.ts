@@ -15,10 +15,10 @@ export const SCRIPT_SHOTS_STYLE_PRESET_PLACEHOLDER = "{STYLE_PRESET}" as const
 export const SCRIPT_SHOTS_GLOBAL_NEG_PROMPT_PLACEHOLDER = "{GLOBAL_NEG_PROMPT}" as const
 export const SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER = "{PREVIOUS_SHOT}" as const
 
-export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的画面描述提示词。
+export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的分镜提示词。
 
 ## 任务
-请基于以下剧本内容，为每个关键画面生成高质量的图像生成提示词（Prompt）。
+请基于以下剧本内容，为每个关键镜头生成高质量的分镜提示词（Prompt）。
 
 ## 剧本信息
 - 标题：${SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER}
@@ -29,10 +29,10 @@ export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `你是一位资深分镜师
 ## 剧本内容
 ${SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER}
 
-## 角色资产（用于画面 Prompt 中的角色设定描述）
+## 角色资产（用于分镜提示词中的角色设定描述）
 ${SCRIPT_SHOTS_ASSET_CHARACTERS_PLACEHOLDER}
 
-## 场景资产（用于画面 Prompt 中的环境描述）
+## 场景资产（用于分镜提示词中的环境描述）
 ${SCRIPT_SHOTS_ASSET_SCENES_PLACEHOLDER}
 
 ## 全局参数
@@ -44,12 +44,11 @@ ${SCRIPT_SHOTS_ASSET_SCENES_PLACEHOLDER}
 ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
 
 ## 要求
-1. 将剧本内容转化为具体的画面序列，通常一个剧本拆分为 4-12 个画面
-2. 每个画面需包含：
-   - composition：画面描述（中文，简洁描述这个画面表现的内容和氛围）
-   - prompt：英文图像生成提示词（用于 AI 图像生成模型）
+1. 将剧本内容转化为具体的镜头序列，通常一个剧本拆分为 4-12 个镜头
+2. 每个镜头需包含：
+   - prompt：英文分镜提示词（用于 AI 图像生成模型）
    - negativePrompt：英文负面提示词
-   - dialogueText：该画面期间的台词/旁白文本（如有）
+   - dialogueText：该镜头期间的台词/旁白文本（如有）
    - actionNote：动作/情节备注（如有）
 3. prompt 编写指南：
    - 使用英文，详细且具体
@@ -58,7 +57,7 @@ ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
    - 环境描述要丰富：时间、天气、光线方向、材质细节
    - 可以加入风格关键词：cinematic, photorealistic, dramatic lighting 等
    - 画幅比例 ${SCRIPT_SHOTS_ASPECT_RATIO_PLACEHOLDER} 的构图特点要体现在 prompt 中
-4. 画面之间应有叙事连贯性，覆盖剧本的关键情节
+4. 镜头之间应有叙事连贯性，覆盖剧本的关键情节
 
 ## 输出格式
 请严格按以下 JSON 格式输出：
@@ -66,8 +65,7 @@ ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
 {
   "shots": [
     {
-      "composition": "画面中文描述",
-      "prompt": "English image generation prompt...",
+      "prompt": "English storyboard prompt...",
       "negativePrompt": "blurry, low quality...",
       "dialogueText": "台词文本",
       "actionNote": "动作备注"
@@ -161,12 +159,12 @@ export function buildScriptShotsPrompt(
   result = appendIfMissing(
     hasAssetCharactersPlaceholder,
     result,
-    `\n## 角色资产（用于画面 Prompt 中的角色设定描述）\n${input.assetCharacters || "无"}`
+    `\n## 角色资产（用于分镜提示词中的角色设定描述）\n${input.assetCharacters || "无"}`
   )
   result = appendIfMissing(
     hasAssetScenesPlaceholder,
     result,
-    `\n## 场景资产（用于画面 Prompt 中的环境描述）\n${input.assetScenes || "无"}`
+    `\n## 场景资产（用于分镜提示词中的环境描述）\n${input.assetScenes || "无"}`
   )
   result = appendIfMissing(hasPlatformPlaceholder, result, `\n- 目标平台：${input.platform}`)
   result = appendIfMissing(hasAspectRatioPlaceholder, result, `\n- 画幅比例：${input.aspectRatio}`)

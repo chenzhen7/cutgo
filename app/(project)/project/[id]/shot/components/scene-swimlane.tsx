@@ -7,8 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import {
   BookOpen,
   Plus,
-  Type,
-  Film,
   LayoutGrid,
   LayoutList,
 } from "lucide-react"
@@ -30,7 +28,7 @@ import {
 } from "@dnd-kit/sortable"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ShotCard } from "./shot-card"
-import type { ShotCardDisplayMode, ShotCardLayout } from "./shot-card"
+import type { ShotCardLayout } from "./shot-card"
 import type { ScriptShotPlan, Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
@@ -41,7 +39,6 @@ interface SceneSwimlaneProps {
   selectedShotIds: Set<string>
   imageGeneratingIds: Set<string>
   videoGeneratingIds: Set<string>
-  shotDisplayMode: ShotCardDisplayMode
   layout?: ShotCardLayout
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
@@ -54,7 +51,6 @@ interface SceneSwimlaneProps {
   onGenerateVideo: (episodeId: string, shotId: string) => void
   onPlayVideo: (shotId: string) => void
   onViewScript: (scriptShotPlan: ScriptShotPlan) => void
-  onToggleShotDisplayMode: () => void
   onShotLayoutChange: (layout: ShotCardLayout) => void
   onReorderShots: (episodeId: string, orderedIds: string[]) => void
 }
@@ -66,7 +62,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   selectedShotIds,
   imageGeneratingIds,
   videoGeneratingIds,
-  shotDisplayMode,
   layout = "list",
   assetCharacters,
   assetScenes,
@@ -79,7 +74,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   onGenerateVideo,
   onPlayVideo,
   onViewScript,
-  onToggleShotDisplayMode,
   onShotLayoutChange,
   onReorderShots,
 }: SceneSwimlaneProps) {
@@ -148,7 +142,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
             </div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs text-muted-foreground">
-                {scriptShotPlan.shots.length} 个画面
+                {scriptShotPlan.shots.length} 个镜头
               </span>
               {scriptShotPlan.shots.length > 0 && (
                 <>
@@ -167,26 +161,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
 
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
 
-            {layout !== "grid" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={onToggleShotDisplayMode}
-              >
-                {shotDisplayMode === "composition" ? (
-                  <>
-                    <Type className="size-3 mr-1" />
-                    画面描述
-                  </>
-                ) : (
-                  <>
-                    <Film className="size-3 mr-1" />
-                    提示词
-                  </>
-                )}
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="sm"
@@ -254,7 +228,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                   isSelected={selectedShotIds.has(shot.id)}
                   isGeneratingImage={imageGeneratingIds.has(shot.id)}
                   isGeneratingVideo={videoGeneratingIds.has(shot.id)}
-                  displayMode={shotDisplayMode}
                   layout={layout}
                   assetCharacters={assetCharacters}
                   assetScenes={assetScenes}
@@ -292,7 +265,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                 isSelected={false}
                 isGeneratingImage={false}
                 isGeneratingVideo={false}
-                displayMode={shotDisplayMode}
                 layout={layout}
                 isDragging={true}
                 assetCharacters={assetCharacters}

@@ -18,7 +18,7 @@ export async function POST(
     })
   }
 
-  const prompt = `你是一位 AI 图像生成 Prompt 专家。请优化以下画面描述 Prompt，使其更适合 AI 图像生成模型（如 Stable Diffusion、Midjourney）。
+  const prompt = `你是一位 AI 图像生成 Prompt 专家。请优化以下分镜提示词 Prompt，使其更适合 AI 图像生成模型（如 Stable Diffusion、Midjourney）。
 
 当前 Prompt：
 ${currentPrompt}
@@ -27,7 +27,7 @@ ${style ? `视觉风格偏好：${style}` : ""}
 ${emphasis ? `重点强调：${emphasis}` : ""}
 
 要求：
-1. 保持原始画面内容不变
+1. 保持原始分镜内容不变
 2. 添加更多细节描述（光影、氛围、材质、色调）
 3. 优化关键词顺序和权重
 4. 生成合适的负面提示词

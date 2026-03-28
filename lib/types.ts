@@ -333,7 +333,6 @@ export interface Shot {
   shotSize: ShotSize
   cameraMovement: CameraMovement
   cameraAngle: CameraAngle
-  composition: string
   prompt: string
   negativePrompt: string | null
   duration: string
@@ -395,7 +394,6 @@ export interface ShotInput {
   shotSize?: string
   cameraMovement?: string
   cameraAngle?: string
-  composition: string
   prompt: string
   negativePrompt?: string
   duration?: string

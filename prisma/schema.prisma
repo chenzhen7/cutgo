@@ -276,9 +276,7 @@ model Shot {
   cameraMovement  String    @default("static")
   /// 机位角度
   cameraAngle     String    @default("eye_level")
-  /// 构图说明
-  composition     String
-  /// 文生图主提示词
+  /// 分镜提示词（用于生图）
   prompt          String
   negativePrompt  String?
   /// 镜头时长

@@ -27,7 +27,7 @@ import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
-import type { ShotCardDisplayMode, ShotCardLayout } from "./components/shot-card"
+import type { ShotCardLayout } from "./components/shot-card"
 import type { ScriptShotPlan, ShotInput, Shot } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 
@@ -106,7 +106,6 @@ export default function ScriptShotPage() {
   const [batchVideoStatus, setBatchVideoStatus] = useState<"idle" | "generating" | "completed" | "error">("idle")
   const [batchVideoProgress, setBatchVideoProgress] = useState<{ current: number; total: number } | null>(null)
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
-  const [shotDisplayMode, setShotDisplayMode] = useState<ShotCardDisplayMode>("composition")
   const [shotLayout, setShotLayout] = useState<ShotCardLayout>("list")
 
   const runBatchVideoGeneration = useCallback(
@@ -209,10 +208,6 @@ export default function ScriptShotPage() {
     []
   )
 
-  const handleToggleShotDisplayMode = useCallback(() => {
-    setShotDisplayMode((m) => m === "composition" ? "prompts" : "composition")
-  }, [])
-
   const handleDuplicateShot = useCallback(
     (episodeId: string, shotId: string) => {
       duplicateShot(episodeId, shotId)
@@ -238,8 +233,7 @@ export default function ScriptShotPage() {
     async (episodeId: string) => {
       await addShot(episodeId, {
         shotSize: "medium",
-        composition: "新画面描述",
-        prompt: "Cinematic scene, detailed environment, dramatic lighting, photorealistic",
+        prompt: "Storyboard prompt: cinematic scene, detailed environment, dramatic lighting, photorealistic",
       })
     },
     [addShot]
@@ -511,7 +505,6 @@ export default function ScriptShotPage() {
                         selectedShotIds={selectedShotIds}
                         imageGeneratingIds={imageGeneratingIds}
                         videoGeneratingIds={videoGeneratingIds}
-                        shotDisplayMode={shotDisplayMode}
                         layout={shotLayout}
                         assetCharacters={assetCharacters}
                         assetScenes={assetScenes}
@@ -524,7 +517,6 @@ export default function ScriptShotPage() {
                         onGenerateVideo={handleGenerateVideo}
                         onPlayVideo={handlePlayVideo}
                         onViewScript={handleViewScript}
-                        onToggleShotDisplayMode={handleToggleShotDisplayMode}
                         onShotLayoutChange={setShotLayout}
                         onReorderShots={handleReorderShots}
                       />

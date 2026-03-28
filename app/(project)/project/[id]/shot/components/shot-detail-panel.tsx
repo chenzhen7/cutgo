@@ -31,7 +31,6 @@ import {
   User,
   MapPin,
   Package,
-  Info,
   Paintbrush,
   Loader2,
   ImageIcon,
@@ -91,7 +90,6 @@ export function ShotDetailPanel({
   onClose,
 }: ShotDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"image" | "video">("image")
-  const [composition, setComposition] = useState(shot.composition)
   const [prompt, setPrompt] = useState(shot.prompt || "")
   const [promptEnd, setPromptEnd] = useState(shot.promptEnd || "")
   const [gridPrompts, setGridPrompts] = useState<string[]>([])
@@ -108,7 +106,6 @@ export function ShotDetailPanel({
   }, [])
 
   useEffect(() => {
-    setComposition(shot.composition || "")
     setPrompt(shot.prompt || "")
     setPromptEnd(shot.promptEnd || "")
     setVideoPrompt(shot.videoPrompt || "")
@@ -118,7 +115,7 @@ export function ShotDetailPanel({
     } catch {
       setGridPrompts([])
     }
-  }, [shot.id, shot.composition, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.videoDuration, shot.videoPrompt])
+  }, [shot.id, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.videoDuration, shot.videoPrompt])
 
   const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
@@ -341,7 +338,7 @@ export function ShotDetailPanel({
                     <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
                   </div>
                   <p className="text-[11px] text-muted-foreground bg-muted/40 rounded p-2 leading-relaxed max-h-20 overflow-y-auto">
-                    {shot.prompt || "（使用画面描述中的 prompt）"}
+                    {shot.prompt || "（使用分镜提示词）"}
                   </p>
                 </div>
                 <div>
@@ -587,38 +584,10 @@ export function ShotDetailPanel({
               </div>
             </div>
 
-            {/* Composition */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-1">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面描述</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-3 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-[240px]">
-                      <p className="text-xs leading-relaxed">
-                        用中文简述画面内容和氛围，帮助理解每个画面表现什么场景
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Textarea
-                value={composition || ""}
-                onChange={(e) => {
-                  setComposition(e.target.value)
-                  debouncedUpdate({ composition: e.target.value })
-                }}
-                className="text-xs min-h-[60px] max-h-[120px] resize-none"
-                placeholder="描述画面内容和氛围..."
-              />
-            </div>
-
             {/* Image prompt */}
             <div>
               <div className="flex items-center gap-1.5 mb-1">
-                <Label className="text-xs">生图提示词</Label>
+                <Label className="text-xs">分镜提示词</Label>
                 <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
               </div>
               <Textarea
@@ -628,7 +597,7 @@ export function ShotDetailPanel({
                   debouncedUpdate({ prompt: e.target.value })
                 }}
                 className="text-xs min-h-[80px] max-h-[160px] resize-none"
-                placeholder="描述画面的生图提示词（英文）..."
+                placeholder="描述该镜头的分镜提示词（英文）..."
               />
             </div>
           </TabsContent>

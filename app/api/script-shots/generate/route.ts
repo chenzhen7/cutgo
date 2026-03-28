@@ -5,7 +5,6 @@ import { getLLMProvider } from "@/lib/ai/llm"
 import { buildScriptShotsPrompt } from "@/lib/prompts"
 
 interface AIShotResult {
-  composition: string
   prompt: string
   negativePrompt: string
   dialogueText?: string
@@ -115,8 +114,7 @@ function generateLocalScriptShots(
   const shots: AIShotResult[] = []
   for (let i = 0; i < shotCount; i++) {
     shots.push({
-      composition: `${episodeTitle} - 画面 ${i + 1}（本地生成，建议配置 AI 模型获得更好效果）`,
-      prompt: `Scene from "${episodeTitle}", shot ${i + 1}, cinematic lighting, 9:16 vertical frame, photorealistic, detailed environment, dramatic atmosphere. (Local fallback - configure AI for better results)`,
+      prompt: `Storyboard prompt for "${episodeTitle}", shot ${i + 1}, cinematic lighting, ${scriptContent.slice(0, 120)}, 9:16 vertical frame, photorealistic, detailed environment, dramatic atmosphere. (Local fallback - configure AI for better results)`,
       negativePrompt: "blurry, low quality, distorted face, extra limbs, watermark, text",
     })
   }
@@ -230,7 +228,6 @@ export const POST = withError(async (request: NextRequest) => {
           shotSize: "medium",
           cameraMovement: "static",
           cameraAngle: "eye_level",
-          composition: shot.composition || "",
           prompt: shot.prompt || "",
           negativePrompt: shot.negativePrompt || null,
           duration: "3s",
@@ -244,7 +241,7 @@ export const POST = withError(async (request: NextRequest) => {
 
       if (aiResult.shots?.length) {
         const lastShot = aiResult.shots[aiResult.shots.length - 1]
-        previousShotStr = `画面描述: ${lastShot.composition}`
+        previousShotStr = `分镜提示词: ${lastShot.prompt}`
       }
     }
 

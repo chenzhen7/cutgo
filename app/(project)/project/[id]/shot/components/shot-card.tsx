@@ -11,7 +11,7 @@ import {
 import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush, Video, Play, Type, Film, GripVertical } from "lucide-react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { SHOT_SIZE_OPTIONS, CAMERA_MOVEMENT_OPTIONS, CAMERA_ANGLE_OPTIONS, IMAGE_TYPE_OPTIONS } from "@/lib/types"
+import { IMAGE_TYPE_OPTIONS } from "@/lib/types"
 import type { Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 function parseJsonArray(value: string | null): string[] {
@@ -19,18 +19,6 @@ function parseJsonArray(value: string | null): string[] {
   try { return JSON.parse(value) } catch { return [] }
 }
 
-const ALL_KEYWORDS = [
-  ...SHOT_SIZE_OPTIONS.map((o) => o.label),
-  ...CAMERA_MOVEMENT_OPTIONS.map((o) => o.label),
-  ...CAMERA_ANGLE_OPTIONS.map((o) => o.label),
-]
-
-function matchKeywords(text: string): string[] {
-  if (!text) return []
-  return ALL_KEYWORDS.filter((kw) => text.includes(kw))
-}
-
-export type ShotCardDisplayMode = "composition" | "prompts"
 export type ShotCardLayout = "list" | "grid"
 
 interface ShotCardProps {
@@ -40,7 +28,6 @@ interface ShotCardProps {
   isSelected: boolean
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
-  displayMode: ShotCardDisplayMode
   layout?: ShotCardLayout
   isDragging?: boolean
   assetCharacters: AssetCharacter[]
@@ -158,7 +145,6 @@ export const ShotCard = memo(function ShotCard({
   isSelected,
   isGeneratingImage,
   isGeneratingVideo,
-  displayMode,
   layout = "list",
   isDragging = false,
   assetCharacters,
@@ -185,8 +171,6 @@ export const ShotCard = memo(function ShotCard({
   const handleGenerateImage = useCallback(() => onGenerateImage(episodeId, shot.id), [onGenerateImage, episodeId, shot.id])
   const handleGenerateVideo = useCallback(() => onGenerateVideo(episodeId, shot.id), [onGenerateVideo, episodeId, shot.id])
   const handlePlayVideo = useCallback(() => onPlayVideo(shot.id), [onPlayVideo, shot.id])
-  const matchedTags = useMemo(() => matchKeywords(shot.composition), [shot.composition])
-
   const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
   const boundPropIds = useMemo(() => parseJsonArray(shot.propIds), [shot.propIds])
 
@@ -202,8 +186,6 @@ export const ShotCard = memo(function ShotCard({
     () => assetProps.filter((p) => boundPropIds.includes(p.id)),
     [assetProps, boundPropIds]
   )
-
-  const hasAssets = boundCharacters.length > 0 || boundScene || boundProps.length > 0
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -289,9 +271,9 @@ export const ShotCard = memo(function ShotCard({
         <div className="px-2 py-1.5 flex flex-col gap-0.5">
           <p className={cn(
             "text-[10px] leading-relaxed line-clamp-2",
-            shot.composition ? "text-foreground" : "text-muted-foreground/60 italic"
+            shot.prompt ? "text-foreground" : "text-muted-foreground/60 italic"
           )}>
-            {shot.composition || "暂无画面描述"}
+            {shot.prompt || "暂无分镜提示词"}
           </p>
         </div>
       </div>
@@ -339,55 +321,28 @@ export const ShotCard = memo(function ShotCard({
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col gap-1.5 @[900px]:gap-2">
-          {displayMode === "composition" ? (
-            <p className={cn(
-              "text-[12px] leading-relaxed line-clamp-2 @[480px]:line-clamp-4 @[900px]:text-[13px]",
-              shot.composition ? "text-foreground font-medium" : "text-muted-foreground/60 italic"
-            )}>
-              {shot.composition || "暂无画面描述"}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-start gap-1.5">
-                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
-                  <Type className="size-2.5 mr-0.5" />
-                  生图
-                </Badge>
-                <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
-                  {shot.prompt || "暂无生图提示词"}
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5">
-                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
-                  <Film className="size-2.5 mr-0.5" />
-                  视频
-                </Badge>
-                <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
-                  {shot.videoPrompt || "暂无视频提示词"}
-                </p>
-              </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-start gap-1.5">
+              <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
+                <Type className="size-2.5 mr-0.5" />
+                分镜
+              </Badge>
+              <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
+                {shot.prompt || "暂无分镜提示词"}
+              </p>
             </div>
-          )}
+            <div className="flex items-start gap-1.5">
+              <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
+                <Film className="size-2.5 mr-0.5" />
+                视频
+              </Badge>
+              <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
+                {shot.videoPrompt || "暂无视频提示词"}
+              </p>
+            </div>
+          </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {matchedTags.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {matchedTags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="text-[8px] font-normal px-1.5 py-0 rounded-full bg-muted/60 @[900px]:text-[9px]"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            {matchedTags.length > 0 && hasAssets && (
-              <div className="w-px h-3 bg-border shrink-0" />
-            )}
-
             <div className="flex items-center gap-2 flex-wrap">
               {boundCharacters.length > 0 && (
                 <div className="flex items-center -space-x-1.5">

@@ -12,7 +12,6 @@ export async function POST(
     shotSize = "medium",
     cameraMovement = "static",
     cameraAngle = "eye_level",
-    composition,
     prompt,
     negativePrompt,
     duration = "3s",
@@ -25,9 +24,9 @@ export async function POST(
     insertAfter,
   } = body
 
-  if (!composition || !prompt) {
+  if (!prompt) {
     return NextResponse.json(
-      { error: "composition and prompt are required" },
+      { error: "prompt is required" },
       { status: 400 }
     )
   }
@@ -60,7 +59,6 @@ export async function POST(
       shotSize,
       cameraMovement,
       cameraAngle,
-      composition,
       prompt,
       negativePrompt: negativePrompt || null,
       duration,

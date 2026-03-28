@@ -101,8 +101,8 @@ export function VideoPreviewDialog({
             <Video className="size-4 text-violet-400" />
             镜头 #{shot.index + 1} 视频预览
           </DialogTitle>
-          {shot.composition && (
-            <p className="text-xs text-white/50 line-clamp-1 mt-1">{shot.composition}</p>
+          {shot.prompt && (
+            <p className="text-xs text-white/50 line-clamp-1 mt-1">{shot.prompt}</p>
           )}
         </DialogHeader>
 
