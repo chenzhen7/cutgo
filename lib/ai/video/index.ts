@@ -18,11 +18,3 @@ export async function getVideoProvider(): Promise<VideoProvider> {
     return new PlaceholderVideoProvider()
   }
 }
-
-/**
- * 清除 Provider 缓存。
- * 已废弃：现在 getVideoProvider 每次都会读取最新配置。
- */
-export function clearVideoProviderCache(): void {
-  // 保持函数存在以兼容现有调用
-}

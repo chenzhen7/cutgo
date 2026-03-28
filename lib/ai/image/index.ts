@@ -25,11 +25,3 @@ export async function getImageProvider(): Promise<ImageProvider> {
     return new PlaceholderImageProvider()
   }
 }
-
-/**
- * 清除 Provider 缓存。
- * 已废弃：现在 getImageProvider 每次都会读取最新配置。
- */
-export function clearImageProviderCache(): void {
-  // 保持函数存在以兼容现有调用
-}

@@ -57,14 +57,6 @@ export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): L
 }
 
 /**
- * 清除 Provider 缓存。
- * 已废弃：现在 getLLMProvider 每次都会读取最新配置。
- */
-export function clearLLMProviderCache(): void {
-  // 保持函数存在以兼容现有调用
-}
-
-/**
  * 使用当前生效配置调用 LLM 聊天接口。
  * 未配置时抛出 API_ERRORS.LLM_NOT_CONFIGURED.code，由上层 route 统一转换为标准错误响应。
  */

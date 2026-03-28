@@ -23,7 +23,7 @@ export type {
 export { getLLMConfig, getImageConfig, getVideoConfig, getTTSConfig, getActiveConfig } from "./config"
 export type { AIModelConfig } from "./types"
 
-// 导出各能力的 Provider 获取函数和缓存清除函数
-export { getLLMProvider, clearLLMProviderCache } from "./llm"
-export { getImageProvider, clearImageProviderCache } from "./image"
-export { getVideoProvider, clearVideoProviderCache } from "./video"
+// 导出各能力的 Provider 获取函数
+export { getLLMProvider } from "./llm"
+export { getImageProvider } from "./image"
+export { getVideoProvider } from "./video"

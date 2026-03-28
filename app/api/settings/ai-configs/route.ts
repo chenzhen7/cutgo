@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import {
-  clearImageProviderCache,
-  clearLLMProviderCache,
-  clearVideoProviderCache,
-} from "@/lib/ai"
 
 /** GET /api/settings/ai-configs?type=llm — 获取指定类型的所有模型配置 */
 export async function GET(req: Request) {
@@ -68,8 +63,6 @@ export async function POST(req: Request) {
       await syncActiveConfig(type, created.id)
     }
 
-    clearProviderCacheByType(type)
-
     return NextResponse.json({ ...created, config: config ?? {} }, { status: 201 })
   } catch (error) {
     console.error("[ai-configs POST]", error)
@@ -93,10 +86,4 @@ async function syncActiveConfig(type: string, configId: string | null) {
     create: { id: "global", [field]: configId },
     update: { [field]: configId },
   })
-}
-
-function clearProviderCacheByType(type: string) {
-  if (type === "llm") clearLLMProviderCache()
-  if (type === "image") clearImageProviderCache()
-  if (type === "video") clearVideoProviderCache()
 }
