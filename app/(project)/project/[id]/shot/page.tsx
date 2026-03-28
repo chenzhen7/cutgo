@@ -186,19 +186,10 @@ export default function ScriptShotPage() {
     }
   }, [projectId, activeEpisodeId, fetchScriptShotPlans, setActiveShotId])
 
-  const handleGenerateAll = useCallback(
-    async (mode: "skip_existing" | "overwrite") => {
-      await generateScriptShots(projectId, undefined, mode)
-    },
-    [projectId, generateScriptShots]
-  )
-
-  const handleGenerateEpisodes = useCallback(
-    async (episodeIds: string[]) => {
-      await generateScriptShots(projectId, episodeIds, "overwrite")
-    },
-    [projectId, generateScriptShots]
-  )
+  const handleGenerateCurrentEpisode = useCallback(async () => {
+    if (!activeEpisodeId) return
+    await generateScriptShots(projectId, [activeEpisodeId], "overwrite")
+  }, [projectId, activeEpisodeId, generateScriptShots])
 
   const handleDeleteShot = useCallback(
     async (episodeId: string, shotId: string) => {
@@ -435,7 +426,8 @@ export default function ScriptShotPage() {
           <div className="px-2.5 py-2.5 sm:px-3">
             <p className="text-sm text-destructive">{generateError}</p>
             <button
-              onClick={() => handleGenerateAll("skip_existing")}
+              onClick={handleGenerateCurrentEpisode}
+              disabled={!activeEpisodeId}
               className="mt-2 text-sm text-destructive underline hover:no-underline"
             >
               重试
@@ -474,7 +466,8 @@ export default function ScriptShotPage() {
               generateStatus={generateStatus}
               batchImageStatus={batchImageStatus}
               batchImageProgress={batchImageProgress}
-              onGenerateAll={handleGenerateAll}
+              canGenerateCurrentEpisode={!!activeEpisodeId}
+              onGenerateCurrentEpisode={handleGenerateCurrentEpisode}
               onBatchGenerateImages={handleBatchGenerateImages}
               onBatchGenerateEpisodeImages={handleBatchGenerateEpisodeImages}
               batchVideoStatus={batchVideoStatus}
@@ -551,7 +544,7 @@ export default function ScriptShotPage() {
                     {activeEpisodeId && (
                       <Button
                         size="sm"
-                        onClick={() => handleGenerateEpisodes([activeEpisodeId])}
+                        onClick={handleGenerateCurrentEpisode}
                         disabled={isGenerating}
                       >
                         生成该集分镜

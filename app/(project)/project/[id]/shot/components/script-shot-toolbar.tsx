@@ -9,7 +9,8 @@ interface ScriptShotToolbarProps {
   generateStatus: ScriptShotGenerateStatus
   batchImageStatus: "idle" | "generating" | "completed" | "error"
   batchImageProgress: { current: number; total: number } | null
-  onGenerateAll: (mode: "skip_existing" | "overwrite") => void
+  canGenerateCurrentEpisode: boolean
+  onGenerateCurrentEpisode: () => void
   onBatchGenerateImages: (mode: "all" | "missing_only") => void
   onBatchGenerateEpisodeImages: () => void
   batchVideoStatus: "idle" | "generating" | "completed" | "error"
@@ -22,7 +23,8 @@ export function ScriptShotToolbar({
   generateStatus,
   batchImageStatus,
   batchImageProgress,
-  onGenerateAll,
+  canGenerateCurrentEpisode,
+  onGenerateCurrentEpisode,
   onBatchGenerateImages,
   onBatchGenerateEpisodeImages,
   batchVideoStatus,
@@ -77,19 +79,14 @@ export function ScriptShotToolbar({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button disabled={isGenerating} size="sm">
-              {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Sparkles className="size-4 mr-2" />}
-              {isGenerating ? "生成中..." : "AI 生成分镜"}
-              <ChevronDown className="size-4 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onGenerateAll("skip_existing")}>生成（跳过已生成）</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onGenerateAll("overwrite")}>重新生成</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          disabled={isGenerating || !canGenerateCurrentEpisode}
+          size="sm"
+          onClick={onGenerateCurrentEpisode}
+        >
+          {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Sparkles className="size-4 mr-2" />}
+          {isGenerating ? "生成中..." : "AI 生成分镜"}
+        </Button>
       </div>
     </div>
   )
