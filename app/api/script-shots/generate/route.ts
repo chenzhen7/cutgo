@@ -6,7 +6,7 @@ import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/
 
 interface AIScriptShotResult {
   shots: Array<{
-    shot: string
+    prompt: string
     characters: string[]
     scene: string
     props: string[]
@@ -96,7 +96,7 @@ async function callAIGenerateScriptShots(
         if (typeof item === "string") {
           // 兼容历史输出结构：["镜头1", "镜头2"]
           return {
-            shot: item.trim(),
+            prompt: item.trim(),
             characters: [],
             scene: "",
             props: [],
@@ -104,13 +104,19 @@ async function callAIGenerateScriptShots(
         }
         if (!item || typeof item !== "object") return null
         const raw = item as {
+          prompt?: unknown
           shot?: unknown
           characters?: unknown
           scene?: unknown
           props?: unknown
         }
-        const shot = typeof raw.shot === "string" ? raw.shot.trim() : ""
-        if (!shot) return null
+        const prompt =
+          typeof raw.prompt === "string"
+            ? raw.prompt.trim()
+            : typeof raw.shot === "string"
+            ? raw.shot.trim()
+            : ""
+        if (!prompt) return null
         const characters = Array.isArray(raw.characters)
           ? raw.characters
             .filter((v): v is string => typeof v === "string")
@@ -125,14 +131,14 @@ async function callAIGenerateScriptShots(
             .filter(Boolean)
           : []
         return {
-          shot,
+          prompt,
           characters,
           scene,
           props,
         }
       })
       .filter(
-        (item): item is { shot: string; characters: string[]; scene: string; props: string[] } =>
+        (item): item is { prompt: string; characters: string[]; scene: string; props: string[] } =>
           Boolean(item)
       )
     return {
@@ -212,7 +218,7 @@ export const POST = withError(async (request: NextRequest) => {
 
       const shotData = (aiResult.shots || [])
         .map((item, si) => {
-          const prompt = item.shot.trim()
+          const prompt = item.prompt.trim()
           if (!prompt) return null
           const characterIds = item.characters
             .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
@@ -244,7 +250,7 @@ export const POST = withError(async (request: NextRequest) => {
       }
 
       if (aiResult.shots?.length) {
-        const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.shot?.trim() || ""
+        const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.prompt?.trim() || ""
         if (lastPrompt) {
           previousShotStr = `分镜提示词: ${lastPrompt}`
         }
