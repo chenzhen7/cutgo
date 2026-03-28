@@ -23,20 +23,7 @@ interface DoubaoImageResponse {
 export class DoubaoImageProvider implements ImageProvider {
   readonly id = "doubao"
 
-  private static readonly ALLOWED_MODELS = new Set<string>([
-    "doubao-seedream-4-0-250828",
-    "doubao-seedream-4-5-251128",
-    "doubao-seedream-5-0-260128",
-  ])
-
-  constructor(private readonly config: DoubaoImageConfig) {
-    if (!DoubaoImageProvider.ALLOWED_MODELS.has(config.model)) {
-      throwCutGoError(
-        "VALIDATION",
-        `不支持的豆包生图模型：${config.model}。`
-      )
-    }
-  }
+  constructor(private readonly config: DoubaoImageConfig) {}
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
     const { numOutputs = 1 } = options
@@ -45,6 +32,7 @@ export class DoubaoImageProvider implements ImageProvider {
     }
 
     const tasks = Array.from({ length: numOutputs }, () => this.generateSingle(options))
+    
     return Promise.all(tasks)
   }
 

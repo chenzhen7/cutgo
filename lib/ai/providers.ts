@@ -136,9 +136,11 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       label: "字节豆包（火山方舟）",
       logo: "/logos/doubao.svg",
       models: [
-        { value: "doubao-seedream-4-0-250828", label: "Doubao Seedream 4.0" },
-        { value: "doubao-seedream-4-5-251128", label: "Doubao Seedream 4.5" },
         { value: "doubao-seedream-5-0-260128", label: "Doubao Seedream 5.0" },
+        { value: "doubao-seedream-4-5-251128", label: "Doubao Seedream 4.5" },
+        { value: "doubao-seedream-4-0-250828", label: "Doubao Seedream 4.0" },
+      
+        
       ],
       defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
     },
