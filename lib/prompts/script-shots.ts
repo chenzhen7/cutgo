@@ -2,28 +2,17 @@
  * 分镜生成 — Prompt 模板（与业务解耦，便于后续在设置页/项目级配置中编辑）
  */
 
-export const SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER = "{EPISODE_TITLE}" as const
-export const SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER = "{EPISODE_SCENES}" as const
-export const SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER = "{EPISODE_CHARACTERS}" as const
-export const SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER = "{EPISODE_PROPS}" as const
-export const SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER = "{SCRIPT_CONTENT}" as const
-export const SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER = "{PREVIOUS_SHOT}" as const
+const SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER = "{EPISODE_TITLE}" as const
+const SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER = "{EPISODE_SCENES}" as const
+const SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER = "{EPISODE_CHARACTERS}" as const
+const SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER = "{EPISODE_PROPS}" as const
+const SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER = "{SCRIPT_CONTENT}" as const
+const SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER = "{PREVIOUS_SHOT}" as const
 
-export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的分镜提示词。
+const DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE = `你是一位资深分镜师和 AI 图像生成 Prompt 专家，擅长将剧本转化为高质量的分镜提示词。
 
 ## 任务
-请基于以下剧本内容，为每个关键镜头生成高质量的分镜提示词（Prompt）。
-
-## 剧本信息
-- 标题：${SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER}
-- 关联场景：${SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER}
-- 出场角色：${SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER}
-- 涉及道具：${SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER}
-
-## 剧本内容
-${SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER}
-
-${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
+请根据用户提供的剧本信息与剧本正文，为每个关键镜头生成高质量的分镜提示词（Prompt）。
 
 ## 要求
 1. 使用中文，详细且具体
@@ -162,6 +151,22 @@ ${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
 
 `
 
+export const DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE = `## 剧本信息
+- 标题：${SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER}
+- 关联场景：${SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER}
+- 出场角色：${SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER}
+- 涉及道具：${SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER}
+
+## 剧本内容
+${SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER}
+
+${SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER}
+`
+
+export const DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE = `${DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE}
+
+${DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE}` as const
+
 export interface BuildScriptShotsPromptInput {
   episodeTitle: string
   episodeScenes: string
@@ -173,6 +178,16 @@ export interface BuildScriptShotsPromptInput {
 
 export interface BuildScriptShotsPromptOptions {
   /** 自定义模板；若缺失占位符字段，会在末尾追加对应段落 */
+  template?: string
+}
+
+export interface BuildScriptShotsSystemPromptOptions {
+  /** 自定义系统提示词模板 */
+  template?: string
+}
+
+export interface BuildScriptShotsUserPromptOptions {
+  /** 自定义角色（user）提示词模板；若缺失占位符字段，会在末尾追加对应段落 */
   template?: string
 }
 
@@ -189,9 +204,25 @@ export function buildScriptShotsPrompt(
   input: BuildScriptShotsPromptInput,
   options?: BuildScriptShotsPromptOptions
 ): string {
+  const systemPrompt = buildScriptShotsSystemPrompt()
+  const userPrompt = buildScriptShotsUserPrompt(input, options)
+  return `${systemPrompt}\n\n${userPrompt}`.trim()
+}
+
+export function buildScriptShotsSystemPrompt(options?: BuildScriptShotsSystemPromptOptions): string {
   const raw = options?.template?.trim()
     ? options.template
-    : DEFAULT_SCRIPT_SHOTS_PROMPT_TEMPLATE
+    : DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE
+  return raw.trim()
+}
+
+export function buildScriptShotsUserPrompt(
+  input: BuildScriptShotsPromptInput,
+  options?: BuildScriptShotsUserPromptOptions
+): string {
+  const raw = options?.template?.trim()
+    ? options.template
+    : DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE
 
   const hasEpisodeTitlePlaceholder = raw.includes(SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER)
   const hasEpisodeScenesPlaceholder = raw.includes(SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER)

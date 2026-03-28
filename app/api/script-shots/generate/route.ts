@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
-import { buildScriptShotsPrompt } from "@/lib/prompts"
+import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/prompts"
 
 interface AIScriptShotResult {
   prompts: string[]
@@ -62,7 +62,8 @@ async function callAIGenerateScriptShots(
     throwCutGoError("LLM_NOT_CONFIGURED")
   }
 
-  const prompt = buildScriptShotsPrompt({
+  const systemPrompt = buildScriptShotsSystemPrompt()
+  const userPrompt = buildScriptShotsUserPrompt({
     episodeTitle,
     episodeScenes,
     episodeCharacters,
@@ -72,7 +73,10 @@ async function callAIGenerateScriptShots(
   })
 
   const result = await llmProvider.chat({
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
   })
   let text = result.content?.trim() || ""
   text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
