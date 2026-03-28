@@ -337,7 +337,7 @@ export function ShotDetailPanel({
                     <Label className="text-xs">首帧提示词</Label>
                     <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
                   </div>
-                  <p className="text-[11px] text-muted-foreground bg-muted/40 rounded p-2 leading-relaxed max-h-20 overflow-y-auto">
+                  <p className="text-[12px] text-foreground/90 bg-muted/40 rounded p-2.5 leading-relaxed max-h-24 overflow-y-auto">
                     {shot.prompt || "（使用分镜提示词）"}
                   </p>
                 </div>
@@ -352,7 +352,7 @@ export function ShotDetailPanel({
                       setPromptEnd(e.target.value)
                       debouncedUpdate({ promptEnd: e.target.value })
                     }}
-                    className="text-xs min-h-[60px] resize-none"
+                    className="text-[13px] min-h-[60px] resize-none leading-relaxed"
                     placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
                   />
                 </div>
@@ -596,7 +596,7 @@ export function ShotDetailPanel({
                   setPrompt(e.target.value)
                   debouncedUpdate({ prompt: e.target.value })
                 }}
-                className="text-xs min-h-[80px] max-h-[160px] resize-none"
+                className="text-[13px] min-h-[80px] max-h-[160px] resize-none leading-relaxed"
                 placeholder="描述该镜头的分镜提示词（英文）..."
               />
             </div>
@@ -683,7 +683,7 @@ export function ShotDetailPanel({
                   setVideoPrompt(e.target.value)
                   debouncedUpdate({ videoPrompt: e.target.value })
                 }}
-                className="text-xs min-h-[60px] max-h-[120px] resize-none"
+                className="text-[13px] min-h-[60px] max-h-[120px] resize-none leading-relaxed"
                 placeholder="描述视频运动效果和转场（英文），留空则自动生成..."
               />
             </div>

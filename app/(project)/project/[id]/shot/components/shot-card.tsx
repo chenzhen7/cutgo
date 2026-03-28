@@ -270,8 +270,8 @@ export const ShotCard = memo(function ShotCard({
         {/* Bottom info */}
         <div className="px-2 py-1.5 flex flex-col gap-0.5">
           <p className={cn(
-            "text-[10px] leading-relaxed line-clamp-2",
-            shot.prompt ? "text-foreground" : "text-muted-foreground/60 italic"
+            "text-[11px] leading-relaxed line-clamp-2",
+            shot.prompt ? "text-foreground/90" : "text-muted-foreground italic"
           )}>
             {shot.prompt || "暂无分镜提示词"}
           </p>
@@ -327,7 +327,7 @@ export const ShotCard = memo(function ShotCard({
                 <Type className="size-2.5 mr-0.5" />
                 分镜
               </Badge>
-              <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
+              <p className="text-[11px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[12px]">
                 {shot.prompt || "暂无分镜提示词"}
               </p>
             </div>
@@ -336,7 +336,7 @@ export const ShotCard = memo(function ShotCard({
                 <Film className="size-2.5 mr-0.5" />
                 视频
               </Badge>
-              <p className="text-[9px] text-muted-foreground line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[10px]">
+              <p className="text-[11px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[12px]">
                 {shot.videoPrompt || "暂无视频提示词"}
               </p>
             </div>
