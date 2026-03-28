@@ -47,9 +47,9 @@ export class GoogleLLMProvider implements LLMProvider {
       content: result.text,
       usage: result.usage
         ? {
-            promptTokens: result.usage.inputTokens,
-            completionTokens: result.usage.outputTokens,
-          }
+          promptTokens: result.usage.inputTokens,
+          completionTokens: result.usage.outputTokens,
+        }
         : undefined,
     }
   }

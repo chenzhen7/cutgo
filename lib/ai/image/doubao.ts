@@ -49,7 +49,7 @@ export class DoubaoImageProvider implements ImageProvider {
       promptPreview:
         prompt.length > 200 ? `${prompt.slice(0, 200)}…` : prompt,
     })
-    
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -73,19 +73,17 @@ export class DoubaoImageProvider implements ImageProvider {
       const errorText = await res.text()
 
       throwCutGoError(
-        "INTERNAL",
-        `豆包生图服务调用失败（${res.status}）：${errorText}`
+        "INTERNAL",`status=${res.status}，error=${errorText}`
       )
     }
 
     const json = (await res.json()) as DoubaoImageResponse
-    if (this.isDev) {
-      const raw = JSON.stringify(json)
+
+    const raw = JSON.stringify(json)
       console.log(
         "[Doubao Image] response body (truncated)",
-        raw.length > 1500 ? `${raw.slice(0, 1500)}…` : raw
+        raw.length > 100 ? `${raw.slice(0, 100)}…` : raw
       )
-    }
 
     const first = json.data?.[0]
     if (!first) {
@@ -93,16 +91,10 @@ export class DoubaoImageProvider implements ImageProvider {
     }
 
     if (first.url) {
-      if (this.isDev) {
-        console.log("[Doubao Image] result: image url")
-      }
       return { url: first.url }
     }
 
     if (first.b64_json) {
-      if (this.isDev) {
-        console.log("[Doubao Image] result: base64 payload")
-      }
       return { url: `data:image/png;base64,${first.b64_json}` }
     }
 

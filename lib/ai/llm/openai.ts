@@ -32,15 +32,15 @@ export class OpenAILLMProvider implements LLMProvider {
       baseURL: config.baseUrl.replace(/\/$/, ""),
       fetch: isDev
         ? async (url, options) => {
-            console.log("[AI SDK] URL:", url)
-            console.log("[AI SDK] Headers:", options?.headers)
-            console.log("[AI SDK] Body:", options?.body)
-            const response = await fetch(url, options)
-            const clone = response.clone()
-            const text = await clone.text()
-            console.log("[AI SDK] Response:", text)
-            return response
-          }
+          console.log("[AI SDK] URL:", url)
+          console.log("[AI SDK] Headers:", options?.headers)
+          console.log("[AI SDK] Body:", options?.body)
+          const response = await fetch(url, options)
+          const clone = response.clone()
+          const text = await clone.text()
+          console.log("[AI SDK] Response:", text)
+          return response
+        }
         : undefined,
     })
   }
@@ -63,9 +63,9 @@ export class OpenAILLMProvider implements LLMProvider {
       content: result.text,
       usage: result.usage
         ? {
-            promptTokens: result.usage.inputTokens,
-            completionTokens: result.usage.outputTokens,
-          }
+          promptTokens: result.usage.inputTokens,
+          completionTokens: result.usage.outputTokens,
+        }
         : undefined,
     }
   }
