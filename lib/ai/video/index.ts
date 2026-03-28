@@ -2,33 +2,27 @@ import { getVideoConfig } from "../config"
 import { PlaceholderVideoProvider } from "./placeholder"
 import type { VideoProvider } from "../types"
 
-// 缓存 Provider 实例
-let cachedProvider: VideoProvider | null = null
-
 /**
  * 获取当前配置的视频生成 Provider（异步，从数据库读取配置）。
  * 如果没有 API Key，则返回占位实现。
  */
 export async function getVideoProvider(): Promise<VideoProvider> {
-  if (cachedProvider) return cachedProvider
-
   const config = await getVideoConfig()
 
   if (config?.provider === "runway" && config.apiKey) {
     // 待实现：Runway Gen-2/Gen-3 接口
     // const { RunwayVideoProvider } = await import("./runway")
-    // cachedProvider = new RunwayVideoProvider(config)
-    cachedProvider = new PlaceholderVideoProvider()
+    // return new RunwayVideoProvider(config)
+    return new PlaceholderVideoProvider()
   } else {
-    cachedProvider = new PlaceholderVideoProvider()
+    return new PlaceholderVideoProvider()
   }
-
-  return cachedProvider
 }
 
 /**
- * 清除 Provider 缓存
+ * 清除 Provider 缓存。
+ * 已废弃：现在 getVideoProvider 每次都会读取最新配置。
  */
 export function clearVideoProviderCache(): void {
-  cachedProvider = null
+  // 保持函数存在以兼容现有调用
 }

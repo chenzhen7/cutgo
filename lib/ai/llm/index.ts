@@ -4,9 +4,7 @@ import { OpenAILLMProvider } from "./openai"
 import type { LLMGenerateOptions, LLMGenerateResult, LLMProvider } from "../types"
 import { API_ERRORS } from "@/lib/api-error"
 
-// 缓存 Provider 实例，避免重复创建
-let cachedProvider: LLMProvider | null = null
-
+// 模型配置运行时参数定义
 export interface LLMProviderRuntimeConfig {
   provider: string
   apiKey: string
@@ -19,12 +17,9 @@ export interface LLMProviderRuntimeConfig {
  * 无配置时返回 null，由业务层决定是否降级（例如提示用户配置 API Key）。
  */
 export async function getLLMProvider(): Promise<LLMProvider | null> {
-  if (cachedProvider) return cachedProvider
-
   const config = await getLLMConfig()
   if (!config) return null
-  cachedProvider = createLLMProviderFromConfig(config)
-  return cachedProvider
+  return createLLMProviderFromConfig(config)
 }
 
 /**
@@ -63,10 +58,10 @@ export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): L
 
 /**
  * 清除 Provider 缓存。
- * 当用户在设置页面更改了模型厂商或 API Key 时，应调用此函数以确保下次获取的是最新配置。
+ * 已废弃：现在 getLLMProvider 每次都会读取最新配置。
  */
 export function clearLLMProviderCache(): void {
-  cachedProvider = null
+  // 保持函数存在以兼容现有调用
 }
 
 /**
