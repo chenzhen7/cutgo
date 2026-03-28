@@ -143,7 +143,7 @@ async function testImage({
   try {
     const result = await Promise.race([
       imageProvider.generate({
-        prompt: "test image",
+        prompt: "apple",
         width: 512,
         height: 512,
       }),

@@ -22,9 +22,10 @@ interface DoubaoImageResponse {
  */
 export class DoubaoImageProvider implements ImageProvider {
   readonly id = "doubao"
+  private readonly isDev: boolean
 
   constructor(private readonly config: DoubaoImageConfig) {
-    
+    this.isDev = process.env.NODE_ENV === "development"
   }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
@@ -41,6 +42,14 @@ export class DoubaoImageProvider implements ImageProvider {
     const prompt = this.buildPrompt(options.prompt, options.negativePrompt)
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/images/generations`
 
+    console.log("[Doubao Image] request", {
+      url,
+      model: this.config.model,
+      size: `${options.width}x${options.height}`,
+      promptPreview:
+        prompt.length > 200 ? `${prompt.slice(0, 200)}…` : prompt,
+    })
+    
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -54,29 +63,46 @@ export class DoubaoImageProvider implements ImageProvider {
         response_format: "url",
       }),
       signal: AbortSignal.timeout(300_000),
+    })
+
+    if (this.isDev) {
+      console.log("[Doubao Image] response status", res.status, res.statusText)
     }
-  
-  )
 
     if (!res.ok) {
       const errorText = await res.text()
+
       throwCutGoError(
         "INTERNAL",
-        `豆包生图服务调用失败（${res.status}）：${errorText.slice(0, 300)}`
+        `豆包生图服务调用失败（${res.status}）：${errorText}`
       )
     }
 
     const json = (await res.json()) as DoubaoImageResponse
+    if (this.isDev) {
+      const raw = JSON.stringify(json)
+      console.log(
+        "[Doubao Image] response body (truncated)",
+        raw.length > 1500 ? `${raw.slice(0, 1500)}…` : raw
+      )
+    }
+
     const first = json.data?.[0]
     if (!first) {
       throwCutGoError("INTERNAL", "豆包生图服务未返回有效图片数据")
     }
 
     if (first.url) {
+      if (this.isDev) {
+        console.log("[Doubao Image] result: image url")
+      }
       return { url: first.url }
     }
 
     if (first.b64_json) {
+      if (this.isDev) {
+        console.log("[Doubao Image] result: base64 payload")
+      }
       return { url: `data:image/png;base64,${first.b64_json}` }
     }
 
