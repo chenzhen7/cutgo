@@ -90,36 +90,18 @@ async function callAIGenerateScriptShots(
     previousShot: previousShotStr,
   })
 
+  const result = await llmProvider.chat({
+    messages: [{ role: "user", content: prompt }],
+  })
+  let text = result.content?.trim() || ""
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
+
   try {
-    const result = await llmProvider.chat({
-      messages: [{ role: "user", content: prompt }],
-    })
-    let text = result.content?.trim() || ""
-    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
-    const parsed = JSON.parse(text)
+    const parsed = JSON.parse(text) as { shots?: AIShotResult[] }
     return { shots: parsed.shots || [] }
-  } catch (err) {
-    console.error("AI script-shot generation failed, falling back to local:", err)
-    return generateLocalScriptShots(episodeTitle, scriptContent)
+  } catch {
+    throwCutGoError("LLM_INVALID_RESPONSE", "LLM 返回的分镜结果不是有效 JSON")
   }
-}
-
-function generateLocalScriptShots(
-  episodeTitle: string,
-  scriptContent: string
-): AIScriptShotResult {
-  const contentLength = scriptContent.length
-  const shotCount = Math.max(2, Math.min(Math.ceil(contentLength / 200), 6))
-
-  const shots: AIShotResult[] = []
-  for (let i = 0; i < shotCount; i++) {
-    shots.push({
-      prompt: `Storyboard prompt for "${episodeTitle}", shot ${i + 1}, cinematic lighting, ${scriptContent.slice(0, 120)}, 9:16 vertical frame, photorealistic, detailed environment, dramatic atmosphere. (Local fallback - configure AI for better results)`,
-      negativePrompt: "blurry, low quality, distorted face, extra limbs, watermark, text",
-    })
-  }
-
-  return { shots }
 }
 
 export const POST = withError(async (request: NextRequest) => {
