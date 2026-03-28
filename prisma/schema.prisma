@@ -270,12 +270,6 @@ model Shot {
 
   /// 镜头序号
   index           Int
-  /// 景别
-  shotSize        String
-  /// 运镜
-  cameraMovement  String    @default("static")
-  /// 机位角度
-  cameraAngle     String    @default("eye_level")
   /// 分镜提示词（用于生图）
   prompt          String
   negativePrompt  String?

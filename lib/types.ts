@@ -277,39 +277,7 @@ export const DEFAULT_NEGATIVE_PROMPTS =
 
 // ── Script Shot Plan Types ──
 
-export type ShotSize = "extreme_wide" | "wide" | "medium" | "medium_close" | "close" | "extreme_close"
-export type CameraMovement = "static" | "push_in" | "pull_out" | "pan" | "tilt" | "tracking" | "orbit" | "crane" | "handheld"
-export type CameraAngle = "eye_level" | "high" | "low" | "birds_eye" | "dutch"
 export type ScriptShotPlanStatus = "draft" | "generated" | "edited"
-
-export const SHOT_SIZE_OPTIONS: { value: ShotSize; label: string; en: string }[] = [
-  { value: "extreme_wide", label: "远景", en: "Extreme Wide Shot" },
-  { value: "wide", label: "全景", en: "Wide Shot" },
-  { value: "medium", label: "中景", en: "Medium Shot" },
-  { value: "medium_close", label: "中近景", en: "Medium Close-Up" },
-  { value: "close", label: "近景", en: "Close-Up" },
-  { value: "extreme_close", label: "特写", en: "Extreme Close-Up" },
-]
-
-export const CAMERA_MOVEMENT_OPTIONS: { value: CameraMovement; label: string; en: string }[] = [
-  { value: "static", label: "静止", en: "Static" },
-  { value: "push_in", label: "推进", en: "Push In" },
-  { value: "pull_out", label: "拉远", en: "Pull Out" },
-  { value: "pan", label: "横摇", en: "Pan" },
-  { value: "tilt", label: "竖摇", en: "Tilt" },
-  { value: "tracking", label: "跟拍", en: "Tracking" },
-  { value: "orbit", label: "环绕", en: "Orbit" },
-  { value: "crane", label: "升降", en: "Crane" },
-  { value: "handheld", label: "手持", en: "Handheld" },
-]
-
-export const CAMERA_ANGLE_OPTIONS: { value: CameraAngle; label: string; en: string }[] = [
-  { value: "eye_level", label: "平视", en: "Eye Level" },
-  { value: "high", label: "俯拍", en: "High Angle" },
-  { value: "low", label: "仰拍", en: "Low Angle" },
-  { value: "birds_eye", label: "鸟瞰", en: "Bird's Eye" },
-  { value: "dutch", label: "荷兰角", en: "Dutch Angle" },
-]
 
 export type ImageType = "keyframe" | "first_last" | "multi_grid"
 export type GridLayout = "2x2" | "1x3" | "2x3"
@@ -330,9 +298,6 @@ export interface Shot {
   id: string
   episodeId: string
   index: number
-  shotSize: ShotSize
-  cameraMovement: CameraMovement
-  cameraAngle: CameraAngle
   prompt: string
   negativePrompt: string | null
   duration: string
@@ -391,9 +356,6 @@ export interface ScriptShotGenerateProgress {
 }
 
 export interface ShotInput {
-  shotSize?: string
-  cameraMovement?: string
-  cameraAngle?: string
   prompt: string
   negativePrompt?: string
   duration?: string

@@ -249,7 +249,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
     await get().addShot(episodeId, {
-      shotSize: "medium",
       prompt: shot.prompt,
       negativePrompt: shot.negativePrompt || undefined,
       scriptLineIds: shot.scriptLineIds || undefined,

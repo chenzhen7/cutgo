@@ -232,7 +232,6 @@ export default function ScriptShotPage() {
   const handleAddShot = useCallback(
     async (episodeId: string) => {
       await addShot(episodeId, {
-        shotSize: "medium",
         prompt: "Storyboard prompt: cinematic scene, detailed environment, dramatic lighting, photorealistic",
       })
     },

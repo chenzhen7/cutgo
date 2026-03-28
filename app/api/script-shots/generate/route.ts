@@ -175,9 +175,6 @@ export const POST = withError(async (request: NextRequest) => {
         data: (aiResult.shots || []).map((shot, si) => ({
           episodeId: episode.id,
           index: si,
-          shotSize: "medium",
-          cameraMovement: "static",
-          cameraAngle: "eye_level",
           prompt: shot.prompt || "",
           negativePrompt: shot.negativePrompt || null,
           duration: "3s",

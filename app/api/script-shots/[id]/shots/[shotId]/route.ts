@@ -10,7 +10,6 @@ export async function PATCH(
 
   const updateData: Record<string, unknown> = {}
   const fields = [
-    "shotSize", "cameraMovement", "cameraAngle",
     "prompt", "negativePrompt", "duration", "imageUrl",
     "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
     "scriptLineIds", "dialogueText", "actionNote",

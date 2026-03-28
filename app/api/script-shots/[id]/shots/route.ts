@@ -9,9 +9,6 @@ export async function POST(
   const body = await request.json()
 
   const {
-    shotSize = "medium",
-    cameraMovement = "static",
-    cameraAngle = "eye_level",
     prompt,
     negativePrompt,
     duration = "3s",
@@ -56,9 +53,6 @@ export async function POST(
     data: {
       episodeId,
       index: newIndex,
-      shotSize,
-      cameraMovement,
-      cameraAngle,
       prompt,
       negativePrompt: negativePrompt || null,
       duration,
