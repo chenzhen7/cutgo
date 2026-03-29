@@ -247,14 +247,53 @@ export const PLATFORM_PRESETS = [
   { label: "YouTube/横屏", value: "youtube", aspectRatio: "16:9", resolution: "1920x1080" },
 ] as const
 
+export const STYLE_PRESET_CATEGORIES = [
+  { label: "全部", value: "all" },
+  { label: "写实都市", value: "realistic" },
+  { label: "古装玄幻", value: "fantasy" },
+  { label: "科幻未来", value: "scifi" },
+  { label: "动漫插画", value: "anime" },
+  { label: "艺术风格", value: "art" },
+] as const
+
+export type StylePresetCategory = (typeof STYLE_PRESET_CATEGORIES)[number]["value"]
+
 export const STYLE_PRESETS = [
-  { label: "都市霸总", value: "urban-ceo" },
-  { label: "古装仙侠", value: "ancient-xianxia" },
-  { label: "硬核科幻", value: "hard-scifi" },
-  { label: "日漫风", value: "anime-jp" },
-  { label: "美漫风格", value: "comic-us" },
-  { label: "赛博朋克", value: "cyberpunk" },
-  { label: "水墨风", value: "ink-wash" },
+  // 写实都市
+  { label: "都市霸总", value: "urban-ceo", category: "realistic" as StylePresetCategory },
+  { label: "现代都市", value: "modern-city", category: "realistic" as StylePresetCategory },
+  { label: "商战职场", value: "business-war", category: "realistic" as StylePresetCategory },
+  { label: "豪门世家", value: "wealthy-family", category: "realistic" as StylePresetCategory },
+  { label: "甜宠恋爱", value: "sweet-romance", category: "realistic" as StylePresetCategory },
+  { label: "悬疑犯罪", value: "mystery-crime", category: "realistic" as StylePresetCategory },
+  // 古装玄幻
+  { label: "古装仙侠", value: "ancient-xianxia", category: "fantasy" as StylePresetCategory },
+  { label: "武侠江湖", value: "wuxia", category: "fantasy" as StylePresetCategory },
+  { label: "东方玄幻", value: "eastern-fantasy", category: "fantasy" as StylePresetCategory },
+  { label: "宫廷权谋", value: "palace-intrigue", category: "fantasy" as StylePresetCategory },
+  { label: "神话传说", value: "mythology", category: "fantasy" as StylePresetCategory },
+  { label: "西方奇幻", value: "western-fantasy", category: "fantasy" as StylePresetCategory },
+  // 科幻未来
+  { label: "硬核科幻", value: "hard-scifi", category: "scifi" as StylePresetCategory },
+  { label: "赛博朋克", value: "cyberpunk", category: "scifi" as StylePresetCategory },
+  { label: "星际太空", value: "space-opera", category: "scifi" as StylePresetCategory },
+  { label: "末世废土", value: "post-apocalypse", category: "scifi" as StylePresetCategory },
+  { label: "蒸汽朋克", value: "steampunk", category: "scifi" as StylePresetCategory },
+  { label: "生化危机", value: "biohazard", category: "scifi" as StylePresetCategory },
+  // 动漫插画
+  { label: "日漫风", value: "anime-jp", category: "anime" as StylePresetCategory },
+  { label: "美漫风格", value: "comic-us", category: "anime" as StylePresetCategory },
+  { label: "国漫风格", value: "comic-cn", category: "anime" as StylePresetCategory },
+  { label: "像素风格", value: "pixel-art", category: "anime" as StylePresetCategory },
+  { label: "chibi 萌系", value: "chibi", category: "anime" as StylePresetCategory },
+  { label: "黑白漫画", value: "manga-bw", category: "anime" as StylePresetCategory },
+  // 艺术风格
+  { label: "水墨风", value: "ink-wash", category: "art" as StylePresetCategory },
+  { label: "油画质感", value: "oil-painting", category: "art" as StylePresetCategory },
+  { label: "水彩插画", value: "watercolor", category: "art" as StylePresetCategory },
+  { label: "复古胶片", value: "retro-film", category: "art" as StylePresetCategory },
+  { label: "扁平插画", value: "flat-illustration", category: "art" as StylePresetCategory },
+  { label: "暗黑哥特", value: "dark-gothic", category: "art" as StylePresetCategory },
 ] as const
 
 export const DEFAULT_NEGATIVE_PROMPTS =
