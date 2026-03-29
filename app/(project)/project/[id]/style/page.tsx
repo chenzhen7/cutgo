@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { STYLE_PRESETS, STYLE_PRESET_CATEGORIES } from "@/lib/types"
 import type { Project } from "@/lib/types"
@@ -169,61 +170,61 @@ export default function StylePage() {
           />
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {filteredPresets.map((style) => {
-            const isSelected = selectedPreset === style.value
-            return (
-              <button
-                key={style.value}
-                onClick={() =>
-                  setSelectedPreset(isSelected ? null : style.value)
-                }
-                className={cn(
-                  "relative flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all text-center group",
-                  isSelected
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40 hover:bg-muted/40"
-                )}
-              >
-                <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
-                  <ImageIcon className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
-                </div>
-                <span className="text-xs font-medium leading-tight line-clamp-1 w-full">
-                  {style.label}
-                </span>
-                {isSelected && (
-                  <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                    <Check className="h-2.5 w-2.5 text-primary-foreground" />
+        {/* Grid with Scroll Area */}
+        <ScrollArea className="h-[520px] pr-4 -mr-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 py-2">
+            {filteredPresets.map((style) => {
+              const isSelected = selectedPreset === style.value
+              return (
+                <button
+                  key={style.value}
+                  onClick={() =>
+                    setSelectedPreset(isSelected ? null : style.value)
+                  }
+                  className={cn(
+                    "relative flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all text-center group",
+                    isSelected
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40 hover:bg-muted/40"
+                  )}
+                >
+                  <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
                   </div>
-                )}
-              </button>
-            )
-          })}
+                  <span className="text-xs font-medium leading-tight line-clamp-1 w-full">
+                    {style.label}
+                  </span>
+                  {isSelected && (
+                    <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </button>
+              )
+            })}
 
-          {/* Custom style card — always visible */}
-          <button
-            onClick={() => setSelectedPreset(isCustom ? null : "__custom__")}
-            className={cn(
-              "relative flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-3 transition-all text-center group",
-              isCustom
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/40 hover:bg-muted/40"
-            )}
-          >
-            <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
-              <Plus className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
-            </div>
-            <span className="text-xs font-medium leading-tight">
-              自定义
-            </span>
-            {isCustom && (
-              <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                <Check className="h-2.5 w-2.5 text-primary-foreground" />
+            {/* Custom style card — always visible */}
+            <button
+              onClick={() => setSelectedPreset(isCustom ? null : "__custom__")}
+              className={cn(
+                "relative flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-3 transition-all text-center group",
+                isCustom
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/40 hover:bg-muted/40"
+              )}
+            >
+              <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
+                <Plus className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
               </div>
-            )}
-          </button>
-        </div>
+              <span className="text-xs font-medium leading-tight">自定义</span>
+              {isCustom && (
+                <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                  <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                </div>
+              )}
+            </button>
+          </div>
+        </ScrollArea>
 
         {filteredPresets.length === 0 && searchQuery && (
           <div className="text-center py-8 text-muted-foreground text-sm">
