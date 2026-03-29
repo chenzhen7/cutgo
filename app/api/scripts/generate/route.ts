@@ -127,6 +127,7 @@ export const POST = withError(async (request: NextRequest) => {
       const task = await createRunningAiTask({
         projectId,
         episodeId: episode.id,
+        targetInfo: `第${episode.index + 1}集 ${episode.title}`,
         taskType: "llm_script",
       })
 

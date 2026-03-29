@@ -8,11 +8,6 @@ export const GET = withError(
 
     const task = await prisma.aiTask.findUnique({
       where: { id },
-      include: {
-        project: { select: { id: true, name: true } },
-        episode: { select: { id: true, index: true, title: true } },
-        shot: { select: { id: true, index: true } },
-      },
     })
 
     if (!task) {

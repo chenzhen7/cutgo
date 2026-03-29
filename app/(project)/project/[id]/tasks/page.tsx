@@ -289,11 +289,7 @@ export default function ProjectTasksPage() {
               <div className="text-right">操作</div>
             </div>
             {sortedTasks.map((task) => {
-              const targetText = task.shot
-                ? `分镜 #${task.shot.index}`
-                : task.episode
-                  ? `第${task.episode.index + 1}集`
-                  : "项目级"
+              const targetText = task.targetInfo || "-"
               return (
                 <div
                   key={task.id}

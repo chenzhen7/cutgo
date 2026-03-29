@@ -83,12 +83,6 @@ export const GET = withError(async (request: NextRequest) => {
     prisma.aiTask.count({ where }),
     prisma.aiTask.findMany({
       where,
-      include: {
-        project: { select: { id: true, name: true } },
-        episode: { select: { id: true, index: true, title: true } },
-        shot: { select: { id: true, index: true } },
-        videoComposition: { select: { id: true, episodeId: true, status: true, progress: true } },
-      },
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { [sortBy]: sortOrder },

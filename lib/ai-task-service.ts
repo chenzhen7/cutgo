@@ -9,6 +9,7 @@ type CreateAiTaskInput = {
   episodeId?: string | null
   shotId?: string | null
   videoCompositionId?: string | null
+  targetInfo: string
   maxRetries?: number
 }
 
@@ -57,6 +58,7 @@ export async function createRunningAiTask(input: CreateAiTaskInput) {
       episodeId: input.episodeId ?? null,
       shotId: input.shotId ?? null,
       videoCompositionId: input.videoCompositionId ?? null,
+      targetInfo: input.targetInfo,
       taskType: input.taskType,
       status: "running",
       model,

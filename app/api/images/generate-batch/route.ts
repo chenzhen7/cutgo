@@ -99,9 +99,18 @@ export async function POST(request: NextRequest) {
   const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
   let success = 0
   let failed = 0
+  let episodeInfo = ""
+  if (episodeId) {
+    const ep = await prisma.episode.findUnique({ where: { id: episodeId } })
+    if (ep) {
+      episodeInfo = ` 第${ep.index + 1}集 ${ep.title}`
+    }
+  }
+
   const task = await createRunningAiTask({
     projectId,
     episodeId: episodeId || null,
+    targetInfo: `${episodeInfo}`,
     taskType: "image_generate",
   })
 

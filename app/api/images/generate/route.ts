@@ -90,7 +90,13 @@ export async function POST(request: NextRequest) {
     where: { id: shotId },
     include: {
       episode: {
-        select: { id: true, projectId: true, index: true, title: true },
+        select: { 
+          id: true, 
+          projectId: true, 
+          index: true, 
+          title: true,
+          project: { select: { name: true } }
+        },
       },
     },
   })
@@ -102,6 +108,7 @@ export async function POST(request: NextRequest) {
     projectId: shot.episode.projectId,
     episodeId: shot.episode.id,
     shotId: shot.id,
+    targetInfo: `第${shot.episode.index + 1}集 ${shot.episode.title} 分镜 ${shot.index + 1}`,
     taskType: "image_generate",
   })
 

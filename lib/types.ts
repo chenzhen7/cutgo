@@ -482,6 +482,7 @@ export interface AiTask {
   episodeId: string | null
   shotId: string | null
   videoCompositionId: string | null
+  targetInfo: string
   taskType: AiTaskType
   status: AiTaskStatus
   model: string | null
@@ -493,10 +494,6 @@ export interface AiTask {
   finishedAt: string | null
   createdAt: string
   updatedAt: string
-  project?: { id: string; name: string }
-  episode?: { id: string; index: number; title: string } | null
-  shot?: { id: string; index: number } | null
-  videoComposition?: { id: string; episodeId: string; status: string; progress: number } | null
 }
 
 export interface AiTaskListResponse {
