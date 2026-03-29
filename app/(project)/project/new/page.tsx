@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useProjectStore } from "@/store/project-store"
-import { PLATFORM_PRESETS, DURATION_OPTIONS } from "@/lib/types"
+import { PLATFORM_PRESETS } from "@/lib/types"
 
 const PLATFORM_ICONS: Record<string, React.ElementType> = {
   douyin: Smartphone,
@@ -26,28 +26,23 @@ export default function NewProjectPage() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [tags, setTags] = useState("")
-  const [platformValue, setPlatformValue] = useState("douyin")
-  const [duration, setDuration] = useState("60s")
-  const [customDuration, setCustomDuration] = useState("")
+  const [presetValue, setPresetValue] = useState("douyin")
   const [submitting, setSubmitting] = useState(false)
 
-  const selectedPlatform = PLATFORM_PRESETS.find(
-    (p) => p.value === platformValue
+  const selectedPreset = PLATFORM_PRESETS.find(
+    (p) => p.value === presetValue
   )!
 
   async function handleCreate() {
     if (!name.trim() || submitting) return
     setSubmitting(true)
     try {
-      const finalDuration = duration === "自定义" ? customDuration : duration
       const project = await createProject({
         name: name.trim(),
         description: description.trim() || undefined,
         tags: tags.trim() || undefined,
-        platform: selectedPlatform.label,
-        aspectRatio: selectedPlatform.aspectRatio,
-        resolution: selectedPlatform.resolution,
-        duration: finalDuration,
+        aspectRatio: selectedPreset.aspectRatio,
+        resolution: selectedPreset.resolution,
       })
       router.push(`/project/${project.id}`)
     } catch {
@@ -112,20 +107,20 @@ export default function NewProjectPage() {
           </CardContent>
         </Card>
 
-        {/* 目标平台预设 */}
+        {/* 画面规格（画幅与分辨率） */}
         <Card>
           <CardHeader>
-            <CardTitle>目标平台</CardTitle>
+            <CardTitle>画面规格</CardTitle>
           </CardHeader>
           <CardContent>
             <RadioGroup
-              value={platformValue}
-              onValueChange={setPlatformValue}
+              value={presetValue}
+              onValueChange={setPresetValue}
               className="grid grid-cols-1 sm:grid-cols-3 gap-3"
             >
               {PLATFORM_PRESETS.map((p) => {
                 const Icon = PLATFORM_ICONS[p.value] || Smartphone
-                const isSelected = platformValue === p.value
+                const isSelected = presetValue === p.value
                 return (
                   <label
                     key={p.value}
@@ -148,48 +143,6 @@ export default function NewProjectPage() {
                 )
               })}
             </RadioGroup>
-          </CardContent>
-        </Card>
-
-        {/* 预计时长 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>预计时长</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-xs text-muted-foreground">
-              单集时长影响 AI 拆解剧本的节奏感
-            </p>
-            <RadioGroup
-              value={duration}
-              onValueChange={setDuration}
-              className="flex flex-wrap gap-3"
-            >
-              {DURATION_OPTIONS.map((d) => {
-                const isSelected = duration === d
-                return (
-                  <label
-                    key={d}
-                    className={`cursor-pointer rounded-lg border-2 px-5 py-2.5 text-sm font-medium transition-colors ${
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-foreground/20"
-                    }`}
-                  >
-                    <RadioGroupItem value={d} className="sr-only" />
-                    {d}
-                  </label>
-                )
-              })}
-            </RadioGroup>
-            {duration === "自定义" && (
-              <Input
-                placeholder="输入时长，如：120s"
-                value={customDuration}
-                onChange={(e) => setCustomDuration(e.target.value)}
-                className="max-w-[200px]"
-              />
-            )}
           </CardContent>
         </Card>
 

@@ -145,7 +145,7 @@ export const POST = withError(async (request: NextRequest) => {
           episode.cliffhanger,
           chapterContent,
           previousContent,
-          project.duration
+          episode.duration
         )
 
         await prisma.episode.update({

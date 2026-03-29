@@ -12,7 +12,6 @@ import {
   List,
   Trash2,
   ArrowUpDown,
-  Filter,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -43,7 +42,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectStore } from "@/store/project-store"
-import { PLATFORM_PRESETS } from "@/lib/types"
 
 const STEP_TOTAL = 5
 
@@ -71,7 +69,6 @@ export default function HomePage() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterPlatform, setFilterPlatform] = useState<string>("")
   const [sortField, setSortField] = useState<SortField>("updatedAt")
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null)
 
@@ -92,10 +89,6 @@ export default function HomePage() {
       )
     }
 
-    if (filterPlatform) {
-      result = result.filter((p) => p.platform === filterPlatform)
-    }
-
     result.sort((a, b) => {
       if (sortField === "name") return a.name.localeCompare(b.name)
       return (
@@ -104,7 +97,7 @@ export default function HomePage() {
     })
 
     return result
-  }, [projects, searchQuery, filterPlatform, sortField])
+  }, [projects, searchQuery, sortField])
 
   async function handleDelete() {
     if (!deleteDialogId) return
@@ -144,30 +137,6 @@ export default function HomePage() {
               className="pl-9"
             />
           </div>
-
-          {/* Platform Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-3.5 w-3.5" />
-                {filterPlatform || "全部平台"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setFilterPlatform("")}>
-                全部平台
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {PLATFORM_PRESETS.map((p) => (
-                <DropdownMenuItem
-                  key={p.value}
-                  onClick={() => setFilterPlatform(p.label)}
-                >
-                  {p.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
 
           {/* Sort */}
           <DropdownMenu>
@@ -303,14 +272,11 @@ export default function HomePage() {
                       </p>
                     )}
                     <CardDescription className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {project.platform}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {project.duration}
-                      </Badge>
                       <Badge variant="outline" className="text-xs">
                         {project.aspectRatio}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {project.resolution}
                       </Badge>
                     </CardDescription>
                   </CardHeader>
@@ -361,11 +327,11 @@ export default function HomePage() {
                         <span className="font-medium text-sm truncate">
                           {project.name}
                         </span>
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          {project.platform}
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {project.aspectRatio}
                         </Badge>
                         <Badge variant="outline" className="text-xs shrink-0">
-                          {project.duration}
+                          {project.resolution}
                         </Badge>
                       </div>
                       {project.description && (

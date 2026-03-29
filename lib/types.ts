@@ -4,10 +4,8 @@ export interface Project {
   description: string | null
   tags: string | null
   coverUrl: string | null
-  platform: string
   aspectRatio: string
   resolution: string
-  duration: string
   stylePreset: string | null
   globalNegPrompt: string | null
   styleRefUrl: string | null
@@ -229,10 +227,8 @@ export interface CreateProjectInput {
   name: string
   description?: string
   tags?: string
-  platform: string
   aspectRatio: string
   resolution: string
-  duration: string
 }
 
 export interface UpdateProjectInput {
@@ -240,10 +236,8 @@ export interface UpdateProjectInput {
   description?: string
   tags?: string
   coverUrl?: string
-  platform?: string
   aspectRatio?: string
   resolution?: string
-  duration?: string
   stylePreset?: string
   globalNegPrompt?: string
   styleRefUrl?: string
@@ -257,8 +251,6 @@ export const PLATFORM_PRESETS = [
   { label: "视频号/快手", value: "kuaishou", aspectRatio: "3:4", resolution: "1080x1440" },
   { label: "YouTube/横屏", value: "youtube", aspectRatio: "16:9", resolution: "1920x1080" },
 ] as const
-
-export const DURATION_OPTIONS = ["30s", "60s", "90s", "自定义"] as const
 
 export const STYLE_PRESETS = [
   { label: "都市霸总", value: "urban-ceo" },

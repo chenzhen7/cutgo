@@ -81,14 +81,11 @@ export function ProjectSidebar({
                 {project.name}
               </p>
               <div className="mt-1.5 flex items-center gap-1.5">
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {project.platform}
-                </Badge>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {project.duration}
-                </Badge>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                   {project.aspectRatio}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  {project.resolution}
                 </Badge>
               </div>
             </div>

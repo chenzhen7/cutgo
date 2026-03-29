@@ -20,14 +20,10 @@ model Project {
   /// 封面图 URL
   coverUrl    String?
 
-  /// 目标发布平台，如「抖音」
-  platform    String @default("抖音")
   /// 画幅比，如 9:16
   aspectRatio String @default("9:16")
   /// 分辨率描述，如 1080x1920
   resolution  String @default("1080x1920")
-  /// 目标单集时长描述，如 60s
-  duration    String @default("60s")
 
   /// 风格预设标识或名称
   stylePreset     String?
