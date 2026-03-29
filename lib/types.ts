@@ -158,8 +158,7 @@ export interface AssetCharacter {
   name: string
   role: "protagonist" | "supporting" | "extra"
   gender: string | null
-  description: string | null
-  personality: string | null
+  prompt: string | null
   imageUrl: string | null
   seed: number | null
   locked: boolean
@@ -171,7 +170,7 @@ export interface AssetScene {
   id: string
   projectId: string
   name: string
-  description: string | null
+  prompt: string | null
   imageUrl: string | null
   tags: string | null
   createdAt: string
@@ -182,7 +181,7 @@ export interface AssetProp {
   id: string
   projectId: string
   name: string
-  description: string | null
+  prompt: string | null
   imageUrl: string | null
   createdAt: string
   updatedAt: string
@@ -192,8 +191,7 @@ export interface AssetCharacterInput {
   name: string
   role?: "protagonist" | "supporting" | "extra"
   gender?: string
-  description?: string
-  personality?: string
+  prompt?: string
   imageUrl?: string
   seed?: number
   locked?: boolean
@@ -201,14 +199,14 @@ export interface AssetCharacterInput {
 
 export interface AssetSceneInput {
   name: string
-  description?: string
+  prompt?: string
   imageUrl?: string
   tags?: string
 }
 
 export interface AssetPropInput {
   name: string
-  description?: string
+  prompt?: string
   imageUrl?: string
 }
 

@@ -12,17 +12,16 @@ interface AIAssetResult {
     name: string
     role: "protagonist" | "supporting" | "extra"
     gender?: string
-    description?: string
-    personality?: string
+    prompt?: string
   }[]
   scenes: {
     name: string
-    description?: string
+    prompt?: string
     tags?: string
   }[]
   props: {
     name: string
-    description?: string
+    prompt?: string
   }[]
 }
 

@@ -66,7 +66,7 @@ export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业
       "name": "角色名",
       "role": "protagonist",
       "gender": "female",
-      "prompt": "角色描述（外貌特征，用于生成角色立绘）",
+      "prompt": "角色描述（外貌特征，用于生成角色立绘）"
     }
   ],
   "scenes": [

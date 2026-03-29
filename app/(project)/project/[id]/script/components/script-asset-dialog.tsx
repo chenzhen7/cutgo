@@ -198,9 +198,9 @@ export function ScriptAssetDialog({
                                   {roleLabel(char.role)}
                                 </Badge>
                               </div>
-                              {char.description && (
+                              {char.prompt && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                  {char.description}
+                                  {char.prompt}
                                 </p>
                               )}
                             </div>
@@ -255,9 +255,9 @@ export function ScriptAssetDialog({
                             </div>
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium">{sc.name}</span>
-                              {sc.description && (
+                              {sc.prompt && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                  {sc.description}
+                                  {sc.prompt}
                                 </p>
                               )}
                             </div>
@@ -312,9 +312,9 @@ export function ScriptAssetDialog({
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">{prop.name}</span>
                               </div>
-                              {prop.description && (
+                              {prop.prompt && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                  {prop.description}
+                                  {prop.prompt}
                                 </p>
                               )}
                             </div>

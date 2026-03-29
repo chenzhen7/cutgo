@@ -6,21 +6,20 @@ interface CharacterItem {
   name: string
   role?: "protagonist" | "supporting" | "extra"
   gender?: string
-  description?: string
-  personality?: string
+  prompt?: string
   overwrite?: boolean
 }
 
 interface SceneItem {
   name: string
-  description?: string
+  prompt?: string
   tags?: string
   overwrite?: boolean
 }
 
 interface PropItem {
   name: string
-  description?: string
+  prompt?: string
   overwrite?: boolean
 }
 
@@ -56,14 +55,12 @@ export const POST = withError(async (request: NextRequest) => {
                 name: c.name,
                 role: c.role ?? "supporting",
                 gender: c.gender ?? null,
-                description: c.description ?? null,
-                personality: c.personality ?? null,
+                prompt: c.prompt ?? null,
               },
               update: {
                 role: c.role ?? "supporting",
                 gender: c.gender ?? null,
-                description: c.description ?? null,
-                personality: c.personality ?? null,
+                prompt: c.prompt ?? null,
               },
             })
           : prisma.assetCharacter.create({
@@ -72,8 +69,7 @@ export const POST = withError(async (request: NextRequest) => {
                 name: c.name,
                 role: c.role ?? "supporting",
                 gender: c.gender ?? null,
-                description: c.description ?? null,
-                personality: c.personality ?? null,
+                prompt: c.prompt ?? null,
               },
             })
       )
@@ -86,11 +82,11 @@ export const POST = withError(async (request: NextRequest) => {
               create: {
                 projectId,
                 name: s.name,
-                description: s.description ?? null,
+                prompt: s.prompt ?? null,
                 tags: s.tags ?? null,
               },
               update: {
-                description: s.description ?? null,
+                prompt: s.prompt ?? null,
                 tags: s.tags ?? null,
               },
             })
@@ -98,7 +94,7 @@ export const POST = withError(async (request: NextRequest) => {
               data: {
                 projectId,
                 name: s.name,
-                description: s.description ?? null,
+                prompt: s.prompt ?? null,
                 tags: s.tags ?? null,
               },
             })
@@ -112,17 +108,17 @@ export const POST = withError(async (request: NextRequest) => {
               create: {
                 projectId,
                 name: p.name,
-                description: p.description ?? null,
+                prompt: p.prompt ?? null,
               },
               update: {
-                description: p.description ?? null,
+                prompt: p.prompt ?? null,
               },
             })
           : prisma.assetProp.create({
               data: {
                 projectId,
                 name: p.name,
-                description: p.description ?? null,
+                prompt: p.prompt ?? null,
               },
             })
       )

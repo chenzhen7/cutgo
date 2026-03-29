@@ -48,19 +48,18 @@ interface ExtractedCharacter {
   name: string
   role: "protagonist" | "supporting" | "extra"
   gender?: string
-  description?: string
-  personality?: string
+  prompt?: string
 }
 
 interface ExtractedScene {
   name: string
-  description?: string
+  prompt?: string
   tags?: string
 }
 
 interface ExtractedProp {
   name: string
-  description?: string
+  prompt?: string
 }
 
 interface AssetItemState<T> {
@@ -104,7 +103,7 @@ function useAssetItemStates<T extends { name: string }>(
 }
 
 // ── 单个资产行组件 ──
-const AssetRow = memo(function AssetRow<T extends { name: string; description?: string }>({
+const AssetRow = memo(function AssetRow<T extends { name: string; prompt?: string }>({
   state,
   onUpdate,
   existingNames,
@@ -220,15 +219,15 @@ const AssetRow = memo(function AssetRow<T extends { name: string; description?: 
         )}
       </div>
 
-      {/* 描述 */}
-      {data.description && action !== "skip" && (
+      {/* 提示词 */}
+      {data.prompt && action !== "skip" && (
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 pl-0.5">
-          {data.description}
+          {data.prompt}
         </p>
       )}
     </div>
   )
-}) as <T extends { name: string; description?: string }>(props: {
+}) as <T extends { name: string; prompt?: string }>(props: {
   state: AssetItemState<T>
   onUpdate: (patch: Partial<AssetItemState<T>>) => void
   existingNames: string[]

@@ -489,7 +489,7 @@ const CharacterList = memo(function CharacterList({
         (c) =>
           !searchQuery ||
           c.name.includes(searchQuery) ||
-          c.description?.includes(searchQuery) ||
+          c.prompt?.includes(searchQuery) ||
           c.role.includes(searchQuery)
       ),
     [characters, searchQuery]
@@ -537,9 +537,9 @@ const CharacterList = memo(function CharacterList({
                     {genderLabel(char.gender)}
                   </p>
                 )}
-                {char.description && (
+                {char.prompt && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {char.description}
+                    {char.prompt}
                   </p>
                 )}
               </div>
@@ -594,7 +594,7 @@ const SceneList = memo(function SceneList({
         (s) =>
           !searchQuery ||
           s.name.includes(searchQuery) ||
-          s.description?.includes(searchQuery)
+          s.prompt?.includes(searchQuery)
       ),
     [scenes, searchQuery]
   )
@@ -612,9 +612,9 @@ const SceneList = memo(function SceneList({
               )}
             </div>
             <span className="text-sm font-medium">{scene.name}</span>
-            {scene.description && (
+            {scene.prompt && (
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                {scene.description}
+                {scene.prompt}
               </p>
             )}
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
@@ -666,7 +666,7 @@ const PropList = memo(function PropList({
         (p) =>
           !searchQuery ||
           p.name.includes(searchQuery) ||
-          p.description?.includes(searchQuery)
+          p.prompt?.includes(searchQuery)
       ),
     [props, searchQuery]
   )
@@ -688,9 +688,9 @@ const PropList = memo(function PropList({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{prop.name}</span>
                 </div>
-                {prop.description && (
+                {prop.prompt && (
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                    {prop.description}
+                    {prop.prompt}
                   </p>
                 )}
               </div>
@@ -745,8 +745,7 @@ function CharacterFormDialog({
   const [name, setName] = useState("")
   const [role, setRole] = useState<"protagonist" | "supporting" | "extra">("supporting")
   const [gender, setGender] = useState("")
-  const [description, setDescription] = useState("")
-  const [personality, setPersonality] = useState("")
+  const [prompt, setPrompt] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -755,14 +754,12 @@ function CharacterFormDialog({
       setName(character.name)
       setRole(character.role as "protagonist" | "supporting" | "extra")
       setGender(normalizeGender(character.gender))
-      setDescription(character.description || "")
-      setPersonality(character.personality || "")
+      setPrompt(character.prompt || "")
     } else {
       setName("")
       setRole("supporting")
       setGender("")
-      setDescription("")
-      setPersonality("")
+      setPrompt("")
     }
     setError("")
   }, [character, open])
@@ -776,8 +773,7 @@ function CharacterFormDialog({
         name: name.trim(),
         role,
         gender: gender || undefined,
-        description: description || undefined,
-        personality: personality || undefined,
+        prompt: prompt || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -822,12 +818,8 @@ function CharacterFormDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label>角色描述</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="角色简介（可包含外貌特征、身份背景等）" rows={2} />
-          </div>
-          <div className="grid gap-2">
-            <Label>性格描述</Label>
-            <Textarea value={personality} onChange={(e) => setPersonality(e.target.value)} placeholder="性格特点" rows={2} />
+            <Label>提示词</Label>
+            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="角色简介（可包含外貌特征、身份背景等）" rows={4} />
           </div>
         </div>
         {error && (
@@ -856,7 +848,7 @@ function SceneFormDialog({
   onSave: (data: AssetSceneInput) => Promise<void>
 }) {
   const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
+  const [prompt, setPrompt] = useState("")
   const [tags, setTags] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -864,11 +856,11 @@ function SceneFormDialog({
   useEffect(() => {
     if (scene) {
       setName(scene.name)
-      setDescription(scene.description || "")
+      setPrompt(scene.prompt || "")
       setTags(scene.tags || "")
     } else {
       setName("")
-      setDescription("")
+      setPrompt("")
       setTags("")
     }
     setError("")
@@ -881,7 +873,7 @@ function SceneFormDialog({
     try {
       await onSave({
         name: name.trim(),
-        description: description || undefined,
+        prompt: prompt || undefined,
         tags: tags || undefined,
       })
     } catch (err) {
@@ -903,8 +895,8 @@ function SceneFormDialog({
             <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 总裁办公室" />
           </div>
           <div className="grid gap-2">
-            <Label>场景描述</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="环境描述" rows={3} />
+            <Label>提示词</Label>
+            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="场景生图提示词" rows={3} />
           </div>
           <div className="grid gap-2">
             <Label>标签</Label>
@@ -937,17 +929,17 @@ function PropFormDialog({
   onSave: (data: AssetPropInput) => Promise<void>
 }) {
   const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
+  const [prompt, setPrompt] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
   useEffect(() => {
     if (prop) {
       setName(prop.name)
-      setDescription(prop.description || "")
+      setPrompt(prop.prompt || "")
     } else {
       setName("")
-      setDescription("")
+      setPrompt("")
     }
     setError("")
   }, [prop, open])
@@ -959,7 +951,7 @@ function PropFormDialog({
     try {
       await onSave({
         name: name.trim(),
-        description: description || undefined,
+        prompt: prompt || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -980,8 +972,8 @@ function PropFormDialog({
             <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 合同文件" />
           </div>
           <div className="grid gap-2">
-            <Label>道具描述</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="道具描述" rows={3} />
+            <Label>提示词</Label>
+            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="道具生图提示词" rows={3} />
           </div>
         </div>
         {error && (

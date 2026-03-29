@@ -172,10 +172,8 @@ model AssetCharacter {
   role        String  @default("supporting")
   /// male | female | other
   gender      String?
-  /// 背景设定
-  description String?
-  /// 性格描述
-  personality String?
+  /// 角色生图提示词
+  prompt      String?
   /// 立绘/参考图 URL
   imageUrl    String?
   /// 图像生成随机种子（可空）
@@ -197,8 +195,8 @@ model AssetScene {
 
   /// 场景名称（项目内唯一）
   name        String
-  /// 场景说明
-  description String?
+  /// 场景提示词
+  prompt      String?
   imageUrl    String?
   /// 标签
   tags        String?
@@ -217,10 +215,9 @@ model AssetProp {
 
   /// 道具名称（项目内唯一）
   name        String
-  description String?
+  /// 道具提示词
+  prompt      String?
   imageUrl    String?
-  /// 分类
-  category    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
