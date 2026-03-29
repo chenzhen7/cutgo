@@ -14,8 +14,15 @@ interface GenerateAssetImageRequest {
 /** 各资产类型的默认生图尺寸 */
 const SIZE_MAP: Record<AssetType, { width: number; height: number }> = {
   character: { width: 512, height: 512 },
-  scene:     { width: 768, height: 512 },
-  prop:      { width: 512, height: 512 },
+  scene: { width: 768, height: 512 },
+  prop: { width: 512, height: 512 },
+}
+
+/** 任务列表展示用（与 API 请求体中的英文 type 区分） */
+const ASSET_TYPE_LABEL: Record<AssetType, string> = {
+  character: "角色",
+  scene: "场景",
+  prop: "道具",
 }
 
 type AssetRecord = {
@@ -95,7 +102,7 @@ export const POST = withError(async (request: NextRequest) => {
   const prompt = asset.prompt?.trim() || asset.name
   const task = await createRunningAiTask({
     projectId: asset.projectId,
-    targetInfo: `${type}:${asset.name}`,
+    targetInfo: `${ASSET_TYPE_LABEL[type]}：${asset.name}`,
     taskType: "image_generate",
   })
 
