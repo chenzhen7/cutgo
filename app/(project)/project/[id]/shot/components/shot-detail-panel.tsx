@@ -396,7 +396,7 @@ export function ShotDetailPanel({
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <MapPin className="size-3 text-muted-foreground" />
+                      <MapPin className="size-4 text-muted-foreground" />
                       <span className="text-[11px] font-medium">场景</span>
                     </div>
                     <Popover open={scenePopoverOpen} onOpenChange={setScenePopoverOpen}>
@@ -431,7 +431,7 @@ export function ShotDetailPanel({
                                     <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
                                   ) : (
                                     <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                      <MapPin className="size-3 text-muted-foreground" />
+                                      <MapPin className="size-3.5 text-muted-foreground" />
                                     </div>
                                   )}
                                   <span className="truncate">{s.name}</span>
@@ -467,7 +467,7 @@ export function ShotDetailPanel({
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <User className="size-3 text-muted-foreground" />
+                      <User className="size-4 text-muted-foreground" />
                       <span className="text-[11px] font-medium">角色</span>
                       {boundCharacters.length > 0 && (
                         <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{boundCharacters.length}</Badge>
@@ -493,7 +493,7 @@ export function ShotDetailPanel({
                                     <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
                                   ) : (
                                     <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                      <User className="size-3 text-muted-foreground" />
+                                      <User className="size-3.5 text-muted-foreground" />
                                     </div>
                                   )}
                                   <span className="text-xs truncate">{c.name}</span>
@@ -506,19 +506,19 @@ export function ShotDetailPanel({
                     </Popover>
                   </div>
                   {boundCharacters.length > 0 ? (
-                    <div className="flex gap-1.5 flex-wrap">
+                    <div className="flex gap-2 flex-wrap">
                       {boundCharacters.map((c) => (
                         <div key={c.id} className="flex flex-col items-center gap-0.5">
-                          <div className="size-9 rounded-md overflow-hidden bg-muted border">
+                          <div className="size-11 rounded-md overflow-hidden bg-muted border">
                             {c.imageUrl ? (
                               <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                             ) : (
                               <div className="size-full flex items-center justify-center">
-                                <User className="size-4 text-muted-foreground/40" />
+                                <User className="size-5 text-muted-foreground/40" />
                               </div>
                             )}
                           </div>
-                          <span className="text-[9px] text-muted-foreground truncate max-w-[36px]">{c.name}</span>
+                          <span className="text-[9px] text-muted-foreground truncate max-w-[44px]">{c.name}</span>
                         </div>
                       ))}
                     </div>
@@ -533,7 +533,7 @@ export function ShotDetailPanel({
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <Package className="size-3 text-muted-foreground" />
+                      <Package className="size-4 text-muted-foreground" />
                       <span className="text-[11px] font-medium">道具</span>
                       {boundProps.length > 0 && (
                         <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{boundProps.length}</Badge>

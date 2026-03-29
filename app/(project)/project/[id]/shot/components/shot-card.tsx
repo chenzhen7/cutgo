@@ -344,11 +344,11 @@ export const ShotCard = memo(function ShotCard({
                   {boundCharacters.slice(0, 5).map((c) => (
                     <Tooltip key={c.id}>
                       <TooltipTrigger asChild>
-                        <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[900px]:size-5">
+                        <div className="size-[22px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[640px]:size-6 @[900px]:size-7">
                           {c.imageUrl ? (
                             <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                           ) : (
-                            <User className="size-3 text-muted-foreground" />
+                            <User className="size-3.5 text-muted-foreground @[900px]:size-4" />
                           )}
                         </div>
                       </TooltipTrigger>
@@ -356,7 +356,7 @@ export const ShotCard = memo(function ShotCard({
                     </Tooltip>
                   ))}
                   {boundCharacters.length > 5 && (
-                    <div className="size-[18px] rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0 @[900px]:size-5">
+                    <div className="size-[22px] rounded-full bg-muted border-2 border-card flex items-center justify-center text-[8px] text-muted-foreground font-medium shrink-0 @[640px]:size-6 @[900px]:size-7 @[900px]:text-[9px]">
                       +{boundCharacters.length - 5}
                     </div>
                   )}
@@ -365,14 +365,14 @@ export const ShotCard = memo(function ShotCard({
 
               {boundScene && (
                 <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full px-1.5 py-0.5 font-medium @[900px]:text-[10px]">
-                  <MapPin className="size-3 shrink-0" />
+                  <MapPin className="size-3.5 shrink-0 @[900px]:size-4" />
                   {boundScene.name}
                 </span>
               )}
 
               {boundProps.length > 0 && (
                 <span className="inline-flex items-center gap-1 text-[9px] bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full px-1.5 py-0.5 font-medium @[900px]:text-[10px]">
-                  <Package className="size-3 shrink-0" />
+                  <Package className="size-3.5 shrink-0 @[900px]:size-4" />
                   {boundProps.length === 1
                     ? boundProps[0].name
                     : `${boundProps[0].name} +${boundProps.length - 1}`}
