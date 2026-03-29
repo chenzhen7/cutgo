@@ -118,6 +118,7 @@ export default function AssetsPage() {
   const [showExtractDialog, setShowExtractDialog] = useState(false)
   const [extractSuccessMsg] = useState<string | null>(null)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -272,6 +273,7 @@ export default function AssetsPage() {
             onEdit={setEditingCharacter}
             onDelete={setDeletingCharacterId}
             onToggleLock={handleToggleCharacterLock}
+            onPreview={(url, name) => setPreviewImage({ url, name })}
           />
         )}
         {activeTab === "characters" && characters.length === 0 && totalAssets > 0 && (
@@ -285,6 +287,7 @@ export default function AssetsPage() {
             searchQuery={searchQuery}
             onEdit={setEditingScene}
             onDelete={setDeletingSceneId}
+            onPreview={(url, name) => setPreviewImage({ url, name })}
           />
         )}
         {activeTab === "scenes" && scenes.length === 0 && totalAssets > 0 && (
@@ -298,6 +301,7 @@ export default function AssetsPage() {
             searchQuery={searchQuery}
             onEdit={setEditingProp}
             onDelete={setDeletingPropId}
+            onPreview={(url, name) => setPreviewImage({ url, name })}
           />
         )}
         {activeTab === "props" && props.length === 0 && totalAssets > 0 && (
@@ -512,6 +516,18 @@ export default function AssetsPage() {
         props={props}
         onComplete={() => void fetchAssets(projectId)}
       />
+
+      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl p-2">
+          {previewImage && (
+            <img
+              src={previewImage.url}
+              alt={previewImage.name}
+              className="max-h-[80vh] w-full rounded-md object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -787,12 +803,14 @@ const CharacterList = memo(function CharacterList({
   onEdit,
   onDelete,
   onToggleLock,
+  onPreview,
 }: {
   characters: AssetCharacter[]
   searchQuery: string
   onEdit: (c: AssetCharacter) => void
   onDelete: (id: string) => void
   onToggleLock: (id: string, locked: boolean) => void
+  onPreview: (imageUrl: string, name: string) => void
 }) {
   const normalizeGender = (gender: string | null | undefined): "male" | "female" | "other" | null => {
     if (!gender) return null
@@ -848,7 +866,17 @@ const CharacterList = memo(function CharacterList({
             <div className="flex items-start gap-3">
               <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
                 {char.imageUrl ? (
-                  <img src={char.imageUrl} alt={char.name} className="h-14 w-14 rounded-lg object-cover" />
+                  <button
+                    type="button"
+                    className="h-14 w-14 rounded-lg"
+                    onClick={() => onPreview(char.imageUrl!, char.name)}
+                  >
+                    <img
+                      src={char.imageUrl}
+                      alt={char.name}
+                      className="h-14 w-14 rounded-lg object-cover cursor-zoom-in"
+                    />
+                  </button>
                 ) : (
                   <Users className="h-6 w-6 text-muted-foreground/50" />
                 )}
@@ -910,11 +938,13 @@ const SceneList = memo(function SceneList({
   searchQuery,
   onEdit,
   onDelete,
+  onPreview,
 }: {
   scenes: AssetScene[]
   searchQuery: string
   onEdit: (s: AssetScene) => void
   onDelete: (id: string) => void
+  onPreview: (imageUrl: string, name: string) => void
 }) {
   const filtered = useMemo(
     () =>
@@ -934,7 +964,17 @@ const SceneList = memo(function SceneList({
           <CardContent className="pt-4">
             <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3">
               {scene.imageUrl ? (
-                <img src={scene.imageUrl} alt={scene.name} className="h-24 w-full rounded-lg object-cover" />
+                <button
+                  type="button"
+                  className="h-24 w-full rounded-lg"
+                  onClick={() => onPreview(scene.imageUrl!, scene.name)}
+                >
+                  <img
+                    src={scene.imageUrl}
+                    alt={scene.name}
+                    className="h-24 w-full rounded-lg object-cover cursor-zoom-in"
+                  />
+                </button>
               ) : (
                 <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
               )}
@@ -982,11 +1022,13 @@ const PropList = memo(function PropList({
   searchQuery,
   onEdit,
   onDelete,
+  onPreview,
 }: {
   props: AssetProp[]
   searchQuery: string
   onEdit: (p: AssetProp) => void
   onDelete: (id: string) => void
+  onPreview: (imageUrl: string, name: string) => void
 }) {
   const filtered = useMemo(
     () =>
@@ -1007,7 +1049,17 @@ const PropList = memo(function PropList({
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
                 {prop.imageUrl ? (
-                  <img src={prop.imageUrl} alt={prop.name} className="h-12 w-12 rounded-lg object-cover" />
+                  <button
+                    type="button"
+                    className="h-12 w-12 rounded-lg"
+                    onClick={() => onPreview(prop.imageUrl!, prop.name)}
+                  >
+                    <img
+                      src={prop.imageUrl}
+                      alt={prop.name}
+                      className="h-12 w-12 rounded-lg object-cover cursor-zoom-in"
+                    />
+                  </button>
                 ) : (
                   <Box className="h-5 w-5 text-muted-foreground/50" />
                 )}
