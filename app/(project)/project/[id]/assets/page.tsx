@@ -719,7 +719,7 @@ function GenerateAssetImagesDialog({
             ) : (
               <>
                 <ImageIcon className="size-4" />
-                后台生成 {selectedItems.length} 张图片
+                生成 {selectedItems.length} 张图片
               </>
             )}
           </Button>
