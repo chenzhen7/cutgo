@@ -39,10 +39,6 @@ export const POST = withError(async (
       })
     }
 
-    await tx.project.update({
-      where: { id: novel.projectId },
-      data: { step: 2, stepLabel: "剧本生成" },
-    })
   })
 
   const updated = await prisma.novel.findUnique({ where: { id } })

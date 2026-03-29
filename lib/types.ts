@@ -10,8 +10,6 @@ export interface Project {
   globalNegPrompt: string | null
   styleRefUrl: string | null
   status: string
-  step: number
-  stepLabel: string
   novel?: Novel | null
   createdAt: string
   updatedAt: string
@@ -242,13 +240,10 @@ export interface UpdateProjectInput {
   globalNegPrompt?: string
   styleRefUrl?: string
   status?: string
-  step?: number
-  stepLabel?: string
 }
 
 export const PLATFORM_PRESETS = [
   { label: "抖音/TikTok", value: "douyin", aspectRatio: "9:16", resolution: "1080x1920" },
-  { label: "视频号/快手", value: "kuaishou", aspectRatio: "3:4", resolution: "1080x1440" },
   { label: "YouTube/横屏", value: "youtube", aspectRatio: "16:9", resolution: "1920x1080" },
 ] as const
 

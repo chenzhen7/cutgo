@@ -20,9 +20,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const project = await prisma.project.update({
+    const project = await prisma.project.findUniqueOrThrow({
       where: { id: projectId },
-      data: { step: 5, stepLabel: "导出发布" },
     })
 
     return NextResponse.json(project)

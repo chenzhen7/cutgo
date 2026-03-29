@@ -123,20 +123,15 @@ export function ProjectSidebar({
         <SidebarGroup>
           <SidebarGroupLabel>制作流程</SidebarGroupLabel>
           <SidebarMenu className="gap-1">
-            {PIPELINE_STEPS.map((step) => (
-              <SidebarMenuItem key={step.key}>
+            {PIPELINE_STEPS.map((item) => (
+              <SidebarMenuItem key={item.key}>
                 <SidebarMenuButton
                   asChild
-                  isActive={currentStepKey === step.key}
-
+                  isActive={currentStepKey === item.key}
                 >
-                  <Link href={`/project/${projectId}/${step.key}`}>
-                    <span className="flex h-5 w-5 items-center justify-center rounded text-xs font-medium">
-                      {step.step}
-                    </span>
-                    <step.icon />
-                    <span>{step.label}</span>
-
+                  <Link href={`/project/${projectId}/${item.key}`}>
+                    <item.icon />
+                    <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

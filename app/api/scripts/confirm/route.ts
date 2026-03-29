@@ -16,9 +16,8 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "至少需要 1 个已生成的剧本")
   }
 
-  const project = await prisma.project.update({
+  const project = await prisma.project.findUniqueOrThrow({
     where: { id: projectId },
-    data: { step: 3, stepLabel: "分镜生成" },
   })
 
   return NextResponse.json(project)

@@ -14,9 +14,8 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "至少需要 1 个角色资产")
   }
 
-  const project = await prisma.project.update({
+  const project = await prisma.project.findUniqueOrThrow({
     where: { id: projectId },
-    data: { step: 2, stepLabel: "剧本生成" },
   })
 
   return NextResponse.json(project)

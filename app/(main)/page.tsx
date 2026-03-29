@@ -43,8 +43,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectStore } from "@/store/project-store"
 
-const STEP_TOTAL = 5
-
 type ViewMode = "grid" | "list"
 type SortField = "updatedAt" | "createdAt" | "name"
 
@@ -191,7 +189,6 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <Skeleton className="h-4 w-full" />
-                  <Skeleton className="mt-3 h-1.5 w-full" />
                 </CardContent>
               </Card>
             ))}
@@ -281,22 +278,11 @@ export default function HomePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        进度：{project.stepLabel}（{project.step}/{STEP_TOTAL}）
-                      </span>
+                    <div className="flex items-center justify-end text-sm">
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {formatTime(project.updatedAt)}
                       </span>
-                    </div>
-                    <div className="mt-3 h-1.5 w-full rounded-full bg-secondary">
-                      <div
-                        className="h-1.5 rounded-full bg-primary transition-all"
-                        style={{
-                          width: `${(project.step / STEP_TOTAL) * 100}%`,
-                        }}
-                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -341,9 +327,6 @@ export default function HomePage() {
                       )}
                     </div>
                     <div className="flex items-center gap-6 shrink-0 text-sm text-muted-foreground">
-                      <span>
-                        {project.stepLabel}（{project.step}/{STEP_TOTAL}）
-                      </span>
                       <span className="flex items-center gap-1 text-xs">
                         <Clock className="h-3 w-3" />
                         {formatTime(project.updatedAt)}

@@ -33,11 +33,7 @@ model Project {
   styleRefUrl     String?
 
   /// 项目状态，如 draft
-  status    String @default("draft")
-  /// 当前流程步骤序号（1-based）
-  step      Int    @default(1)
-  /// 当前步骤展示文案，如「小说导入」
-  stepLabel String @default("小说导入")
+  status String @default("draft")
 
   novel    Novel?
   episodes Episode[]

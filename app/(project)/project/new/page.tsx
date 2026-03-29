@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Monitor, Smartphone, Tablet } from "lucide-react"
+import { ArrowLeft, Monitor, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,6 @@ import { PLATFORM_PRESETS } from "@/lib/types"
 
 const PLATFORM_ICONS: Record<string, React.ElementType> = {
   douyin: Smartphone,
-  kuaishou: Tablet,
   youtube: Monitor,
 }
 
@@ -116,7 +115,7 @@ export default function NewProjectPage() {
             <RadioGroup
               value={presetValue}
               onValueChange={setPresetValue}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             >
               {PLATFORM_PRESETS.map((p) => {
                 const Icon = PLATFORM_ICONS[p.value] || Smartphone
@@ -124,11 +123,10 @@ export default function NewProjectPage() {
                 return (
                   <label
                     key={p.value}
-                    className={`relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
-                      isSelected
+                    className={`relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${isSelected
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-foreground/20"
-                    }`}
+                      }`}
                   >
                     <RadioGroupItem
                       value={p.value}

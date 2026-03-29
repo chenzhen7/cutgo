@@ -45,7 +45,7 @@ export function ScriptEmptyState({
         <Sparkles className="size-10 text-muted-foreground/40" />
         <div className="text-center max-w-md">
           <p className="text-sm font-medium">尚未创建分集</p>
-          
+
           <p className="mt-3 text-xs text-muted-foreground">
             已识别 {chapters.length} 个章节。请先在分集规划中创建分集，然后点击右上角「AI 生成剧本」为各分集生成剧本
           </p>
@@ -64,13 +64,13 @@ export function ScriptEmptyState({
           )}
         </div>
         {onOpenOutlineDialog && (
-            <div className="mt-3 flex justify-center">
-              <Button size="sm" onClick={onOpenOutlineDialog}>
-                <ListOrdered className="size-4" />
-                生成分集大纲
-              </Button>
-            </div>
-          )}
+          <div className="mt-3 flex justify-center">
+            <Button size="sm" onClick={onOpenOutlineDialog}>
+              <ListOrdered className="size-4" />
+              生成分集大纲
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
