@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
 
 function makePlaceholderUrl(
   prompt: string,
@@ -98,6 +99,11 @@ export async function POST(request: NextRequest) {
   const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
   let success = 0
   let failed = 0
+  const task = await createRunningAiTask({
+    projectId,
+    episodeId: episodeId || null,
+    taskType: "image_generate",
+  })
 
   for (const shot of shots) {
     try {
@@ -108,6 +114,15 @@ export async function POST(request: NextRequest) {
       results.push({ shotId: shot.id, status: "failed" })
       failed++
     }
+  }
+
+  if (failed > 0) {
+    await markAiTaskFailed(task.id, {
+      code: "PARTIAL_FAILED",
+      message: `批量生图完成，但有 ${failed}/${shots.length} 个镜头失败`,
+    })
+  } else {
+    await markAiTaskSucceeded(task.id)
   }
 
   return NextResponse.json({

@@ -55,7 +55,6 @@ export const GET = withError(async (request: NextRequest) => {
     where.OR = [
       { id: { contains: keyword } },
       { model: { contains: keyword } },
-      { currentStep: { contains: keyword } },
       { errorMessage: { contains: keyword } },
       { errorCode: { contains: keyword } },
     ]

@@ -2,15 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
-function safeJsonParse(value: string | null) {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as unknown
-  } catch {
-    return value
-  }
-}
-
 type TaskEvent = {
   key: string
   label: string
@@ -54,7 +45,7 @@ export const GET = withError(
         label: task.status === "failed" ? "任务失败" : "任务结束",
         at: task.finishedAt,
         status: task.status,
-        detail: task.errorMessage || task.currentStep,
+        detail: task.errorMessage,
       },
     ]
 
@@ -64,7 +55,6 @@ export const GET = withError(
         label: "运行中",
         at: task.updatedAt,
         status: "running",
-        detail: task.currentStep || null,
       })
     }
 
@@ -79,9 +69,6 @@ export const GET = withError(
 
     return NextResponse.json({
       ...task,
-      parsedConfigSnapshot: safeJsonParse(task.configSnapshot),
-      parsedInputPayload: safeJsonParse(task.inputPayload),
-      parsedOutputPayload: safeJsonParse(task.outputPayload),
       events: events
         .filter((item) => item.at)
         .sort((a, b) => (a.at!.getTime() > b.at!.getTime() ? 1 : -1)),

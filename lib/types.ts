@@ -485,11 +485,6 @@ export interface AiTask {
   taskType: AiTaskType
   status: AiTaskStatus
   model: string | null
-  configSnapshot: string | null
-  inputPayload: string | null
-  outputPayload: string | null
-  progress: number
-  currentStep: string | null
   errorCode: string | null
   errorMessage: string | null
   retryCount: number

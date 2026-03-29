@@ -4,6 +4,11 @@ import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
 import {
+  createRunningAiTask,
+  markAiTaskFailed,
+  markAiTaskSucceeded,
+} from "@/lib/ai-task-service"
+import {
   buildEpisodeScriptSystemPrompt,
   buildEpisodeScriptUserPrompt,
 } from "@/lib/prompts"
@@ -118,28 +123,40 @@ export const POST = withError(async (request: NextRequest) => {
 
   try {
     for (const episode of targetEpisodes) {
+      const task = await createRunningAiTask({
+        projectId,
+        episodeId: episode.id,
+        taskType: "llm_script",
+      })
+
       const sourceIds = parseSourceChapterIds(episode)
       const chapterContent = sourceIds
         .map((id) => chapterMap.get(id) || "")
         .filter(Boolean)
         .join("\n\n---\n\n")
 
-      const scriptContent = await callAIGenerateScript(
-        episode.title,
-        episode.outline ?? "",
-        episode.keyConflict,
-        episode.cliffhanger,
-        chapterContent,
-        previousContent,
-        project.duration
-      )
+      try {
+        const scriptContent = await callAIGenerateScript(
+          episode.title,
+          episode.outline ?? "",
+          episode.keyConflict,
+          episode.cliffhanger,
+          chapterContent,
+          previousContent,
+          project.duration
+        )
 
-      await prisma.episode.update({
-        where: { id: episode.id },
-        data: { script: scriptContent },
-      })
+        await prisma.episode.update({
+          where: { id: episode.id },
+          data: { script: scriptContent },
+        })
 
-      previousContent = scriptContent
+        await markAiTaskSucceeded(task.id)
+        previousContent = scriptContent
+      } catch (err) {
+        await markAiTaskFailed(task.id, err)
+        throw err
+      }
     }
 
     const allEpisodes = await prisma.episode.findMany({

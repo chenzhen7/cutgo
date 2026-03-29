@@ -11,14 +11,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 type AiTaskDetail = AiTask & {
-  parsedConfigSnapshot?: unknown
-  parsedInputPayload?: unknown
-  parsedOutputPayload?: unknown
   events?: { key: string; label: string; at: string; status?: string; detail?: string | null }[]
 }
 
@@ -49,16 +45,6 @@ function statusBadgeVariant(status: AiTask["status"]) {
   if (status === "cancelled") return "outline" as const
   if (status === "running") return "secondary" as const
   return "outline" as const
-}
-
-function renderJson(value: unknown) {
-  if (value === null || value === undefined) return "-"
-  if (typeof value === "string") return value
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
 }
 
 export default function ProjectTasksPage() {
@@ -295,12 +281,11 @@ export default function ProjectTasksPage() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg border">
-            <div className="grid grid-cols-10 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+            <div className="grid grid-cols-9 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
               <div>任务ID</div>
               <div>类型</div>
               <div>目标对象</div>
               <div>状态</div>
-              <div>进度</div>
               <div>模型</div>
               <div>耗时</div>
               <div>创建时间</div>
@@ -317,7 +302,7 @@ export default function ProjectTasksPage() {
                 <div
                   key={task.id}
                   className={cn(
-                    "grid grid-cols-10 items-center border-b px-3 py-2 text-sm last:border-b-0 hover:bg-muted/20",
+                    "grid grid-cols-9 items-center border-b px-3 py-2 text-sm last:border-b-0 hover:bg-muted/20",
                     task.status === "failed" && "bg-destructive/5"
                   )}
                 >
@@ -325,14 +310,10 @@ export default function ProjectTasksPage() {
                   <div className="text-xs">{AI_TASK_TYPE_LABEL[task.taskType]}</div>
                   <div className="text-xs text-muted-foreground">{targetText}</div>
                   <div>
-                    <Badge variant={statusBadgeVariant(task.status)}>{AI_TASK_STATUS_LABEL[task.status]}</Badge>
-                  </div>
-                  <div className="pr-2">
-                    <div className="flex items-center gap-1.5">
-                      {task.status === "running" && <Loader2 className="size-3 animate-spin text-primary" />}
-                      <span className="text-xs">{task.progress}%</span>
-                    </div>
-                    <Progress value={task.progress} className="mt-1 h-1.5" />
+                    <Badge variant={statusBadgeVariant(task.status)}>
+                      {task.status === "running" && <Loader2 className="mr-1 size-3 animate-spin" />}
+                      {AI_TASK_STATUS_LABEL[task.status]}
+                    </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">{task.model || "-"}</div>
                   <div className="text-xs">{formatDuration(task.startedAt, task.finishedAt)}</div>
@@ -409,7 +390,6 @@ export default function ProjectTasksPage() {
                 <div>模型：{detail.model || "-"}</div>
                 <div>开始时间：{formatDateTime(detail.startedAt)}</div>
                 <div>结束时间：{formatDateTime(detail.finishedAt)}</div>
-                <div className="col-span-2">当前步骤：{detail.currentStep || "-"}</div>
               </div>
 
               <div className="rounded-lg border p-3">
@@ -427,27 +407,6 @@ export default function ProjectTasksPage() {
                 ) : (
                   <p className="text-xs text-muted-foreground">暂无步骤记录</p>
                 )}
-              </div>
-
-              <div className="rounded-lg border p-3">
-                <p className="mb-2 text-sm font-medium">输入快照</p>
-                <pre className="max-h-40 overflow-auto rounded bg-muted/30 p-2 text-xs">
-                  {renderJson(detail.parsedInputPayload ?? detail.inputPayload)}
-                </pre>
-              </div>
-
-              <div className="rounded-lg border p-3">
-                <p className="mb-2 text-sm font-medium">输出快照</p>
-                <pre className="max-h-40 overflow-auto rounded bg-muted/30 p-2 text-xs">
-                  {renderJson(detail.parsedOutputPayload ?? detail.outputPayload)}
-                </pre>
-              </div>
-
-              <div className="rounded-lg border p-3">
-                <p className="mb-2 text-sm font-medium">执行配置快照</p>
-                <pre className="max-h-40 overflow-auto rounded bg-muted/30 p-2 text-xs">
-                  {renderJson(detail.parsedConfigSnapshot ?? detail.configSnapshot)}
-                </pre>
               </div>
 
               {detail.errorMessage && (

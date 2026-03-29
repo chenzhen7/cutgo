@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
+import type { Prisma } from "@/lib/generated/prisma/client"
 import { prisma } from "@/lib/db"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { getLLMProvider } from "@/lib/ai/llm"
+import {
+  createRunningAiTask,
+  markAiTaskFailed,
+  markAiTaskSucceeded,
+} from "@/lib/ai-task-service"
 import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/prompts"
 
 interface AIScriptShotResult {
@@ -114,8 +120,8 @@ async function callAIGenerateScriptShots(
           typeof raw.prompt === "string"
             ? raw.prompt.trim()
             : typeof raw.shot === "string"
-            ? raw.shot.trim()
-            : ""
+              ? raw.shot.trim()
+              : ""
         if (!prompt) return null
         const characters = Array.isArray(raw.characters)
           ? raw.characters
@@ -184,6 +190,12 @@ export const POST = withError(async (request: NextRequest) => {
 
   try {
     for (const episode of targetEpisodes) {
+      const task = await createRunningAiTask({
+        projectId,
+        episodeId: episode.id,
+        taskType: "llm_shot",
+      })
+
       const episodeCharacterIds = parseJsonArray(episode.characters)
       const episodeSceneIds = parseJsonArray(episode.scenes)
       const episodePropIds = parseJsonArray(episode.props)
@@ -194,65 +206,72 @@ export const POST = withError(async (request: NextRequest) => {
         : null
       const matchedProps = assetProps.filter((p) => episodePropIds.includes(p.id))
 
-      const aiResult = await callAIGenerateScriptShots(
-        episode.title,
-        episode.script,
-        matchedCharacters.map((c) => c.name).join("; "),
-        matchedProps.map((p) => p.name).join("; "),
-        matchedScene?.name || "",
-        previousShotStr
-      )
+      try {
+        const aiResult = await callAIGenerateScriptShots(
+          episode.title,
+          episode.script,
+          matchedCharacters.map((c) => c.name).join("; "),
+          matchedProps.map((p) => p.name).join("; "),
+          matchedScene?.name || "",
+          previousShotStr
+        )
 
-      const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
-      const projectCharacterMap = new Map(assetCharacters.map((c) => [c.name.trim(), c.id]))
-      const episodePropMap = new Map(matchedProps.map((p) => [p.name.trim(), p.id]))
-      const projectPropMap = new Map(assetProps.map((p) => [p.name.trim(), p.id]))
-      const episodeSceneMap = new Map(
-        (matchedScene ? [matchedScene] : [])
-          .map((s) => [s.name.trim(), s.id] as const)
-      )
-      const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
+        const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
+        const projectCharacterMap = new Map(assetCharacters.map((c) => [c.name.trim(), c.id]))
+        const episodePropMap = new Map(matchedProps.map((p) => [p.name.trim(), p.id]))
+        const projectPropMap = new Map(assetProps.map((p) => [p.name.trim(), p.id]))
+        const episodeSceneMap = new Map(
+          (matchedScene ? [matchedScene] : [])
+            .map((s) => [s.name.trim(), s.id] as const)
+        )
+        const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
-      const shotData = (aiResult.shots || [])
-        .map((item, si) => {
-          const prompt = item.prompt.trim()
-          if (!prompt) return null
-          const characterIds = item.characters
-            .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
-            .filter((id): id is string => Boolean(id))
-          const propIds = item.props
-            .map((name) => episodePropMap.get(name) ?? projectPropMap.get(name))
-            .filter((id): id is string => Boolean(id))
-          const sceneId =
-            (item.scene ? (episodeSceneMap.get(item.scene) ?? projectSceneMap.get(item.scene)) : null)
-            ?? matchedScene?.id
-            ?? null
-          return {
-            episodeId: episode.id,
-            index: si,
-            prompt,
-            negativePrompt: null,
-            duration: "3s",
-            dialogueText: null,
-            actionNote: null,
-            characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
-            sceneId,
-            propIds: propIds.length > 0 ? JSON.stringify(propIds) : null,
-          }
-        })
-        .filter((item): item is NonNullable<typeof item> => Boolean(item))
+        const shotData = (aiResult.shots || [])
+          .map((item, si) => {
+            const prompt = item.prompt.trim()
+            if (!prompt) return null
+            const characterIds = item.characters
+              .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
+              .filter((id): id is string => Boolean(id))
+            const propIds = item.props
+              .map((name) => episodePropMap.get(name) ?? projectPropMap.get(name))
+              .filter((id): id is string => Boolean(id))
+            const sceneId =
+              (item.scene ? (episodeSceneMap.get(item.scene) ?? projectSceneMap.get(item.scene)) : null)
+              ?? matchedScene?.id
+              ?? null
+            return {
+              episodeId: episode.id,
+              index: si,
+              prompt,
+              negativePrompt: null,
+              duration: "3s",
+              dialogueText: null,
+              actionNote: null,
+              characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
+              sceneId,
+              propIds: propIds.length > 0 ? JSON.stringify(propIds) : null,
+            }
+          })
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-      const txOperations: any[] = [prisma.shot.deleteMany({ where: { episodeId: episode.id } })]
-      if (shotData.length > 0) {
-        txOperations.push(prisma.shot.createMany({ data: shotData }))
-      }
-      await prisma.$transaction(txOperations)
-
-      if (aiResult.shots?.length) {
-        const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.prompt?.trim() || ""
-        if (lastPrompt) {
-          previousShotStr = `分镜提示词: ${lastPrompt}`
+        const txOperations: Prisma.PrismaPromise<unknown>[] = [prisma.shot.deleteMany({ where: { episodeId: episode.id } })]
+        if (shotData.length > 0) {
+          txOperations.push(prisma.shot.createMany({ data: shotData }))
         }
+        await prisma.$transaction(txOperations)
+
+        if (aiResult.shots?.length) {
+          const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.prompt?.trim() || ""
+          if (lastPrompt) {
+            previousShotStr = `分镜提示词: ${lastPrompt}`
+          }
+        }
+
+        await markAiTaskSucceeded(task.id)
+      } catch (err) {
+        await markAiTaskFailed(task.id, err)
+        throw err
       }
     }
 

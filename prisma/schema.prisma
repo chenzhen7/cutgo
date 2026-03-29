@@ -336,17 +336,7 @@ model AiTask {
   status   String @default("queued")
 
   /// 执行时模型快照，如 openai/gpt-4o
-  model          String?
-  /// 执行配置快照（JSON 字符串）
-  configSnapshot String?
-  /// 输入参数快照（JSON 字符串）
-  inputPayload   String?
-  /// 输出结果快照（JSON 字符串）
-  outputPayload  String?
-
-  /// 进度 0-100
-  progress    Int     @default(0)
-  currentStep String?
+  model String?
 
   errorCode    String?
   errorMessage String?
