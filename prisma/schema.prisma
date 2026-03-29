@@ -25,7 +25,7 @@ model Project {
   /// 分辨率描述，如 1080x1920
   resolution  String @default("1080x1920")
 
-  /// 风格预设标识或名称
+  /// 视觉风格名称（中文；预设与 STYLE_PRESETS.label 一致，自定义则为用户文案）
   stylePreset     String?
   /// 全局负面提示词（图像等）
   globalNegPrompt String?

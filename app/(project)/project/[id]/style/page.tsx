@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { STYLE_PRESETS, STYLE_PRESET_CATEGORIES } from "@/lib/types"
 import type { Project } from "@/lib/types"
@@ -39,7 +45,7 @@ export default function StylePage() {
       .then((data: Project) => {
         setProject(data)
         if (data.stylePreset) {
-          const matched = STYLE_PRESETS.some((s) => s.value === data.stylePreset)
+          const matched = STYLE_PRESETS.some((s) => s.label === data.stylePreset)
           if (matched) {
             setSelectedPreset(data.stylePreset)
           } else {
@@ -54,15 +60,18 @@ export default function StylePage() {
     return STYLE_PRESETS.filter((style) => {
       const matchCategory =
         activeCategory === "all" || style.category === activeCategory
+      const q = searchQuery.toLowerCase()
       const matchSearch =
-        !searchQuery || style.label.toLowerCase().includes(searchQuery.toLowerCase())
+        !searchQuery ||
+        style.label.toLowerCase().includes(q) ||
+        style.description.toLowerCase().includes(q)
       return matchCategory && matchSearch
     })
   }, [activeCategory, searchQuery])
 
   const selectedLabel = isCustom
     ? customStyle || "自定义风格"
-    : STYLE_PRESETS.find((s) => s.value === selectedPreset)?.label
+    : STYLE_PRESETS.find((s) => s.label === selectedPreset)?.label
 
   const resolvedStyle = isCustom ? customStyle.trim() : selectedPreset
 
@@ -172,58 +181,71 @@ export default function StylePage() {
 
         {/* Grid with Scroll Area */}
         <ScrollArea className="h-[520px] pr-4 -mr-4">
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 py-2">
-            {filteredPresets.map((style) => {
-              const isSelected = selectedPreset === style.value
-              return (
-                <button
-                  key={style.value}
-                  onClick={() =>
-                    setSelectedPreset(isSelected ? null : style.value)
-                  }
-                  className={cn(
-                    "relative flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all text-center group",
-                    isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/40 hover:bg-muted/40"
-                  )}
-                >
-                  <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
-                    <ImageIcon className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
-                  </div>
-                  <span className="text-xs font-medium leading-tight line-clamp-1 w-full">
-                    {style.label}
-                  </span>
-                  {isSelected && (
-                    <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                    </div>
-                  )}
-                </button>
-              )
-            })}
+          <TooltipProvider delayDuration={300}>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 py-2">
+              {filteredPresets.map((style) => {
+                const isSelected = selectedPreset === style.label
+                return (
+                  <Tooltip key={style.label}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedPreset(isSelected ? null : style.label)
+                        }
+                        className={cn(
+                          "relative flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all text-center group",
+                          isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/40 hover:bg-muted/40"
+                        )}
+                      >
+                        <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <ImageIcon className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
+                        </div>
+                        <span className="text-xs font-medium leading-tight line-clamp-1 w-full">
+                          {style.label}
+                        </span>
+                        {isSelected && (
+                          <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                            <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                          </div>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="max-w-sm text-left leading-relaxed"
+                    >
+                      {style.description}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
 
-            {/* Custom style card — always visible */}
-            <button
-              onClick={() => setSelectedPreset(isCustom ? null : "__custom__")}
-              className={cn(
-                "relative flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-3 transition-all text-center group",
-                isCustom
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/40 hover:bg-muted/40"
-              )}
-            >
-              <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
-                <Plus className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
-              </div>
-              <span className="text-xs font-medium leading-tight">自定义</span>
-              {isCustom && (
-                <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                  <Check className="h-2.5 w-2.5 text-primary-foreground" />
+              {/* Custom style card — always visible */}
+              <button
+                type="button"
+                onClick={() => setSelectedPreset(isCustom ? null : "__custom__")}
+                className={cn(
+                  "relative flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-3 transition-all text-center group",
+                  isCustom
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40 hover:bg-muted/40"
+                )}
+              >
+                <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center">
+                  <Plus className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
                 </div>
-              )}
-            </button>
-          </div>
+                <span className="text-xs font-medium leading-tight">自定义</span>
+                {isCustom && (
+                  <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                    <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            </div>
+          </TooltipProvider>
         </ScrollArea>
 
         {filteredPresets.length === 0 && searchQuery && (

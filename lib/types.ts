@@ -6,6 +6,7 @@ export interface Project {
   coverUrl: string | null
   aspectRatio: string
   resolution: string
+  /** 视觉风格名称（中文，与 STYLE_PRESETS 的 label 一致；自定义时为用户填写文案） */
   stylePreset: string | null
   globalNegPrompt: string | null
   styleRefUrl: string | null
@@ -258,43 +259,175 @@ export const STYLE_PRESET_CATEGORIES = [
 
 export type StylePresetCategory = (typeof STYLE_PRESET_CATEGORIES)[number]["value"]
 
-export const STYLE_PRESETS = [
+export type StylePresetItem = {
+  label: string
+  description: string
+  category: StylePresetCategory
+}
+
+/** 根据中文名称取预设说明（自定义风格无预设时返回 undefined） */
+export function getStylePresetDescription(label: string): string | undefined {
+  return STYLE_PRESETS.find((s) => s.label === label)?.description
+}
+
+export const STYLE_PRESETS: StylePresetItem[] = [
   // 写实都市
-  { label: "都市霸总", value: "urban-ceo", category: "realistic" as StylePresetCategory },
-  { label: "现代都市", value: "modern-city", category: "realistic" as StylePresetCategory },
-  { label: "商战职场", value: "business-war", category: "realistic" as StylePresetCategory },
-  { label: "豪门世家", value: "wealthy-family", category: "realistic" as StylePresetCategory },
-  { label: "甜宠恋爱", value: "sweet-romance", category: "realistic" as StylePresetCategory },
-  { label: "悬疑犯罪", value: "mystery-crime", category: "realistic" as StylePresetCategory },
+  {
+    label: "都市霸总",
+    description:
+      "现代都市高质感写实，冷色调或香槟金点缀，西装革履、豪车豪宅，强调权力感与精致布光，适合霸总题材。",
+    category: "realistic",
+  },
+  {
+    label: "现代都市",
+    description: "当代城市生活写实风，自然光与街景霓虹并存，生活化场景与真实材质，偏纪实感。",
+    category: "realistic",
+  },
+  {
+    label: "商战职场",
+    description: "写字楼、会议室、数据大屏等职场场景，利落剪裁与中性配色，画面干练、偏电影感。",
+    category: "realistic",
+  },
+  {
+    label: "豪门世家",
+    description: "奢华别墅、宴会、珠宝与礼服，暖金与深色木饰面，强调阶层与仪式感。",
+    category: "realistic",
+  },
+  {
+    label: "甜宠恋爱",
+    description: "明亮柔和色调、浅景深与温馨小场景，人物表情细腻，整体轻盈浪漫。",
+    category: "realistic",
+  },
+  {
+    label: "悬疑犯罪",
+    description: "低饱和、强对比光影，雨夜、巷弄、警局等冷峻场景，压抑紧张的氛围。",
+    category: "realistic",
+  },
   // 古装玄幻
-  { label: "古装仙侠", value: "ancient-xianxia", category: "fantasy" as StylePresetCategory },
-  { label: "武侠江湖", value: "wuxia", category: "fantasy" as StylePresetCategory },
-  { label: "东方玄幻", value: "eastern-fantasy", category: "fantasy" as StylePresetCategory },
-  { label: "宫廷权谋", value: "palace-intrigue", category: "fantasy" as StylePresetCategory },
-  { label: "神话传说", value: "mythology", category: "fantasy" as StylePresetCategory },
-  { label: "西方奇幻", value: "western-fantasy", category: "fantasy" as StylePresetCategory },
+  {
+    label: "古装仙侠",
+    description: "飘逸汉服、仙山云海、法术光效，唯美空灵，偏东方仙侠影视剧视觉。",
+    category: "fantasy",
+  },
+  {
+    label: "武侠江湖",
+    description: "江湖客栈、竹林刀光、尘土与雨水，动作感强，偏写实武侠片质感。",
+    category: "fantasy",
+  },
+  {
+    label: "东方玄幻",
+    description: "异世界与东方元素融合，奇兽、秘境、符文，想象力强但仍带东方审美。",
+    category: "fantasy",
+  },
+  {
+    label: "宫廷权谋",
+    description: "宫殿、朝服、烛火与暗涌，庄重构图与厚重色彩，强调权谋张力。",
+    category: "fantasy",
+  },
+  {
+    label: "神话传说",
+    description: "神祇、祥瑞、古典纹样与史诗尺度场景，庄严华丽、偏神话大片。",
+    category: "fantasy",
+  },
+  {
+    label: "西方奇幻",
+    description: "城堡、精灵、龙与魔法，偏欧美奇幻影视与插画的中高幻想调性。",
+    category: "fantasy",
+  },
   // 科幻未来
-  { label: "硬核科幻", value: "hard-scifi", category: "scifi" as StylePresetCategory },
-  { label: "赛博朋克", value: "cyberpunk", category: "scifi" as StylePresetCategory },
-  { label: "星际太空", value: "space-opera", category: "scifi" as StylePresetCategory },
-  { label: "末世废土", value: "post-apocalypse", category: "scifi" as StylePresetCategory },
-  { label: "蒸汽朋克", value: "steampunk", category: "scifi" as StylePresetCategory },
-  { label: "生化危机", value: "biohazard", category: "scifi" as StylePresetCategory },
+  {
+    label: "硬核科幻",
+    description: "科学细节可信、飞船与空间站、冷金属与仪表光，偏《太空漫游》式写实科幻。",
+    category: "scifi",
+  },
+  {
+    label: "赛博朋克",
+    description: "霓虹雨夜、义体与全息广告，高反差与粉青配色，密集都市与未来贫民窟对比。",
+    category: "scifi",
+  },
+  {
+    label: "星际太空",
+    description: "星云、舰队、异星地表与舱内舷窗，宏大尺度与深邃宇宙感。",
+    category: "scifi",
+  },
+  {
+    label: "末世废土",
+    description: "黄沙、残骸、简易装备与匮乏感，低饱和、风沙与锈迹材质为主。",
+    category: "scifi",
+  },
+  {
+    label: "蒸汽朋克",
+    description: "黄铜齿轮、维多利亚服装与蒸汽机械，暖棕与铜绿，复古未来感。",
+    category: "scifi",
+  },
+  {
+    label: "生化危机",
+    description: "实验室、防护服、变异与警戒红光，惊悚紧张，偏生物恐怖题材视觉。",
+    category: "scifi",
+  },
   // 动漫插画
-  { label: "日漫风", value: "anime-jp", category: "anime" as StylePresetCategory },
-  { label: "美漫风格", value: "comic-us", category: "anime" as StylePresetCategory },
-  { label: "国漫风格", value: "comic-cn", category: "anime" as StylePresetCategory },
-  { label: "像素风格", value: "pixel-art", category: "anime" as StylePresetCategory },
-  { label: "chibi 萌系", value: "chibi", category: "anime" as StylePresetCategory },
-  { label: "黑白漫画", value: "manga-bw", category: "anime" as StylePresetCategory },
+  {
+    label: "日漫风",
+    description: "赛璐璐或现代日本动画上色，清晰线稿、大眼睛与夸张表情，二次元典型观感。",
+    category: "anime",
+  },
+  {
+    label: "美漫风格",
+    description: "粗线轮廓、高饱和配色与肌肉块面感，类似超级英雄漫画与动态分格。",
+    category: "anime",
+  },
+  {
+    label: "国漫风格",
+    description: "国产网络动画常见画风，介于日漫与国风设定之间，线条干净、配色偏亮丽。",
+    category: "anime",
+  },
+  {
+    label: "像素风格",
+    description: "低分辨率像素块、有限色板与复古游戏感，可带 dither 与 8/16bit 质感。",
+    category: "anime",
+  },
+  {
+    label: "chibi 萌系",
+    description: "二头身大头小身、圆润线条与可爱配色，偏 Q 版与萌系周边视觉。",
+    category: "anime",
+  },
+  {
+    label: "黑白漫画",
+    description: "纯黑白网点与速度线，强明暗对比，典型日式或港式漫画印刷感。",
+    category: "anime",
+  },
   // 艺术风格
-  { label: "水墨风", value: "ink-wash", category: "art" as StylePresetCategory },
-  { label: "油画质感", value: "oil-painting", category: "art" as StylePresetCategory },
-  { label: "水彩插画", value: "watercolor", category: "art" as StylePresetCategory },
-  { label: "复古胶片", value: "retro-film", category: "art" as StylePresetCategory },
-  { label: "扁平插画", value: "flat-illustration", category: "art" as StylePresetCategory },
-  { label: "暗黑哥特", value: "dark-gothic", category: "art" as StylePresetCategory },
-] as const
+  {
+    label: "水墨风",
+    description: "宣纸晕染、留白与飞白笔触，山水人物皆可，强调东方写意与气韵。",
+    category: "art",
+  },
+  {
+    label: "油画质感",
+    description: "厚涂笔触、古典明暗与油画肌理，偏传统架上绘画观感。",
+    category: "art",
+  },
+  {
+    label: "水彩插画",
+    description: "透明叠色、水痕与柔和边缘，清新或梦幻的插画绘本感。",
+    category: "art",
+  },
+  {
+    label: "复古胶片",
+    description: "颗粒、褪色与漏光，模拟胶片色温与暗角，怀旧电影或老照片气质。",
+    category: "art",
+  },
+  {
+    label: "扁平插画",
+    description: "少透视、大块面色与简洁图形，适合 UI 与矢量风商业插画。",
+    category: "art",
+  },
+  {
+    label: "暗黑哥特",
+    description: "教堂、烛台、乌鸦与颓废蕾丝，暗紫黑红与宗教符号，神秘阴郁。",
+    category: "art",
+  },
+]
 
 export const DEFAULT_NEGATIVE_PROMPTS =
   "bad anatomy, text, watermark, low quality, blurry, deformed, extra limbs, disfigured"
