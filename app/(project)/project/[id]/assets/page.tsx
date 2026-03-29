@@ -16,11 +16,16 @@ import {
   Lock,
   Unlock,
   ImageIcon,
+  Image,
+  CheckSquare,
+  Square,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -29,7 +34,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
   Dialog,
@@ -47,10 +51,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useAssetStore } from "@/store/asset-store"
 import { useNovelStore } from "@/store/novel-store"
 import { ExtractAssetsDialog } from "../import/components/extract-assets-dialog"
+import { apiFetch } from "@/lib/api-client"
 import type {
   AssetCharacter,
   AssetScene,
@@ -61,6 +67,16 @@ import type {
 } from "@/lib/types"
 
 type AssetTab = "characters" | "scenes" | "props"
+
+type AssetGenerateType = "character" | "scene" | "prop"
+
+interface GenerateItem {
+  type: AssetGenerateType
+  id: string
+  name: string
+  hasImage: boolean
+  selected: boolean
+}
 
 export default function AssetsPage() {
   const params = useParams()
@@ -101,6 +117,7 @@ export default function AssetsPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [showExtractDialog, setShowExtractDialog] = useState(false)
   const [extractSuccessMsg] = useState<string | null>(null)
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -154,6 +171,15 @@ export default function AssetsPage() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowGenerateDialog(true)}
+            disabled={totalAssets === 0}
+          >
+            <Image className="size-4" />
+            生成图片
+          </Button>
           <Button
             size="sm"
             onClick={() => setShowExtractDialog(true)}
@@ -477,7 +503,267 @@ export default function AssetsPage() {
           onSuccess={() => void handleExtractSuccess()}
         />
       )}
+
+      <GenerateAssetImagesDialog
+        open={showGenerateDialog}
+        onOpenChange={setShowGenerateDialog}
+        characters={characters}
+        scenes={scenes}
+        props={props}
+        onComplete={() => void fetchAssets(projectId)}
+      />
     </div>
+  )
+}
+
+// ── Generate Asset Images Dialog ──
+
+function GenerateAssetImagesDialog({
+  open,
+  onOpenChange,
+  characters,
+  scenes,
+  props,
+  onComplete,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  characters: AssetCharacter[]
+  scenes: AssetScene[]
+  props: AssetProp[]
+  onComplete: () => void
+}) {
+  const buildItems = useCallback((): GenerateItem[] => {
+    const charItems: GenerateItem[] = characters.map((c) => ({
+      type: "character" as const,
+      id: c.id,
+      name: c.name,
+      hasImage: !!c.imageUrl,
+      selected: !c.imageUrl,
+    }))
+    const sceneItems: GenerateItem[] = scenes.map((s) => ({
+      type: "scene" as const,
+      id: s.id,
+      name: s.name,
+      hasImage: !!s.imageUrl,
+      selected: !s.imageUrl,
+    }))
+    const propItems: GenerateItem[] = props.map((p) => ({
+      type: "prop" as const,
+      id: p.id,
+      name: p.name,
+      hasImage: !!p.imageUrl,
+      selected: !p.imageUrl,
+    }))
+    return [...charItems, ...sceneItems, ...propItems]
+  }, [characters, scenes, props])
+
+  const [items, setItems] = useState<GenerateItem[]>([])
+  const [generating, setGenerating] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [currentName, setCurrentName] = useState("")
+  const [doneCount, setDoneCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+  const [finished, setFinished] = useState(false)
+  const [errorCount, setErrorCount] = useState(0)
+
+  useEffect(() => {
+    if (open) {
+      setItems(buildItems())
+      setGenerating(false)
+      setProgress(0)
+      setCurrentName("")
+      setDoneCount(0)
+      setTotalCount(0)
+      setFinished(false)
+      setErrorCount(0)
+    }
+  }, [open, buildItems])
+
+  const selectedItems = items.filter((i) => i.selected)
+
+  const allSelected = items.length > 0 && items.every((i) => i.selected)
+  const noneSelected = items.every((i) => !i.selected)
+
+  const toggleAll = () => {
+    const newVal = !allSelected
+    setItems((prev) => prev.map((i) => ({ ...i, selected: newVal })))
+  }
+
+  const toggleItem = (id: string) => {
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i))
+    )
+  }
+
+  const handleGenerate = async () => {
+    const toGenerate = items.filter((i) => i.selected)
+    if (toGenerate.length === 0) return
+    setGenerating(true)
+    setTotalCount(toGenerate.length)
+    setDoneCount(0)
+    setErrorCount(0)
+    setFinished(false)
+
+    let errors = 0
+    for (let idx = 0; idx < toGenerate.length; idx++) {
+      const item = toGenerate[idx]
+      setCurrentName(item.name)
+      setProgress(Math.round((idx / toGenerate.length) * 100))
+      try {
+        await apiFetch(`/api/assets/generate-images`, {
+          method: "POST",
+          body: { type: item.type, id: item.id },
+        })
+      } catch {
+        errors++
+      }
+      setDoneCount(idx + 1)
+    }
+    setProgress(100)
+    setErrorCount(errors)
+    setFinished(true)
+    setGenerating(false)
+    onComplete()
+  }
+
+  const typeLabel: Record<AssetGenerateType, string> = {
+    character: "角色",
+    scene: "场景",
+    prop: "道具",
+  }
+
+  const typeIcon: Record<AssetGenerateType, React.ReactNode> = {
+    character: <Users className="size-3.5 text-violet-500" />,
+    scene: <MapPin className="size-3.5 text-blue-500" />,
+    prop: <Box className="size-3.5 text-amber-600" />,
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!generating) onOpenChange(v)
+      }}
+    >
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ImageIcon className="size-4" />
+            生成资产图片
+          </DialogTitle>
+        </DialogHeader>
+
+        {!generating && !finished && (
+          <>
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
+              <span>共 {items.length} 项资产，已勾选 {selectedItems.length} 项</span>
+              <button
+                onClick={toggleAll}
+                className="flex items-center gap-1 text-xs hover:text-foreground transition-colors"
+              >
+                {allSelected ? (
+                  <CheckSquare className="size-3.5" />
+                ) : (
+                  <Square className="size-3.5" />
+                )}
+                {allSelected ? "取消全选" : "全选"}
+              </button>
+            </div>
+            <ScrollArea className="h-72 rounded-md border">
+              <div className="p-2 space-y-0.5">
+                {items.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-8">
+                    暂无资产
+                  </p>
+                )}
+                {items.map((item) => (
+                  <label
+                    key={item.id}
+                    className={cn(
+                      "flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-muted/60 transition-colors",
+                      item.selected && "bg-muted/40"
+                    )}
+                  >
+                    <Checkbox
+                      checked={item.selected}
+                      onCheckedChange={() => toggleItem(item.id)}
+                    />
+                    <span className="flex items-center gap-1.5 flex-1 min-w-0">
+                      {typeIcon[item.type]}
+                      <span className="text-sm truncate">{item.name}</span>
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                        {typeLabel[item.type]}
+                      </Badge>
+                    </span>
+                    {item.hasImage && (
+                      <span className="text-[10px] text-muted-foreground shrink-0">已有图片</span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </ScrollArea>
+          </>
+        )}
+
+        {generating && (
+          <div className="space-y-4 py-2">
+            <div className="text-sm text-center text-muted-foreground">
+              正在生成：<span className="text-foreground font-medium">{currentName}</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+            <p className="text-xs text-center text-muted-foreground">
+              {doneCount} / {totalCount}
+            </p>
+          </div>
+        )}
+
+        {finished && (
+          <div className="space-y-3 py-2">
+            <Progress value={100} className="h-2" />
+            <p className="text-sm text-center">
+              {errorCount === 0 ? (
+                <span className="text-green-600 dark:text-green-400">
+                  全部完成！共生成 {doneCount} 张图片
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  完成 {doneCount - errorCount} 张，{errorCount} 张失败
+                </span>
+              )}
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={generating}
+          >
+            {finished ? "关闭" : "取消"}
+          </Button>
+          {!finished && (
+            <Button
+              onClick={() => void handleGenerate()}
+              disabled={generating || noneSelected}
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  生成中…
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="size-4" />
+                  生成 {selectedItems.length} 张图片
+                </>
+              )}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
