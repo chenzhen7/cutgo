@@ -23,9 +23,11 @@ interface DoubaoImageResponse {
 export class DoubaoImageProvider implements ImageProvider {
   readonly id = "doubao"
   private readonly isDev: boolean
-
+  private readonly baseUrl: string
+  
   constructor(private readonly config: DoubaoImageConfig) {
     this.isDev = process.env.NODE_ENV === "development"
+    this.baseUrl = config.baseUrl.replace(/\/$/, "")
   }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
@@ -39,13 +41,14 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const prompt = this.buildPrompt(options.prompt, options.negativePrompt)
-    const url = `${this.config.baseUrl.replace(/\/$/, "")}/images/generations`
-    const size = options.size 
+    const { prompt: rawPrompt, negativePrompt, size = null } = options
+    const prompt = this.buildPrompt(rawPrompt, negativePrompt)
+    const url = `${this.baseUrl}/images/generations`
 
     console.log("[Doubao Image] request", {
       url,
       model: this.config.model,
+      size,
       promptPreview:
         prompt.length > 200 ? `${prompt.slice(0, 200)}…` : prompt,
     })

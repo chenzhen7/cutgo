@@ -31,7 +31,7 @@ function alignTo64(value: number): number {
 export class StabilityImageProvider implements ImageProvider {
   readonly id = "stability"
 
-  constructor(private readonly config: StabilityImageConfig) {}
+  constructor(private readonly config: StabilityImageConfig) { }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
     const { prompt, negativePrompt, width, height, numOutputs = 1 } = options
