@@ -22,11 +22,10 @@ interface DoubaoImageResponse {
  */
 export class DoubaoImageProvider implements ImageProvider {
   readonly id = "doubao"
-  private readonly isDev: boolean
+
   private readonly baseUrl: string
-  
+
   constructor(private readonly config: DoubaoImageConfig) {
-    this.isDev = process.env.NODE_ENV === "development"
     this.baseUrl = config.baseUrl.replace(/\/$/, "")
   }
 
@@ -68,25 +67,23 @@ export class DoubaoImageProvider implements ImageProvider {
       signal: AbortSignal.timeout(300_000),
     })
 
-    if (this.isDev) {
-      console.log("[Doubao Image] response status", res.status, res.statusText)
-    }
+    console.log("[Doubao Image] response status", res.status, res.statusText)
 
     if (!res.ok) {
       const errorText = await res.text()
 
       throwCutGoError(
-        "INTERNAL",`status=${res.status}，error=${errorText}`
+        "INTERNAL", `status=${res.status}，error=${errorText}`
       )
     }
 
     const json = (await res.json()) as DoubaoImageResponse
 
     const raw = JSON.stringify(json)
-      console.log(
-        "[Doubao Image] response body (truncated)",
-        raw.length > 100 ? `${raw.slice(0, 100)}…` : raw
-      )
+    console.log(
+      "[Doubao Image] response body (truncated)",
+      raw.length > 100 ? `${raw.slice(0, 100)}…` : raw
+    )
 
     const first = json.data?.[0]
     if (!first) {

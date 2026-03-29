@@ -25,23 +25,23 @@ export class OpenAILLMProvider implements LLMProvider {
   private readonly openai
 
   constructor(private readonly config: OpenAICompatibleConfig) {
-    const isDev = process.env.NODE_ENV === "development"
+    // const isDev = process.env.NODE_ENV === "development"
 
     this.openai = createOpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseUrl.replace(/\/$/, ""),
-      fetch: isDev
-        ? async (url, options) => {
-          console.log("[AI SDK] URL:", url)
-          console.log("[AI SDK] Headers:", options?.headers)
-          console.log("[AI SDK] Body:", options?.body)
-          const response = await fetch(url, options)
-          const clone = response.clone()
-          const text = await clone.text()
-          console.log("[AI SDK] Response:", text)
-          return response
-        }
-        : undefined,
+      // fetch: isDev
+      //   ? async (url, options) => {
+      //     console.log("[AI SDK] URL:", url)
+      //     console.log("[AI SDK] Headers:", options?.headers)
+      //     console.log("[AI SDK] Body:", options?.body)
+      //     const response = await fetch(url, options)
+      //     const clone = response.clone()
+      //     const text = await clone.text()
+      //     console.log("[AI SDK] Response:", text)
+      //     return response
+      //   }
+      //   : undefined,
     })
   }
 

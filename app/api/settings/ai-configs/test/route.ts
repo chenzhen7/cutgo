@@ -4,6 +4,17 @@ import { createLLMProviderFromConfig } from "@/lib/ai/llm"
 import { createImageProviderFromConfig } from "@/lib/ai/image"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
+const TEST_TIMEOUT_MS = 300_000
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs = TEST_TIMEOUT_MS): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("timeout")), timeoutMs)
+    }),
+  ])
+}
+
 /**
  * POST /api/settings/ai-configs/test
  * 测试模型配置是否可用（发送一条最小化请求验证 API Key 和 Base URL）
@@ -26,7 +37,7 @@ export const POST = withError(async (req: NextRequest) => {
   }
 
   if (type === "tts") {
-    return await testTTS({ provider, model, apiKey, baseUrl })
+    return await testTTS({ provider, apiKey, baseUrl })
   }
 
   // video 等暂不支持在线测试
@@ -67,21 +78,18 @@ async function testLLM({
   if (!llmProvider) {
     throwCutGoError("VALIDATION", `当前暂不支持该 LLM Provider 的在线测试：${provider}`)
   }
-  
-  console.log("[ai-configs/test][llm] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model , "llmProvider:", llmProvider.id)
+
+  console.log("[ai-configs/test][llm] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model, "llmProvider:", llmProvider.id)
 
   try {
-    await Promise.race([
+    await withTimeout(
       llmProvider.chat({
         model,
         messages: [{ role: "user", content: "hi" }],
         maxTokens: 10,
-        timeoutMs: 1000 * 20
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject("timeout"), 300_000)
-      ),
-    ])
+        timeoutMs: 1000 * 20,
+      })
+    )
 
     return NextResponse.json({ success: true, message: "连接成功" })
   } catch (error) {
@@ -141,16 +149,13 @@ async function testImage({
   console.log("[ai-configs/test][image] resolvedBaseUrl:", resolvedBaseUrl, "| model:", model, "imageProvider:", imageProvider.id)
 
   try {
-    const result = await Promise.race([
+    const result = await withTimeout(
       imageProvider.generate({
         prompt: "apple",
         width: 512,
         height: 512,
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject("timeout"), 300_000)
-      ),
-    ])
+      })
+    )
 
     const first = Array.isArray(result) ? result[0] : result
     if (!first?.url) {
@@ -175,7 +180,6 @@ async function testTTS({
   baseUrl,
 }: {
   provider: string
-  model: string
   apiKey: string
   baseUrl: string
 }) {
