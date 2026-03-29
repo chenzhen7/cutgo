@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Upload, FileText, X, Loader2 } from "lucide-react"
 import { countWords, hasChapterStructure } from "@/lib/novel-utils"
 
@@ -26,7 +28,7 @@ const STAGES = [
 interface ImportNovelDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onImport: (text: string, fileName: string | null) => Promise<void>
+  onImport: (text: string, fileName: string | null, extractAssetsAfter: boolean) => Promise<void>
   analyzing: boolean
   analysisStageIndex: number
   analysisProgress: number
@@ -46,6 +48,7 @@ export function ImportNovelDialog({
   const [text, setText] = useState("")
   const [fileName, setFileName] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [extractAssetsAfter, setExtractAssetsAfter] = useState(true)
 
   const wordCount = countWords(text)
   const isOverLimit = wordCount > WARN_THRESHOLD
@@ -100,7 +103,7 @@ export function ImportNovelDialog({
   )
 
   const handleSubmit = async () => {
-    await onImport(text, fileName)
+    await onImport(text, fileName, extractAssetsAfter)
   }
 
   const handleOpenChange = (v: boolean) => {
@@ -108,6 +111,7 @@ export function ImportNovelDialog({
     if (!v) {
       setText("")
       setFileName(null)
+      setExtractAssetsAfter(true)
     }
     onOpenChange(v)
   }
@@ -230,6 +234,17 @@ export function ImportNovelDialog({
                 文本内容过短，建议至少导入 100 字以上的小说内容
               </p>
             )}
+
+            <div className="flex items-center gap-2  py-2.5">
+              <Checkbox
+                id="import-extract-assets"
+                checked={extractAssetsAfter}
+                onCheckedChange={(v) => setExtractAssetsAfter(v === true)}
+              />
+              <Label htmlFor="import-extract-assets" className="text-sm font-normal cursor-pointer leading-snug">
+                导入完成后提取资产（角色、场景、道具）
+              </Label>
+            </div>
 
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" onClick={() => handleOpenChange(false)}>

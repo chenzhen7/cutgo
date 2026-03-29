@@ -38,6 +38,8 @@ export default function ImportPage() {
 
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showExtractDialog, setShowExtractDialog] = useState(false)
+  const [extractAutoStart, setExtractAutoStart] = useState(false)
+  const [extractInitialChapterIds, setExtractInitialChapterIds] = useState<string[] | null>(null)
   const [stageIndex, setStageIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [confirmError, setConfirmError] = useState<string | null>(null)
@@ -69,7 +71,7 @@ export default function ImportPage() {
   }, [])
 
   const handleImport = useCallback(
-    async (text: string, fileName: string | null) => {
+    async (text: string, fileName: string | null, extractAssetsAfter: boolean) => {
       startProgressAnimation()
       try {
         const imported = await importNovel({
@@ -80,6 +82,11 @@ export default function ImportPage() {
         await analyzeNovel(imported.id)
         stopProgressAnimation()
         setShowImportDialog(false)
+        if (extractAssetsAfter) {
+          setExtractInitialChapterIds(null)
+          setExtractAutoStart(true)
+          setShowExtractDialog(true)
+        }
       } catch {
         stopProgressAnimation()
       }
@@ -87,16 +94,20 @@ export default function ImportPage() {
     [projectId, importNovel, analyzeNovel, startProgressAnimation, stopProgressAnimation]
   )
 
-  const handleConfirm = useCallback(async () => {
-    if (!novel) return
-    setConfirmError(null)
-    try {
-      await confirmImport(novel.id)
-      router.push(`/project/${projectId}/script`)
-    } catch (e) {
-      setConfirmError((e as Error).message)
+  const openExtractDialogManual = useCallback(() => {
+    setExtractAutoStart(false)
+    setExtractInitialChapterIds(null)
+    setShowExtractDialog(true)
+  }, [])
+
+  const handleExtractDialogOpenChange = useCallback((open: boolean) => {
+    setShowExtractDialog(open)
+    if (!open) {
+      setExtractAutoStart(false)
+      setExtractInitialChapterIds(null)
     }
-  }, [novel, confirmImport, router, projectId])
+  }, [])
+
 
   const handleExtractSuccess = useCallback(
     (stats: { characterCount: number; sceneCount: number; propCount: number }) => {
@@ -138,16 +149,12 @@ export default function ImportPage() {
             <>
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => setShowExtractDialog(true)}
+                onClick={openExtractDialogManual}
               >
                 <Sparkles className="size-4" />
                 AI 提取资产
               </Button>
-              <Button size="sm" onClick={handleConfirm}>
-                确认导入，进入剧本生成
-                <ArrowRight className="size-4" />
-              </Button>
+              
             </>
           )}
         </div>
@@ -183,7 +190,15 @@ export default function ImportPage() {
         ) : (
           <TabChapters
             chapters={chapters}
-            onAdd={(data) => addChapter(novel!.id, data)}
+            onAdd={async (data) => {
+              const { extractAssets, ...rest } = data
+              const chapter = await addChapter(novel!.id, rest)
+              if (extractAssets !== false) {
+                setExtractInitialChapterIds([chapter.id])
+                setExtractAutoStart(true)
+                setShowExtractDialog(true)
+              }
+            }}
             onUpdate={updateChapter}
             onDelete={(id) => deleteChapter(novel!.id, id)}
           />
@@ -202,11 +217,13 @@ export default function ImportPage() {
       {novel && (
         <ExtractAssetsDialog
           open={showExtractDialog}
-          onOpenChange={setShowExtractDialog}
+          onOpenChange={handleExtractDialogOpenChange}
           projectId={projectId}
           novelId={novel.id}
           chapters={chapters}
           onSuccess={handleExtractSuccess}
+          autoStartExtract={extractAutoStart}
+          initialSelectedChapterIds={extractInitialChapterIds}
         />
       )}
     </div>

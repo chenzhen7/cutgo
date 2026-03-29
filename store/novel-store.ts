@@ -25,7 +25,7 @@ interface NovelState {
 
   fetchNovel: (projectId: string) => Promise<void>
 
-  addChapter: (novelId: string, data: ChapterInput) => Promise<void>
+  addChapter: (novelId: string, data: ChapterInput) => Promise<Chapter>
   updateChapter: (chapterId: string, data: Partial<ChapterInput>) => Promise<void>
   deleteChapter: (novelId: string, chapterId: string) => Promise<void>
 
@@ -60,7 +60,9 @@ export const useNovelStore = create<NovelState>((set, get) => ({
         analysisStatus: "completed",
       })
     } catch (err) {
-      set({ analysisStatus: "error", analysisError: (err as Error).message })
+      const message = err instanceof Error ? err.message : String(err)
+      set({ analysisStatus: "error", analysisError: message })
+      throw err
     }
   },
 
@@ -93,6 +95,7 @@ export const useNovelStore = create<NovelState>((set, get) => ({
       body: data,
     })
     set({ chapters: [...get().chapters, chapter] })
+    return chapter
   },
 
   updateChapter: async (chapterId, data) => {

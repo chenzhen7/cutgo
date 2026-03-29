@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Trash2, Plus, Check, X, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
@@ -31,7 +32,7 @@ import type { Chapter } from "@/lib/types"
 
 interface TabChaptersProps {
   chapters: Chapter[]
-  onAdd: (data: { title?: string; content?: string }) => Promise<void>
+  onAdd: (data: { title?: string; content?: string; extractAssets?: boolean }) => Promise<void>
   onUpdate: (chapterId: string, data: { title?: string; content?: string }) => Promise<void>
   onDelete: (chapterId: string) => Promise<void>
 }
@@ -43,22 +44,28 @@ function AddChapterDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: { title: string; content: string }) => Promise<void>
+  onSubmit: (data: { title: string; content: string; extractAssets: boolean }) => Promise<void>
 }) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [extractAssets, setExtractAssets] = useState(true)
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) { setTitle(""); setContent("") }
+    if (!v) {
+      setTitle("")
+      setContent("")
+      setExtractAssets(true)
+    }
     onOpenChange(v)
   }
 
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
-      await onSubmit({ title: title.trim(), content: content.trim() })
+      await onSubmit({ title: title.trim(), content: content.trim(), extractAssets })
       setTitle(""); setContent("")
+      setExtractAssets(true)
       onOpenChange(false)
     } finally {
       setSubmitting(false)
@@ -98,6 +105,16 @@ function AddChapterDialog({
               rows={8}
               className="resize-y overflow-y-auto max-h-[320px]"
             />
+          </div>
+          <div className="flex items-center gap-2 rounded-md py-2.5">
+            <Checkbox
+              id="add-chapter-extract-assets"
+              checked={extractAssets}
+              onCheckedChange={(v) => setExtractAssets(v === true)}
+            />
+            <Label htmlFor="add-chapter-extract-assets" className="text-sm font-normal cursor-pointer leading-snug">
+              添加完成后提取资产（角色、场景、道具）
+            </Label>
           </div>
         </div>
         <DialogFooter>
@@ -341,7 +358,11 @@ export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChapters
           open={showAddDialog}
           onOpenChange={setShowAddDialog}
           onSubmit={async (data) => {
-            await onAdd({ title: data.title || undefined, content: data.content || undefined })
+            await onAdd({
+              title: data.title || undefined,
+              content: data.content || undefined,
+              extractAssets: data.extractAssets,
+            })
           }}
         />
       </div>
@@ -419,7 +440,11 @@ export function TabChapters({ chapters, onAdd, onUpdate, onDelete }: TabChapters
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={async (data) => {
-          await onAdd({ title: data.title || undefined, content: data.content || undefined })
+          await onAdd({
+            title: data.title || undefined,
+            content: data.content || undefined,
+            extractAssets: data.extractAssets,
+          })
         }}
       />
     </div>

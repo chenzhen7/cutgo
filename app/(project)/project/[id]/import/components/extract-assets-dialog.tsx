@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useState, useMemo, useEffect } from "react"
+import { memo, useState, useMemo, useEffect, useRef, useCallback } from "react"
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,10 @@ interface ExtractAssetsDialogProps {
   novelId: string
   chapters: Chapter[]
   onSuccess?: (stats: { characterCount: number; sceneCount: number; propCount: number }) => void
+  /** 打开对话框后自动开始 AI 提取（进入「提取中」步骤） */
+  autoStartExtract?: boolean
+  /** 预选章节；不传或为空则默认全选当前章节列表 */
+  initialSelectedChapterIds?: string[] | null
 }
 
 // ── 提取结果中每个资产的状态 ──
@@ -289,6 +293,8 @@ export function ExtractAssetsDialog({
   novelId,
   chapters,
   onSuccess,
+  autoStartExtract = false,
+  initialSelectedChapterIds = null,
 }: ExtractAssetsDialogProps) {
   // ── 步骤：select → extracting → review ──
   const [step, setStep] = useState<"select" | "extracting" | "review">("select")
@@ -316,16 +322,69 @@ export function ExtractAssetsDialog({
     [chapters]
   )
 
+  const autoExtractStartedRef = useRef(false)
+
+  const resolveSelectedIds = useCallback(() => {
+    const allIds = rows.map((r) => r.id)
+    if (initialSelectedChapterIds != null && initialSelectedChapterIds.length > 0) {
+      const filtered = initialSelectedChapterIds.filter((id) => allIds.includes(id))
+      return filtered.length > 0 ? filtered : allIds
+    }
+    return allIds
+  }, [rows, initialSelectedChapterIds])
+
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      autoExtractStartedRef.current = false
+      return
+    }
     setStep("select")
-    setSelectedChapterIds(rows.map((r) => r.id))
+    setSelectedChapterIds(resolveSelectedIds())
     setError(null)
     setExtractedCharacters([])
     setExtractedScenes([])
     setExtractedProps([])
     setExistingNames({ characters: [], scenes: [], props: [] })
-  }, [open, rows])
+  }, [open, rows, resolveSelectedIds])
+
+  const runExtract = useCallback(
+    async (orderedIds: string[]) => {
+      if (!orderedIds.length) return
+      setStep("extracting")
+      setError(null)
+      try {
+        const data = await apiFetch<{
+          characters: ExtractedCharacter[]
+          scenes: ExtractedScene[]
+          props: ExtractedProp[]
+          existingNames: { characters: string[]; scenes: string[]; props: string[] }
+        }>(`/api/novels/${novelId}/extract-assets`, {
+          method: "POST",
+          body: { chapterIds: orderedIds },
+        })
+        setExtractedCharacters(data.characters ?? [])
+        setExtractedScenes(data.scenes ?? [])
+        setExtractedProps(data.props ?? [])
+        setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
+        setStep("review")
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "请求失败")
+        setStep("select")
+      }
+    },
+    [novelId]
+  )
+
+  useEffect(() => {
+    if (!open || !autoStartExtract || autoExtractStartedRef.current) return
+    const ids = resolveSelectedIds()
+    if (ids.length === 0) return
+    const idSet = new Set(ids)
+    const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
+    if (orderedIds.length === 0) return
+    autoExtractStartedRef.current = true
+    void runExtract(orderedIds)
+  }, [open, autoStartExtract, rows, resolveSelectedIds, runExtract])
 
   const allSelected = useMemo(() => {
     if (!rows.length) return false
@@ -344,29 +403,9 @@ export function ExtractAssetsDialog({
 
   const handleExtract = async () => {
     if (!selectedChapterIds.length) return
-    setStep("extracting")
-    setError(null)
-    try {
-      const idSet = new Set(selectedChapterIds)
-      const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
-      const data = await apiFetch<{
-        characters: ExtractedCharacter[]
-        scenes: ExtractedScene[]
-        props: ExtractedProp[]
-        existingNames: { characters: string[]; scenes: string[]; props: string[] }
-      }>(`/api/novels/${novelId}/extract-assets`, {
-        method: "POST",
-        body: { chapterIds: orderedIds },
-      })
-      setExtractedCharacters(data.characters ?? [])
-      setExtractedScenes(data.scenes ?? [])
-      setExtractedProps(data.props ?? [])
-      setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
-      setStep("review")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "请求失败")
-      setStep("select")
-    }
+    const idSet = new Set(selectedChapterIds)
+    const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
+    await runExtract(orderedIds)
   }
 
   // 统计（单次遍历，减少渲染时重复 filter）
