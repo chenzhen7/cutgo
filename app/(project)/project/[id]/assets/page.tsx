@@ -11,7 +11,6 @@ import {
   Search,
   Loader2,
   Sparkles,
-  Pencil,
   Trash2,
   Lock,
   Unlock,
@@ -19,6 +18,7 @@ import {
   Image,
   CheckSquare,
   Square,
+  Upload,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -861,7 +861,11 @@ const CharacterList = memo(function CharacterList({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
       {filtered.map((char) => (
-        <Card key={char.id} className="group relative">
+        <Card
+          key={char.id}
+          className="group relative cursor-pointer"
+          onClick={() => onEdit(char)}
+        >
           <CardContent className="pt-4">
             <div className="flex items-start gap-3">
               <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -869,7 +873,10 @@ const CharacterList = memo(function CharacterList({
                   <button
                     type="button"
                     className="h-14 w-14 rounded-lg"
-                    onClick={() => onPreview(char.imageUrl!, char.name)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onPreview(char.imageUrl!, char.name)
+                    }}
                   >
                     <img
                       src={char.imageUrl}
@@ -905,7 +912,10 @@ const CharacterList = memo(function CharacterList({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => onToggleLock(char.id, !char.locked)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleLock(char.id, !char.locked)
+                }}
               >
                 {char.locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
               </Button>
@@ -913,15 +923,10 @@ const CharacterList = memo(function CharacterList({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => onEdit(char)}
-              >
-                <Pencil className="size-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onDelete(char.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(char.id)
+                }}
               >
                 <Trash2 className="size-3" />
               </Button>
@@ -960,14 +965,21 @@ const SceneList = memo(function SceneList({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
       {filtered.map((scene) => (
-        <Card key={scene.id} className="group relative">
+        <Card
+          key={scene.id}
+          className="group relative cursor-pointer"
+          onClick={() => onEdit(scene)}
+        >
           <CardContent className="pt-4">
             <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3">
               {scene.imageUrl ? (
                 <button
                   type="button"
                   className="h-24 w-full rounded-lg"
-                  onClick={() => onPreview(scene.imageUrl!, scene.name)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onPreview(scene.imageUrl!, scene.name)
+                  }}
                 >
                   <img
                     src={scene.imageUrl}
@@ -997,15 +1009,10 @@ const SceneList = memo(function SceneList({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => onEdit(scene)}
-              >
-                <Pencil className="size-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onDelete(scene.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(scene.id)
+                }}
               >
                 <Trash2 className="size-3" />
               </Button>
@@ -1044,7 +1051,11 @@ const PropList = memo(function PropList({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
       {filtered.map((prop) => (
-        <Card key={prop.id} className="group relative">
+        <Card
+          key={prop.id}
+          className="group relative cursor-pointer"
+          onClick={() => onEdit(prop)}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -1052,7 +1063,10 @@ const PropList = memo(function PropList({
                   <button
                     type="button"
                     className="h-12 w-12 rounded-lg"
-                    onClick={() => onPreview(prop.imageUrl!, prop.name)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onPreview(prop.imageUrl!, prop.name)
+                    }}
                   >
                     <img
                       src={prop.imageUrl}
@@ -1080,15 +1094,10 @@ const PropList = memo(function PropList({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => onEdit(prop)}
-              >
-                <Pencil className="size-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onDelete(prop.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(prop.id)
+                }}
               >
                 <Trash2 className="size-3" />
               </Button>
@@ -1101,6 +1110,71 @@ const PropList = memo(function PropList({
 })
 
 // ── Form Dialogs ──
+
+function ImagePreviewUploader({
+  imageUrl,
+  onChange,
+  title,
+}: {
+  imageUrl: string
+  onChange: (value: string) => void
+  title: string
+}) {
+  const [readingFile, setReadingFile] = useState(false)
+
+  const handleFileChange = async (file: File | undefined) => {
+    if (!file) return
+    setReadingFile(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "")
+        reader.onerror = () => reject(new Error("读取图片失败，请重试"))
+        reader.readAsDataURL(file)
+      })
+      if (!dataUrl) throw new Error("读取图片失败，请重试")
+      onChange(dataUrl)
+    } finally {
+      setReadingFile(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
+        {imageUrl ? (
+          <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="text-xs text-muted-foreground text-center px-4">暂无图片</div>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${title}-upload`} className="inline-flex">
+          <Button type="button" variant="outline" size="sm" asChild disabled={readingFile}>
+            <span className="cursor-pointer">
+              {readingFile ? (
+                <Loader2 className="mr-2 size-3.5 animate-spin" />
+              ) : (
+                <Upload className="mr-2 size-3.5" />
+              )}
+              上传本地图片
+            </span>
+          </Button>
+        </Label>
+        <Input
+          id={`${title}-upload`}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            void handleFileChange(e.target.files?.[0])
+            e.currentTarget.value = ""
+          }}
+        />
+      </div>
+    </div>
+  )
+}
 
 function CharacterFormDialog({
   open,
@@ -1126,6 +1200,7 @@ function CharacterFormDialog({
   const [role, setRole] = useState<"protagonist" | "supporting" | "extra">("supporting")
   const [gender, setGender] = useState("")
   const [prompt, setPrompt] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -1135,11 +1210,13 @@ function CharacterFormDialog({
       setRole(character.role as "protagonist" | "supporting" | "extra")
       setGender(normalizeGender(character.gender))
       setPrompt(character.prompt || "")
+      setImageUrl(character.imageUrl || "")
     } else {
       setName("")
       setRole("supporting")
       setGender("")
       setPrompt("")
+      setImageUrl("")
     }
     setError("")
   }, [character, open])
@@ -1154,6 +1231,7 @@ function CharacterFormDialog({
         role,
         gender: gender || undefined,
         prompt: prompt || undefined,
+        imageUrl: imageUrl || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -1164,42 +1242,49 @@ function CharacterFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{character ? "编辑角色" : "添加角色"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-1">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>角色名 *</Label>
-              <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="角色名称" />
+        <div className="grid gap-5 py-1 sm:grid-cols-[220px_minmax(0,1fr)]">
+          <ImagePreviewUploader
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            title="角色图片"
+          />
+          <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>角色名 *</Label>
+                <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="角色名称" />
+              </div>
+              <div className="grid gap-2">
+                <Label>角色类型</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="protagonist">主角</SelectItem>
+                    <SelectItem value="supporting">配角</SelectItem>
+                    <SelectItem value="extra">群演</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid gap-2">
-              <Label>角色类型</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label>性别</Label>
+              <Select value={gender} onValueChange={setGender}>
+                <SelectTrigger><SelectValue placeholder="选择性别" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="protagonist">主角</SelectItem>
-                  <SelectItem value="supporting">配角</SelectItem>
-                  <SelectItem value="extra">群演</SelectItem>
+                  <SelectItem value="male">男</SelectItem>
+                  <SelectItem value="female">女</SelectItem>
+                  <SelectItem value="other">其他</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>性别</Label>
-            <Select value={gender} onValueChange={setGender}>
-              <SelectTrigger><SelectValue placeholder="选择性别" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">男</SelectItem>
-                <SelectItem value="female">女</SelectItem>
-                <SelectItem value="other">其他</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>提示词</Label>
-            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="角色简介（可包含外貌特征、身份背景等）" rows={4} />
+            <div className="grid gap-2">
+              <Label>提示词</Label>
+              <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="角色简介（可包含外貌特征、身份背景等）" rows={4} />
+            </div>
           </div>
         </div>
         {error && (
@@ -1230,6 +1315,7 @@ function SceneFormDialog({
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
   const [tags, setTags] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -1238,10 +1324,12 @@ function SceneFormDialog({
       setName(scene.name)
       setPrompt(scene.prompt || "")
       setTags(scene.tags || "")
+      setImageUrl(scene.imageUrl || "")
     } else {
       setName("")
       setPrompt("")
       setTags("")
+      setImageUrl("")
     }
     setError("")
   }, [scene, open])
@@ -1255,6 +1343,7 @@ function SceneFormDialog({
         name: name.trim(),
         prompt: prompt || undefined,
         tags: tags || undefined,
+        imageUrl: imageUrl || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -1265,22 +1354,29 @@ function SceneFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{scene ? "编辑场景" : "添加场景"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-1">
-          <div className="grid gap-2">
-            <Label>场景名称 *</Label>
-            <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 总裁办公室" />
-          </div>
-          <div className="grid gap-2">
-            <Label>提示词</Label>
-            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="场景生图提示词" rows={3} />
-          </div>
-          <div className="grid gap-2">
-            <Label>标签</Label>
-            <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="用逗号分隔，如 室内,现代,豪华" />
+        <div className="grid gap-5 py-1 sm:grid-cols-[220px_minmax(0,1fr)]">
+          <ImagePreviewUploader
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            title="场景图片"
+          />
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label>场景名称 *</Label>
+              <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 总裁办公室" />
+            </div>
+            <div className="grid gap-2">
+              <Label>提示词</Label>
+              <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="场景生图提示词" rows={3} />
+            </div>
+            <div className="grid gap-2">
+              <Label>标签</Label>
+              <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="用逗号分隔，如 室内,现代,豪华" />
+            </div>
           </div>
         </div>
         {error && (
@@ -1310,6 +1406,7 @@ function PropFormDialog({
 }) {
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -1317,9 +1414,11 @@ function PropFormDialog({
     if (prop) {
       setName(prop.name)
       setPrompt(prop.prompt || "")
+      setImageUrl(prop.imageUrl || "")
     } else {
       setName("")
       setPrompt("")
+      setImageUrl("")
     }
     setError("")
   }, [prop, open])
@@ -1332,6 +1431,7 @@ function PropFormDialog({
       await onSave({
         name: name.trim(),
         prompt: prompt || undefined,
+        imageUrl: imageUrl || undefined,
       })
     } catch (err) {
       setError((err as Error).message)
@@ -1342,18 +1442,25 @@ function PropFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{prop ? "编辑道具" : "添加道具"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-1">
-          <div className="grid gap-2">
-            <Label>道具名称 *</Label>
-            <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 合同文件" />
-          </div>
-          <div className="grid gap-2">
-            <Label>提示词</Label>
-            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="道具生图提示词" rows={3} />
+        <div className="grid gap-5 py-1 sm:grid-cols-[220px_minmax(0,1fr)]">
+          <ImagePreviewUploader
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            title="道具图片"
+          />
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label>道具名称 *</Label>
+              <Input value={name} onChange={(e) => { setName(e.target.value); setError("") }} placeholder="如 合同文件" />
+            </div>
+            <div className="grid gap-2">
+              <Label>提示词</Label>
+              <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="道具生图提示词" rows={3} />
+            </div>
           </div>
         </div>
         {error && (
