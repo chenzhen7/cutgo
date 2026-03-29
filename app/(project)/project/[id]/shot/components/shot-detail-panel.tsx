@@ -41,7 +41,7 @@ import {
   Maximize2,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS, VIDEO_DURATION_OPTIONS, VIDEO_MOTION_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
 
@@ -63,11 +63,6 @@ interface ShotDetailPanelProps {
   onPrev: (() => void) | null
   onNext: (() => void) | null
   onClose: () => void
-}
-
-function parseJsonArray(value: string | null): string[] {
-  if (!value) return []
-  try { return JSON.parse(value) } catch { return [] }
 }
 
 export function ShotDetailPanel({

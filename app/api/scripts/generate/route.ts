@@ -7,6 +7,7 @@ import {
   createRunningAiTask,
   markAiTaskFailed,
   markAiTaskSucceeded,
+  toErrorInfo,
 } from "@/lib/ai-task-service"
 import {
   buildEpisodeScriptSystemPrompt,
@@ -178,15 +179,10 @@ export const POST = withError(async (request: NextRequest) => {
       where: { projectId },
       orderBy: { index: "asc" },
     })
-    const error = err as { code?: string; status?: number; message?: string }
-    const errorCode = typeof error.code === "string" ? error.code : API_ERRORS.INTERNAL.code
-    const errorStatus = typeof error.status === "number" ? error.status : API_ERRORS.INTERNAL.status
-    const errorMessage =
-      typeof error.message === "string" && error.message.trim().length > 0
-        ? error.message
-        : API_ERRORS.INTERNAL.defaultMessage
+    const errorInfo = toErrorInfo(err)
+    const errorStatus = (err as { status?: number }).status || API_ERRORS.INTERNAL.status
     return NextResponse.json(
-      { error: errorCode, message: errorMessage, episodes: allEpisodes },
+      { error: errorInfo.code, message: errorInfo.message, episodes: allEpisodes },
       { status: errorStatus }
     )
   }

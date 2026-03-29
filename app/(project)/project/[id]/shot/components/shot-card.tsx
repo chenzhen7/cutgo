@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useCallback, useMemo } from "react"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
   Tooltip,
@@ -13,11 +13,6 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { IMAGE_TYPE_OPTIONS } from "@/lib/types"
 import type { Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
-
-function parseJsonArray(value: string | null): string[] {
-  if (!value) return []
-  try { return JSON.parse(value) } catch { return [] }
-}
 
 export type ShotCardLayout = "list" | "grid"
 

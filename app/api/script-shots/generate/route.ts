@@ -7,8 +7,10 @@ import {
   createRunningAiTask,
   markAiTaskFailed,
   markAiTaskSucceeded,
+  toErrorInfo,
 } from "@/lib/ai-task-service"
 import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/prompts"
+import { parseJsonArray } from "@/lib/utils"
 
 interface AIScriptShotResult {
   shots: Array<{
@@ -21,16 +23,6 @@ interface AIScriptShotResult {
 
 const episodeWithShotsInclude = {
   shots: { orderBy: { index: "asc" as const } },
-}
-
-function parseJsonArray(val: string | null | undefined): string[] {
-  if (!val) return []
-  try {
-    const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
 }
 
 function toScriptShotPlan(episode: {
@@ -302,17 +294,12 @@ export const POST = withError(async (request: NextRequest) => {
       include: episodeWithShotsInclude,
     })
     const allScriptShotPlans = episodesWithShots.map(toScriptShotPlan)
-    const error = err as { code?: string; status?: number; message?: string }
-    const errorCode = typeof error.code === "string" ? error.code : API_ERRORS.INTERNAL.code
-    const errorStatus = typeof error.status === "number" ? error.status : API_ERRORS.INTERNAL.status
-    const errorMessage =
-      typeof error.message === "string" && error.message.trim().length > 0
-        ? error.message
-        : API_ERRORS.INTERNAL.defaultMessage
+    const errorInfo = toErrorInfo(err)
+    const errorStatus = (err as { status?: number }).status || API_ERRORS.INTERNAL.status
     return NextResponse.json(
       {
-        error: errorCode,
-        message: errorMessage,
+        error: errorInfo.code,
+        message: errorInfo.message,
         scriptShotPlans: allScriptShotPlans,
       },
       { status: errorStatus }

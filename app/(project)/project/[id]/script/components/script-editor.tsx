@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Check, X, Pencil, MapPin, User, Package, ListOrdered, BookOpen, School, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
 import type {
   AssetCharacter,
   AssetProp,
@@ -27,16 +27,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-
-function parseJsonArray(val: string | null | undefined): string[] {
-  if (!val) return []
-  try {
-    const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
 
 interface ScriptEditorProps {
   episode: Episode

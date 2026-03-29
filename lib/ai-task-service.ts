@@ -12,7 +12,7 @@ type CreateAiTaskInput = {
   maxRetries?: number
 }
 
-function toErrorInfo(error: unknown): { code: string; message: string } {
+export function toErrorInfo(error: unknown): { code: string; message: string } {
   const e = error as { code?: string; message?: string }
   return {
     code: typeof e?.code === "string" ? e.code : API_ERRORS.INTERNAL.code,
