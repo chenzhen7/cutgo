@@ -104,7 +104,7 @@ export default function SettingsPage() {
 
   // 测试连接状态
   const [testingId, setTestingId] = useState<string | null>(null)
-  const [testResult, setTestResult] = useState<Record<string, { ok: boolean; msg: string }>>({})
+  const [testResult, setTestResult] = useState<Record<string, { ok: boolean; msg: string; imageUrl?: string }>>({})
 
   // 切换激活中状态
   const [switchingId, setSwitchingId] = useState<string | null>(null)
@@ -232,7 +232,7 @@ export default function SettingsPage() {
     setTestingId(cfg.id)
     setTestResult((prev) => ({ ...prev, [cfg.id]: { ok: false, msg: "测试中..." } }))
     try {
-      const data = await apiFetch<{ success: boolean; message: string }>(
+      const data = await apiFetch<{ success: boolean; message: string; imageUrl?: string }>(
         "/api/settings/ai-configs/test",
         {
           method: "POST",
@@ -245,7 +245,10 @@ export default function SettingsPage() {
           },
         }
       )
-      setTestResult((prev) => ({ ...prev, [cfg.id]: { ok: true, msg: data.message } }))
+      setTestResult((prev) => ({
+        ...prev,
+        [cfg.id]: { ok: true, msg: data.message, imageUrl: data.imageUrl },
+      }))
       toast.success(`「${cfg.name}」连接成功`)
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "连接失败"
@@ -366,6 +369,16 @@ export default function SettingsPage() {
                                 )}
                                 {result.msg}
                               </p>
+                            )}
+                            {result?.imageUrl && (
+                              <div className="mt-2 h-24 w-24 overflow-hidden rounded border bg-muted shadow-sm">
+                                <img
+                                  src={result.imageUrl}
+                                  alt="Test result"
+                                  className="h-full w-full cursor-zoom-in object-cover transition-transform hover:scale-105"
+                                  onClick={() => window.open(result.imageUrl, "_blank")}
+                                />
+                              </div>
                             )}
                           </div>
                         </div>

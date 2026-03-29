@@ -41,11 +41,11 @@ export class DoubaoImageProvider implements ImageProvider {
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
     const prompt = this.buildPrompt(options.prompt, options.negativePrompt)
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/images/generations`
+    const size = options.size 
 
     console.log("[Doubao Image] request", {
       url,
       model: this.config.model,
-      size: `${options.width}x${options.height}`,
       promptPreview:
         prompt.length > 200 ? `${prompt.slice(0, 200)}…` : prompt,
     })
@@ -59,7 +59,7 @@ export class DoubaoImageProvider implements ImageProvider {
       body: JSON.stringify({
         model: this.config.model,
         prompt,
-        size: `${options.width}x${options.height}`,
+        size,
         response_format: "url",
       }),
       signal: AbortSignal.timeout(300_000),

@@ -157,7 +157,7 @@ async function testImage({
       throwCutGoError("VALIDATION", "图片生成成功但未返回有效结果")
     }
 
-    return NextResponse.json({ success: true, message: "连接成功" })
+    return NextResponse.json({ success: true, message: "连接成功", imageUrl: first.url })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (message === "timeout") {
