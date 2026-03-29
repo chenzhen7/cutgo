@@ -42,10 +42,10 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const { prompt: rawPrompt, negativePrompt, size = null, images } = options
+    const { prompt: rawPrompt, negativePrompt, size = null, referenceImages } = options
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
     const url = `${this.baseUrl}/images/generations`
-    const imageInput = this.resolveImageInput(images)
+    const imageInput = this.resolveImageInput(referenceImages)
 
     console.log("[Doubao Image] request", {
       url,
@@ -111,8 +111,8 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   /** 参考图：URL 或 data:image/...;base64,...；单张 string，多张 string[] */
-  private resolveImageInput(images?: string[]): DoubaoImageInput {
-    const validImages = (images || []).map((item) => item.trim()).filter(Boolean)
+  private resolveImageInput(referenceImages?: string[]): DoubaoImageInput {
+    const validImages = (referenceImages || []).map((item) => item.trim()).filter(Boolean)
     if (validImages.length === 0) return undefined
     return validImages.length === 1 ? validImages[0] : validImages
   }
