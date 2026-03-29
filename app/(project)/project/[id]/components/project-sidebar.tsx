@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams, usePathname } from "next/navigation"
-import { ArrowLeft, Film, FolderOpen, Palette } from "lucide-react"
+import { ArrowLeft, Film, FolderOpen, ListTodo, Palette } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,6 +27,7 @@ import * as React from "react";
 const managementLinks = [
   { key: "style", label: "视觉风格", icon: Palette },
   { key: "assets", label: "资产库", icon: FolderOpen },
+  { key: "tasks", label: "任务中心", icon: ListTodo },
 ]
 
 export function ProjectSidebar({

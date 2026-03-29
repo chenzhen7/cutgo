@@ -464,6 +464,56 @@ export interface VideoComposition {
   updatedAt: string
 }
 
+export type AiTaskType =
+  | "llm_outline"
+  | "llm_extract_assets"
+  | "llm_script"
+  | "llm_shot"
+  | "image_generate"
+  | "shot_video_generate"
+  | "video_generate"
+  | "tts_generate"
+
+export type AiTaskStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled"
+
+export interface AiTask {
+  id: string
+  projectId: string
+  episodeId: string | null
+  shotId: string | null
+  videoCompositionId: string | null
+  taskType: AiTaskType
+  status: AiTaskStatus
+  model: string | null
+  configSnapshot: string | null
+  inputPayload: string | null
+  outputPayload: string | null
+  progress: number
+  currentStep: string | null
+  errorCode: string | null
+  errorMessage: string | null
+  retryCount: number
+  maxRetries: number
+  startedAt: string | null
+  finishedAt: string | null
+  createdAt: string
+  updatedAt: string
+  project?: { id: string; name: string }
+  episode?: { id: string; index: number; title: string } | null
+  shot?: { id: string; index: number } | null
+  videoComposition?: { id: string; episodeId: string; status: string; progress: number } | null
+}
+
+export interface AiTaskListResponse {
+  items: AiTask[]
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+}
+
 export interface TtsVoice {
   id: string
   name: string
