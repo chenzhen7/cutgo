@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
+import { toast } from "sonner"
 import {
   FolderOpen,
   Users,
@@ -25,7 +26,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -514,7 +514,6 @@ export default function AssetsPage() {
         characters={characters}
         scenes={scenes}
         props={props}
-        onComplete={() => void fetchAssets(projectId)}
       />
 
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
@@ -540,14 +539,12 @@ function GenerateAssetImagesDialog({
   characters,
   scenes,
   props,
-  onComplete,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   characters: AssetCharacter[]
   scenes: AssetScene[]
   props: AssetProp[]
-  onComplete: () => void
 }) {
   const buildItems = useCallback((): GenerateItem[] => {
     const charItems: GenerateItem[] = characters.map((c) => ({
@@ -575,24 +572,12 @@ function GenerateAssetImagesDialog({
   }, [characters, scenes, props])
 
   const [items, setItems] = useState<GenerateItem[]>([])
-  const [generating, setGenerating] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [currentName, setCurrentName] = useState("")
-  const [doneCount, setDoneCount] = useState(0)
-  const [totalCount, setTotalCount] = useState(0)
-  const [finished, setFinished] = useState(false)
-  const [errorCount, setErrorCount] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (open) {
       setItems(buildItems())
-      setGenerating(false)
-      setProgress(0)
-      setCurrentName("")
-      setDoneCount(0)
-      setTotalCount(0)
-      setFinished(false)
-      setErrorCount(0)
+      setSubmitting(false)
     }
   }, [open, buildItems])
 
@@ -615,32 +600,28 @@ function GenerateAssetImagesDialog({
   const handleGenerate = async () => {
     const toGenerate = items.filter((i) => i.selected)
     if (toGenerate.length === 0) return
-    setGenerating(true)
-    setTotalCount(toGenerate.length)
-    setDoneCount(0)
-    setErrorCount(0)
-    setFinished(false)
+    setSubmitting(true)
 
-    let errors = 0
-    for (let idx = 0; idx < toGenerate.length; idx++) {
-      const item = toGenerate[idx]
-      setCurrentName(item.name)
-      setProgress(Math.round((idx / toGenerate.length) * 100))
-      try {
-        await apiFetch(`/api/assets/generate-images`, {
+    const results = await Promise.allSettled(
+      toGenerate.map((item) =>
+        apiFetch<{ accepted: boolean; taskId: string }>(`/api/assets/generate-images`, {
           method: "POST",
           body: { type: item.type, id: item.id },
         })
-      } catch {
-        errors++
-      }
-      setDoneCount(idx + 1)
+      )
+    )
+
+    const failedCount = results.filter((r) => r.status === "rejected").length
+    const successCount = toGenerate.length - failedCount
+
+    if (failedCount > 0) {
+      toast.warning(`已提交 ${successCount} 个后台任务，${failedCount} 个提交失败`)
+    } else {
+      toast.success(`已提交 ${successCount} 个后台任务，请到任务中心查看进度`)
     }
-    setProgress(100)
-    setErrorCount(errors)
-    setFinished(true)
-    setGenerating(false)
-    onComplete()
+
+    onOpenChange(false)
+    setSubmitting(false)
   }
 
   const typeLabel: Record<AssetGenerateType, string> = {
@@ -659,7 +640,7 @@ function GenerateAssetImagesDialog({
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        if (!generating) onOpenChange(v)
+        if (!submitting) onOpenChange(v)
       }}
     >
       <DialogContent className="sm:max-w-lg">
@@ -670,113 +651,78 @@ function GenerateAssetImagesDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {!generating && !finished && (
-          <>
-            <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
-              <span>共 {items.length} 项资产，已勾选 {selectedItems.length} 项</span>
-              <button
-                onClick={toggleAll}
-                className="flex items-center gap-1 text-xs hover:text-foreground transition-colors"
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
+          <span>共 {items.length} 项资产，已勾选 {selectedItems.length} 项</span>
+          <button
+            onClick={toggleAll}
+            className="flex items-center gap-1 text-xs hover:text-foreground transition-colors"
+          >
+            {allSelected ? (
+              <CheckSquare className="size-3.5" />
+            ) : (
+              <Square className="size-3.5" />
+            )}
+            {allSelected ? "取消全选" : "全选"}
+          </button>
+        </div>
+        <ScrollArea className="h-72 rounded-md border">
+          <div className="p-2 space-y-0.5">
+            {items.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                暂无资产
+              </p>
+            )}
+            {items.map((item) => (
+              <label
+                key={item.id}
+                className={cn(
+                  "flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-muted/60 transition-colors",
+                  item.selected && "bg-muted/40"
+                )}
               >
-                {allSelected ? (
-                  <CheckSquare className="size-3.5" />
-                ) : (
-                  <Square className="size-3.5" />
-                )}
-                {allSelected ? "取消全选" : "全选"}
-              </button>
-            </div>
-            <ScrollArea className="h-72 rounded-md border">
-              <div className="p-2 space-y-0.5">
-                {items.length === 0 && (
-                  <p className="text-center text-sm text-muted-foreground py-8">
-                    暂无资产
-                  </p>
-                )}
-                {items.map((item) => (
-                  <label
-                    key={item.id}
-                    className={cn(
-                      "flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-muted/60 transition-colors",
-                      item.selected && "bg-muted/40"
-                    )}
-                  >
-                    <Checkbox
-                      checked={item.selected}
-                      onCheckedChange={() => toggleItem(item.id)}
-                    />
-                    <span className="flex items-center gap-1.5 flex-1 min-w-0">
-                      {typeIcon[item.type]}
-                      <span className="text-sm truncate">{item.name}</span>
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
-                        {typeLabel[item.type]}
-                      </Badge>
-                    </span>
-                    {item.hasImage && (
-                      <span className="text-[10px] text-muted-foreground shrink-0">已有图片</span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            </ScrollArea>
-          </>
-        )}
-
-        {generating && (
-          <div className="space-y-4 py-2">
-            <div className="text-sm text-center text-muted-foreground">
-              正在生成：<span className="text-foreground font-medium">{currentName}</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-            <p className="text-xs text-center text-muted-foreground">
-              {doneCount} / {totalCount}
-            </p>
-          </div>
-        )}
-
-        {finished && (
-          <div className="space-y-3 py-2">
-            <Progress value={100} className="h-2" />
-            <p className="text-sm text-center">
-              {errorCount === 0 ? (
-                <span className="text-green-600 dark:text-green-400">
-                  全部完成！共生成 {doneCount} 张图片
+                <Checkbox
+                  checked={item.selected}
+                  onCheckedChange={() => toggleItem(item.id)}
+                />
+                <span className="flex items-center gap-1.5 flex-1 min-w-0">
+                  {typeIcon[item.type]}
+                  <span className="text-sm truncate">{item.name}</span>
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                    {typeLabel[item.type]}
+                  </Badge>
                 </span>
-              ) : (
-                <span className="text-muted-foreground">
-                  完成 {doneCount - errorCount} 张，{errorCount} 张失败
-                </span>
-              )}
-            </p>
+                {item.hasImage && (
+                  <span className="text-[10px] text-muted-foreground shrink-0">已有图片</span>
+                )}
+              </label>
+            ))}
           </div>
-        )}
+        </ScrollArea>
 
         <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={generating}
+            disabled={submitting}
           >
-            {finished ? "关闭" : "取消"}
+            取消
           </Button>
-          {!finished && (
-            <Button
-              onClick={() => void handleGenerate()}
-              disabled={generating || noneSelected}
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  生成中…
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="size-4" />
-                  生成 {selectedItems.length} 张图片
-                </>
-              )}
-            </Button>
-          )}
+          <Button
+            onClick={() => void handleGenerate()}
+            disabled={submitting || noneSelected}
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                提交中…
+              </>
+            ) : (
+              <>
+                <ImageIcon className="size-4" />
+                后台生成 {selectedItems.length} 张图片
+              </>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
