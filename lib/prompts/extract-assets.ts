@@ -25,6 +25,7 @@ export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业
 - 身份/职业
 - 辨识特征（伤疤、饰品、武器等）
 - 着装描述
+- 场景
 不要照抄原文，要转化为视觉语言，避免抽象描述（如“很强大”要转为视觉表达）
 
 ## 2. 场景（scenes）
