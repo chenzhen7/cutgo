@@ -6,6 +6,7 @@ import {
   markAiTaskFailed,
   markAiTaskSucceeded,
 } from "@/lib/ai-task-service"
+import { getImageProvider } from "@/lib/ai/image"
 
 interface GenerateImageRequest {
   shotId: string
@@ -19,68 +20,15 @@ interface GenerateImageRequest {
   stylePreset?: string
 }
 
-function makePlaceholderUrl(
-  prompt: string,
-  width: number,
-  height: number,
-  index?: number
-): string {
-  const label = encodeURIComponent(
-    (index != null ? `#${index + 1} ` : "") +
-    prompt.slice(0, 30).replace(/[^\w\s]/g, "")
-  )
-  const colors = ["264653", "2a9d8f", "e9c46a", "f4a261", "e76f51", "606c38"]
-  const bg = colors[Math.floor(Math.random() * colors.length)]
-  return `https://placehold.co/${width}x${height}/${bg}/white?text=${label}`
-}
-
-// --- Placeholder generators (replace with real AI service) ---
-
-async function generateKeyframe(
-  prompt: string,
-  _negativePrompt?: string,
-  aspectRatio?: string,
-  _stylePreset?: string
-): Promise<string> {
-  // TODO: Replace with real AI image generation (DALL-E, Flux, ComfyUI, etc.)
-  const [w, h] = aspectRatio === "16:9" ? [768, 432] : [432, 768]
-  await new Promise((r) => setTimeout(r, 800))
-  return makePlaceholderUrl(prompt, w, h)
-}
-
-async function generateFirstLast(
-  prompt: string,
-  promptEnd: string,
-  _negativePrompt?: string,
-  aspectRatio?: string,
-  _stylePreset?: string
-): Promise<[string, string]> {
-  // TODO: Replace with real AI image generation
-  const [w, h] = aspectRatio === "16:9" ? [768, 432] : [432, 768]
-  await new Promise((r) => setTimeout(r, 1200))
-  return [
-    makePlaceholderUrl("首帧 " + prompt, w, h, 0),
-    makePlaceholderUrl("尾帧 " + promptEnd, w, h, 1),
-  ]
-}
-
-async function generateMultiGrid(
-  gridPrompts: string[],
-  _gridLayout: string,
-  _negativePrompt?: string,
-  aspectRatio?: string,
-  _stylePreset?: string
-): Promise<string> {
-  // TODO: Replace with real AI image generation + grid stitching
-  const [w, h] = aspectRatio === "16:9" ? [768, 432] : [432, 768]
-  await new Promise((r) => setTimeout(r, 1500))
-  const summary = gridPrompts.map((p, i) => `${i + 1}:${p.slice(0, 12)}`).join("|")
-  return makePlaceholderUrl(summary, w, h)
+function resolveSize(aspectRatio?: string): { width: number; height: number } {
+  return aspectRatio === "16:9"
+    ? { width: 768, height: 432 }
+    : { width: 432, height: 768 }
 }
 
 export async function POST(request: NextRequest) {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, gridLayout, negativePrompt, aspectRatio, stylePreset } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio } = body
 
   if (!shotId || !prompt) {
     return NextResponse.json({ error: "shotId and prompt are required" }, { status: 400 })
@@ -90,12 +38,12 @@ export async function POST(request: NextRequest) {
     where: { id: shotId },
     include: {
       episode: {
-        select: { 
-          id: true, 
-          projectId: true, 
-          index: true, 
+        select: {
+          id: true,
+          projectId: true,
+          index: true,
           title: true,
-          project: { select: { name: true } }
+          project: { select: { name: true } },
         },
       },
     },
@@ -113,10 +61,13 @@ export async function POST(request: NextRequest) {
   })
 
   try {
+    const provider = await getImageProvider()
     const type = imageType || "keyframe"
+    const { width, height } = resolveSize(aspectRatio)
 
     if (type === "keyframe") {
-      const imageUrl = await generateKeyframe(prompt, negativePrompt, aspectRatio, stylePreset)
+      const result = await provider.generate({ prompt, negativePrompt, width, height })
+      const imageUrl = Array.isArray(result) ? result[0].url : result.url
       const updated = await prisma.shot.update({
         where: { id: shotId },
         data: { imageUrl, imageType: "keyframe", imageUrls: null },
@@ -131,7 +82,12 @@ export async function POST(request: NextRequest) {
         await markAiTaskFailed(task.id, error)
         return NextResponse.json({ error: "promptEnd is required for first_last type" }, { status: 400 })
       }
-      const [firstUrl, lastUrl] = await generateFirstLast(prompt, promptEnd, negativePrompt, aspectRatio, stylePreset)
+      const [r1, r2] = await Promise.all([
+        provider.generate({ prompt, negativePrompt, width, height }),
+        provider.generate({ prompt: promptEnd, negativePrompt, width, height }),
+      ])
+      const firstUrl = Array.isArray(r1) ? r1[0].url : r1.url
+      const lastUrl  = Array.isArray(r2) ? r2[0].url : r2.url
       const imageUrls = JSON.stringify([firstUrl, lastUrl])
       const updated = await prisma.shot.update({
         where: { id: shotId },
@@ -142,24 +98,26 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === "multi_grid") {
-      if (!gridPrompts?.length || !gridLayout) {
-        const error = { code: API_ERRORS.VALIDATION.code, message: "gridPrompts and gridLayout are required for multi_grid type" }
+      if (!gridPrompts?.length) {
+        const error = { code: API_ERRORS.VALIDATION.code, message: "gridPrompts are required for multi_grid type" }
         await markAiTaskFailed(task.id, error)
-        return NextResponse.json({ error: "gridPrompts and gridLayout are required for multi_grid type" }, { status: 400 })
+        return NextResponse.json({ error: "gridPrompts are required for multi_grid type" }, { status: 400 })
       }
-      const imageUrl = await generateMultiGrid(gridPrompts, gridLayout, negativePrompt, aspectRatio, stylePreset)
+      const results = await Promise.all(
+        gridPrompts.map((p) => provider.generate({ prompt: p, negativePrompt, width, height }))
+      )
+      const urls = results.map((r) => (Array.isArray(r) ? r[0].url : r.url))
+      const imageUrl = urls[0]
       const updated = await prisma.shot.update({
         where: { id: shotId },
         data: {
           imageUrl,
           imageType: "multi_grid",
-          imageUrls: null,
-          gridLayout,
-          gridPrompts: JSON.stringify(gridPrompts),
+          imageUrls: JSON.stringify(urls),
         },
       })
       await markAiTaskSucceeded(task.id)
-      return NextResponse.json({ shotId, imageUrl, imageType: "multi_grid", shot: updated })
+      return NextResponse.json({ shotId, imageUrl, imageUrls: urls, imageType: "multi_grid", shot: updated })
     }
 
     await markAiTaskFailed(task.id, { code: API_ERRORS.VALIDATION.code, message: "Invalid imageType" })

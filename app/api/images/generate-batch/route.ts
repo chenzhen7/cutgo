@@ -1,37 +1,37 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
+import { getImageProvider } from "@/lib/ai/image"
+import type { ImageProvider } from "@/lib/ai/types"
 
-function makePlaceholderUrl(
-  prompt: string,
-  width: number,
-  height: number,
-  index?: number
-): string {
-  const label = encodeURIComponent(
-    (index != null ? `#${index + 1} ` : "") +
-      prompt.slice(0, 30).replace(/[^\w\s]/g, "")
-  )
-  const colors = ["264653", "2a9d8f", "e9c46a", "f4a261", "e76f51", "606c38"]
-  const bg = colors[Math.floor(Math.random() * colors.length)]
-  return `https://placehold.co/${width}x${height}/${bg}/white?text=${label}`
+function resolveSize(aspectRatio: string): { width: number; height: number } {
+  return aspectRatio === "16:9"
+    ? { width: 768, height: 432 }
+    : { width: 432, height: 768 }
 }
 
-async function generateForShot(shot: {
-  id: string
-  prompt: string
-  promptEnd: string | null
-  imageType: string
-  gridPrompts: string | null
-  gridLayout: string | null
-  negativePrompt: string | null
-}, aspectRatio: string) {
-  const [w, h] = aspectRatio === "16:9" ? [768, 432] : [432, 768]
-  await new Promise((r) => setTimeout(r, 300 + Math.random() * 500))
+async function generateForShot(
+  provider: ImageProvider,
+  shot: {
+    id: string
+    prompt: string
+    promptEnd: string | null
+    imageType: string
+    gridPrompts: string | null
+    negativePrompt: string | null
+  },
+  aspectRatio: string
+) {
+  const { width, height } = resolveSize(aspectRatio)
+  const neg = shot.negativePrompt ?? undefined
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
-    const firstUrl = makePlaceholderUrl("首帧 " + shot.prompt, w, h, 0)
-    const lastUrl = makePlaceholderUrl("尾帧 " + shot.promptEnd, w, h, 1)
+    const [r1, r2] = await Promise.all([
+      provider.generate({ prompt: shot.prompt, negativePrompt: neg, width, height }),
+      provider.generate({ prompt: shot.promptEnd, negativePrompt: neg, width, height }),
+    ])
+    const firstUrl = Array.isArray(r1) ? r1[0].url : r1.url
+    const lastUrl  = Array.isArray(r2) ? r2[0].url : r2.url
     await prisma.shot.update({
       where: { id: shot.id },
       data: { imageUrl: firstUrl, imageUrls: JSON.stringify([firstUrl, lastUrl]) },
@@ -39,19 +39,24 @@ async function generateForShot(shot: {
     return { shotId: shot.id, imageUrl: firstUrl, imageUrls: [firstUrl, lastUrl], status: "success" as const }
   }
 
-  if (shot.imageType === "multi_grid" && shot.gridPrompts && shot.gridLayout) {
+  if (shot.imageType === "multi_grid" && shot.gridPrompts) {
     let prompts: string[] = []
     try { prompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
-    const summary = prompts.map((p, i) => `${i + 1}:${p.slice(0, 12)}`).join("|")
-    const imageUrl = makePlaceholderUrl(summary, w, h)
-    await prisma.shot.update({
-      where: { id: shot.id },
-      data: { imageUrl },
-    })
-    return { shotId: shot.id, imageUrl, status: "success" as const }
+    if (prompts.length > 0) {
+      const results = await Promise.all(
+        prompts.map((p) => provider.generate({ prompt: p, negativePrompt: neg, width, height }))
+      )
+      const urls = results.map((r) => (Array.isArray(r) ? r[0].url : r.url))
+      await prisma.shot.update({
+        where: { id: shot.id },
+        data: { imageUrl: urls[0], imageUrls: JSON.stringify(urls) },
+      })
+      return { shotId: shot.id, imageUrl: urls[0], imageUrls: urls, status: "success" as const }
+    }
   }
 
-  const imageUrl = makePlaceholderUrl(shot.prompt, w, h)
+  const result = await provider.generate({ prompt: shot.prompt, negativePrompt: neg, width, height })
+  const imageUrl = Array.isArray(result) ? result[0].url : result.url
   await prisma.shot.update({
     where: { id: shot.id },
     data: { imageUrl },
@@ -73,14 +78,8 @@ export async function POST(request: NextRequest) {
   }
 
   const where: Record<string, unknown> = { episode: { projectId } }
-
-  if (episodeId) {
-    where.episodeId = episodeId
-  }
-
-  if (mode === "missing_only") {
-    where.imageUrl = null
-  }
+  if (episodeId) where.episodeId = episodeId
+  if (mode === "missing_only") where.imageUrl = null
 
   const shots = await prisma.shot.findMany({
     where,
@@ -91,32 +90,31 @@ export async function POST(request: NextRequest) {
       promptEnd: true,
       imageType: true,
       gridPrompts: true,
-      gridLayout: true,
       negativePrompt: true,
     },
   })
 
-  const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
-  let success = 0
-  let failed = 0
   let episodeInfo = ""
   if (episodeId) {
     const ep = await prisma.episode.findUnique({ where: { id: episodeId } })
-    if (ep) {
-      episodeInfo = ` 第${ep.index + 1}集 ${ep.title}`
-    }
+    if (ep) episodeInfo = ` 第${ep.index + 1}集 ${ep.title}`
   }
 
   const task = await createRunningAiTask({
     projectId,
     episodeId: episodeId || null,
-    targetInfo: `${episodeInfo}`,
+    targetInfo: episodeInfo,
     taskType: "image_generate",
   })
 
+  const provider = await getImageProvider()
+  const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
+  let success = 0
+  let failed = 0
+
   for (const shot of shots) {
     try {
-      const result = await generateForShot(shot, project.aspectRatio)
+      const result = await generateForShot(provider, shot, project.aspectRatio)
       results.push(result)
       success++
     } catch {
