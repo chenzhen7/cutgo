@@ -47,7 +47,7 @@ export class DoubaoImageProvider implements ImageProvider {
     console.log("[Doubao Image] request", {
       url,
       model: this.config.model,
-      size,
+      ...(size && { size }),
       promptPreview:
         prompt.length > 200 ? `${prompt.slice(0, 200)}…` : prompt,
     })
@@ -61,7 +61,7 @@ export class DoubaoImageProvider implements ImageProvider {
       body: JSON.stringify({
         model: this.config.model,
         prompt,
-        size,
+        ...(size && { size }),
         response_format: "url",
       }),
       signal: AbortSignal.timeout(300_000),
