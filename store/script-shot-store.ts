@@ -11,6 +11,8 @@ import type {
   AssetProp,
 } from "@/lib/types"
 import { apiFetch } from "@/lib/api-client"
+import { parseJsonArray } from "@/lib/utils"
+import { toast } from "sonner"
 
 let scriptShotPlansFetchToken = 0
 
@@ -304,6 +306,35 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
 
+    const { assetCharacters, assetScenes, assetProps } = get()
+    const characterIds = parseJsonArray(shot.characterIds)
+    const propIds = parseJsonArray(shot.propIds)
+    const boundCharacters = assetCharacters.filter((c) => characterIds.includes(c.id))
+    const boundScene = shot.sceneId ? assetScenes.find((s) => s.id === shot.sceneId) : null
+    const boundProps = assetProps.filter((p) => propIds.includes(p.id))
+
+    const missingAssetNames: string[] = []
+    for (const c of boundCharacters) {
+      if (!c.imageUrl) missingAssetNames.push(`角色「${c.name}」`)
+    }
+    if (boundScene && !boundScene.imageUrl) {
+      missingAssetNames.push(`场景「${boundScene.name}」`)
+    }
+    for (const p of boundProps) {
+      if (!p.imageUrl) missingAssetNames.push(`道具「${p.name}」`)
+    }
+
+    if (missingAssetNames.length > 0) {
+      toast.error(`请先补充关联资产图片：${missingAssetNames.join("、")}`)
+      return
+    }
+
+    const referenceImages = [
+      ...boundCharacters.map((c) => c.imageUrl).filter((v): v is string => !!v),
+      ...(boundScene?.imageUrl ? [boundScene.imageUrl] : []),
+      ...boundProps.map((p) => p.imageUrl).filter((v): v is string => !!v),
+    ]
+
     const generating = new Set(get().imageGeneratingIds)
     generating.add(shotId)
     set({ imageGeneratingIds: generating })
@@ -314,6 +345,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         imageType: shot.imageType || "keyframe",
         prompt: shot.prompt,
         negativePrompt: shot.negativePrompt,
+        referenceImages,
       }
       if (shot.imageType === "first_last") {
         body.promptEnd = shot.promptEnd || shot.prompt

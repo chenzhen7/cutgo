@@ -16,6 +16,8 @@ interface DoubaoImageResponse {
   data?: DoubaoImageDataItem[]
 }
 
+type DoubaoImageInput = string | string[] | undefined
+
 /**
  * 火山方舟（豆包/即梦）图片生成 Provider（OpenAI 兼容 Images API）
  * 仅支持 4.0+ 模型：doubao-seedream-4-0-250828 / 4-5 / 5-0。
@@ -40,15 +42,17 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const { prompt: rawPrompt, negativePrompt, size = null } = options
+    const { prompt: rawPrompt, negativePrompt, size = null, images } = options
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
     const url = `${this.baseUrl}/images/generations`
+    const imageInput = this.resolveImageInput(images)
 
     console.log("[Doubao Image] request", {
       url,
       model: this.config.model,
       size,
       prompt,
+      imageCount: Array.isArray(imageInput) ? imageInput.length : imageInput ? 1 : 0,
     })
 
     const res = await fetch(url, {
@@ -61,6 +65,7 @@ export class DoubaoImageProvider implements ImageProvider {
         model: this.config.model,
         prompt,
         ...(size && { size }),
+        ...(imageInput ? { image: imageInput } : {}),
         response_format: "url",
       }),
       signal: AbortSignal.timeout(300_000),
@@ -103,5 +108,12 @@ export class DoubaoImageProvider implements ImageProvider {
   private buildPrompt(prompt: string, negativePrompt?: string): string {
     if (!negativePrompt?.trim()) return prompt
     return `${prompt}\n\nNegative prompt: ${negativePrompt}`
+  }
+
+  /** 参考图：URL 或 data:image/...;base64,...；单张 string，多张 string[] */
+  private resolveImageInput(images?: string[]): DoubaoImageInput {
+    const validImages = (images || []).map((item) => item.trim()).filter(Boolean)
+    if (validImages.length === 0) return undefined
+    return validImages.length === 1 ? validImages[0] : validImages
   }
 }

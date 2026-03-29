@@ -72,6 +72,8 @@ export interface LLMProvider {
 export interface ImageGenerateOptions {
   prompt: string
   negativePrompt?: string
+  /** 参考图 URL / Base64（仅部分模型支持） */
+  images?: string[]
   /** 生图尺寸字符串（如豆包 OpenAI 兼容接口的 `1024x1024`）；未传则由 width/height 拼接 */
   size?: string
   width: number

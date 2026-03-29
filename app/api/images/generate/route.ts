@@ -18,6 +18,7 @@ interface GenerateImageRequest {
   negativePrompt?: string
   aspectRatio?: string
   stylePreset?: string
+  referenceImages?: string[]
 }
 
 function resolveSize(aspectRatio?: string): { width: number; height: number } {
@@ -28,7 +29,7 @@ function resolveSize(aspectRatio?: string): { width: number; height: number } {
 
 export async function POST(request: NextRequest) {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, referenceImages } = body
 
   if (!shotId || !prompt) {
     return NextResponse.json({ error: "shotId and prompt are required" }, { status: 400 })
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     const { width, height } = resolveSize(aspectRatio)
 
     if (type === "keyframe") {
-      const result = await provider.generate({ prompt, negativePrompt, width, height })
+      const result = await provider.generate({ prompt, negativePrompt, width, height, images: referenceImages })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
       const updated = await prisma.shot.update({
         where: { id: shotId },
@@ -83,11 +84,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "promptEnd is required for first_last type" }, { status: 400 })
       }
       const [r1, r2] = await Promise.all([
-        provider.generate({ prompt, negativePrompt, width, height }),
-        provider.generate({ prompt: promptEnd, negativePrompt, width, height }),
+        provider.generate({ prompt, negativePrompt, width, height, images: referenceImages }),
+        provider.generate({ prompt: promptEnd, negativePrompt, width, height, images: referenceImages }),
       ])
       const firstUrl = Array.isArray(r1) ? r1[0].url : r1.url
-      const lastUrl  = Array.isArray(r2) ? r2[0].url : r2.url
+      const lastUrl = Array.isArray(r2) ? r2[0].url : r2.url
       const imageUrls = JSON.stringify([firstUrl, lastUrl])
       const updated = await prisma.shot.update({
         where: { id: shotId },
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "gridPrompts are required for multi_grid type" }, { status: 400 })
       }
       const results = await Promise.all(
-        gridPrompts.map((p) => provider.generate({ prompt: p, negativePrompt, width, height }))
+        gridPrompts.map((p) => provider.generate({ prompt: p, negativePrompt, width, height, images: referenceImages }))
       )
       const urls = results.map((r) => (Array.isArray(r) ? r[0].url : r.url))
       const imageUrl = urls[0]
