@@ -23,7 +23,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -99,6 +98,7 @@ export default function AssetsPage() {
   const [showPropForm, setShowPropForm] = useState(false)
   const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
   const [deletingPropId, setDeletingPropId] = useState<string | null>(null)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [showExtractDialog, setShowExtractDialog] = useState(false)
   const [extractSuccessMsg] = useState<string | null>(null)
 
@@ -346,7 +346,9 @@ export default function AssetsPage() {
       {/* Delete confirmations */}
       <AlertDialog
         open={!!deletingCharacterId}
-        onOpenChange={(open) => !open && setDeletingCharacterId(null)}
+        onOpenChange={(open) => {
+          if (!open && !deleteSubmitting) setDeletingCharacterId(null)
+        }}
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
@@ -356,24 +358,38 @@ export default function AssetsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel disabled={deleteSubmitting}>取消</AlertDialogCancel>
+            <Button
+              disabled={deleteSubmitting}
               onClick={async () => {
-                if (deletingCharacterId) {
+                if (!deletingCharacterId || deleteSubmitting) return
+                setDeleteSubmitting(true)
+                try {
                   await deleteCharacter(deletingCharacterId)
                   setDeletingCharacterId(null)
+                } finally {
+                  setDeleteSubmitting(false)
                 }
               }}
             >
-              确认删除
-            </AlertDialogAction>
+              {deleteSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  删除中…
+                </>
+              ) : (
+                "确认删除"
+              )}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog
         open={!!deletingSceneId}
-        onOpenChange={(open) => !open && setDeletingSceneId(null)}
+        onOpenChange={(open) => {
+          if (!open && !deleteSubmitting) setDeletingSceneId(null)
+        }}
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
@@ -383,24 +399,38 @@ export default function AssetsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel disabled={deleteSubmitting}>取消</AlertDialogCancel>
+            <Button
+              disabled={deleteSubmitting}
               onClick={async () => {
-                if (deletingSceneId) {
+                if (!deletingSceneId || deleteSubmitting) return
+                setDeleteSubmitting(true)
+                try {
                   await deleteScene(deletingSceneId)
                   setDeletingSceneId(null)
+                } finally {
+                  setDeleteSubmitting(false)
                 }
               }}
             >
-              确认删除
-            </AlertDialogAction>
+              {deleteSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  删除中…
+                </>
+              ) : (
+                "确认删除"
+              )}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog
         open={!!deletingPropId}
-        onOpenChange={(open) => !open && setDeletingPropId(null)}
+        onOpenChange={(open) => {
+          if (!open && !deleteSubmitting) setDeletingPropId(null)
+        }}
       >
         <AlertDialogContent className="sm:max-w-sm">
           <AlertDialogHeader>
@@ -410,17 +440,29 @@ export default function AssetsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel disabled={deleteSubmitting}>取消</AlertDialogCancel>
+            <Button
+              disabled={deleteSubmitting}
               onClick={async () => {
-                if (deletingPropId) {
+                if (!deletingPropId || deleteSubmitting) return
+                setDeleteSubmitting(true)
+                try {
                   await deleteProp(deletingPropId)
                   setDeletingPropId(null)
+                } finally {
+                  setDeleteSubmitting(false)
                 }
               }}
             >
-              确认删除
-            </AlertDialogAction>
+              {deleteSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  删除中…
+                </>
+              ) : (
+                "确认删除"
+              )}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
