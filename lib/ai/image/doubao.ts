@@ -48,8 +48,7 @@ export class DoubaoImageProvider implements ImageProvider {
       url,
       model: this.config.model,
       size,
-      promptPreview:
-        prompt.length > 200 ? `${prompt.slice(0, 200)}…` : prompt,
+      prompt,
     })
 
     const res = await fetch(url, {
