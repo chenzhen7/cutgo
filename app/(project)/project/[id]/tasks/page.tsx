@@ -14,10 +14,6 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-type AiTaskDetail = AiTask & {
-  events?: { key: string; label: string; at: string; status?: string; detail?: string | null }[]
-}
-
 const PAGE_SIZE = 20
 
 function formatDateTime(value?: string | null) {
@@ -70,7 +66,7 @@ export default function ProjectTasksPage() {
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
-  const [detail, setDetail] = useState<AiTaskDetail | null>(null)
+  const [detail, setDetail] = useState<AiTask | null>(null)
 
   const loadTasks = useCallback(
     async (nextPage: number, showRefreshing = false) => {
@@ -142,7 +138,7 @@ export default function ProjectTasksPage() {
     setDetail(null)
     setDetailLoading(true)
     try {
-      const data = await apiFetch<AiTaskDetail>(`/api/ai-tasks/${id}`)
+      const data = await apiFetch<AiTask>(`/api/ai-tasks/${id}`)
       setDetail(data)
     } catch (err) {
       if (err instanceof ApiError) {
@@ -296,7 +292,7 @@ export default function ProjectTasksPage() {
               const targetText = task.shot
                 ? `分镜 #${task.shot.index}`
                 : task.episode
-                  ? `第${task.episode.index}集`
+                  ? `第${task.episode.index + 1}集`
                   : "项目级"
               return (
                 <div
@@ -390,23 +386,6 @@ export default function ProjectTasksPage() {
                 <div>模型：{detail.model || "-"}</div>
                 <div>开始时间：{formatDateTime(detail.startedAt)}</div>
                 <div>结束时间：{formatDateTime(detail.finishedAt)}</div>
-              </div>
-
-              <div className="rounded-lg border p-3">
-                <p className="mb-2 text-sm font-medium">步骤时间线</p>
-                {detail.events && detail.events.length > 0 ? (
-                  <div className="space-y-2">
-                    {detail.events.map((event) => (
-                      <div key={event.key} className="rounded border border-dashed px-2 py-1.5 text-xs">
-                        <div className="font-medium">{event.label}</div>
-                        <div className="text-muted-foreground">{formatDateTime(event.at)}</div>
-                        {event.detail && <div className="text-muted-foreground">{event.detail}</div>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">暂无步骤记录</p>
-                )}
               </div>
 
               {detail.errorMessage && (
