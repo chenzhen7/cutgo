@@ -216,7 +216,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
             <div className={cn(
               "p-2.5 @[640px]:p-3",
               layout === "grid"
-                ? "grid gap-2 grid-cols-3 @[400px]:grid-cols-4 @[520px]:grid-cols-5 @[640px]:grid-cols-6 @[780px]:grid-cols-7 @[920px]:grid-cols-8 @[1060px]:grid-cols-9 @[1200px]:grid-cols-10"
+                ? "grid gap-2 grid-cols-2 @[360px]:grid-cols-3 @[540px]:grid-cols-4 @[720px]:grid-cols-5 @[900px]:grid-cols-6 @[1080px]:grid-cols-7 @[1260px]:grid-cols-8"
                 : "flex flex-col gap-2.5 @[640px]:gap-3"
             )}>
               {localShots.map((shot) => (
