@@ -178,8 +178,8 @@ export function ShotDetailPanel({
   const handleGridLayoutChange = (layout: string) => {
     const layoutOpt = GRID_LAYOUT_OPTIONS.find((o) => o.value === layout)
     if (!layoutOpt) return
-    const currentPrompts = gridPrompts.length > 0 ? gridPrompts : [shot.prompt]
-    const newPrompts = Array.from({ length: layoutOpt.count }, (_, i) => currentPrompts[i] || shot.prompt)
+    const currentPrompts = gridPrompts.length > 0 ? gridPrompts : []
+    const newPrompts = Array.from({ length: layoutOpt.count }, (_, i) => currentPrompts[i] || "")
     setGridPrompts(newPrompts)
     updateShotData({
       gridLayout: layout as GridLayout,
