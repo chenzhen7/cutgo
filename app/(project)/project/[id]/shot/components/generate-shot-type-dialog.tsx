@@ -46,7 +46,7 @@ export function GenerateShotTypeDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>生成分镜</DialogTitle>
+          <DialogTitle className="font-semibold">生成分镜</DialogTitle>
           <DialogDescription>
             为该分集生成分镜画面，请选择分镜类型
           </DialogDescription>

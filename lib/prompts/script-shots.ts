@@ -2,6 +2,9 @@
  * 分镜生成 — Prompt 模板（与业务解耦，便于后续在设置页/项目级配置中编辑）
  */
 
+import type { ImageType, GridLayout } from "@/lib/types"
+import { GRID_LAYOUT_OPTIONS } from "@/lib/types"
+
 const SCRIPT_SHOTS_EPISODE_TITLE_PLACEHOLDER = "{EPISODE_TITLE}" as const
 const SCRIPT_SHOTS_EPISODE_SCENES_PLACEHOLDER = "{EPISODE_SCENES}" as const
 const SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER = "{EPISODE_CHARACTERS}" as const
@@ -140,25 +143,7 @@ const DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE = `你是一位资深分镜师
 - 烟雾/尘埃/雨丝/雪花/光束中的微粒
 
 
-## 输出格式
-请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
-
-[
-  {
-    "prompt": "镜头提示词",
-    "characters": ["角色A", "角色B"],
-    "scene": "场景名",
-    "props": ["道具A", "道具B"]
-  }
-]
-
-字段约束：
-1. prompt 必填，字符串
-2. characters：该镜头实际出场角色名数组；没有则输出 []
-3. scene：该镜头对应场景名；不确定时优先使用当前分集主场景
-4. props：该镜头实际出现或重点关联道具名数组；没有则输出 []
-5. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
-
+{IMAGE_TYPE_OUTPUT_INSTRUCTIONS}
 `
 
 const DEFAULT_SCRIPT_SHOTS_USER_PROMPT_TEMPLATE = `## 剧本信息
@@ -180,6 +165,8 @@ export interface BuildScriptShotsPromptInput {
   episodeProps: string
   scriptContent: string
   previousShot: string | null
+  imageType?: ImageType
+  gridLayout?: GridLayout | null
 }
 
 
@@ -202,13 +189,91 @@ function appendIfMissing(hasPlaceholder: boolean, result: string, fallbackBlock:
   return `${result}\n${fallbackBlock}`
 }
 
+function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: GridLayout | null): string {
+  if (imageType === "first_last") {
+    return `## 输出格式
+请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
 
+[
+  {
+    "prompt": "首帧镜头提示词",
+    "promptEnd": "尾帧镜头提示词（镜头结束画面，与首帧形成运镜变化）",
+    "characters": ["角色A", "角色B"],
+    "scene": "场景名",
+    "props": ["道具A", "道具B"]
+  }
+]
 
-export function buildScriptShotsSystemPrompt(options?: BuildScriptShotsSystemPromptOptions): string {
+字段约束：
+1. prompt 必填，首帧镜头提示词
+2. promptEnd 必填，尾帧镜头提示词
+3. characters：该镜头实际出场角色名数组；没有则输出 []
+4. scene：该镜头对应场景名；不确定时优先使用当前分集主场景
+5. props：该镜头实际出现或重点关联道具名数组；没有则输出 []
+6. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
+7. 确保提示词完整性，不要省略任何信息`
+  }
+
+  if (imageType === "multi_grid") {
+    const layout = GRID_LAYOUT_OPTIONS.find((o) => o.value === gridLayout) ?? GRID_LAYOUT_OPTIONS[0]
+    const count = layout.count
+    const gridPromptsExample = Array.from({ length: count }, (_, i) => `"子帧${i + 1}提示词"`).join(", ")
+    return `## 输出格式
+请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
+
+[
+  {
+    "prompt": "整体镜头描述（概括该镜头的场景与氛围）",
+    "gridPrompts": [${gridPromptsExample}],
+    "characters": ["角色A", "角色B"],
+    "scene": "场景名",
+    "props": ["道具A", "道具B"]
+  }
+]
+
+字段约束：
+1. prompt 必填，对整体镜头的概括性描述
+2. gridPrompts 必填，数组长度必须为 ${count}，对应 ${layout.label} 宫格布局中每个格子镜头的画面提示词，各格子画面应体现该镜头内的时间/动作推进
+3. characters：该镜头实际出场角色名数组；没有则输出 []
+4. scene：该镜头对应场景名；不确定时优先使用当前分集主场景
+5. props：该镜头实际出现或重点关联道具名数组；没有则输出 []
+6. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
+7. 确保提示词完整性，不要省略任何信息`
+  }
+
+  // keyframe（默认）
+  return `## 输出格式
+请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
+
+[
+  {
+    "prompt": "镜头提示词",
+    "characters": ["角色A", "角色B"],
+    "scene": "场景名",
+    "props": ["道具A", "道具B"]
+  }
+]
+
+字段约束：
+1. prompt 镜头提示词必填，字符串
+2. characters：该镜头实际出场角色名数组；没有则输出 []
+3. scene：该镜头对应场景名；不确定时优先使用当前分集主场景
+4. props：该镜头实际出现或重点关联道具名数组；没有则输出 []
+5. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
+6. 确保提示词完整性，不要省略任何信息`
+}
+
+export function buildScriptShotsSystemPrompt(
+  options?: BuildScriptShotsSystemPromptOptions,
+  imageType: ImageType = "keyframe",
+  gridLayout?: GridLayout | null
+): string {
   const raw = options?.template?.trim()
     ? options.template
     : DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE
-  return raw.trim()
+
+  return replaceAll(raw.trim(), "{IMAGE_TYPE_OUTPUT_INSTRUCTIONS}", buildImageTypeOutputInstructions(imageType, gridLayout)
+  )
 }
 
 export function buildScriptShotsUserPrompt(

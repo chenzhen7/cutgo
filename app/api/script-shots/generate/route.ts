@@ -15,6 +15,8 @@ import { parseJsonArray } from "@/lib/utils"
 interface AIScriptShotResult {
   shots: Array<{
     prompt: string
+    promptEnd?: string
+    gridPrompts?: string[]
     characters: string[]
     scene: string
     props: string[]
@@ -58,14 +60,20 @@ async function callAIGenerateScriptShots(
   episodeCharacters: string,
   episodeProps: string,
   episodeScenes: string,
-  previousShotStr: string | null
+  previousShotStr: string | null,
+  imageType: string = "keyframe",
+  gridLayout: string | null = null
 ): Promise<AIScriptShotResult> {
   const llmProvider = await getLLMProvider()
   if (!llmProvider) {
     throwCutGoError("LLM_NOT_CONFIGURED")
   }
 
-  const systemPrompt = buildScriptShotsSystemPrompt()
+  const systemPrompt = buildScriptShotsSystemPrompt(
+    undefined,
+    imageType as import("@/lib/types").ImageType,
+    gridLayout as import("@/lib/types").GridLayout | null
+  )
   const userPrompt = buildScriptShotsUserPrompt({
     episodeTitle,
     episodeScenes,
@@ -95,6 +103,8 @@ async function callAIGenerateScriptShots(
           // 兼容历史输出结构：["镜头1", "镜头2"]
           return {
             prompt: item.trim(),
+            promptEnd: undefined,
+            gridPrompts: undefined,
             characters: [],
             scene: "",
             props: [],
@@ -104,6 +114,8 @@ async function callAIGenerateScriptShots(
         const raw = item as {
           prompt?: unknown
           shot?: unknown
+          promptEnd?: unknown
+          gridPrompts?: unknown
           characters?: unknown
           scene?: unknown
           props?: unknown
@@ -115,6 +127,16 @@ async function callAIGenerateScriptShots(
               ? raw.shot.trim()
               : ""
         if (!prompt) return null
+        const promptEnd =
+          typeof raw.promptEnd === "string" && raw.promptEnd.trim()
+            ? raw.promptEnd.trim()
+            : undefined
+        const gridPrompts = Array.isArray(raw.gridPrompts)
+          ? raw.gridPrompts
+            .filter((v): v is string => typeof v === "string")
+            .map((v) => v.trim())
+            .filter(Boolean)
+          : undefined
         const characters = Array.isArray(raw.characters)
           ? raw.characters
             .filter((v): v is string => typeof v === "string")
@@ -130,13 +152,15 @@ async function callAIGenerateScriptShots(
           : []
         return {
           prompt,
+          promptEnd,
+          gridPrompts,
           characters,
           scene,
           props,
         }
       })
       .filter(
-        (item): item is { prompt: string; characters: string[]; scene: string; props: string[] } =>
+        (item): item is { prompt: string; promptEnd?: string; gridPrompts?: string[]; characters: string[]; scene: string; props: string[] } =>
           Boolean(item)
       )
     return {
@@ -206,7 +230,9 @@ export const POST = withError(async (request: NextRequest) => {
           matchedCharacters.map((c) => c.name).join("; "),
           matchedProps.map((p) => p.name).join("; "),
           matchedScene?.name || "",
-          previousShotStr
+          previousShotStr,
+          imageType,
+          gridLayout
         )
 
         const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
@@ -237,10 +263,12 @@ export const POST = withError(async (request: NextRequest) => {
               episodeId: episode.id,
               index: si,
               prompt,
+              promptEnd: item.promptEnd ?? null,
               negativePrompt: null,
               duration: "3s",
               imageType: imageType as string,
               gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
+              gridPrompts: item.gridPrompts?.length ? JSON.stringify(item.gridPrompts) : null,
               dialogueText: null,
               actionNote: null,
               characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
