@@ -338,9 +338,15 @@ export function ShotDetailPanel({
                     <Label className="text-xs">首帧提示词</Label>
                     <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
                   </div>
-                  <p className="text-[12px] text-foreground/90 bg-muted/40 rounded p-2.5 leading-relaxed max-h-24 overflow-y-auto">
-                    {shot.prompt || "（使用分镜提示词）"}
-                  </p>
+                  <Textarea
+                    value={prompt}
+                    onChange={(e) => {
+                      setPrompt(e.target.value)
+                      debouncedUpdate({ prompt: e.target.value })
+                    }}
+                    className="text-[13px] min-h-[60px] resize-none leading-relaxed"
+                    placeholder="描述该镜头的首帧提示词（英文）..."
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
@@ -586,21 +592,23 @@ export function ShotDetailPanel({
             </div>
 
             {/* Image prompt */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-1">
-                <Label className="text-xs">分镜提示词</Label>
-                <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
+            {imageType !== "first_last" && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Label className="text-xs">分镜提示词</Label>
+                  <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
+                </div>
+                <Textarea
+                  value={prompt}
+                  onChange={(e) => {
+                    setPrompt(e.target.value)
+                    debouncedUpdate({ prompt: e.target.value })
+                  }}
+                  className="text-[13px] min-h-[80px] max-h-[160px] resize-none leading-relaxed"
+                  placeholder="描述该镜头的分镜提示词（英文）..."
+                />
               </div>
-              <Textarea
-                value={prompt}
-                onChange={(e) => {
-                  setPrompt(e.target.value)
-                  debouncedUpdate({ prompt: e.target.value })
-                }}
-                className="text-[13px] min-h-[80px] max-h-[160px] resize-none leading-relaxed"
-                placeholder="描述该镜头的分镜提示词（英文）..."
-              />
-            </div>
+            )}
           </TabsContent>
 
           {/* === Video Generation Tab === */}
