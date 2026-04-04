@@ -87,7 +87,7 @@ export class DoubaoImageProvider implements ImageProvider {
     const raw = JSON.stringify(json)
     console.log(
       "[Doubao Image] response body (truncated)",
-      raw.length > 100 ? `${raw.slice(0, 100)}…` : raw
+      raw.length > 300 ? `${raw.slice(0, 300)}…` : raw
     )
 
     const first = json.data?.[0]
