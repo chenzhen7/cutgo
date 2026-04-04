@@ -12,6 +12,7 @@ import type {
   ImageType,
   GridLayout,
 } from "@/lib/types"
+import type { ShotCardLayout } from "@/app/(project)/project/[id]/shot/components/shot-card"
 import { apiFetch } from "@/lib/api-client"
 import { parseJsonArray } from "@/lib/utils"
 import { toast } from "sonner"
@@ -42,6 +43,7 @@ interface ScriptShotState {
   activeShotId: string | null
   selectedShotIds: Set<string>
   detailPanelOpen: boolean
+  shotLayout: ShotCardLayout
 
   imageGeneratingIds: Set<string>
   batchImageStatus: "idle" | "generating" | "completed" | "error"
@@ -80,6 +82,7 @@ interface ScriptShotState {
   setActiveEpisodeId: (episodeId: string | null) => void
   setActiveShotId: (shotId: string | null) => void
   setDetailPanelOpen: (open: boolean) => void
+  setShotLayout: (layout: ShotCardLayout) => void
   toggleShotSelection: (shotId: string) => void
   clearShotSelection: () => void
 
@@ -114,6 +117,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   activeShotId: null,
   selectedShotIds: new Set(),
   detailPanelOpen: false,
+  shotLayout: "list",
 
   imageGeneratingIds: new Set(),
   batchImageStatus: "idle",
@@ -414,6 +418,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
   setActiveShotId: (shotId) => set({ activeShotId: shotId, detailPanelOpen: !!shotId }),
   setDetailPanelOpen: (open) => set({ detailPanelOpen: open, activeShotId: open ? get().activeShotId : null }),
+  setShotLayout: (layout) => set({ shotLayout: layout }),
 
   toggleShotSelection: (shotId) => {
     const selected = new Set(get().selectedShotIds)
@@ -502,6 +507,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       activeShotId: null,
       selectedShotIds: new Set(),
       detailPanelOpen: false,
+      shotLayout: "list",
       imageGeneratingIds: new Set(),
       batchImageStatus: "idle",
       batchImageProgress: null,

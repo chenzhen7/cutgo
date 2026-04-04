@@ -41,6 +41,8 @@ export default function ScriptPage() {
     updateEpisode,
     generateEpisodeOutlines,
     clearGenerateError,
+    activeEpisodeId,
+    setActiveEpisodeId,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
@@ -49,7 +51,6 @@ export default function ScriptPage() {
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
   const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
   const [assetProps, setAssetProps] = useState<AssetProp[]>([])
-  const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -69,10 +70,25 @@ export default function ScriptPage() {
         setAssetScenes([])
         setAssetProps([])
       }
+
+      const eps = useScriptStore.getState().episodes
+      const currentActiveEpisodeId = useScriptStore.getState().activeEpisodeId
+      if (eps && eps.length > 0) {
+        const isActiveValid = eps.some(e => e.id === currentActiveEpisodeId)
+        if (!isActiveValid) {
+          // If invalid or not set, maybe default to the first one?
+          // The script page doesn't currently auto-select the first one by default if it's null,
+          // but if it's invalid we should probably set it to null.
+          setActiveEpisodeId(null)
+        }
+      } else {
+        setActiveEpisodeId(null)
+      }
+
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, fetchChapters])
+  }, [projectId, fetchEpisodes, fetchChapters, setActiveEpisodeId])
 
   const activeEpisode = useMemo(
     () => episodes.find((ep) => ep.id === activeEpisodeId) ?? null,
@@ -83,7 +99,7 @@ export default function ScriptPage() {
     (ep: Episode) => {
       setActiveEpisodeId(ep.id)
     },
-    []
+    [setActiveEpisodeId]
   )
 
   const handleGenerateEpisodes = useCallback(

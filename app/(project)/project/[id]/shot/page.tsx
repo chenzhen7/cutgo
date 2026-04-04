@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
@@ -66,6 +66,8 @@ export default function ScriptShotPage() {
     setActiveEpisodeId,
     setActiveShotId,
     setDetailPanelOpen,
+    shotLayout,
+    setShotLayout,
   } = useScriptShotsStore()
 
   const currentScriptShotPlans = useMemo(() => {
@@ -108,7 +110,6 @@ export default function ScriptShotPage() {
   const [batchVideoStatus, setBatchVideoStatus] = useState<"idle" | "generating" | "completed" | "error">("idle")
   const [batchVideoProgress, setBatchVideoProgress] = useState<{ current: number; total: number } | null>(null)
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
-  const [shotLayout, setShotLayout] = useState<ShotCardLayout>("list")
 
   const runBatchVideoGeneration = useCallback(
     (targets: Array<{ episodeId: string; shot: Shot }>) => {
@@ -153,10 +154,14 @@ export default function ScriptShotPage() {
         fetchAssets(projectId),
       ])
 
-      // 如果没有选中的分集，且有分集数据，默认选中第一个
+      const currentActiveEpisodeId = useScriptShotsStore.getState().activeEpisodeId
+
       if (eps && eps.length > 0) {
-        const sorted = sortEpisodesByChapterAndIndex(eps)
-        setActiveEpisodeId(sorted[0].id)
+        const isActiveValid = eps.some(e => e.id === currentActiveEpisodeId)
+        if (!isActiveValid) {
+          const sorted = sortEpisodesByChapterAndIndex(eps)
+          setActiveEpisodeId(sorted[0].id)
+        }
       }
 
       setInitialLoading(false)
@@ -165,13 +170,18 @@ export default function ScriptShotPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
+  const prevEpisodeIdRef = useRef(activeEpisodeId)
+
   useEffect(() => {
     if (!activeEpisodeId) return
 
     let cancelled = false
     const loadActiveEpisode = async () => {
       setEpisodeLoading(true)
-      setActiveShotId(null)
+      if (prevEpisodeIdRef.current !== activeEpisodeId) {
+        setActiveShotId(null)
+      }
+      prevEpisodeIdRef.current = activeEpisodeId
       try {
         await fetchScriptShotPlans(projectId, activeEpisodeId)
       } finally {
