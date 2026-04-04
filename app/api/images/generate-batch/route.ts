@@ -12,6 +12,7 @@ function resolveSize(aspectRatio: string): { width: number; height: number } {
 
 async function generateForShot(
   provider: ImageProvider,
+  projectId: string,
   shot: {
     id: string
     prompt: string
@@ -27,11 +28,25 @@ async function generateForShot(
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
     const [r1, r2] = await Promise.all([
-      provider.generate({ prompt: shot.prompt, negativePrompt: neg, width, height }),
-      provider.generate({ prompt: shot.promptEnd, negativePrompt: neg, width, height }),
+      provider.generate({
+        prompt: shot.prompt,
+        projectId,
+        scope: "shot",
+        negativePrompt: neg,
+        width,
+        height,
+      }),
+      provider.generate({
+        prompt: shot.promptEnd,
+        projectId,
+        scope: "shot",
+        negativePrompt: neg,
+        width,
+        height,
+      }),
     ])
     const firstUrl = Array.isArray(r1) ? r1[0].url : r1.url
-    const lastUrl  = Array.isArray(r2) ? r2[0].url : r2.url
+    const lastUrl = Array.isArray(r2) ? r2[0].url : r2.url
     await prisma.shot.update({
       where: { id: shot.id },
       data: { imageUrl: firstUrl, imageUrls: JSON.stringify([firstUrl, lastUrl]) },
@@ -44,7 +59,16 @@ async function generateForShot(
     try { prompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
     if (prompts.length > 0) {
       const results = await Promise.all(
-        prompts.map((p) => provider.generate({ prompt: p, negativePrompt: neg, width, height }))
+        prompts.map((p) =>
+          provider.generate({
+            prompt: p,
+            projectId,
+            scope: "shot",
+            negativePrompt: neg,
+            width,
+            height,
+          })
+        )
       )
       const urls = results.map((r) => (Array.isArray(r) ? r[0].url : r.url))
       await prisma.shot.update({
@@ -55,7 +79,14 @@ async function generateForShot(
     }
   }
 
-  const result = await provider.generate({ prompt: shot.prompt, negativePrompt: neg, width, height })
+  const result = await provider.generate({
+    prompt: shot.prompt,
+    projectId,
+    scope: "shot",
+    negativePrompt: neg,
+    width,
+    height,
+  })
   const imageUrl = Array.isArray(result) ? result[0].url : result.url
   await prisma.shot.update({
     where: { id: shot.id },
@@ -114,7 +145,7 @@ export async function POST(request: NextRequest) {
 
   for (const shot of shots) {
     try {
-      const result = await generateForShot(provider, shot, project.aspectRatio)
+      const result = await generateForShot(provider, projectId, shot, project.aspectRatio)
       results.push(result)
       success++
     } catch {

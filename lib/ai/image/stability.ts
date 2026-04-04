@@ -1,4 +1,5 @@
 import type { ImageProvider, ImageGenerateOptions, ImageGenerateResult } from "../types"
+import { persistGeneratedImageLocally } from "@/lib/utils/local-image"
 
 export interface StabilityImageConfig {
   apiKey: string
@@ -34,7 +35,7 @@ export class StabilityImageProvider implements ImageProvider {
   constructor(private readonly config: StabilityImageConfig) { }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
-    const { prompt, negativePrompt, width, height, numOutputs = 1 } = options
+    const { prompt, negativePrompt, width, height, numOutputs = 1, projectId, scope } = options
 
     const baseUrl = this.config.baseUrl.replace(/\/$/, "")
     const engineId = this.config.model || "stable-diffusion-xl-1024-v1-0"
@@ -74,9 +75,18 @@ export class StabilityImageProvider implements ImageProvider {
       throw new Error("Stability AI API returned no artifacts")
     }
 
-    const results: ImageGenerateResult[] = json.artifacts.map((artifact) => ({
+    const rawResults: ImageGenerateResult[] = json.artifacts.map((artifact) => ({
       url: `data:image/png;base64,${artifact.base64}`,
     }))
+    const results = await Promise.all(
+      rawResults.map(async (item) => ({
+        url: await persistGeneratedImageLocally({
+          sourceUrl: item.url,
+          projectId,
+          scope,
+        }),
+      }))
+    )
 
     return numOutputs === 1 ? results[0] : results
   }

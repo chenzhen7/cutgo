@@ -1,4 +1,5 @@
 import type { ImageProvider, ImageGenerateOptions, ImageGenerateResult } from "../types"
+import { persistGeneratedImageLocally } from "@/lib/utils/local-image"
 
 /**
  * 图像生成占位实现（构造器方式）
@@ -24,12 +25,27 @@ export class PlaceholderImageProvider implements ImageProvider {
    * 模拟生成图片
    */
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
-    const { prompt, width, height, numOutputs = 1 } = options
+    const { prompt, width, height, numOutputs = 1, projectId, scope } = options
     if (numOutputs > 1) {
-      return Array.from({ length: numOutputs }, (_, i) => ({
+      const results = Array.from({ length: numOutputs }, (_, i) => ({
         url: this.makePlaceholderUrl(prompt, width, height, i),
       }))
+      return Promise.all(
+        results.map(async (item) => ({
+          url: await persistGeneratedImageLocally({
+            sourceUrl: item.url,
+            projectId,
+            scope,
+          }),
+        }))
+      )
     }
-    return { url: this.makePlaceholderUrl(prompt, width, height) }
+    const rawUrl = this.makePlaceholderUrl(prompt, width, height)
+    const localUrl = await persistGeneratedImageLocally({
+      sourceUrl: rawUrl,
+      projectId,
+      scope,
+    })
+    return { url: localUrl }
   }
 }

@@ -1,5 +1,6 @@
 import type { ImageGenerateOptions, ImageGenerateResult, ImageProvider } from "../types"
 import { throwCutGoError } from "@/lib/api-error"
+import { persistGeneratedImageLocally } from "@/lib/utils/local-image"
 
 export interface DoubaoImageConfig {
   apiKey: string
@@ -42,7 +43,7 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const { prompt: rawPrompt, negativePrompt, size = null, referenceImages } = options
+    const { prompt: rawPrompt, negativePrompt, size = null, referenceImages, projectId, scope } = options
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
     const url = `${this.baseUrl}/images/generations`
     const imageInput = this.resolveImageInput(referenceImages)
@@ -95,11 +96,22 @@ export class DoubaoImageProvider implements ImageProvider {
     }
 
     if (first.url) {
-      return { url: first.url }
+      const persistedUrl = await persistGeneratedImageLocally({
+        sourceUrl: first.url,
+        projectId,
+        scope,
+      })
+      return { url: persistedUrl }
     }
 
     if (first.b64_json) {
-      return { url: `data:image/png;base64,${first.b64_json}` }
+      const dataUrl = `data:image/png;base64,${first.b64_json}`
+      const persistedUrl = await persistGeneratedImageLocally({
+        sourceUrl: dataUrl,
+        projectId,
+        scope,
+      })
+      return { url: persistedUrl }
     }
 
     throwCutGoError("INTERNAL", "豆包生图服务返回格式异常：缺少图片地址")

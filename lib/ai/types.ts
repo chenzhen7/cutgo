@@ -71,6 +71,8 @@ export interface LLMProvider {
 /** 图像生成配置选项 */
 export interface ImageGenerateOptions {
   prompt: string
+  projectId: string
+  scope: "shot" | "asset"
   negativePrompt?: string
   /** 参考图 URL / Base64（data:image/...;base64,...） */
   referenceImages?: string[]

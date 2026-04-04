@@ -64,6 +64,7 @@ async function runAssetImageTask({
   taskId,
   type,
   id,
+  projectId,
   prompt,
   width,
   height,
@@ -71,13 +72,20 @@ async function runAssetImageTask({
   taskId: string
   type: AssetType
   id: string
+  projectId: string
   prompt: string
   width: number
   height: number
 }) {
   try {
     const provider = await getImageProvider()
-    const result = await provider.generate({ prompt, width, height })
+    const result = await provider.generate({
+      prompt,
+      projectId,
+      scope: "asset",
+      width,
+      height,
+    })
     const imageUrl = Array.isArray(result) ? result[0].url : result.url
     await updateAssetImage(type, id, imageUrl)
     await markAiTaskSucceeded(taskId)
@@ -110,6 +118,7 @@ export const POST = withError(async (request: NextRequest) => {
     taskId: task.id,
     type,
     id,
+    projectId: asset.projectId,
     prompt,
     width,
     height,
