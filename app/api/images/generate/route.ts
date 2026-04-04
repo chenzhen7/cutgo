@@ -29,7 +29,7 @@ function resolveSize(aspectRatio?: string): { width: number; height: number } {
 
 export async function POST(request: NextRequest) {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, referenceImages } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, gridLayout, negativePrompt, aspectRatio, referenceImages } = body
 
   if (!shotId || !prompt) {
     return NextResponse.json({ error: "shotId and prompt are required" }, { status: 400 })
@@ -128,31 +128,35 @@ export async function POST(request: NextRequest) {
         await markAiTaskFailed(task.id, error)
         return NextResponse.json({ error: "gridPrompts are required for multi_grid type" }, { status: 400 })
       }
-      const results = await Promise.all(
-        gridPrompts.map((p) =>
-          provider.generate({
-            prompt: p,
-            projectId: shot.episode.projectId,
-            scope: "shot",
-            negativePrompt,
-            width,
-            height,
-            referenceImages,
-          })
-        )
-      )
-      const urls = results.map((r) => (Array.isArray(r) ? r[0].url : r.url))
-      const imageUrl = urls[0]
+
+      const promptObj: Record<string, string> = {}
+      gridPrompts.forEach((p, i) => {
+        promptObj[String(i + 1)] = p
+      })
+      const jsonBlock = JSON.stringify(promptObj, null, 2)
+      const layoutText = shot.gridLayout ? `宫格布局：${shot.gridLayout}\n` : ""
+      const combinedPrompt = `${shot.prompt}\n\n请生成一张包含多宫格分镜布局的完整图片。${layoutText}\n\n以下 JSON 中数字键 "1"、"2"… 依次对应各子画面（建议从左到右、从上到下），请严格按各键对应描述绘制：\n\n${jsonBlock}`
+      
+      const result = await provider.generate({
+        prompt: combinedPrompt,
+        projectId: shot.episode.projectId,
+        scope: "shot",
+        negativePrompt,
+        width,
+        height,
+        referenceImages,
+      })
+      const imageUrl = Array.isArray(result) ? result[0].url : result.url
       const updated = await prisma.shot.update({
         where: { id: shotId },
         data: {
           imageUrl,
           imageType: "multi_grid",
-          imageUrls: JSON.stringify(urls),
+          imageUrls: null,
         },
       })
       await markAiTaskSucceeded(task.id)
-      return NextResponse.json({ shotId, imageUrl, imageUrls: urls, imageType: "multi_grid", shot: updated })
+      return NextResponse.json({ shotId, imageUrl, imageUrls: [imageUrl], imageType: "multi_grid", shot: updated })
     }
 
     await markAiTaskFailed(task.id, { code: API_ERRORS.VALIDATION.code, message: "Invalid imageType" })

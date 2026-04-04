@@ -19,6 +19,7 @@ async function generateForShot(
     promptEnd: string | null
     imageType: string
     gridPrompts: string | null
+    gridLayout: string | null
     negativePrompt: string | null
   },
   aspectRatio: string
@@ -58,24 +59,28 @@ async function generateForShot(
     let prompts: string[] = []
     try { prompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
     if (prompts.length > 0) {
-      const results = await Promise.all(
-        prompts.map((p) =>
-          provider.generate({
-            prompt: p,
-            projectId,
-            scope: "shot",
-            negativePrompt: neg,
-            width,
-            height,
-          })
-        )
-      )
-      const urls = results.map((r) => (Array.isArray(r) ? r[0].url : r.url))
+      const promptObj: Record<string, string> = {}
+      prompts.forEach((p, i) => {
+        promptObj[String(i + 1)] = p
+      })
+      const jsonBlock = JSON.stringify(promptObj, null, 2)
+      const layoutText = shot.gridLayout ? `宫格布局：${shot.gridLayout}\n` : ""
+      const combinedPrompt = `${shot.prompt}\n\n请生成一张包含多宫格分镜布局的完整图片。${layoutText}\n\n以下 JSON 中数字键 "1"、"2"… 依次对应各子画面（建议从左到右、从上到下），请严格按各键对应描述绘制：\n\n${jsonBlock}`
+      
+      const result = await provider.generate({
+        prompt: combinedPrompt,
+        projectId,
+        scope: "shot",
+        negativePrompt: neg,
+        width,
+        height,
+      })
+      const imageUrl = Array.isArray(result) ? result[0].url : result.url
       await prisma.shot.update({
         where: { id: shot.id },
-        data: { imageUrl: urls[0], imageUrls: JSON.stringify(urls) },
+        data: { imageUrl, imageUrls: null },
       })
-      return { shotId: shot.id, imageUrl: urls[0], imageUrls: urls, status: "success" as const }
+      return { shotId: shot.id, imageUrl, imageUrls: [imageUrl], status: "success" as const }
     }
   }
 
@@ -121,6 +126,7 @@ export async function POST(request: NextRequest) {
       promptEnd: true,
       imageType: true,
       gridPrompts: true,
+      gridLayout: true,
       negativePrompt: true,
     },
   })
