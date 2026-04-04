@@ -306,15 +306,21 @@ export function ShotDetailPanel({
                   <div className="flex gap-2">
                     <div className="flex-1 space-y-1">
                       <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
-                      <img src={imageUrls[0]} alt="首帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
+                      <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
+                        <img src={imageUrls[0]} alt="首帧" className="max-h-[200px] h-auto w-auto max-w-full rounded-md" />
+                      </div>
                     </div>
                     <div className="flex-1 space-y-1">
                       <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
-                      <img src={imageUrls[1]} alt="尾帧" className="w-full aspect-[9/16] max-h-[200px] object-cover rounded-lg border" />
+                      <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
+                        <img src={imageUrls[1]} alt="尾帧" className="max-h-[200px] h-auto w-auto max-w-full rounded-md" />
+                      </div>
                     </div>
                   </div>
                 ) : hasImage ? (
-                  <img src={shot.imageUrl!} alt="画面预览" className="w-full aspect-[9/16] max-h-[260px] object-cover rounded-lg border" />
+                  <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
+                    <img src={shot.imageUrl!} alt="画面预览" className="max-h-[260px] h-auto w-auto max-w-full rounded-md" />
+                  </div>
                 ) : (
                   <div className="w-full aspect-[9/16] max-h-[200px] rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2">
                     <ImageIcon className="size-8 text-muted-foreground/20" />
