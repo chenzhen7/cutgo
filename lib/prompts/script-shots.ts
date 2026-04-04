@@ -11,8 +11,7 @@ const SCRIPT_SHOTS_EPISODE_CHARACTERS_PLACEHOLDER = "{EPISODE_CHARACTERS}" as co
 const SCRIPT_SHOTS_EPISODE_PROPS_PLACEHOLDER = "{EPISODE_PROPS}" as const
 const SCRIPT_SHOTS_SCRIPT_CONTENT_PLACEHOLDER = "{SCRIPT_CONTENT}" as const
 const SCRIPT_SHOTS_PREVIOUS_SHOT_PLACEHOLDER = "{PREVIOUS_SHOT}" as const
-
-const DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE = `你是一位资深分镜师和，擅长将剧本转化为高质量的分镜提示词。
+const DEFAULT_SCRIPT_SHOTS_SYSTEM_PROMPT_TEMPLATE = `你是一位电影剧和漫剧分镜设计师，擅长将剧本转化为高质量的分镜脚本提示词。
 
 ## 任务
 请根据用户提供的剧本信息与剧本正文，为每个关键镜头生成高质量的分镜提示词（Prompt）。
