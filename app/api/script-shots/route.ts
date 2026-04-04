@@ -12,6 +12,7 @@ function toScriptShotPlan(episode: {
   index: number
   title: string
   script: string
+  shotType: string
   createdAt: Date
   updatedAt: Date
   shots: unknown[]
@@ -25,6 +26,7 @@ function toScriptShotPlan(episode: {
       index: episode.index,
       title: episode.title,
       script: episode.script,
+      shotType: episode.shotType,
     },
     status: episode.script ? "generated" : "draft",
     shots: episode.shots,

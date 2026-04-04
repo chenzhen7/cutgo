@@ -192,6 +192,11 @@ export default function ScriptShotPage() {
     [currentScriptShotPlans]
   )
 
+  const defaultShotType = useMemo(() => {
+    const plan = currentScriptShotPlans.find(p => p.episodeId === activeEpisodeId)
+    return plan?.episode?.shotType as ImageType | undefined
+  }, [currentScriptShotPlans, activeEpisodeId])
+
   const handleGenerateCurrentEpisode = useCallback(() => {
     if (!activeEpisodeId) return
     setShowShotTypeDialog(true)
@@ -639,6 +644,7 @@ export default function ScriptShotPage() {
       <GenerateShotTypeDialog
         open={showShotTypeDialog}
         hasExistingShots={hasExistingShots}
+        defaultShotType={defaultShotType}
         onCancel={() => setShowShotTypeDialog(false)}
         onConfirm={handleConfirmGenerate}
       />

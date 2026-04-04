@@ -33,6 +33,7 @@ function toScriptShotPlan(episode: {
   index: number
   title: string
   script: string
+  shotType: string
   createdAt: Date
   updatedAt: Date
   shots: unknown[]
@@ -46,6 +47,7 @@ function toScriptShotPlan(episode: {
       index: episode.index,
       title: episode.title,
       script: episode.script,
+      shotType: episode.shotType,
     },
     status: episode.script ? "generated" : "draft",
     shots: episode.shots,
@@ -278,7 +280,13 @@ export const POST = withError(async (request: NextRequest) => {
           })
           .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-        const txOperations: Prisma.PrismaPromise<unknown>[] = [prisma.shot.deleteMany({ where: { episodeId: episode.id } })]
+        const txOperations: Prisma.PrismaPromise<unknown>[] = [
+          prisma.shot.deleteMany({ where: { episodeId: episode.id } }),
+          prisma.episode.update({
+            where: { id: episode.id },
+            data: { shotType: imageType as string },
+          }),
+        ]
         if (shotData.length > 0) {
           txOperations.push(prisma.shot.createMany({ data: shotData }))
         }

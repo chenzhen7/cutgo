@@ -142,6 +142,9 @@ model Episode {
   /// 剧本正文（不为空说明该分集存在剧本）
   script String @default("")
 
+  /// 默认镜头类型（keyframe | first_last | multi_grid）
+  shotType String @default("keyframe")
+
   shots             Shot[]
   videoCompositions VideoComposition[]
   // aiTasks           AiTask[]

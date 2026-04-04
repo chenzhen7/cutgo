@@ -75,6 +75,8 @@ export interface Episode {
   props: string | null
   /** 剧本正文，不为空说明该分集存在剧本 */
   script: string
+  /** 默认镜头类型 */
+  shotType: string
   createdAt: string
   updatedAt: string
 }
@@ -496,6 +498,7 @@ export interface ScriptShotPlan {
     index: number
     title: string
     script: string
+    shotType: string
   }
   status: ScriptShotPlanStatus
   shots: Shot[]

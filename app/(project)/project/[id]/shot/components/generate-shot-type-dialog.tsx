@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import { AlertTriangle } from "lucide-react"
 interface GenerateShotTypeDialogProps {
   open: boolean
   hasExistingShots: boolean
+  defaultShotType?: ImageType
   onCancel: () => void
   onConfirm: (imageType: ImageType, gridLayout: GridLayout | null) => void
 }
@@ -32,11 +33,19 @@ interface GenerateShotTypeDialogProps {
 export function GenerateShotTypeDialog({
   open,
   hasExistingShots,
+  defaultShotType = "keyframe",
   onCancel,
   onConfirm,
 }: GenerateShotTypeDialogProps) {
-  const [selectedType, setSelectedType] = useState<ImageType>("keyframe")
+  const [selectedType, setSelectedType] = useState<ImageType>(defaultShotType)
   const [selectedGridLayout, setSelectedGridLayout] = useState<GridLayout>("2x2")
+
+  // 当 defaultShotType 变化或打开弹窗时，重置选择
+  React.useEffect(() => {
+    if (open) {
+      setSelectedType(defaultShotType)
+    }
+  }, [open, defaultShotType])
 
   const handleConfirm = () => {
     onConfirm(selectedType, selectedType === "multi_grid" ? selectedGridLayout : null)
@@ -88,11 +97,11 @@ export function GenerateShotTypeDialog({
                   <SelectValue placeholder="请选择宫格布局" />
                 </SelectTrigger>
                 <SelectContent>
-                {GRID_LAYOUT_OPTIONS.map((layout) => (
-                  <SelectItem key={layout.value} value={layout.value}>
-                    {layout.label}
-                  </SelectItem>
-                ))}
+                  {GRID_LAYOUT_OPTIONS.map((layout) => (
+                    <SelectItem key={layout.value} value={layout.value}>
+                      {layout.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
