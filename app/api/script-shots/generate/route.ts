@@ -149,7 +149,7 @@ async function callAIGenerateScriptShots(
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
-  const { projectId, episodeIds } = body
+  const { projectId, episodeIds, imageType = "keyframe", gridLayout = null } = body
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
@@ -239,6 +239,8 @@ export const POST = withError(async (request: NextRequest) => {
               prompt,
               negativePrompt: null,
               duration: "3s",
+              imageType: imageType as string,
+              gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
               dialogueText: null,
               actionNote: null,
               characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,

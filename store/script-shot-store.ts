@@ -9,6 +9,8 @@ import type {
   AssetCharacter,
   AssetScene,
   AssetProp,
+  ImageType,
+  GridLayout,
 } from "@/lib/types"
 import { apiFetch } from "@/lib/api-client"
 import { parseJsonArray } from "@/lib/utils"
@@ -51,7 +53,9 @@ interface ScriptShotState {
 
   generateScriptShots: (
     projectId: string,
-    episodeIds?: string[]
+    episodeIds?: string[],
+    imageType?: ImageType,
+    gridLayout?: GridLayout | null
   ) => Promise<void>
 
   createScriptShotPlan: (projectId: string, episodeId: string) => Promise<void>
@@ -166,12 +170,12 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  generateScriptShots: async (projectId, episodeIds) => {
+  generateScriptShots: async (projectId, episodeIds, imageType, gridLayout) => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
       const data = await apiFetch<{ scriptShotPlans?: ScriptShotPlan[] }>("/api/script-shots/generate", {
         method: "POST",
-        body: { projectId, episodeIds },
+        body: { projectId, episodeIds, imageType, gridLayout },
       })
       set({
         scriptShotPlans: data.scriptShotPlans || [],

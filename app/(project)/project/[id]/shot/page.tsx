@@ -27,8 +27,9 @@ import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
+import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
 import type { ShotCardLayout } from "./components/shot-card"
-import type { ScriptShotPlan, ShotInput, Shot } from "@/lib/types"
+import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 
 export default function ScriptShotPage() {
@@ -99,7 +100,7 @@ export default function ScriptShotPage() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [episodeLoading, setEpisodeLoading] = useState(false)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
-  const [showGenerateConfirm, setShowGenerateConfirm] = useState(false)
+  const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   // Video generation mock state
@@ -186,27 +187,22 @@ export default function ScriptShotPage() {
     }
   }, [projectId, activeEpisodeId, fetchScriptShotPlans, setActiveShotId])
 
-  const handleGenerateCurrentEpisode = useCallback(async () => {
+  const hasExistingShots = useMemo(
+    () => currentScriptShotPlans.length > 0 && currentScriptShotPlans.some(p => p.shots.length > 0),
+    [currentScriptShotPlans]
+  )
+
+  const handleGenerateCurrentEpisode = useCallback(() => {
     if (!activeEpisodeId) return
+    setShowShotTypeDialog(true)
+  }, [activeEpisodeId])
 
-    // 如果该分集已经有了分镜，则弹窗确认
-    const hasShots = currentScriptShotPlans.length > 0 && currentScriptShotPlans.some(p => p.shots.length > 0)
-    if (hasShots) {
-      setShowGenerateConfirm(true)
-      return
-    }
-
+  const handleConfirmGenerate = useCallback(async (imageType: ImageType, gridLayout: GridLayout | null) => {
+    if (!activeEpisodeId) return
+    setShowShotTypeDialog(false)
     setDetailPanelOpen(false)
-    await generateScriptShots(projectId, [activeEpisodeId])
+    await generateScriptShots(projectId, [activeEpisodeId], imageType, gridLayout)
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
-    await fetchScriptShotPlans(projectId, activeEpisodeId)
-  }, [projectId, activeEpisodeId, currentScriptShotPlans, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
-
-  const handleConfirmGenerate = useCallback(async () => {
-    if (!activeEpisodeId) return
-    setShowGenerateConfirm(false)
-    setDetailPanelOpen(false)
-    await generateScriptShots(projectId, [activeEpisodeId])
     await fetchScriptShotPlans(projectId, activeEpisodeId)
   }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
 
@@ -639,29 +635,13 @@ export default function ScriptShotPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Generate storyboard confirmation */}
-      <AlertDialog
-        open={showGenerateConfirm}
-        onOpenChange={setShowGenerateConfirm}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>重新生成分镜</AlertDialogTitle>
-            <AlertDialogDescription>
-              当前分集已存在生成的分镜。重新生成将<span className="font-bold text-destructive">永久删除</span>现有的所有镜头、已生成的画面和视频，且无法恢复。确定要继续吗？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleConfirmGenerate}
-            >
-              确认重新生成
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Generate storyboard type selection dialog */}
+      <GenerateShotTypeDialog
+        open={showShotTypeDialog}
+        hasExistingShots={hasExistingShots}
+        onCancel={() => setShowShotTypeDialog(false)}
+        onConfirm={handleConfirmGenerate}
+      />
 
       {/* Video preview dialog */}
       <VideoPreviewDialog
