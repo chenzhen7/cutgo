@@ -11,6 +11,7 @@ import {
 } from "@/lib/ai-task-service"
 import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/prompts"
 import { parseJsonArray } from "@/lib/utils"
+import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
 
 interface AIScriptShotResult {
   shots: Array<{
@@ -21,39 +22,6 @@ interface AIScriptShotResult {
     scene: string
     props: string[]
   }>
-}
-
-const episodeWithShotsInclude = {
-  shots: { orderBy: { index: "asc" as const } },
-}
-
-function toScriptShotPlan(episode: {
-  id: string
-  projectId: string
-  index: number
-  title: string
-  script: string
-  shotType: string
-  createdAt: Date
-  updatedAt: Date
-  shots: unknown[]
-}) {
-  return {
-    id: episode.id,
-    projectId: episode.projectId,
-    episodeId: episode.id,
-    episode: {
-      id: episode.id,
-      index: episode.index,
-      title: episode.title,
-      script: episode.script,
-      shotType: episode.shotType,
-    },
-    status: episode.script ? "generated" : "draft",
-    shots: episode.shots,
-    createdAt: episode.createdAt,
-    updatedAt: episode.updatedAt,
-  }
 }
 
 async function callAIGenerateScriptShots(
@@ -161,10 +129,7 @@ async function callAIGenerateScriptShots(
           props,
         }
       })
-      .filter(
-        (item): item is { prompt: string; promptEnd?: string; gridPrompts?: string[]; characters: string[]; scene: string; props: string[] } =>
-          Boolean(item)
-      )
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
     return {
       shots,
     }

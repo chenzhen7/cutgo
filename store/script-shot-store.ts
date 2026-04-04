@@ -58,10 +58,6 @@ interface ScriptShotState {
     gridLayout?: GridLayout | null
   ) => Promise<void>
 
-  createScriptShotPlan: (projectId: string, episodeId: string) => Promise<void>
-  updateScriptShotPlan: (episodeId: string, data: { status?: string }) => Promise<void>
-  deleteScriptShotPlan: (episodeId: string) => Promise<void>
-
   addShot: (episodeId: string, data: ShotInput) => Promise<void>
   updateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => Promise<void>
   deleteShot: (episodeId: string, shotId: string) => Promise<void>
@@ -189,27 +185,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         generateProgress: null,
       })
     }
-  },
-
-  createScriptShotPlan: async (projectId, episodeId) => {
-    const sb = await apiFetch<ScriptShotPlan>("/api/script-shots", {
-      method: "POST",
-      body: { projectId, episodeId },
-    })
-    set({ scriptShotPlans: [...get().scriptShotPlans, sb] })
-  },
-
-  updateScriptShotPlan: async (episodeId, data) => {
-    const updated = await apiFetch<ScriptShotPlan>(`/api/script-shots/${episodeId}`, {
-      method: "PATCH",
-      body: data,
-    })
-    set({ scriptShotPlans: get().scriptShotPlans.map((sb) => (sb.id === episodeId ? { ...sb, ...updated } : sb)) })
-  },
-
-  deleteScriptShotPlan: async (episodeId) => {
-    await apiFetch(`/api/script-shots/${episodeId}`, { method: "DELETE" })
-    set({ scriptShotPlans: get().scriptShotPlans.map((sb) => sb.id === episodeId ? { ...sb, shots: [] } : sb) })
   },
 
   addShot: async (episodeId, data) => {

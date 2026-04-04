@@ -152,6 +152,8 @@ async function testImage({
     const result = await withTimeout(
       imageProvider.generate({
         prompt: "apple",
+        projectId: "test",
+        scope: "asset",
         width: 512,
         height: 512,
       })
