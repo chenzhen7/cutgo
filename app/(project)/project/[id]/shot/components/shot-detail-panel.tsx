@@ -628,7 +628,7 @@ export function ShotDetailPanel({
                 <video
                   ref={videoRef}
                   src={shot.videoUrl}
-                  className="w-full aspect-[9/16] max-h-[220px] object-cover bg-black"
+                  className="w-full aspect-[9/16] max-h-[220px] object-contain bg-black"
                   loop
                   playsInline
                   muted
