@@ -79,6 +79,21 @@ export const GET = withError(async (request: NextRequest) => {
     where.createdAt = createdAt
   }
 
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  await prisma.aiTask.updateMany({
+    where: {
+      projectId,
+      status: "running",
+      createdAt: { lt: oneDayAgo },
+    },
+    data: {
+      status: "failed",
+      errorCode: "TIMEOUT",
+      errorMessage: "任务执行超时（超过1天）",
+      finishedAt: new Date(),
+    },
+  })
+
   const [total, items] = await Promise.all([
     prisma.aiTask.count({ where }),
     prisma.aiTask.findMany({

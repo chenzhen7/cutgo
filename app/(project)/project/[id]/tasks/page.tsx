@@ -69,11 +69,13 @@ export default function ProjectTasksPage() {
   const [detail, setDetail] = useState<AiTask | null>(null)
 
   const loadTasks = useCallback(
-    async (nextPage: number, showRefreshing = false) => {
-      if (showRefreshing) {
-        setRefreshing(true)
-      } else {
-        setLoading(true)
+    async (nextPage: number, showRefreshing = false, isBackground = false) => {
+      if (!isBackground) {
+        if (showRefreshing) {
+          setRefreshing(true)
+        } else {
+          setLoading(true)
+        }
       }
 
       try {
@@ -98,14 +100,18 @@ export default function ProjectTasksPage() {
         setTotal(data.pagination.total)
         setPage(data.pagination.page)
       } catch (err) {
-        if (err instanceof ApiError) {
-          toast.error(err.message)
-        } else {
-          toast.error("读取任务列表失败，请稍后重试")
+        if (!isBackground) {
+          if (err instanceof ApiError) {
+            toast.error(err.message)
+          } else {
+            toast.error("读取任务列表失败，请稍后重试")
+          }
         }
       } finally {
-        setLoading(false)
-        setRefreshing(false)
+        if (!isBackground) {
+          setLoading(false)
+          setRefreshing(false)
+        }
       }
     },
     [projectId, sortBy, sortOrder, keyword, taskType, status, startDate, endDate, failedOnly]
@@ -114,6 +120,17 @@ export default function ProjectTasksPage() {
   useEffect(() => {
     void loadTasks(1)
   }, [loadTasks])
+
+  useEffect(() => {
+    const hasRunningTasks = tasks.some((t) => t.status === "running")
+    if (!hasRunningTasks) return
+
+    const timer = setInterval(() => {
+      void loadTasks(page, false, true)
+    }, 5000)
+
+    return () => clearInterval(timer)
+  }, [tasks, loadTasks, page])
 
   const handleSearch = () => {
     void loadTasks(1)
