@@ -330,77 +330,8 @@ export function ShotDetailPanel({
               </div>
             </div>
 
-            {/* Prompts by Type */}
-            {imageType === "first_last" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Label className="text-xs">首帧提示词</Label>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
-                  </div>
-                  <Textarea
-                    value={prompt}
-                    onChange={(e) => {
-                      setPrompt(e.target.value)
-                      debouncedUpdate({ prompt: e.target.value })
-                    }}
-                    className="text-[13px] min-h-[60px] resize-none leading-relaxed"
-                    placeholder="描述该镜头的首帧提示词（英文）..."
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Label className="text-xs">尾帧提示词</Label>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0">promptEnd</Badge>
-                  </div>
-                  <Textarea
-                    value={promptEnd}
-                    onChange={(e) => {
-                      setPromptEnd(e.target.value)
-                      debouncedUpdate({ promptEnd: e.target.value })
-                    }}
-                    className="text-[13px] min-h-[60px] resize-none leading-relaxed"
-                    placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {imageType === "multi_grid" && (
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs mb-1.5 block">宫格布局</Label>
-                  <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRID_LAYOUT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                          {opt.label} ({opt.count}格)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {Array.from({ length: currentGridLayout.count }).map((_, i) => (
-                    <div key={i} className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
-                      <Textarea
-                        value={gridPrompts[i] || ""}
-                        onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                        className="text-xs min-h-[40px] resize-none"
-                        placeholder={`第 ${i + 1} 格画面提示词...`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Asset bindings section: 3 columns */}
-            <div className="space-y-2">
+{/* Asset bindings section: 3 columns */}
+<div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
 
               <div className="grid grid-cols-3 gap-3">
@@ -590,6 +521,77 @@ export function ShotDetailPanel({
                 </div>
               </div>
             </div>
+            
+            {/* Prompts by Type */}
+            {imageType === "first_last" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Label className="text-xs">首帧提示词</Label>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
+                  </div>
+                  <Textarea
+                    value={prompt}
+                    onChange={(e) => {
+                      setPrompt(e.target.value)
+                      debouncedUpdate({ prompt: e.target.value })
+                    }}
+                    className="text-[13px] min-h-[60px] resize-none leading-relaxed"
+                    placeholder="描述该镜头的首帧提示词（英文）..."
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Label className="text-xs">尾帧提示词</Label>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0">promptEnd</Badge>
+                  </div>
+                  <Textarea
+                    value={promptEnd}
+                    onChange={(e) => {
+                      setPromptEnd(e.target.value)
+                      debouncedUpdate({ promptEnd: e.target.value })
+                    }}
+                    className="text-[13px] min-h-[60px] resize-none leading-relaxed"
+                    placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {imageType === "multi_grid" && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs mb-1.5 block">宫格布局</Label>
+                  <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRID_LAYOUT_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label} ({opt.count}格)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: currentGridLayout.count }).map((_, i) => (
+                    <div key={i} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
+                      <Textarea
+                        value={gridPrompts[i] || ""}
+                        onChange={(e) => handleGridPromptChange(i, e.target.value)}
+                        className="text-xs min-h-[40px] resize-none"
+                        placeholder={`第 ${i + 1} 格画面提示词...`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            
 
             {/* Image prompt */}
             {imageType !== "first_last" && (
