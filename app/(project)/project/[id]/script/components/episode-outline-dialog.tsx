@@ -114,7 +114,7 @@ export function EpisodeOutlineDialog({
 
   return (
     <Dialog open={open} onOpenChange={generating ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] !flex !flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ListOrdered className="size-4 text-primary" />
@@ -139,7 +139,7 @@ export function EpisodeOutlineDialog({
           </Button>
         </div>
 
-        <ScrollArea className="max-h-[320px]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-1">
             {rows.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">暂无可用章节</p>

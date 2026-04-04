@@ -95,7 +95,7 @@ export function ChapterSelectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] !flex !flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>选择要生成剧本的分集</DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
@@ -112,7 +112,7 @@ export function ChapterSelectDialog({
           </Button>
         </div>
 
-        <ScrollArea className="max-h-[320px]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-1">
             {sortedEpisodes.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">暂无分集</p>

@@ -119,7 +119,7 @@ export function ScriptAssetDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] !flex !flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>关联资产 — {episode.title}</DialogTitle>
         </DialogHeader>
@@ -157,7 +157,7 @@ export function ScriptAssetDialog({
               })}
             </div>
 
-            <ScrollArea className="flex-1 -mx-6 px-6 min-h-0 max-h-[50vh]">
+            <ScrollArea className="flex-1 -mx-6 px-6 min-h-0">
               <div className="py-3">
                 {/* Characters */}
                 {tab === "characters" && (
