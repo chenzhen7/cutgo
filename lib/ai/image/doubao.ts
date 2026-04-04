@@ -1,6 +1,6 @@
 import type { ImageGenerateOptions, ImageGenerateResult, ImageProvider } from "../types"
 import { throwCutGoError } from "@/lib/api-error"
-import { persistGeneratedImageLocally } from "@/lib/utils/local-image"
+import { persistGeneratedImageLocally, fetchImageAsBase64 } from "@/lib/utils/local-image"
 
 export interface DoubaoImageConfig {
   apiKey: string
@@ -46,14 +46,16 @@ export class DoubaoImageProvider implements ImageProvider {
     const { prompt: rawPrompt, negativePrompt, size = null, referenceImages, projectId, scope } = options
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
     const url = `${this.baseUrl}/images/generations`
-    const imageInput = this.resolveImageInput(referenceImages)
+    const imageInput = await this.resolveImageInput(referenceImages)
 
     console.log("[Doubao Image] request", {
       url,
       model: this.config.model,
       size,
-      prompt,
-      imageCount: Array.isArray(imageInput) ? imageInput.length : imageInput ? 1 : 0,
+      prompt
+    });
+    (imageInput as string[])?.forEach((item: string) => {
+      console.log("[Doubao Image] referenceImages", item.length > 300 ? `${item.slice(0, 300)}…` : item)
     })
 
     const res = await fetch(url, {
@@ -123,9 +125,14 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   /** 参考图：URL 或 data:image/...;base64,...；单张 string，多张 string[] */
-  private resolveImageInput(referenceImages?: string[]): DoubaoImageInput {
+  private async resolveImageInput(referenceImages?: string[]): Promise<DoubaoImageInput> {
     const validImages = (referenceImages || []).map((item) => item.trim()).filter(Boolean)
     if (validImages.length === 0) return undefined
-    return validImages.length === 1 ? validImages[0] : validImages
+
+    const base64Images = await Promise.all(
+      validImages.map((url) => fetchImageAsBase64(url))
+    )
+
+    return base64Images.length === 1 ? base64Images[0] : base64Images
   }
 }

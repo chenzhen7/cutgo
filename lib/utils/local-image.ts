@@ -23,7 +23,7 @@ function extFromMimeType(mimeType?: string): string {
   return "png"
 }
 
-async function fetchRemoteImage(sourceUrl: string): Promise<{ buffer: Buffer; mimeType?: string }> {
+export async function fetchRemoteImage(sourceUrl: string): Promise<{ buffer: Buffer; mimeType?: string }> {
   const response = await fetch(sourceUrl, {
     signal: AbortSignal.timeout(120_000),
   })
@@ -35,6 +35,35 @@ async function fetchRemoteImage(sourceUrl: string): Promise<{ buffer: Buffer; mi
     buffer: Buffer.from(arrayBuffer),
     mimeType: response.headers.get("content-type") ?? undefined,
   }
+}
+
+export async function fetchImageAsBase64(sourceUrl: string): Promise<string> {
+  if (sourceUrl.startsWith("data:image/")) {
+    return sourceUrl
+  }
+
+  let buffer: Buffer
+  let mimeType: string | undefined
+
+  if (sourceUrl.startsWith("/")) {
+    const fs = await import("node:fs/promises")
+    const absolutePath = path.join(PUBLIC_DIR, sourceUrl)
+    buffer = await fs.readFile(absolutePath)
+    const ext = path.extname(absolutePath).toLowerCase()
+    mimeType = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+               ext === ".png" ? "image/png" :
+               ext === ".webp" ? "image/webp" :
+               ext === ".gif" ? "image/gif" : "image/jpeg"
+  } else if (sourceUrl.startsWith("http://") || sourceUrl.startsWith("https://")) {
+    const fetched = await fetchRemoteImage(sourceUrl)
+    buffer = fetched.buffer
+    mimeType = fetched.mimeType || "image/jpeg"
+  } else {
+    throw new Error("Unsupported image URL format")
+  }
+
+  const base64Data = buffer.toString("base64")
+  return `data:${mimeType};base64,${base64Data}`
 }
 
 export async function persistGeneratedImageLocally(params: {
