@@ -1,7 +1,6 @@
-description: 规范项目错误处理写法，统一使用 throwCutGoError + withError，默认中文错误文案，禁止直接 throw new Error。
-alwaysApply: true
 ---
-
+alwaysApply: false
+---
 # API 错误响应规范
 
 所有 `route.ts` 必须统一使用：
