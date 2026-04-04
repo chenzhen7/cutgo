@@ -312,11 +312,32 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       return
     }
 
-    const referenceImages = [
-      ...boundCharacters.map((c) => c.imageUrl).filter((v): v is string => !!v),
-      ...(boundScene?.imageUrl ? [boundScene.imageUrl] : []),
-      ...boundProps.map((p) => p.imageUrl).filter((v): v is string => !!v),
-    ]
+    const referenceImages: string[] = []
+    const refLabels: string[] = []
+    let imgIndex = 1
+    for (const c of boundCharacters) {
+      if (c.imageUrl) {
+        referenceImages.push(c.imageUrl)
+        refLabels.push(`图${imgIndex}为角色「${c.name}」`)
+        imgIndex++
+      }
+    }
+    if (boundScene?.imageUrl) {
+      referenceImages.push(boundScene.imageUrl)
+      refLabels.push(`图${imgIndex}为场景「${boundScene.name}」`)
+      imgIndex++
+    }
+    for (const p of boundProps) {
+      if (p.imageUrl) {
+        referenceImages.push(p.imageUrl)
+        refLabels.push(`图${imgIndex}为道具「${p.name}」`)
+        imgIndex++
+      }
+    }
+
+    const annotatedPrompt = refLabels.length > 0
+      ? `${shot.prompt}\n\n参考图说明：${refLabels.join("，")}`
+      : shot.prompt
 
     const generating = new Set(get().imageGeneratingIds)
     generating.add(shotId)
@@ -326,12 +347,15 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       const body: Record<string, unknown> = {
         shotId,
         imageType: shot.imageType || "keyframe",
-        prompt: shot.prompt,
+        prompt: annotatedPrompt,
         negativePrompt: shot.negativePrompt,
         referenceImages,
       }
       if (shot.imageType === "first_last") {
-        body.promptEnd = shot.promptEnd || shot.prompt
+        const rawEnd = shot.promptEnd || shot.prompt
+        body.promptEnd = refLabels.length > 0
+          ? `${rawEnd}\n\n参考图说明：${refLabels.join("，")}`
+          : rawEnd
       }
       if (shot.imageType === "multi_grid") {
         body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
