@@ -70,16 +70,7 @@ export async function callLLM(
     throwCutGoError("LLM_NOT_CONFIGURED")
   }
 
-  logAIEvent("llm", "request", {
-    provider: llmProvider.id,
-    body: options,
-  })
-
   const result = await llmProvider.chat(options)
-  logAIEvent("llm", "response", {
-    provider: llmProvider.id,
-    body: result,
-  })
   return result
 
 }

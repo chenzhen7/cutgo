@@ -1,5 +1,6 @@
 import type { ImageProvider, ImageGenerateOptions, ImageGenerateResult } from "../types"
 import { persistGeneratedImageLocally } from "@/lib/utils/local-image"
+import { logAIEvent } from "../logging"
 
 export interface StabilityImageConfig {
   apiKey: string
@@ -56,6 +57,11 @@ export class StabilityImageProvider implements ImageProvider {
       samples: numOutputs,
     }
 
+    logAIEvent("image", "request", {
+      provider: this.id,
+      body,
+    })
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -72,6 +78,11 @@ export class StabilityImageProvider implements ImageProvider {
     }
 
     const json = await res.json() as { artifacts: StabilityArtifact[] }
+
+    logAIEvent("image", "response", {
+      provider: this.id,
+      body: json,
+    })
     if (!json.artifacts?.length) {
       throw new Error("Stability AI API returned no artifacts")
     }

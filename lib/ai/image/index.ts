@@ -78,17 +78,7 @@ export async function callImage(
     throwCutGoError("IMAGE_NOT_CONFIGURED")
   }
 
-  logAIEvent("image", "request", {
-    provider: provider.id,
-    body: options,
-  })
-
   const result = await provider.generate(options)
-
-  logAIEvent("image", "response", {
-    provider: provider.id,
-    body: result,
-  })
   return result
 
 }

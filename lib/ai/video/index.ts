@@ -74,17 +74,7 @@ export async function callVideo(
     throwCutGoError("VIDEO_NOT_CONFIGURED")
   }
 
-  logAIEvent("video", "request", {
-    provider: provider.id,
-    body: options,
-  })
-
   const result = await provider.generate(options)
-
-  logAIEvent("video", "response", {
-    provider: provider.id,
-    body: result,
-  })
 
   return result
 }
@@ -112,12 +102,6 @@ export async function queryVideoTask(
     throwCutGoError("VIDEO_NOT_CONFIGURED")
   }
 
-  logAIEvent("video", "request", {
-    provider: provider.id,
-    action: "queryTask",
-    taskId,
-  })
-
   let status: VideoTaskStatus
   try {
     status = await provider.queryTask(taskId)
@@ -126,14 +110,6 @@ export async function queryVideoTask(
     console.error("queryVideoTask failed ", err)
     status = { status: "failed", reason: (err as Error)?.message || String(err) }
   }
-
-
-  logAIEvent("video", "response", {
-    provider: provider.id,
-    action: "queryTask",
-    taskId,
-    status,
-  })
 
   return status
 }

@@ -7,6 +7,7 @@ import {
 } from "../types"
 import { generateText } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { logAIEvent } from "../logging"
 
 export interface GoogleLLMConfig {
   apiKey: string
@@ -35,12 +36,31 @@ export class GoogleLLMProvider implements LLMProvider {
     const { messages, model, maxTokens, timeoutMs } = options
     const modelId = model || this.config.model
 
+    const requestPayload = {
+      model: modelId,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
+    }
+
+    logAIEvent("llm", "request", {
+      provider: this.id,
+      body: requestPayload,
+    })
+
     const result = await generateText({
       model: this.googleAI.chat(modelId),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
       maxRetries: DEFAULT_LLM_MAX_RETRIES,
       timeout: timeoutMs || DEFAULT_LLM_TIMEOUT_MS,
+    })
+
+    logAIEvent("llm", "response", {
+      provider: this.id,
+      body: {
+        text: result.text,
+        usage: result.usage,
+      },
     })
 
     return {

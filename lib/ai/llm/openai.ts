@@ -7,6 +7,7 @@ import {
 } from "../types"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
+import { logAIEvent } from "../logging"
 
 /** OpenAI 兼容接口的配置参数 */
 export interface OpenAICompatibleConfig {
@@ -37,12 +38,31 @@ export class OpenAILLMProvider implements LLMProvider {
   async chat(options: LLMGenerateOptions): Promise<LLMGenerateResult> {
     const { messages, model, maxTokens, timeoutMs } = options
 
+    const requestPayload = {
+      model: model || this.config.model,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
+    }
+
+    logAIEvent("llm", "request", {
+      provider: this.id,
+      body: requestPayload,
+    })
+
     const result = await generateText({
       model: this.openai.chat(model || this.config.model),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       ...(maxTokens != null ? { maxOutputTokens: maxTokens } : {}),
       maxRetries: DEFAULT_LLM_MAX_RETRIES,
       timeout: timeoutMs || DEFAULT_LLM_TIMEOUT_MS,
+    })
+
+    logAIEvent("llm", "response", {
+      provider: this.id,
+      body: {
+        text: result.text,
+        usage: result.usage,
+      },
     })
 
     return {

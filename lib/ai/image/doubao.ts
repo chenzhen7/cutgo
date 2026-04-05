@@ -1,6 +1,7 @@
 import type { ImageGenerateOptions, ImageGenerateResult, ImageProvider } from "../types"
 import { throwCutGoError } from "@/lib/api-error"
 import { persistGeneratedImageLocally, fetchImageAsBase64 } from "@/lib/utils/local-image"
+import { logAIEvent } from "../logging"
 
 export interface DoubaoImageConfig {
   apiKey: string
@@ -48,7 +49,18 @@ export class DoubaoImageProvider implements ImageProvider {
     const url = `${this.baseUrl}/images/generations`
     const imageInput = await this.resolveImageInput(referenceImages)
 
-    const ratio = aspectRatio
+    const requestBody = {
+      model: this.config.model,
+      prompt,
+      ratio: aspectRatio,
+      ...(imageInput ? { image: imageInput } : {}),
+      response_format: "url",
+    }
+
+    logAIEvent("image", "request", {
+      provider: this.id,
+      body: requestBody,
+    })
 
     const res = await fetch(url, {
       method: "POST",
@@ -56,13 +68,7 @@ export class DoubaoImageProvider implements ImageProvider {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.config.apiKey}`,
       },
-      body: JSON.stringify({
-        model: this.config.model,
-        prompt,
-        ratio: ratio,
-        ...(imageInput ? { image: imageInput } : {}),
-        response_format: "url",
-      }),
+      body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(300_000),
     })
 
@@ -75,6 +81,11 @@ export class DoubaoImageProvider implements ImageProvider {
     }
 
     const json = (await res.json()) as DoubaoImageResponse
+
+    logAIEvent("image", "response", {
+      provider: this.id,
+      body: json,
+    })
 
     const first = json.data?.[0]
     if (!first) {

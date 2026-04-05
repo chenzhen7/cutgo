@@ -1,5 +1,6 @@
 import type { ImageProvider, ImageGenerateOptions, ImageGenerateResult } from "../types"
 import { persistGeneratedImageLocally } from "@/lib/utils/local-image"
+import { logAIEvent } from "../logging"
 
 /**
  * 图像生成占位实现（构造器方式）
@@ -25,13 +26,18 @@ export class PlaceholderImageProvider implements ImageProvider {
    * 模拟生成图片
    */
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
+    logAIEvent("image", "request", {
+      provider: this.id,
+      body: options,
+    })
+
     const { prompt, resolution, numOutputs = 1, projectId, scope } = options
     const [width, height] = resolution.split("x").map(Number)
     if (numOutputs > 1) {
       const results = Array.from({ length: numOutputs }, (_, i) => ({
         url: this.makePlaceholderUrl(prompt, width, height, i),
       }))
-      return Promise.all(
+      const finalResults = await Promise.all(
         results.map(async (item) => ({
           url: await persistGeneratedImageLocally({
             sourceUrl: item.url,
@@ -40,6 +46,13 @@ export class PlaceholderImageProvider implements ImageProvider {
           }),
         }))
       )
+      
+      logAIEvent("image", "response", {
+        provider: this.id,
+        body: finalResults,
+      })
+      
+      return finalResults
     }
     const rawUrl = this.makePlaceholderUrl(prompt, width, height)
     const localUrl = await persistGeneratedImageLocally({
@@ -47,6 +60,13 @@ export class PlaceholderImageProvider implements ImageProvider {
       projectId,
       scope,
     })
-    return { url: localUrl }
+    
+    const result = { url: localUrl }
+    logAIEvent("image", "response", {
+      provider: this.id,
+      body: result,
+    })
+    
+    return result
   }
 }

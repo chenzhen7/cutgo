@@ -6,6 +6,7 @@ import type {
 } from "../types"
 import { throwCutGoError } from "@/lib/api-error"
 import { fetchImageAsBase64 } from "@/lib/utils/local-image"
+import { logAIEvent } from "../logging"
 
 export interface DoubaoVideoConfig {
   apiKey: string
@@ -89,6 +90,11 @@ export class DoubaoVideoProvider implements VideoProvider {
       body.generate_audio = true
     }
 
+    logAIEvent("video", "request", {
+      provider: this.id,
+      body,
+    })
+
     const url = this.baseUrl
     const res = await fetch(url, {
       method: "POST",
@@ -107,6 +113,11 @@ export class DoubaoVideoProvider implements VideoProvider {
 
     const json = (await res.json()) as DoubaoVideoCreateResponse
 
+    logAIEvent("video", "response", {
+      provider: this.id,
+      body: json,
+    })
+
     if (json.error) {
       throwCutGoError("INTERNAL", `豆包视频任务创建失败：${json.error.message}`)
     }
@@ -119,6 +130,12 @@ export class DoubaoVideoProvider implements VideoProvider {
   }
 
   async queryTask(taskId: string): Promise<VideoTaskStatus> {
+    logAIEvent("video", "request", {
+      provider: this.id,
+      action: "queryTask",
+      taskId,
+    })
+
     const url = `${this.baseUrl}/${encodeURIComponent(taskId)}`
     const res = await fetch(url, {
       method: "GET",
@@ -135,6 +152,13 @@ export class DoubaoVideoProvider implements VideoProvider {
     }
 
     const json = (await res.json()) as DoubaoVideoQueryResponse
+
+    logAIEvent("video", "response", {
+      provider: this.id,
+      action: "queryTask",
+      taskId,
+      body: json,
+    })
 
     const apiErrorMsg = json.error ? (json.error.message ?? json.error.code) : undefined
     if (json.error) {
