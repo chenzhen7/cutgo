@@ -4,6 +4,7 @@ import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/li
 import { getImageProvider } from "@/lib/ai/image"
 import type { ImageProvider } from "@/lib/ai/types"
 import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
+import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 
 function resolveSize(aspectRatio: string): { width: number; height: number } {
   return aspectRatio === "16:9"
@@ -95,17 +96,17 @@ async function generateForShot(
   return { shotId: shot.id, imageUrl, status: "success" as const }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
   const { projectId, episodeId, mode = "missing_only" } = body
 
   if (!projectId) {
-    return NextResponse.json({ error: "projectId is required" }, { status: 400 })
+    throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 })
+    throwCutGoError("NOT_FOUND", "Project not found")
   }
 
   const where: Record<string, unknown> = { episode: { projectId } }
@@ -139,33 +140,41 @@ export async function POST(request: NextRequest) {
     taskType: "image_generate",
   })
 
-  const provider = await getImageProvider()
-  const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
-  let success = 0
-  let failed = 0
+  try {
+    const provider = await getImageProvider()
+    const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
+    let success = 0
+    let failed = 0
 
-  for (const shot of shots) {
-    try {
-      const result = await generateForShot(provider, projectId, shot, project.aspectRatio)
-      results.push(result)
-      success++
-    } catch {
-      results.push({ shotId: shot.id, status: "failed" })
-      failed++
+    for (const shot of shots) {
+      try {
+        const result = await generateForShot(provider, projectId, shot, project.aspectRatio)
+        results.push(result)
+        success++
+      } catch {
+        results.push({ shotId: shot.id, status: "failed" })
+        failed++
+      }
     }
-  }
 
-  if (failed > 0) {
-    await markAiTaskFailed(task.id, {
-      code: "PARTIAL_FAILED",
-      message: `批量生图完成，但有 ${failed}/${shots.length} 个镜头失败`,
+    if (failed > 0) {
+      await markAiTaskFailed(task.id, {
+        code: "PARTIAL_FAILED",
+        message: `批量生图完成，但有 ${failed}/${shots.length} 个镜头失败`,
+      })
+    } else {
+      await markAiTaskSucceeded(task.id)
+    }
+
+    return NextResponse.json({
+      results,
+      stats: { total: shots.length, success, failed },
     })
-  } else {
-    await markAiTaskSucceeded(task.id)
+  } catch (err) {
+    await markAiTaskFailed(task.id, err)
+    if (err instanceof CutGoError) {
+      throw err
+    }
+    throwCutGoError("INTERNAL", err instanceof Error ? err.message : "Batch image generation failed")
   }
-
-  return NextResponse.json({
-    results,
-    stats: { total: shots.length, success, failed },
-  })
-}
+})

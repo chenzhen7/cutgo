@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { API_ERRORS } from "@/lib/api-error"
+import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 import {
   createRunningAiTask,
   markAiTaskFailed,
@@ -26,12 +26,12 @@ function resolveSize(aspectRatio?: string): { width: number; height: number } {
     : { width: 432, height: 768 }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withError(async (request: NextRequest) => {
   const body: GenerateImageRequest = await request.json()
   const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, referenceImages } = body
 
   if (!shotId || !prompt) {
-    return NextResponse.json({ error: "shotId and prompt are required" }, { status: 400 })
+    throwCutGoError("MISSING_PARAMS", "shotId and prompt are required")
   }
 
   const shot = await prisma.shot.findUnique({
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     },
   })
   if (!shot) {
-    return NextResponse.json({ error: "Shot not found" }, { status: 404 })
+    throwCutGoError("NOT_FOUND", "Shot not found")
   }
 
   const task = await createRunningAiTask({
@@ -86,9 +86,8 @@ export async function POST(request: NextRequest) {
 
     if (type === "first_last") {
       if (!promptEnd) {
-        const error = { code: API_ERRORS.VALIDATION.code, message: "promptEnd is required for first_last type" }
-        await markAiTaskFailed(task.id, error)
-        return NextResponse.json({ error: "promptEnd is required for first_last type" }, { status: 400 })
+        await markAiTaskFailed(task.id, { code: "VALIDATION_ERROR", message: "promptEnd is required for first_last type" })
+        throwCutGoError("VALIDATION", "promptEnd is required for first_last type")
       }
       const [r1, r2] = await Promise.all([
         provider.generate({
@@ -123,9 +122,8 @@ export async function POST(request: NextRequest) {
 
     if (type === "multi_grid") {
       if (!gridPrompts?.length) {
-        const error = { code: API_ERRORS.VALIDATION.code, message: "gridPrompts are required for multi_grid type" }
-        await markAiTaskFailed(task.id, error)
-        return NextResponse.json({ error: "gridPrompts are required for multi_grid type" }, { status: 400 })
+        await markAiTaskFailed(task.id, { code: "VALIDATION_ERROR", message: "gridPrompts are required for multi_grid type" })
+        throwCutGoError("VALIDATION", "gridPrompts are required for multi_grid type")
       }
 
       const combinedPrompt = buildMultiGridPrompt(prompt, gridPrompts, shot.gridLayout)
@@ -151,11 +149,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ shotId, imageUrl, imageUrls: [imageUrl], imageType: "multi_grid", shot: updated })
     }
 
-    await markAiTaskFailed(task.id, { code: API_ERRORS.VALIDATION.code, message: "Invalid imageType" })
-    return NextResponse.json({ error: "Invalid imageType" }, { status: 400 })
+    await markAiTaskFailed(task.id, { code: "VALIDATION_ERROR", message: "Invalid imageType" })
+    throwCutGoError("VALIDATION", "Invalid imageType")
   } catch (err) {
     console.error("Image generation failed:", err)
     await markAiTaskFailed(task.id, err)
-    return NextResponse.json({ error: "Image generation failed" }, { status: 500 })
+    if (err instanceof CutGoError) {
+      throw err
+    }
+    throwCutGoError("INTERNAL", err instanceof Error ? err.message : "Image generation failed")
   }
-}
+})
