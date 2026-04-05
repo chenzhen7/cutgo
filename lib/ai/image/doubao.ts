@@ -43,12 +43,12 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const { prompt: rawPrompt, negativePrompt, resolution, referenceImages, projectId, scope } = options
+    const { prompt: rawPrompt, negativePrompt, aspectRatio, referenceImages, projectId, scope } = options
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
     const url = `${this.baseUrl}/images/generations`
     const imageInput = await this.resolveImageInput(referenceImages)
 
-    const finalSize = resolution
+    const ratio = aspectRatio
 
     const res = await fetch(url, {
       method: "POST",
@@ -59,7 +59,7 @@ export class DoubaoImageProvider implements ImageProvider {
       body: JSON.stringify({
         model: this.config.model,
         prompt,
-        size: finalSize,
+        ratio: ratio,
         ...(imageInput ? { image: imageInput } : {}),
         response_format: "url",
       }),
