@@ -443,23 +443,23 @@ export function ShotDetailPanel({
                       </Popover>
                     </div>
                     {boundCharacters.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         {boundCharacters.map((c) => (
-                          <div key={c.id} className="flex flex-col items-center gap-0.5">
+                          <div key={c.id} className="flex flex-col items-center gap-1">
                             <button
                               onClick={() => setEditingCharacter(c)}
-                              className="size-11 rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
                               title={`编辑 ${c.name}`}
                             >
                               {c.imageUrl ? (
                                 <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
-                                  <User className="size-5 text-muted-foreground/40" />
+                                  <User className="size-4 text-muted-foreground/40" />
                                 </div>
                               )}
                             </button>
-                            <span className="text-[9px] text-muted-foreground truncate max-w-[44px]">{c.name}</span>
+                            <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{c.name}</span>
                           </div>
                         ))}
                       </div>
@@ -511,23 +511,23 @@ export function ShotDetailPanel({
                       </Popover>
                     </div>
                     {boundProps.length > 0 ? (
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-4 gap-1.5">
                         {boundProps.map((p) => (
-                          <div key={p.id} className="flex flex-col items-center gap-0.5">
+                          <div key={p.id} className="flex flex-col items-center gap-1">
                             <button
                               onClick={() => setEditingProp(p)}
-                              className="size-11 rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
                               title={`编辑 ${p.name}`}
                             >
                               {p.imageUrl ? (
                                 <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
-                                  <Package className="size-5 text-muted-foreground/40" />
+                                  <Package className="size-4 text-muted-foreground/40" />
                                 </div>
                               )}
                             </button>
-                            <span className="text-[9px] text-muted-foreground truncate max-w-[44px]">{p.name}</span>
+                            <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{p.name}</span>
                           </div>
                         ))}
                       </div>
