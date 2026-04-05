@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { throwCutGoError, withError, CutGoError } from "@/lib/api-error"
 import { queryVideoTask } from "@/lib/ai/video"
 import { markAiTaskSucceeded, markAiTaskFailed } from "@/lib/ai-task-service"
+import { persistGeneratedVideoLocally } from "@/lib/utils/local-video"
 
 export const GET = withError(async (
   _request: NextRequest,
@@ -10,7 +11,10 @@ export const GET = withError(async (
 ) => {
   const { id: episodeId, shotId } = await params
 
-  const shot = await prisma.shot.findUnique({ where: { id: shotId } })
+  const shot = await prisma.shot.findUnique({ 
+    where: { id: shotId },
+    include: { episode: true }
+  })
   if (!shot || shot.episodeId !== episodeId) {
     throwCutGoError("NOT_FOUND", "镜头不存在")
   }
@@ -28,10 +32,23 @@ export const GET = withError(async (
     const status = await queryVideoTask(shot.videoTaskId)
 
     if (status.status === "success") {
+      let localVideoUrl = status.url
+      if (status.url) {
+        try {
+          localVideoUrl = await persistGeneratedVideoLocally({
+            sourceUrl: status.url,
+            projectId: shot.episode.projectId,
+            scope: "shot",
+          })
+        } catch (err) {
+          console.error("Failed to save video locally:", err)
+        }
+      }
+
       const updated = await prisma.shot.update({
         where: { id: shotId },
         data: {
-          videoUrl: status.url,
+          videoUrl: localVideoUrl,
           videoStatus: "completed",
           videoTaskId: null,
         },
@@ -45,7 +62,7 @@ export const GET = withError(async (
         await markAiTaskSucceeded(aiTask.id)
       }
 
-      return NextResponse.json({ videoStatus: "completed", videoUrl: status.url, shot: updated })
+      return NextResponse.json({ videoStatus: "completed", videoUrl: localVideoUrl, shot: updated })
     }
 
     if (status.status === "failed") {
