@@ -23,7 +23,7 @@ interface GenerateImageRequest {
 
 export const POST = withError(async (request: NextRequest) => {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, resolution, referenceImages } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt,  referenceImages } = body
 
   if (!shotId || !prompt) {
     throwCutGoError("MISSING_PARAMS", "shotId and prompt are required")
@@ -47,26 +47,29 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("NOT_FOUND", "Shot not found")
   }
 
+  const episode = shot.episode;
+  const project = episode.project;
+
   const task = await createRunningAiTask({
-    projectId: shot.episode.projectId,
-    episodeId: shot.episode.id,
+    projectId: episode.projectId,
+    episodeId: episode.id,
     shotId: shot.id,
-    targetInfo: `第${shot.episode.index + 1}集 ${shot.episode.title} 分镜 ${shot.index + 1}`,
+    targetInfo: `第${episode.index + 1}集 ${episode.title} 分镜 ${shot.index + 1}`,
     taskType: "image_generate",
   })
 
   try {
     const type = imageType || "keyframe"
- 
+
 
     if (type === "keyframe") {
       const result = await callImage({
         prompt,
-        projectId: shot.episode.projectId,
+        projectId: episode.projectId,
         scope: "shot",
         negativePrompt,
-        aspectRatio,
-        resolution,
+        aspectRatio : project.aspectRatio,
+        resolution : project.resolution,
         referenceImages,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
@@ -86,20 +89,20 @@ export const POST = withError(async (request: NextRequest) => {
       const [r1, r2] = await Promise.all([
         callImage({
           prompt,
-          projectId: shot.episode.projectId,
+          projectId: episode.projectId,
           scope: "shot",
           negativePrompt,
-          aspectRatio,
-          resolution,
+          aspectRatio : project.aspectRatio,
+          resolution : project.resolution,
           referenceImages,
         }),
         callImage({
           prompt: promptEnd,
-          projectId: shot.episode.projectId,
+          projectId: episode.projectId,
           scope: "shot",
           negativePrompt,
-          aspectRatio,
-          resolution,
+          aspectRatio : project.aspectRatio,
+          resolution : project.resolution,
           referenceImages,
         }),
       ])
@@ -123,11 +126,11 @@ export const POST = withError(async (request: NextRequest) => {
       const combinedPrompt = buildMultiGridPrompt(prompt, gridPrompts, shot.gridLayout)
       const result = await callImage({
         prompt: combinedPrompt,
-        projectId: shot.episode.projectId,
+        projectId: episode.projectId,
         scope: "shot",
         negativePrompt,
-        aspectRatio,
-        resolution,
+        aspectRatio : project.aspectRatio,
+        resolution : project.resolution ,
         referenceImages,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
