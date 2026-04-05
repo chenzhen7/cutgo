@@ -119,8 +119,6 @@ export default function AssetsPage() {
   const [showExtractDialog, setShowExtractDialog] = useState(false)
   const [extractSuccessMsg] = useState<string | null>(null)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
-  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null)
-
   useEffect(() => {
     const init = async () => {
       setLoading(true)
@@ -274,7 +272,6 @@ export default function AssetsPage() {
             onEdit={setEditingCharacter}
             onDelete={setDeletingCharacterId}
             onToggleLock={handleToggleCharacterLock}
-            onPreview={(url, name) => setPreviewImage({ url, name })}
           />
         )}
         {activeTab === "characters" && characters.length === 0 && totalAssets > 0 && (
@@ -288,7 +285,6 @@ export default function AssetsPage() {
             searchQuery={searchQuery}
             onEdit={setEditingScene}
             onDelete={setDeletingSceneId}
-            onPreview={(url, name) => setPreviewImage({ url, name })}
           />
         )}
         {activeTab === "scenes" && scenes.length === 0 && totalAssets > 0 && (
@@ -302,7 +298,6 @@ export default function AssetsPage() {
             searchQuery={searchQuery}
             onEdit={setEditingProp}
             onDelete={setDeletingPropId}
-            onPreview={(url, name) => setPreviewImage({ url, name })}
           />
         )}
         {activeTab === "props" && props.length === 0 && totalAssets > 0 && (
@@ -516,18 +511,6 @@ export default function AssetsPage() {
         scenes={scenes}
         props={props}
       />
-
-      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="max-w-4xl p-2">
-          {previewImage && (
-            <img
-              src={previewImage.url}
-              alt={previewImage.name}
-              className="max-h-[80vh] w-full rounded-md object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
@@ -750,14 +733,12 @@ const CharacterList = memo(function CharacterList({
   onEdit,
   onDelete,
   onToggleLock,
-  onPreview,
 }: {
   characters: AssetCharacter[]
   searchQuery: string
   onEdit: (c: AssetCharacter) => void
   onDelete: (id: string) => void
   onToggleLock: (id: string, locked: boolean) => void
-  onPreview: (imageUrl: string, name: string) => void
 }) {
   const normalizeGender = (gender: string | null | undefined): "male" | "female" | "other" | null => {
     if (!gender) return null
@@ -882,13 +863,11 @@ const SceneList = memo(function SceneList({
   searchQuery,
   onEdit,
   onDelete,
-  onPreview,
 }: {
   scenes: AssetScene[]
   searchQuery: string
   onEdit: (s: AssetScene) => void
   onDelete: (id: string) => void
-  onPreview: (imageUrl: string, name: string) => void
 }) {
   const filtered = useMemo(
     () =>
@@ -960,13 +939,11 @@ const PropList = memo(function PropList({
   searchQuery,
   onEdit,
   onDelete,
-  onPreview,
 }: {
   props: AssetProp[]
   searchQuery: string
   onEdit: (p: AssetProp) => void
   onDelete: (id: string) => void
-  onPreview: (imageUrl: string, name: string) => void
 }) {
   const filtered = useMemo(
     () =>
