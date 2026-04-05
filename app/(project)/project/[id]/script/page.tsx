@@ -6,6 +6,7 @@ import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene, Episode } from "@/lib/types"
 import { Loader2, ListOrdered, X } from "lucide-react"
 import { toast } from "sonner"
+import { apiFetch } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
@@ -89,6 +90,17 @@ export default function ScriptPage() {
     }
     init()
   }, [projectId, fetchEpisodes, fetchChapters, setActiveEpisodeId])
+
+  const handleAssetRefresh = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(`/api/assets?projectId=${projectId}`)
+      setAssetCharacters(data.characters ?? [])
+      setAssetScenes(data.scenes ?? [])
+      setAssetProps(data.props ?? [])
+    } catch {
+      // 静默失败
+    }
+  }, [projectId])
 
   const activeEpisode = useMemo(
     () => episodes.find((ep) => ep.id === activeEpisodeId) ?? null,
@@ -308,6 +320,7 @@ export default function ScriptPage() {
                         updateEpisode(activeEpisode.id, data)
                       }
                       isGeneratingScript={isGenerating}
+                      onAssetRefresh={() => void handleAssetRefresh()}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center p-8 max-w-md mx-auto">

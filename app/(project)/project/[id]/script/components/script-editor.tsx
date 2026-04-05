@@ -22,12 +22,17 @@ import type {
 } from "@/lib/types"
 import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
-import { PreviewableImage } from "@/components/ui/previewable-image"
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import {
+  CharacterFormDialog,
+  SceneFormDialog,
+  PropFormDialog,
+} from "@/components/asset-form-dialogs"
+import { useAssetStore } from "@/store/asset-store"
 
 interface ScriptEditorProps {
   episode: Episode
@@ -51,6 +56,7 @@ interface ScriptEditorProps {
     props?: string
   }) => Promise<void>
   isGeneratingScript?: boolean
+  onAssetRefresh?: () => void
 }
 
 export function ScriptEditor({
@@ -63,7 +69,12 @@ export function ScriptEditor({
   onUpdateScript,
   onUpdateEpisode,
   isGeneratingScript = false,
+  onAssetRefresh,
 }: ScriptEditorProps) {
+  const { updateCharacter, updateScene, updateProp } = useAssetStore()
+  const [editingCharacter, setEditingCharacter] = useState<AssetCharacter | null>(null)
+  const [editingScene, setEditingScene] = useState<AssetScene | null>(null)
+  const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
   const [content, setContent] = useState(episode.script ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -406,7 +417,7 @@ export function ScriptEditor({
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
                                     {s.imageUrl ? (
-                                      <PreviewableImage src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                                      <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
                                     ) : (
                                       <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                         <MapPin className="size-3 text-muted-foreground" />
@@ -422,18 +433,22 @@ export function ScriptEditor({
                       </Popover>
                     </div>
                     {boundScenes.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         {boundScenes.map((s) => (
                           <div key={s.id} className="flex flex-col items-center gap-1">
-                            <div className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border">
+                            <button
+                              onClick={() => setEditingScene(s)}
+                              className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              title={`编辑 ${s.name}`}
+                            >
                               {s.imageUrl ? (
-                                <PreviewableImage src={s.imageUrl} alt={s.name} className="size-full object-cover" />
+                                <img src={s.imageUrl} alt={s.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
                                   <MapPin className="size-4 text-muted-foreground/40" />
                                 </div>
                               )}
-                            </div>
+                            </button>
                             <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{s.name}</span>
                           </div>
                         ))}
@@ -478,7 +493,7 @@ export function ScriptEditor({
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
                                     {c.imageUrl ? (
-                                      <PreviewableImage src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                                      <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
                                     ) : (
                                       <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                         <User className="size-3 text-muted-foreground" />
@@ -497,15 +512,19 @@ export function ScriptEditor({
                       <div className="grid grid-cols-3 gap-1.5">
                         {boundCharacters.map((c) => (
                           <div key={c.id} className="flex flex-col items-center gap-1">
-                            <div className="aspect-square w-full rounded-md overflow-hidden bg-muted border">
+                            <button
+                              onClick={() => setEditingCharacter(c)}
+                              className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              title={`编辑 ${c.name}`}
+                            >
                               {c.imageUrl ? (
-                                <PreviewableImage src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                                <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
                                   <User className="size-4 text-muted-foreground/40" />
                                 </div>
                               )}
-                            </div>
+                            </button>
                             <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{c.name}</span>
                           </div>
                         ))}
@@ -548,7 +567,16 @@ export function ScriptEditor({
                                     checked={propIds.includes(p.id)}
                                     onCheckedChange={() => handleToggleProp(p.id)}
                                   />
-                                  <span className="text-[11px] truncate">{p.name}</span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {p.imageUrl ? (
+                                      <img src={p.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                                    ) : (
+                                      <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                        <Package className="size-3 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                    <span className="text-[11px] truncate">{p.name}</span>
+                                  </div>
                                 </label>
                               ))
                             )}
@@ -557,11 +585,24 @@ export function ScriptEditor({
                       </Popover>
                     </div>
                     {boundProps.length > 0 ? (
-                      <div className="flex gap-1 flex-wrap">
+                      <div className="grid grid-cols-4 gap-1.5">
                         {boundProps.map((p) => (
-                          <Badge key={p.id} variant="outline" className="text-[9px] px-1.5">
-                            {p.name}
-                          </Badge>
+                          <div key={p.id} className="flex flex-col items-center gap-1">
+                            <button
+                              onClick={() => setEditingProp(p)}
+                              className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              title={`编辑 ${p.name}`}
+                            >
+                              {p.imageUrl ? (
+                                <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
+                              ) : (
+                                <div className="size-full flex items-center justify-center">
+                                  <Package className="size-4 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </button>
+                            <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{p.name}</span>
+                          </div>
                         ))}
                       </div>
                     ) : propIds.length > 0 ? (
@@ -802,6 +843,41 @@ export function ScriptEditor({
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+      {/* Asset Edit Dialogs */}
+      <CharacterFormDialog
+        open={!!editingCharacter}
+        onOpenChange={(open) => { if (!open) setEditingCharacter(null) }}
+        character={editingCharacter}
+        onSave={async (data) => {
+          if (!editingCharacter) return
+          await updateCharacter(editingCharacter.id, data)
+          setEditingCharacter(null)
+          onAssetRefresh?.()
+        }}
+      />
+      <SceneFormDialog
+        open={!!editingScene}
+        onOpenChange={(open) => { if (!open) setEditingScene(null) }}
+        scene={editingScene}
+        onSave={async (data) => {
+          if (!editingScene) return
+          await updateScene(editingScene.id, data)
+          setEditingScene(null)
+          onAssetRefresh?.()
+        }}
+      />
+      <PropFormDialog
+        open={!!editingProp}
+        onOpenChange={(open) => { if (!open) setEditingProp(null) }}
+        prop={editingProp}
+        onSave={async (data) => {
+          if (!editingProp) return
+          await updateProp(editingProp.id, data)
+          setEditingProp(null)
+          onAssetRefresh?.()
+        }}
+      />
     </>
   )
 }

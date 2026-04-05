@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -45,6 +46,13 @@ import { cn, parseJsonArray } from "@/lib/utils"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS, VIDEO_DURATION_OPTIONS, VIDEO_MOTION_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
+import {
+  CharacterFormDialog,
+  SceneFormDialog,
+  PropFormDialog,
+} from "@/components/asset-form-dialogs"
+import { useAssetStore } from "@/store/asset-store"
+import { useScriptShotsStore } from "@/store/script-shot-store"
 
 const EmptyBinding = () => (
   <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
@@ -93,6 +101,19 @@ export function ShotDetailPanel({
   onNext,
   onClose,
 }: ShotDetailPanelProps) {
+  const params = useParams()
+  const projectId = params.id as string
+  const { updateCharacter, updateScene, updateProp } = useAssetStore()
+  const fetchAssets = useScriptShotsStore((s) => s.fetchAssets)
+
+  const [editingCharacter, setEditingCharacter] = useState<AssetCharacter | null>(null)
+  const [editingScene, setEditingScene] = useState<AssetScene | null>(null)
+  const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
+
+  const handleAssetSaved = useCallback(() => {
+    void fetchAssets(projectId)
+  }, [fetchAssets, projectId])
+
   const [activeTab, setActiveTab] = useState<"image" | "video">("image")
   const [prompt, setPrompt] = useState(shot.prompt || "")
   const [promptEnd, setPromptEnd] = useState(shot.promptEnd || "")
@@ -354,9 +375,17 @@ export function ShotDetailPanel({
                       </Popover>
                     </div>
                     {boundScene ? (
-                      <div className="rounded-lg overflow-hidden border bg-muted/30">
+                      <button
+                        onClick={() => setEditingScene(boundScene)}
+                        className="w-full rounded-lg overflow-hidden border bg-muted/30 hover:ring-2 hover:ring-primary/40 transition-all text-left"
+                        title={`编辑 ${boundScene.name}`}
+                      >
                         {boundScene.imageUrl ? (
-                          <PreviewableImage src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-16 object-cover" />
+                          <img
+                            src={boundScene.imageUrl}
+                            alt={boundScene.name}
+                            className="w-full h-16 object-cover"
+                          />
                         ) : (
                           <div className="w-full h-12 flex items-center justify-center bg-muted/50">
                             <MapPin className="size-4 text-muted-foreground/20" />
@@ -365,7 +394,7 @@ export function ShotDetailPanel({
                         <div className="px-1.5 py-1 border-t bg-card">
                           <p className="text-[10px] font-medium truncate">{boundScene.name}</p>
                         </div>
-                      </div>
+                      </button>
                     ) : (
                       <EmptyBinding />
                     )}
@@ -398,7 +427,7 @@ export function ShotDetailPanel({
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
                                     {c.imageUrl ? (
-                                      <PreviewableImage src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                                      <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
                                     ) : (
                                       <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                         <User className="size-3.5 text-muted-foreground" />
@@ -414,18 +443,22 @@ export function ShotDetailPanel({
                       </Popover>
                     </div>
                     {boundCharacters.length > 0 ? (
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="grid grid-cols-3 gap-2">
                         {boundCharacters.map((c) => (
                           <div key={c.id} className="flex flex-col items-center gap-0.5">
-                            <div className="size-11 rounded-md overflow-hidden bg-muted border">
+                            <button
+                              onClick={() => setEditingCharacter(c)}
+                              className="size-11 rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              title={`编辑 ${c.name}`}
+                            >
                               {c.imageUrl ? (
-                                <PreviewableImage src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                                <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
                                   <User className="size-5 text-muted-foreground/40" />
                                 </div>
                               )}
-                            </div>
+                            </button>
                             <span className="text-[9px] text-muted-foreground truncate max-w-[44px]">{c.name}</span>
                           </div>
                         ))}
@@ -460,7 +493,16 @@ export function ShotDetailPanel({
                                     checked={boundPropIds.includes(p.id)}
                                     onCheckedChange={() => handleToggleProp(p.id)}
                                   />
-                                  <span className="text-xs truncate">{p.name}</span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {p.imageUrl ? (
+                                      <img src={p.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                                    ) : (
+                                      <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                        <Package className="size-3.5 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                    <span className="text-xs truncate">{p.name}</span>
+                                  </div>
                                 </label>
                               ))
                             )}
@@ -469,11 +511,24 @@ export function ShotDetailPanel({
                       </Popover>
                     </div>
                     {boundProps.length > 0 ? (
-                      <div className="flex gap-1 flex-wrap">
+                      <div className="grid grid-cols-4 gap-2">
                         {boundProps.map((p) => (
-                          <Badge key={p.id} variant="outline" className="text-[9px] px-1.5">
-                            {p.name}
-                          </Badge>
+                          <div key={p.id} className="flex flex-col items-center gap-0.5">
+                            <button
+                              onClick={() => setEditingProp(p)}
+                              className="size-11 rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
+                              title={`编辑 ${p.name}`}
+                            >
+                              {p.imageUrl ? (
+                                <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
+                              ) : (
+                                <div className="size-full flex items-center justify-center">
+                                  <Package className="size-5 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </button>
+                            <span className="text-[9px] text-muted-foreground truncate max-w-[44px]">{p.name}</span>
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -763,6 +818,41 @@ export function ShotDetailPanel({
           </div>
         )}
       </div>
+
+      {/* Asset Edit Dialogs */}
+      <CharacterFormDialog
+        open={!!editingCharacter}
+        onOpenChange={(open) => { if (!open) setEditingCharacter(null) }}
+        character={editingCharacter}
+        onSave={async (data) => {
+          if (!editingCharacter) return
+          await updateCharacter(editingCharacter.id, data)
+          setEditingCharacter(null)
+          handleAssetSaved()
+        }}
+      />
+      <SceneFormDialog
+        open={!!editingScene}
+        onOpenChange={(open) => { if (!open) setEditingScene(null) }}
+        scene={editingScene}
+        onSave={async (data) => {
+          if (!editingScene) return
+          await updateScene(editingScene.id, data)
+          setEditingScene(null)
+          handleAssetSaved()
+        }}
+      />
+      <PropFormDialog
+        open={!!editingProp}
+        onOpenChange={(open) => { if (!open) setEditingProp(null) }}
+        prop={editingProp}
+        onSave={async (data) => {
+          if (!editingProp) return
+          await updateProp(editingProp.id, data)
+          setEditingProp(null)
+          handleAssetSaved()
+        }}
+      />
     </div>
   )
 }
