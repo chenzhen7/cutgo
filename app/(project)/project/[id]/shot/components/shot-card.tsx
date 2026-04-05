@@ -79,64 +79,71 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
-  // 无图/加载中：固定宽度占位
-  const placeholderClassName = "relative w-[92px] self-stretch shrink-0 rounded-lg overflow-hidden @[640px]:w-[100px] @[900px]:w-[116px]"
+  // 统一的缩略图容器：使用 self-stretch 撑开高度，内部用 absolute 填充确保 100% 高度
+  const containerClassName = "relative w-[92px] self-stretch shrink-0 @[640px]:w-[100px] @[900px]:w-[116px]"
+  const contentClassName = "absolute inset-0 rounded-lg overflow-hidden"
 
   if (isGeneratingImage) {
     return (
-      <div className={cn(placeholderClassName, "bg-muted/50 flex items-center justify-center")}>
-        <Loader2 className="size-[18px] animate-spin text-primary @[900px]:size-5" />
-        <span className="absolute bottom-1 text-[8px] text-muted-foreground @[900px]:text-[9px]">{typeLabel}</span>
+      <div className={containerClassName}>
+        <div className={cn(contentClassName, "bg-muted/50 flex items-center justify-center")}>
+          <Loader2 className="size-[18px] animate-spin text-primary @[900px]:size-5" />
+          <span className="absolute bottom-1 text-[8px] text-muted-foreground @[900px]:text-[9px]">{typeLabel}</span>
+        </div>
       </div>
     )
   }
 
   if (!hasImage) {
     return (
-      <div className={cn(placeholderClassName, "bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center gap-1.5")}>
-        <ImageIcon className="size-[18px] text-muted-foreground/25 @[900px]:size-5" />
-        <span className="text-[8px] text-muted-foreground/40 @[900px]:text-[9px]">{typeLabel}</span>
+      <div className={containerClassName}>
+        <div className={cn(contentClassName, "bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center gap-1.5")}>
+          <ImageIcon className="size-[18px] text-muted-foreground/25 @[900px]:size-5" />
+          <span className="text-[8px] text-muted-foreground/40 @[900px]:text-[9px]">{typeLabel}</span>
+        </div>
       </div>
     )
   }
 
-  // 有图：宽度随图片比例自适应，高度撑满卡片
-  const imgContainerClassName = "relative self-stretch shrink-0 max-w-[200px] rounded-lg overflow-hidden bg-black"
-
   if (imageType === "first_last" && imageUrls.length >= 2) {
-    // 首尾帧：两张图上下叠放，使用固定宽度占位保持布局稳定
     return (
-      <div className={cn(placeholderClassName, "flex flex-col gap-0.5 bg-black")}>
-        <PreviewableImage src={imageUrls[0]} alt="首帧" className="h-1/2 min-h-0 w-full object-contain" />
-        <PreviewableImage src={imageUrls[1]} alt="尾帧" className="h-1/2 min-h-0 w-full object-contain" />
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
+      <div className={containerClassName}>
+        <div className={cn(contentClassName, "flex flex-col gap-0.5")}>
+          <PreviewableImage src={imageUrls[0]} alt="首帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
+          <PreviewableImage src={imageUrls[1]} alt="尾帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
+          </div>
+          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
         </div>
-        <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     )
   }
 
   if (imageType === "multi_grid") {
     return (
-      <div className={imgContainerClassName}>
-        <PreviewableImage src={shot.imageUrl!} alt="多宫格" className="h-full w-auto block" />
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
-          backgroundSize: "50% 50%",
-        }} />
-        <div className="absolute bottom-1 right-1 bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">
-          {shot.gridLayout || "2x2"}
+      <div className={containerClassName}>
+        <div className={contentClassName}>
+          <PreviewableImage src={shot.imageUrl!} alt="多宫格" className="size-full object-contain bg-black" />
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
+            backgroundSize: "50% 50%",
+          }} />
+          <div className="absolute bottom-1 right-1 bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">
+            {shot.gridLayout || "2x2"}
+          </div>
+          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
         </div>
-        <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     )
   }
 
   return (
-    <div className={imgContainerClassName}>
-      <PreviewableImage src={shot.imageUrl!} alt="关键帧" className="h-full w-auto block" />
-      <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+    <div className={containerClassName}>
+      <div className={contentClassName}>
+        <PreviewableImage src={shot.imageUrl!} alt="关键帧" className="size-full object-contain bg-black" />
+        <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+      </div>
     </div>
   )
 }
