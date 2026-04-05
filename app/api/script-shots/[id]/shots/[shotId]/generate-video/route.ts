@@ -46,7 +46,7 @@ export const POST = withError(async (
 
   try {
     const result = await callVideo({
-      prompt: shot.videoPrompt || shot.prompt,
+      prompt: shot.videoPrompt || "",
       imageUrls,
       durationSeconds,
       ratio,
