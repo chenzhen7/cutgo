@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
 import { createLLMProviderFromConfig, callLLM } from "@/lib/ai/llm"
-import { createImageProviderFromConfig } from "@/lib/ai/image"
+import { createImageProviderFromConfig, callImage } from "@/lib/ai/image"
 import { createVideoProviderFromConfig, queryVideoTask } from "@/lib/ai/video"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
@@ -154,13 +154,13 @@ async function testImage({
 
   try {
     const result = await withTimeout(
-      imageProvider.generate({
+      callImage({
         prompt: "apple",
         projectId: "test",
         scope: "asset",
-        width: 512,
-        height: 512,
-      })
+        aspectRatio: "1:1",
+        resolution: "512x512",
+      }, imageProvider)
     )
 
     const first = Array.isArray(result) ? result[0] : result

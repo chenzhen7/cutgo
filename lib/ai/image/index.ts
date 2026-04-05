@@ -61,14 +61,19 @@ export function createImageProviderFromConfig(
  * 未配置时抛出 IMAGE_NOT_CONFIGURED，由上层 route 统一转换为标准错误响应。
  */
 export async function callImage(
-  options: ImageGenerateOptions
+  options: ImageGenerateOptions,
+  customProvider?: ImageProvider
 ): Promise<ImageGenerateResult | ImageGenerateResult[]> {
-  const config = await getImageConfig()
-  if (!config) {
-    throwCutGoError("IMAGE_NOT_CONFIGURED")
+  let provider = customProvider
+
+  if (!provider) {
+    const config = await getImageConfig()
+    if (!config) {
+      throwCutGoError("IMAGE_NOT_CONFIGURED")
+    }
+    provider = createImageProviderFromConfig(config) ?? undefined
   }
 
-  const provider = createImageProviderFromConfig(config)
   if (!provider) {
     throwCutGoError("IMAGE_NOT_CONFIGURED")
   }
@@ -78,8 +83,8 @@ export async function callImage(
     body: options,
   })
 
-  
   const result = await provider.generate(options)
+
   logAIEvent("image", "response", {
     provider: provider.id,
     body: result,

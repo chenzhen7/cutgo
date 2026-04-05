@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
-import { getImageProvider } from "@/lib/ai/image"
-import type { ImageProvider } from "@/lib/ai/types"
+import { callImage } from "@/lib/ai/image"
 import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
 import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 
 async function generateForShot(
-  provider: ImageProvider,
   projectId: string,
   shot: {
     id: string
@@ -25,7 +23,7 @@ async function generateForShot(
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
     const [r1, r2] = await Promise.all([
-      provider.generate({
+      callImage({
         prompt: shot.prompt,
         projectId,
         scope: "shot",
@@ -33,7 +31,7 @@ async function generateForShot(
         aspectRatio,
         resolution,
       }),
-      provider.generate({
+      callImage({
         prompt: shot.promptEnd,
         projectId,
         scope: "shot",
@@ -57,7 +55,7 @@ async function generateForShot(
     if (gridPrompts.length > 0) {
       const combinedPrompt = buildMultiGridPrompt(shot.prompt, gridPrompts, shot.gridLayout)
 
-      const result = await provider.generate({
+      const result = await callImage({
         prompt: combinedPrompt,
         projectId,
         scope: "shot",
@@ -74,7 +72,7 @@ async function generateForShot(
     }
   }
 
-  const result = await provider.generate({
+  const result = await callImage({
     prompt: shot.prompt,
     projectId,
     scope: "shot",
@@ -135,14 +133,13 @@ export const POST = withError(async (request: NextRequest) => {
   })
 
   try {
-    const provider = await getImageProvider()
     const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
     let success = 0
     let failed = 0
 
     for (const shot of shots) {
       try {
-        const result = await generateForShot(provider, projectId, shot, project.aspectRatio, project.resolution)
+        const result = await generateForShot(projectId, shot, project.aspectRatio, project.resolution)
         results.push(result)
         success++
       } catch {

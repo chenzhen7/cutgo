@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { withError, throwCutGoError } from "@/lib/api-error"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
-import { getImageProvider } from "@/lib/ai/image"
+import { callImage } from "@/lib/ai/image"
 
 type AssetType = "character" | "scene" | "prop"
 
@@ -78,8 +78,7 @@ async function runAssetImageTask({
   resolution: string
 }) {
   try {
-    const provider = await getImageProvider()
-    const result = await provider.generate({
+    const result = await callImage({
       prompt,
       projectId,
       scope: "asset",

@@ -6,7 +6,7 @@ import {
   markAiTaskFailed,
   markAiTaskSucceeded,
 } from "@/lib/ai-task-service"
-import { getImageProvider } from "@/lib/ai/image"
+import { callImage } from "@/lib/ai/image"
 import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
 
 interface GenerateImageRequest {
@@ -56,12 +56,11 @@ export const POST = withError(async (request: NextRequest) => {
   })
 
   try {
-    const provider = await getImageProvider()
     const type = imageType || "keyframe"
  
 
     if (type === "keyframe") {
-      const result = await provider.generate({
+      const result = await callImage({
         prompt,
         projectId: shot.episode.projectId,
         scope: "shot",
@@ -85,7 +84,7 @@ export const POST = withError(async (request: NextRequest) => {
         throwCutGoError("VALIDATION", "promptEnd is required for first_last type")
       }
       const [r1, r2] = await Promise.all([
-        provider.generate({
+        callImage({
           prompt,
           projectId: shot.episode.projectId,
           scope: "shot",
@@ -94,7 +93,7 @@ export const POST = withError(async (request: NextRequest) => {
           resolution,
           referenceImages,
         }),
-        provider.generate({
+        callImage({
           prompt: promptEnd,
           projectId: shot.episode.projectId,
           scope: "shot",
@@ -122,7 +121,7 @@ export const POST = withError(async (request: NextRequest) => {
       }
 
       const combinedPrompt = buildMultiGridPrompt(prompt, gridPrompts, shot.gridLayout)
-      const result = await provider.generate({
+      const result = await callImage({
         prompt: combinedPrompt,
         projectId: shot.episode.projectId,
         scope: "shot",
