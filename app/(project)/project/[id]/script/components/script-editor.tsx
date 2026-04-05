@@ -421,10 +421,10 @@ export function ScriptEditor({
                       </Popover>
                     </div>
                     {boundScenes.length > 0 ? (
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="grid grid-cols-2 gap-2">
                         {boundScenes.map((s) => (
-                          <div key={s.id} className="flex flex-col items-center gap-0.5">
-                            <div className="size-9 rounded-md overflow-hidden bg-muted border">
+                          <div key={s.id} className="flex flex-col items-center gap-1">
+                            <div className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border">
                               {s.imageUrl ? (
                                 <img src={s.imageUrl} alt={s.name} className="size-full object-cover" />
                               ) : (
@@ -433,7 +433,7 @@ export function ScriptEditor({
                                 </div>
                               )}
                             </div>
-                            <span className="text-[9px] text-muted-foreground truncate max-w-[36px]">{s.name}</span>
+                            <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{s.name}</span>
                           </div>
                         ))}
                       </div>
@@ -493,10 +493,10 @@ export function ScriptEditor({
                       </Popover>
                     </div>
                     {boundCharacters.length > 0 ? (
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="grid grid-cols-3 gap-1.5">
                         {boundCharacters.map((c) => (
-                          <div key={c.id} className="flex flex-col items-center gap-0.5">
-                            <div className="size-9 rounded-md overflow-hidden bg-muted border">
+                          <div key={c.id} className="flex flex-col items-center gap-1">
+                            <div className="aspect-square w-full rounded-md overflow-hidden bg-muted border">
                               {c.imageUrl ? (
                                 <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                               ) : (
@@ -505,7 +505,7 @@ export function ScriptEditor({
                                 </div>
                               )}
                             </div>
-                            <span className="text-[9px] text-muted-foreground truncate max-w-[36px]">{c.name}</span>
+                            <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{c.name}</span>
                           </div>
                         ))}
                       </div>
