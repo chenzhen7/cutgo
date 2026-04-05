@@ -129,8 +129,8 @@ export const POST = withError(async (request: NextRequest) => {
   const sceneNameToId = new Map(scenes.map((s) => [s.name, s.id]))
   const propNameToId = new Map(props.map((p) => [p.name, p.id]))
 
-  const systemPrompt = buildEpisodeOutlineSystemPrompt()
-  const userPrompt = buildEpisodeOutlineUserPrompt(novelText, { assets: assetsSummary })
+  const systemPrompt = buildEpisodeOutlineSystemPrompt({ assets: assetsSummary })
+  const userPrompt = buildEpisodeOutlineUserPrompt(novelText)
   let outlines: OutlineItem[] = []
   try {
     const result = await callLLM({
