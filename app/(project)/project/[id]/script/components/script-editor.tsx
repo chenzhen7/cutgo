@@ -22,6 +22,7 @@ import type {
 } from "@/lib/types"
 import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -405,7 +406,7 @@ export function ScriptEditor({
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
                                     {s.imageUrl ? (
-                                      <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                                      <PreviewableImage src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
                                     ) : (
                                       <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                         <MapPin className="size-3 text-muted-foreground" />
@@ -426,7 +427,7 @@ export function ScriptEditor({
                           <div key={s.id} className="flex flex-col items-center gap-1">
                             <div className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border">
                               {s.imageUrl ? (
-                                <img src={s.imageUrl} alt={s.name} className="size-full object-cover" />
+                                <PreviewableImage src={s.imageUrl} alt={s.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
                                   <MapPin className="size-4 text-muted-foreground/40" />
@@ -477,7 +478,7 @@ export function ScriptEditor({
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
                                     {c.imageUrl ? (
-                                      <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                                      <PreviewableImage src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
                                     ) : (
                                       <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                         <User className="size-3 text-muted-foreground" />
@@ -498,7 +499,7 @@ export function ScriptEditor({
                           <div key={c.id} className="flex flex-col items-center gap-1">
                             <div className="aspect-square w-full rounded-md overflow-hidden bg-muted border">
                               {c.imageUrl ? (
-                                <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                                <PreviewableImage src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                               ) : (
                                 <div className="size-full flex items-center justify-center">
                                   <User className="size-4 text-muted-foreground/40" />

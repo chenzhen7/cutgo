@@ -57,6 +57,7 @@ import { useAssetStore } from "@/store/asset-store"
 import { useNovelStore } from "@/store/novel-store"
 import { ExtractAssetsDialog } from "../import/components/extract-assets-dialog"
 import { apiFetch } from "@/lib/api-client"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 import type {
   AssetCharacter,
   AssetScene,
@@ -816,20 +817,12 @@ const CharacterList = memo(function CharacterList({
             <div className="flex items-start gap-3">
               <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
                 {char.imageUrl ? (
-                  <button
-                    type="button"
-                    className="h-14 w-14 rounded-lg"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onPreview(char.imageUrl!, char.name)
-                    }}
-                  >
-                    <img
-                      src={char.imageUrl}
-                      alt={char.name}
-                      className="h-14 w-14 rounded-lg object-cover cursor-zoom-in"
-                    />
-                  </button>
+                  <PreviewableImage
+                    src={char.imageUrl}
+                    alt={char.name}
+                    className="h-14 w-14 rounded-lg object-cover cursor-zoom-in"
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 ) : (
                   <Users className="h-6 w-6 text-muted-foreground/50" />
                 )}
@@ -919,20 +912,12 @@ const SceneList = memo(function SceneList({
           <CardContent className="pt-4">
             <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3">
               {scene.imageUrl ? (
-                <button
-                  type="button"
-                  className="h-24 w-full rounded-lg"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onPreview(scene.imageUrl!, scene.name)
-                  }}
-                >
-                  <img
-                    src={scene.imageUrl}
-                    alt={scene.name}
-                    className="h-24 w-full rounded-lg object-cover cursor-zoom-in"
-                  />
-                </button>
+                <PreviewableImage
+                  src={scene.imageUrl}
+                  alt={scene.name}
+                  className="h-24 w-full rounded-lg object-cover cursor-zoom-in"
+                  onClick={(e) => e.stopPropagation()}
+                />
               ) : (
                 <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
               )}
@@ -1006,20 +991,12 @@ const PropList = memo(function PropList({
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
                 {prop.imageUrl ? (
-                  <button
-                    type="button"
-                    className="h-12 w-12 rounded-lg"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onPreview(prop.imageUrl!, prop.name)
-                    }}
-                  >
-                    <img
-                      src={prop.imageUrl}
-                      alt={prop.name}
-                      className="h-12 w-12 rounded-lg object-cover cursor-zoom-in"
-                    />
-                  </button>
+                  <PreviewableImage
+                    src={prop.imageUrl}
+                    alt={prop.name}
+                    className="h-12 w-12 rounded-lg object-cover cursor-zoom-in"
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 ) : (
                   <Box className="h-5 w-5 text-muted-foreground/50" />
                 )}
@@ -1089,7 +1066,7 @@ function ImagePreviewUploader({
     <div className="space-y-3">
       <div className="aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
         {imageUrl ? (
-          <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+          <PreviewableImage src={imageUrl} alt={title} className="h-full w-full object-cover" onClick={(e) => e.stopPropagation()} />
         ) : (
           <div className="text-xs text-muted-foreground text-center px-4">暂无图片</div>
         )}

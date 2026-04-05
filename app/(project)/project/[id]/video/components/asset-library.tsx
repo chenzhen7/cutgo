@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { useVideoEditorStore } from "@/store/video-editor-store"
 import { cn } from "@/lib/utils"
 import { Plus, VideoOff, Clock, Ban } from "lucide-react"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 import {
   Tooltip,
   TooltipContent,
@@ -99,7 +100,7 @@ export function AssetLibrary() {
                       {/* 缩略图 */}
                       <div className="aspect-video w-full bg-muted flex items-center justify-center overflow-hidden">
                         {shot.imageUrl ? (
-                          <img
+<PreviewableImage 
                             src={shot.imageUrl}
                             alt={`镜头 ${shot.index + 1}`}
                             className="w-full h-full object-cover"

@@ -21,6 +21,7 @@ import type {
   AssetScene,
   AssetProp,
 } from "@/lib/types"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 
 interface ScriptAssetDialogProps {
   open: boolean
@@ -182,7 +183,7 @@ export function ScriptAssetDialog({
                           >
                             <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                               {char.imageUrl ? (
-                                <img
+<PreviewableImage 
                                   src={char.imageUrl}
                                   alt={char.name}
                                   className="h-9 w-9 rounded-full object-cover"
@@ -244,7 +245,7 @@ export function ScriptAssetDialog({
                           >
                             <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
                               {sc.imageUrl ? (
-                                <img
+<PreviewableImage 
                                   src={sc.imageUrl}
                                   alt={sc.name}
                                   className="h-9 w-9 rounded-lg object-cover"
@@ -299,7 +300,7 @@ export function ScriptAssetDialog({
                           >
                             <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
                               {prop.imageUrl ? (
-                                <img
+<PreviewableImage 
                                   src={prop.imageUrl}
                                   alt={prop.name}
                                   className="h-9 w-9 rounded-lg object-cover"

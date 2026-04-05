@@ -15,6 +15,7 @@ import type {
   AssetScene,
   Episode,
 } from "@/lib/types"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 
 export type ScriptAssetStripMode = "nav" | "editor"
 
@@ -100,7 +101,7 @@ export function ScriptAssetStrip({
                       )}
                     >
                       {c?.imageUrl ? (
-                        <img
+<PreviewableImage 
                           src={c.imageUrl}
                           alt={label}
                           className="size-full object-cover"

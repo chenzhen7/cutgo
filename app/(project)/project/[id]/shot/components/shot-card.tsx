@@ -13,6 +13,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { IMAGE_TYPE_OPTIONS } from "@/lib/types"
 import type { Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 
 export type ShotCardLayout = "list" | "grid"
 
@@ -108,8 +109,8 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
     return (
       <div className={containerClassName}>
         <div className={cn(contentClassName, "flex flex-col gap-0.5")}>
-          <img src={imageUrls[0]} alt="首帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
-          <img src={imageUrls[1]} alt="尾帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
+          <PreviewableImage src={imageUrls[0]} alt="首帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
+          <PreviewableImage src={imageUrls[1]} alt="尾帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
           </div>
@@ -123,7 +124,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
     return (
       <div className={containerClassName}>
         <div className={contentClassName}>
-          <img src={shot.imageUrl!} alt="多宫格" className="size-full object-contain bg-black" />
+          <PreviewableImage src={shot.imageUrl!} alt="多宫格" className="size-full object-contain bg-black" />
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
             backgroundSize: "50% 50%",
@@ -140,7 +141,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   return (
     <div className={containerClassName}>
       <div className={contentClassName}>
-        <img src={shot.imageUrl!} alt="关键帧" className="size-full object-contain bg-black" />
+        <PreviewableImage src={shot.imageUrl!} alt="关键帧" className="size-full object-contain bg-black" />
         <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     </div>
@@ -225,7 +226,7 @@ export const ShotCard = memo(function ShotCard({
               <span className="text-[8px] text-muted-foreground">生成中</span>
             </div>
           ) : shot.imageUrl ? (
-            <img src={shot.imageUrl} alt="分镜" className="size-full object-contain bg-black" />
+            <PreviewableImage src={shot.imageUrl} alt="分镜" className="size-full object-contain bg-black" />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
               <ImageIcon className="size-6 text-muted-foreground/25" />
@@ -360,7 +361,7 @@ export const ShotCard = memo(function ShotCard({
                       <TooltipTrigger asChild>
                         <div className="size-[22px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[640px]:size-6 @[900px]:size-7">
                           {c.imageUrl ? (
-                            <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                            <PreviewableImage src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                           ) : (
                             <User className="size-3.5 text-muted-foreground @[900px]:size-4" />
                           )}

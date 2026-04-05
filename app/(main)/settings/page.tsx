@@ -43,6 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { AI_PROVIDER_OPTIONS_BY_TYPE } from "@/lib/ai/providers"
 import { apiFetch, ApiError } from "@/lib/api-client"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 
 // ── 类型定义 ──
 
@@ -372,11 +373,10 @@ export default function SettingsPage() {
                             )}
                             {result?.imageUrl && (
                               <div className="mt-2 h-24 w-24 overflow-hidden rounded border bg-muted shadow-sm">
-                                <img
+                                <PreviewableImage
                                   src={result.imageUrl}
                                   alt="Test result"
                                   className="h-full w-full cursor-zoom-in object-cover transition-transform hover:scale-105"
-                                  onClick={() => window.open(result.imageUrl, "_blank")}
                                 />
                               </div>
                             )}

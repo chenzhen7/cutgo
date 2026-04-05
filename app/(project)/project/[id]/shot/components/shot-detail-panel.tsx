@@ -44,6 +44,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn, parseJsonArray } from "@/lib/utils"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS, VIDEO_DURATION_OPTIONS, VIDEO_MOTION_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 
 interface ShotDetailPanelProps {
   shot: Shot
@@ -307,19 +308,19 @@ export function ShotDetailPanel({
                     <div className="flex-1 space-y-1">
                       <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
                       <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                        <img src={imageUrls[0]} alt="首帧" className="max-h-[200px] h-auto w-auto max-w-full rounded-md" />
+                        <PreviewableImage src={imageUrls[0]} alt="首帧" className="max-h-[200px] h-auto w-auto max-w-full rounded-md" />
                       </div>
                     </div>
                     <div className="flex-1 space-y-1">
                       <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
                       <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                        <img src={imageUrls[1]} alt="尾帧" className="max-h-[200px] h-auto w-auto max-w-full rounded-md" />
+                        <PreviewableImage src={imageUrls[1]} alt="尾帧" className="max-h-[200px] h-auto w-auto max-w-full rounded-md" />
                       </div>
                     </div>
                   </div>
                 ) : hasImage ? (
                   <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                    <img src={shot.imageUrl!} alt="画面预览" className="max-h-[260px] h-auto w-auto max-w-full rounded-md" />
+                    <PreviewableImage src={shot.imageUrl!} alt="画面预览" className="max-h-[260px] h-auto w-auto max-w-full rounded-md" />
                   </div>
                 ) : (
                   <div className="w-full aspect-[9/16] max-h-[200px] rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2">
@@ -371,7 +372,7 @@ export function ShotDetailPanel({
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   {s.imageUrl ? (
-                                    <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
+                                    <PreviewableImage src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
                                   ) : (
                                     <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                       <MapPin className="size-3.5 text-muted-foreground" />
@@ -389,7 +390,7 @@ export function ShotDetailPanel({
                   {boundScene ? (
                     <div className="rounded-lg overflow-hidden border bg-muted/30">
                       {boundScene.imageUrl ? (
-                        <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-16 object-cover" />
+                        <PreviewableImage src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-16 object-cover" />
                       ) : (
                         <div className="w-full h-12 flex items-center justify-center bg-muted/50">
                           <MapPin className="size-4 text-muted-foreground/20" />
@@ -433,7 +434,7 @@ export function ShotDetailPanel({
                                 />
                                 <div className="flex items-center gap-2 min-w-0">
                                   {c.imageUrl ? (
-                                    <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                                    <PreviewableImage src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
                                   ) : (
                                     <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
                                       <User className="size-3.5 text-muted-foreground" />
@@ -454,7 +455,7 @@ export function ShotDetailPanel({
                         <div key={c.id} className="flex flex-col items-center gap-0.5">
                           <div className="size-11 rounded-md overflow-hidden bg-muted border">
                             {c.imageUrl ? (
-                              <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
+                              <PreviewableImage src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                             ) : (
                               <div className="size-full flex items-center justify-center">
                                 <User className="size-5 text-muted-foreground/40" />
