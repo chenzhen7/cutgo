@@ -14,24 +14,19 @@ export interface DoubaoVideoConfig {
 
 /** 创建任务响应 */
 interface DoubaoVideoCreateResponse {
-  task_id?: string
+  id?: string
   error?: { code: string; message: string }
 }
 
 /** 查询任务响应 */
 interface DoubaoVideoQueryResponse {
-  code?: string
-  message?: string
-  data?: {
-    task_id: string
-    status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"
-    fail_reason?: string
-    data?: {
-      content?: {
-        video_url?: string
-      }
-    }
-  }
+  id?: string
+  status?: "queuing" | "running" | "succeeded" | "failed"
+  content?: Array<{
+    type: string
+    video_url?: { url: string }
+  }>
+  error?: { code: string; message: string }
 }
 
 /**
@@ -56,38 +51,42 @@ export class DoubaoVideoProvider implements VideoProvider {
       imageUrls,
       durationSeconds,
       ratio = "16:9",
-      resolution = "1080p",
-      fps = 24,
-      seed = -1,
-      watermark = false,
-      cameraFixed = false,
       generateAudio = false,
     } = options
 
+    // 按官方 content 数组格式构建请求
+    type ContentItem =
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string }; role?: "first_frame" | "last_frame" }
+
+    const content: ContentItem[] = [{ type: "text", text: prompt }]
+
+    if (imageUrls && imageUrls.length > 0) {
+      if (imageUrls.length === 1) {
+        // 单图：首帧参考
+        content.push({ type: "image_url", image_url: { url: imageUrls[0] } })
+      } else {
+        // 双图：首尾帧，按官方 role 字段区分
+        content.push({ type: "image_url", image_url: { url: imageUrls[0] }, role: "first_frame" })
+        content.push({ type: "image_url", image_url: { url: imageUrls[1] }, role: "last_frame" })
+      }
+    }
+
     const body: Record<string, unknown> = {
       model: this.config.model,
-      prompt,
-      resolution,
+      content,
       ratio,
-      fps,
-      seed,
-      watermark,
-      camerafixed: cameraFixed,
     }
 
     if (durationSeconds !== undefined) {
       body.duration = durationSeconds
     }
 
-    if (imageUrls && imageUrls.length > 0) {
-      body.images = imageUrls
-    }
-
     if (generateAudio) {
       body.generate_audio = true
     }
 
-    const url = `${this.baseUrl}/video/generations`
+    const url = this.baseUrl
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -109,15 +108,15 @@ export class DoubaoVideoProvider implements VideoProvider {
       throwCutGoError("INTERNAL", `豆包视频任务创建失败：${json.error.message}`)
     }
 
-    if (!json.task_id) {
-      throwCutGoError("INTERNAL", "豆包视频服务未返回 task_id")
+    if (!json.id) {
+      throwCutGoError("INTERNAL", "豆包视频服务未返回 task id")
     }
 
-    return { taskId: json.task_id }
+    return { taskId: json.id }
   }
 
   async queryTask(taskId: string): Promise<VideoTaskStatus> {
-    const url = `${this.baseUrl}/video/generations/${encodeURIComponent(taskId)}`
+    const url = `${this.baseUrl}/${encodeURIComponent(taskId)}`
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -134,29 +133,26 @@ export class DoubaoVideoProvider implements VideoProvider {
 
     const json = (await res.json()) as DoubaoVideoQueryResponse
 
-    if (json.code && json.code !== "success") {
-      throwCutGoError("INTERNAL", `豆包视频任务查询失败：${json.message ?? json.code}`)
+    const apiErrorMsg = json.error ? (json.error.message ?? json.error.code) : undefined
+    if (json.error) {
+      throwCutGoError("INTERNAL", `豆包视频任务查询失败：${apiErrorMsg}`)
     }
 
-    const taskData = json.data
-    if (!taskData) {
-      throwCutGoError("INTERNAL", "豆包视频任务查询返回格式异常")
-    }
-
-    switch (taskData.status) {
-      case "PENDING":
+    switch (json.status) {
+      case "queuing":
         return { status: "pending" }
-      case "PROCESSING":
+      case "running":
         return { status: "processing" }
-      case "SUCCESS": {
-        const videoUrl = taskData.data?.content?.video_url
+      case "succeeded": {
+        const videoItem = json.content?.find((c) => c.type === "video_url")
+        const videoUrl = videoItem?.video_url?.url
         if (!videoUrl) {
           throwCutGoError("INTERNAL", "豆包视频任务成功但未返回视频 URL")
         }
         return { status: "success", url: videoUrl }
       }
-      case "FAILED":
-        return { status: "failed", reason: taskData.fail_reason }
+      case "failed":
+        return { status: "failed", reason: apiErrorMsg }
       default:
         return { status: "processing" }
     }

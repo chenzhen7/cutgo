@@ -43,7 +43,7 @@ export function createVideoProviderFromConfig(
   if (config.provider === "doubao") {
     return new DoubaoVideoProvider({
       apiKey: config.apiKey,
-      baseUrl: config.baseUrl || "https://ark.cn-beijing.volces.com/api/v3",
+      baseUrl: config.baseUrl || "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks",
       model: config.model,
     })
   }
