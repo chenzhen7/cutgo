@@ -18,6 +18,14 @@ interface DoubaoImageResponse {
   data?: DoubaoImageDataItem[]
 }
 
+const DOUBAO_SIZE_MAP: Record<string, string> = {
+  "16:9": "2848x1600",
+  "9:16": "1600x2848",
+  "1:1": "2048x2048",
+  "3:2": "2496x1664",
+  "2:3": "1664x2496",
+}
+
 type DoubaoImageInput = string | string[] | undefined
 
 /**
@@ -48,11 +56,13 @@ export class DoubaoImageProvider implements ImageProvider {
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
     const url = `${this.baseUrl}/images/generations`
     const imageInput = await this.resolveImageInput(referenceImages)
+    
+    const size = aspectRatio ? DOUBAO_SIZE_MAP[aspectRatio] : null;
 
     const requestBody = {
       model: this.config.model,
       prompt,
-      ratio: aspectRatio,
+      size,
       ...(imageInput ? { image: imageInput } : {}),
       response_format: "url",
     }
