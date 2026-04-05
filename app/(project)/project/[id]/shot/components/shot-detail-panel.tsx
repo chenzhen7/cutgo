@@ -331,8 +331,8 @@ export function ShotDetailPanel({
               </div>
             </div>
 
-{/* Asset bindings section: 3 columns */}
-<div className="space-y-2">
+            {/* Asset bindings section: 3 columns */}
+            <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
 
               <div className="grid grid-cols-3 gap-3">
@@ -522,7 +522,7 @@ export function ShotDetailPanel({
                 </div>
               </div>
             </div>
-            
+
             {/* Prompts by Type */}
             {imageType === "first_last" && (
               <div className="grid grid-cols-2 gap-3">
@@ -592,7 +592,7 @@ export function ShotDetailPanel({
               </div>
             )}
 
-            
+
 
             {/* Image prompt */}
             {imageType !== "first_last" && (

@@ -796,7 +796,7 @@ const CharacterList = memo(function CharacterList({
         >
           <CardContent className="pt-4">
             <div className="flex items-start gap-3">
-              <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                 {char.imageUrl ? (
                   <PreviewableImage
                     src={char.imageUrl}
@@ -889,7 +889,7 @@ const SceneList = memo(function SceneList({
           onClick={() => onEdit(scene)}
         >
           <CardContent className="pt-4">
-            <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3">
+            <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3" onClick={(e) => e.stopPropagation()}>
               {scene.imageUrl ? (
                 <PreviewableImage
                   src={scene.imageUrl}
@@ -966,7 +966,7 @@ const PropList = memo(function PropList({
         >
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                 {prop.imageUrl ? (
                   <PreviewableImage
                     src={prop.imageUrl}
@@ -1041,7 +1041,7 @@ function ImagePreviewUploader({
 
   return (
     <div className="space-y-3">
-      <div className="aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
+      <div className="aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         {imageUrl ? (
           <PreviewableImage src={imageUrl} alt={title} className="h-full w-full object-cover" onClick={(e) => e.stopPropagation()} />
         ) : (

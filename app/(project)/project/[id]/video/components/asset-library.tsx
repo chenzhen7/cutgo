@@ -100,7 +100,7 @@ export function AssetLibrary() {
                       {/* 缩略图 */}
                       <div className="aspect-video w-full bg-muted flex items-center justify-center overflow-hidden">
                         {shot.imageUrl ? (
-<PreviewableImage 
+                          <PreviewableImage
                             src={shot.imageUrl}
                             alt={`镜头 ${shot.index + 1}`}
                             className="w-full h-full object-cover"

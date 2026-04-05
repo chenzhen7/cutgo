@@ -359,7 +359,7 @@ export const ShotCard = memo(function ShotCard({
                   {boundCharacters.slice(0, 5).map((c) => (
                     <Tooltip key={c.id}>
                       <TooltipTrigger asChild>
-                        <div className="size-[22px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[640px]:size-6 @[900px]:size-7">
+                        <div className="size-[22px] rounded-full bg-muted border-2 border-card flex items-center justify-center overflow-hidden shrink-0 @[640px]:size-6 @[900px]:size-7" onClick={(e) => e.stopPropagation()}>
                           {c.imageUrl ? (
                             <PreviewableImage src={c.imageUrl} alt={c.name} className="size-full object-cover" />
                           ) : (

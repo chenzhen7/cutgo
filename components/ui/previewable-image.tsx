@@ -28,6 +28,7 @@ export function PreviewableImage({
   const [open, setOpen] = React.useState(false)
 
   const handleClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    e.preventDefault()
     e.stopPropagation()
     onClick?.(e)
     setOpen(true)

@@ -181,9 +181,9 @@ export function ScriptAssetDialog({
                                 : "border-border hover:border-muted-foreground/30"
                             )}
                           >
-                            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                               {char.imageUrl ? (
-<PreviewableImage 
+                                <PreviewableImage
                                   src={char.imageUrl}
                                   alt={char.name}
                                   className="h-9 w-9 rounded-full object-cover"
@@ -243,9 +243,9 @@ export function ScriptAssetDialog({
                                 : "border-border hover:border-muted-foreground/30"
                             )}
                           >
-                            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                               {sc.imageUrl ? (
-<PreviewableImage 
+                                <PreviewableImage
                                   src={sc.imageUrl}
                                   alt={sc.name}
                                   className="h-9 w-9 rounded-lg object-cover"
@@ -298,9 +298,9 @@ export function ScriptAssetDialog({
                                 : "border-border hover:border-muted-foreground/30"
                             )}
                           >
-                            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                               {prop.imageUrl ? (
-<PreviewableImage 
+                                <PreviewableImage
                                   src={prop.imageUrl}
                                   alt={prop.name}
                                   className="h-9 w-9 rounded-lg object-cover"
@@ -343,20 +343,21 @@ export function ScriptAssetDialog({
                   const character = allCharacters.find((c) => c.id === id)
                   const label = character?.name ?? id
                   return (
-                  <Badge key={`char-${id}`} variant="default" className="gap-1 text-xs">
-                    <Users className="size-2.5" />
-                    {label}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleCharacter(id)
-                      }}
-                      className="ml-0.5 hover:text-destructive"
-                    >
-                      <X className="size-2.5" />
-                    </button>
-                  </Badge>
-                )})}
+                    <Badge key={`char-${id}`} variant="default" className="gap-1 text-xs">
+                      <Users className="size-2.5" />
+                      {label}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleCharacter(id)
+                        }}
+                        className="ml-0.5 hover:text-destructive"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </Badge>
+                  )
+                })}
                 {selectedLocation && (
                   <Badge variant="secondary" className="gap-1 text-xs">
                     <MapPin className="size-2.5" />
@@ -376,20 +377,21 @@ export function ScriptAssetDialog({
                   const prop = allProps.find((p) => p.id === id)
                   const label = prop?.name ?? id
                   return (
-                  <Badge key={`prop-${id}`} variant="outline" className="gap-1 text-xs">
-                    <Box className="size-2.5" />
-                    {label}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleProp(id)
-                      }}
-                      className="ml-0.5 hover:text-destructive"
-                    >
-                      <X className="size-2.5" />
-                    </button>
-                  </Badge>
-                )})}
+                    <Badge key={`prop-${id}`} variant="outline" className="gap-1 text-xs">
+                      <Box className="size-2.5" />
+                      {label}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleProp(id)
+                        }}
+                        className="ml-0.5 hover:text-destructive"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </Badge>
+                  )
+                })}
                 {selectedCharIds.length === 0 &&
                   !selectedLocation &&
                   selectedPropIds.length === 0 && (
