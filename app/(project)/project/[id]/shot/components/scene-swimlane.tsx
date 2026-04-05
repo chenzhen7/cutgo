@@ -252,8 +252,10 @@ export const SceneSwimlane = memo(function SceneSwimlane({
               <button
                 onClick={() => onAddShot(scriptShotPlan.episodeId)}
                 className={cn(
-                  "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-colors group",
-                  layout === "grid" ? "aspect-square" : "h-10 @[640px]:h-12"
+                  "rounded-xl border-2 border-dashed border-muted-foreground/15 flex items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group",
+                  layout === "grid"
+                    ? aspectRatio === "16:9" ? "aspect-[16/9]" : "aspect-[9/16]"
+                    : "h-10 @[640px]:h-12"
                 )}
               >
                 <Plus className="size-4 text-muted-foreground/30 group-hover:text-primary/50" />
