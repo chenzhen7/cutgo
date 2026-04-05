@@ -10,6 +10,8 @@ import {
   Sparkles,
   Plus,
   Search,
+  Monitor,
+  Smartphone,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,9 +23,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
-import { STYLE_PRESETS, STYLE_PRESET_CATEGORIES } from "@/lib/types"
+import { STYLE_PRESETS, STYLE_PRESET_CATEGORIES, PLATFORM_PRESETS } from "@/lib/types"
 import type { Project } from "@/lib/types"
+
+const PLATFORM_ICONS: Record<string, React.ElementType> = {
+  douyin: Smartphone,
+  youtube: Monitor,
+}
 
 export default function StylePage() {
   const params = useParams()
@@ -32,6 +40,8 @@ export default function StylePage() {
   const [project, setProject] = useState<Project | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [customStyle, setCustomStyle] = useState("")
+  const [aspectRatio, setAspectRatio] = useState("9:16")
+  const [resolution, setResolution] = useState("1080x1920")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeCategory, setActiveCategory] = useState("all")
@@ -44,6 +54,8 @@ export default function StylePage() {
       .then((res) => res.json())
       .then((data: Project) => {
         setProject(data)
+        setAspectRatio(data.aspectRatio || "9:16")
+        setResolution(data.resolution || "1080x1920")
         if (data.stylePreset) {
           const matched = STYLE_PRESETS.some((s) => s.label === data.stylePreset)
           if (matched) {
@@ -83,6 +95,8 @@ export default function StylePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           stylePreset: resolvedStyle || null,
+          aspectRatio,
+          resolution,
         }),
       })
       setSaved(true)
@@ -117,6 +131,51 @@ export default function StylePage() {
             "保存设置"
           )}
         </Button>
+      </div>
+
+      {/* Style Presets Section */}
+      <div className="py-6 space-y-4 border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Monitor className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">画面规格</span>
+          </div>
+        </div>
+
+        <RadioGroup
+          value={PLATFORM_PRESETS.find(p => p.aspectRatio === aspectRatio)?.value || "douyin"}
+          onValueChange={(val) => {
+            const preset = PLATFORM_PRESETS.find(p => p.value === val)
+            if (preset) {
+              setAspectRatio(preset.aspectRatio)
+              setResolution(preset.resolution)
+            }
+          }}
+          className="grid grid-cols-2 gap-3"
+        >
+          {PLATFORM_PRESETS.map((p) => {
+            const Icon = PLATFORM_ICONS[p.value] || Smartphone
+            const isSelected = aspectRatio === p.aspectRatio
+            return (
+              <label
+                key={p.value}
+                className={cn(
+                  "relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-3 transition-colors",
+                  isSelected
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-foreground/20"
+                )}
+              >
+                <RadioGroupItem value={p.value} className="sr-only" />
+                <Icon className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs font-medium">{p.label}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {p.aspectRatio} · {p.resolution}
+                </span>
+              </label>
+            )
+          })}
+        </RadioGroup>
       </div>
 
       {/* Style Presets Section */}
