@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
-import { createLLMProviderFromConfig } from "@/lib/ai/llm"
+import { createLLMProviderFromConfig, callLLM } from "@/lib/ai/llm"
 import { createImageProviderFromConfig } from "@/lib/ai/image"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
@@ -83,12 +83,12 @@ async function testLLM({
 
   try {
     await withTimeout(
-      llmProvider.chat({
+      callLLM({
         model,
         messages: [{ role: "user", content: "hi" }],
         maxTokens: 10,
         timeoutMs: 1000 * 20,
-      })
+      }, llmProvider)
     )
 
     return NextResponse.json({ success: true, message: "连接成功" })

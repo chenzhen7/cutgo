@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
-import { getLLMProvider } from "@/lib/ai/llm"
+import { callLLM } from "@/lib/ai/llm"
 import {
   createRunningAiTask,
   markAiTaskFailed,
@@ -23,12 +23,6 @@ async function callAIGenerateScript(
   previousContent: string | null,
   duration: string
 ): Promise<string> {
-  const llmProvider = await getLLMProvider()
-
-  if (!llmProvider) {
-    throwCutGoError("LLM_NOT_CONFIGURED")
-  }
-
   const systemPrompt = buildEpisodeScriptSystemPrompt()
   const userPrompt = buildEpisodeScriptUserPrompt({
     episodeTitle,
@@ -40,7 +34,7 @@ async function callAIGenerateScript(
     duration,
   })
 
-  const result = await llmProvider.chat({
+  const result = await callLLM({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

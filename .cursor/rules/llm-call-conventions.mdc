@@ -9,23 +9,16 @@ alwaysApply: false
 
 # LLM 调用规范
 
-所有 API 路由调用 LLM 时，**必须**使用项目封装的统一入口 `getLLMProvider()`，**禁止**直接读取环境变量并裸调 `fetch`。
+所有 API 路由调用 LLM 时，**必须**使用项目封装的统一入口 `callLLM()`，**禁止**直接读取环境变量并裸调 `fetch`。
 
 ## 正确用法
 
 ```ts
-import { getLLMProvider } from "@/lib/ai/llm"
+import { callLLM } from "@/lib/ai/llm"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
-const llmProvider = await getLLMProvider()
-
-// 未配置时抛出标准 422 错误，由 withError 统一处理
-if (!llmProvider) {
-  throwCutGoError("LLM_NOT_CONFIGURED")
-}
-
-// 调用 LLM
-const result = await llmProvider.chat({
+// callLLM 内部已处理未配置时的抛错
+const result = await callLLM({
   messages: [{ role: "user", content: prompt }],
 })
 
@@ -84,5 +77,5 @@ function parseLLMJson<T>(raw: string): T {
 
 ## Provider 支持情况
 
-`getLLMProvider()` 从数据库配置中读取，自动适配以下所有 Provider：
+`getLLMProvider()` / `createLLMProviderFromConfig()` 用于底层获取 Provider，`callLLM()` 自动适配以下所有 Provider：
 `openai` / `deepseek` / `google` / `anthropic` / `qwen` / `doubao` / `zhipu` / `custom-openai`

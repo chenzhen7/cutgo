@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { Prisma } from "@/lib/generated/prisma/client"
 import { prisma } from "@/lib/db"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
-import { getLLMProvider } from "@/lib/ai/llm"
+import { callLLM } from "@/lib/ai/llm"
 import {
   createRunningAiTask,
   markAiTaskFailed,
@@ -34,11 +34,6 @@ async function callAIGenerateScriptShots(
   imageType: string = "keyframe",
   gridLayout: string | null = null
 ): Promise<AIScriptShotResult> {
-  const llmProvider = await getLLMProvider()
-  if (!llmProvider) {
-    throwCutGoError("LLM_NOT_CONFIGURED")
-  }
-
   const systemPrompt = buildScriptShotsSystemPrompt(
     undefined,
     imageType as import("@/lib/types").ImageType,
@@ -53,7 +48,7 @@ async function callAIGenerateScriptShots(
     previousShot: previousShotStr,
   })
 
-  const result = await llmProvider.chat({
+  const result = await callLLM({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

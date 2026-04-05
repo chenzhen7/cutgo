@@ -162,7 +162,7 @@ export const POST = withError(async (request: NextRequest) => {
 
 ### LLM 调用规范
 
-必须使用项目封装的 `callLLM()` 或 `getLLMProvider()`，禁止直接读取环境变量裸调 `fetch`：
+业务路由中必须使用项目封装的统一入口 `callLLM()`，禁止直接读取环境变量裸调 `fetch`；`getLLMProvider()` / `llmProvider.chat()` 仅允许在 `lib/ai/llm` 封装层内部使用：
 
 ```ts
 import { callLLM } from "@/lib/ai/llm"

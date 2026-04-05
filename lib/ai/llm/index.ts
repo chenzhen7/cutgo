@@ -62,9 +62,10 @@ export function createLLMProviderFromConfig(config: LLMProviderRuntimeConfig): L
  * 未配置时直接抛出标准 CutGoError("LLM_NOT_CONFIGURED")，由 withError 统一响应。
  */
 export async function callLLM(
-  options: LLMGenerateOptions
+  options: LLMGenerateOptions,
+  customProvider?: LLMProvider
 ): Promise<LLMGenerateResult> {
-  const llmProvider = await getLLMProvider()
+  const llmProvider = customProvider ?? await getLLMProvider()
   if (!llmProvider) {
     throwCutGoError("LLM_NOT_CONFIGURED")
   }
@@ -80,5 +81,5 @@ export async function callLLM(
     body: result,
   })
   return result
-  
+
 }
