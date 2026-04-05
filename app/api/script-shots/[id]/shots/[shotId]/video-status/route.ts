@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError, CutGoError } from "@/lib/api-error"
 import { queryVideoTask } from "@/lib/ai/video"
+import { markAiTaskSucceeded, markAiTaskFailed } from "@/lib/ai-task-service"
 
 export const GET = withError(async (
   _request: NextRequest,
@@ -35,6 +36,15 @@ export const GET = withError(async (
           videoTaskId: null,
         },
       })
+      
+      const aiTask = await prisma.aiTask.findFirst({
+        where: { shotId, taskType: "shot_video_generate", status: "running" },
+        orderBy: { createdAt: "desc" },
+      })
+      if (aiTask) {
+        await markAiTaskSucceeded(aiTask.id)
+      }
+
       return NextResponse.json({ videoStatus: "completed", videoUrl: status.url, shot: updated })
     }
 
@@ -46,6 +56,15 @@ export const GET = withError(async (
           videoTaskId: null,
         },
       })
+
+      const aiTask = await prisma.aiTask.findFirst({
+        where: { shotId, taskType: "shot_video_generate", status: "running" },
+        orderBy: { createdAt: "desc" },
+      })
+      if (aiTask) {
+        await markAiTaskFailed(aiTask.id, { message: status.reason })
+      }
+
       return NextResponse.json({
         videoStatus: "error",
         videoUrl: null,

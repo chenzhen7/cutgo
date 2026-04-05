@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError, CutGoError } from "@/lib/api-error"
 import { callVideo } from "@/lib/ai/video"
+import { createRunningAiTask, markAiTaskFailed } from "@/lib/ai-task-service"
 
 export const POST = withError(async (
   _request: NextRequest,
@@ -44,6 +45,15 @@ export const POST = withError(async (
   })
   const ratio = episode?.project?.aspectRatio ?? "9:16"
 
+  const targetInfo = `第${episode?.index !== undefined ? episode.index + 1 : "?"}集 ${episode?.title || "未知"} - 镜头${shot.index + 1}`
+  const task = await createRunningAiTask({
+    projectId: episode?.projectId || shot.episodeId,
+    episodeId: episodeId,
+    shotId: shot.id,
+    targetInfo,
+    taskType: "shot_video_generate",
+  })
+
   try {
     const result = await callVideo({
       prompt: shot.videoPrompt || "",
@@ -63,6 +73,7 @@ export const POST = withError(async (
 
     return NextResponse.json({ shot: updated })
   } catch (err) {
+    await markAiTaskFailed(task.id, err)
     if (err instanceof CutGoError) throw err
     throwCutGoError("INTERNAL", (err as Error).message)
   }
