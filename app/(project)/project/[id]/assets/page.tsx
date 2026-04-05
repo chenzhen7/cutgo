@@ -362,128 +362,65 @@ export default function AssetsPage() {
 
 
       {/* Delete confirmations */}
-      <AlertDialog
+      <DeleteConfirmDialog
+        title="删除角色"
+        itemName="角色"
         open={!!deletingCharacterId}
+        submitting={deleteSubmitting}
         onOpenChange={(open) => {
           if (!open && !deleteSubmitting) setDeletingCharacterId(null)
         }}
-      >
-        <AlertDialogContent className="sm:max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>删除角色</AlertDialogTitle>
-            <AlertDialogDescription className="text-left">
-              确定要删除这个角色吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteSubmitting}>取消</AlertDialogCancel>
-            <Button
-              disabled={deleteSubmitting}
-              onClick={async () => {
-                if (!deletingCharacterId || deleteSubmitting) return
-                setDeleteSubmitting(true)
-                try {
-                  await deleteCharacter(deletingCharacterId)
-                  setDeletingCharacterId(null)
-                } finally {
-                  setDeleteSubmitting(false)
-                }
-              }}
-            >
-              {deleteSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  删除中…
-                </>
-              ) : (
-                "确认删除"
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={async () => {
+          if (!deletingCharacterId || deleteSubmitting) return
+          setDeleteSubmitting(true)
+          try {
+            await deleteCharacter(deletingCharacterId)
+            setDeletingCharacterId(null)
+          } finally {
+            setDeleteSubmitting(false)
+          }
+        }}
+      />
 
-      <AlertDialog
+      <DeleteConfirmDialog
+        title="删除场景"
+        itemName="场景"
         open={!!deletingSceneId}
+        submitting={deleteSubmitting}
         onOpenChange={(open) => {
           if (!open && !deleteSubmitting) setDeletingSceneId(null)
         }}
-      >
-        <AlertDialogContent className="sm:max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>删除场景</AlertDialogTitle>
-            <AlertDialogDescription className="text-left">
-              确定要删除这个场景吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteSubmitting}>取消</AlertDialogCancel>
-            <Button
-              disabled={deleteSubmitting}
-              onClick={async () => {
-                if (!deletingSceneId || deleteSubmitting) return
-                setDeleteSubmitting(true)
-                try {
-                  await deleteScene(deletingSceneId)
-                  setDeletingSceneId(null)
-                } finally {
-                  setDeleteSubmitting(false)
-                }
-              }}
-            >
-              {deleteSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  删除中…
-                </>
-              ) : (
-                "确认删除"
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={async () => {
+          if (!deletingSceneId || deleteSubmitting) return
+          setDeleteSubmitting(true)
+          try {
+            await deleteScene(deletingSceneId)
+            setDeletingSceneId(null)
+          } finally {
+            setDeleteSubmitting(false)
+          }
+        }}
+      />
 
-      <AlertDialog
+      <DeleteConfirmDialog
+        title="删除道具"
+        itemName="道具"
         open={!!deletingPropId}
+        submitting={deleteSubmitting}
         onOpenChange={(open) => {
           if (!open && !deleteSubmitting) setDeletingPropId(null)
         }}
-      >
-        <AlertDialogContent className="sm:max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>删除道具</AlertDialogTitle>
-            <AlertDialogDescription className="text-left">
-              确定要删除这个道具吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteSubmitting}>取消</AlertDialogCancel>
-            <Button
-              disabled={deleteSubmitting}
-              onClick={async () => {
-                if (!deletingPropId || deleteSubmitting) return
-                setDeleteSubmitting(true)
-                try {
-                  await deleteProp(deletingPropId)
-                  setDeletingPropId(null)
-                } finally {
-                  setDeleteSubmitting(false)
-                }
-              }}
-            >
-              {deleteSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  删除中…
-                </>
-              ) : (
-                "确认删除"
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={async () => {
+          if (!deletingPropId || deleteSubmitting) return
+          setDeleteSubmitting(true)
+          try {
+            await deleteProp(deletingPropId)
+            setDeletingPropId(null)
+          } finally {
+            setDeleteSubmitting(false)
+          }
+        }}
+      />
 
       {novel && (
         <ExtractAssetsDialog
@@ -716,6 +653,48 @@ function EmptyTabState({ label, onAdd }: { label: string; onAdd: () => void }) {
         手动添加{label}
       </Button>
     </div>
+  )
+}
+
+function DeleteConfirmDialog({
+  title,
+  itemName,
+  open,
+  submitting,
+  onOpenChange,
+  onConfirm,
+}: {
+  title: string
+  itemName: string
+  open: boolean
+  submitting: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-left">
+            确定要删除这个{itemName}吗？此操作无法撤销。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={submitting}>取消</AlertDialogCancel>
+          <Button disabled={submitting} onClick={onConfirm}>
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                删除中…
+              </>
+            ) : (
+              "确认删除"
+            )}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 

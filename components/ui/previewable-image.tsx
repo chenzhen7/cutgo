@@ -45,7 +45,10 @@ export function PreviewableImage({
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-4xl overflow-hidden border-white/10 bg-black/95 p-0">
+        <DialogContent 
+          showCloseButton={false}
+          className="max-w-[90vw] sm:max-w-[90vw] w-fit overflow-hidden border-white/10 bg-black/95 p-0 flex flex-col"
+        >
           {/* 关闭按钮 */}
           <button
             onClick={() => setOpen(false)}
@@ -56,14 +59,14 @@ export function PreviewableImage({
           </button>
 
           {title && (
-            <div className="px-4 pt-4 pb-2 text-sm font-medium text-white/70">{title}</div>
+            <div className="px-4 pt-4 pb-2 text-sm font-medium text-white/70 shrink-0">{title}</div>
           )}
 
-          <div className="flex items-center justify-center p-2">
+          <div className="flex items-center justify-center p-2 sm:p-4 min-h-0">
             <img
               src={src}
               alt={alt}
-              className="max-h-[85vh] max-w-full rounded object-contain"
+              className="h-[60vh] sm:h-[70vh] max-h-[720px] w-auto max-w-full rounded object-contain block"
             />
           </div>
         </DialogContent>
