@@ -19,6 +19,71 @@ import { toast } from "sonner"
 
 let scriptShotPlansFetchToken = 0
 
+const POLL_INTERVAL_MS = 5000
+const MAX_POLL_ATTEMPTS = 72 // 最长 6 分钟
+
+function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void {
+  if (attempt >= MAX_POLL_ATTEMPTS) {
+    const store = useScriptShotsStore.getState()
+    const videoGeneratingIds = new Set(store.videoGeneratingIds)
+    videoGeneratingIds.delete(shotId)
+    useScriptShotsStore.setState({
+      videoGeneratingIds,
+      scriptShotPlans: store.scriptShotPlans.map((sb) =>
+        sb.id === episodeId
+          ? {
+              ...sb,
+              shots: sb.shots.map((sh) =>
+                sh.id === shotId ? { ...sh, videoStatus: "error" as const } : sh
+              ),
+            }
+          : sb
+      ),
+    })
+    toast.error("视频生成超时，请重试")
+    return
+  }
+
+  setTimeout(async () => {
+    try {
+      const data = await apiFetch<{ videoStatus: string; videoUrl: string | null; shot: Shot }>(
+        `/api/script-shots/${episodeId}/shots/${shotId}/video-status`
+      )
+      const store = useScriptShotsStore.getState()
+
+      if (data.videoStatus === "completed") {
+        const videoGeneratingIds = new Set(store.videoGeneratingIds)
+        videoGeneratingIds.delete(shotId)
+        useScriptShotsStore.setState({
+          videoGeneratingIds,
+          scriptShotPlans: store.scriptShotPlans.map((sb) =>
+            sb.id === episodeId
+              ? { ...sb, shots: sb.shots.map((sh) => (sh.id === shotId ? data.shot : sh)) }
+              : sb
+          ),
+        })
+        toast.success("视频生成完成")
+      } else if (data.videoStatus === "error") {
+        const videoGeneratingIds = new Set(store.videoGeneratingIds)
+        videoGeneratingIds.delete(shotId)
+        useScriptShotsStore.setState({
+          videoGeneratingIds,
+          scriptShotPlans: store.scriptShotPlans.map((sb) =>
+            sb.id === episodeId
+              ? { ...sb, shots: sb.shots.map((sh) => (sh.id === shotId ? data.shot : sh)) }
+              : sb
+          ),
+        })
+        toast.error("视频生成失败")
+      } else {
+        startVideoPolling(episodeId, shotId, attempt + 1)
+      }
+    } catch {
+      startVideoPolling(episodeId, shotId, attempt + 1)
+    }
+  }, POLL_INTERVAL_MS)
+}
+
 type ShotWithPlan = { shot: Shot; scriptShotPlan: ScriptShotPlan }
 
 function flattenShotsByActiveEpisode(scriptShotPlans: ScriptShotPlan[], activeEpisodeId: string | null): ShotWithPlan[] {
@@ -49,6 +114,10 @@ interface ScriptShotState {
   batchImageStatus: "idle" | "generating" | "completed" | "error"
   batchImageProgress: { current: number; total: number } | null
 
+  videoGeneratingIds: Set<string>
+  batchVideoStatus: "idle" | "generating" | "completed" | "error"
+  batchVideoProgress: { current: number; total: number } | null
+
   fetchScriptShotPlans: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<Episode[]>
   fetchAssets: (projectId: string) => Promise<void>
@@ -78,6 +147,10 @@ interface ScriptShotState {
   generateImage: (episodeId: string, shotId: string) => Promise<void>
   generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
   clearImage: (episodeId: string, shotId: string) => Promise<void>
+
+  generateVideo: (episodeId: string, shotId: string) => Promise<void>
+  generateBatchVideos: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
+  clearVideo: (episodeId: string, shotId: string) => Promise<void>
 
   setActiveEpisodeId: (episodeId: string | null) => void
   setActiveShotId: (shotId: string | null) => void
@@ -122,6 +195,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   imageGeneratingIds: new Set(),
   batchImageStatus: "idle",
   batchImageProgress: null,
+
+  videoGeneratingIds: new Set(),
+  batchVideoStatus: "idle",
+  batchVideoProgress: null,
 
   fetchScriptShotPlans: async (projectId, episodeId) => {
     const currentFetchToken = ++scriptShotPlansFetchToken
@@ -439,6 +516,97 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     })
   },
 
+  generateVideo: async (episodeId, shotId) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
+    const shot = sb?.shots.find((s) => s.id === shotId)
+
+    if (!shot?.imageUrl) {
+      toast.error("请先生成分镜图片，再进行图生视频")
+      return
+    }
+
+    const videoGeneratingIds = new Set(get().videoGeneratingIds)
+    videoGeneratingIds.add(shotId)
+    set({ videoGeneratingIds })
+
+    try {
+      const data = await apiFetch<{ shot: Shot }>(
+        `/api/script-shots/${episodeId}/shots/${shotId}/generate-video`,
+        { method: "POST" }
+      )
+      set({
+        scriptShotPlans: get().scriptShotPlans.map((s) =>
+          s.id === episodeId
+            ? { ...s, shots: s.shots.map((sh) => (sh.id === shotId ? data.shot : sh)) }
+            : s
+        ),
+      })
+      startVideoPolling(episodeId, shotId)
+    } catch (err) {
+      const after = new Set(get().videoGeneratingIds)
+      after.delete(shotId)
+      set({ videoGeneratingIds: after })
+      toast.error(`视频生成启动失败：${(err as Error).message}`)
+    }
+  },
+
+  generateBatchVideos: async (projectId, options) => {
+    const { scriptShotPlans } = get()
+    const mode = options?.mode ?? "missing_only"
+    const episodeId = options?.episodeId
+
+    const plans = episodeId
+      ? scriptShotPlans.filter((sb) => sb.episodeId === episodeId)
+      : scriptShotPlans
+
+    const targets = plans.flatMap((plan) =>
+      plan.shots.filter((s) => {
+        if (!s.imageUrl) return false
+        if (mode === "missing_only") return !s.videoUrl
+        return true
+      }).map((s) => ({ episodeId: plan.id, shot: s }))
+    )
+
+    if (targets.length === 0) {
+      toast.info("没有需要生成视频的镜头（请确认已生成图片）")
+      return
+    }
+
+    set({ batchVideoStatus: "generating", batchVideoProgress: { current: 0, total: targets.length } })
+
+    let completed = 0
+    const total = targets.length
+
+    for (const { episodeId: eId, shot } of targets) {
+      try {
+        await get().generateVideo(eId, shot.id)
+      } catch {
+        // 单镜失败不中断批量
+      }
+      completed++
+      set({ batchVideoProgress: { current: completed, total } })
+    }
+
+    set({ batchVideoStatus: "completed" })
+    setTimeout(() => {
+      set({ batchVideoStatus: "idle", batchVideoProgress: null })
+    }, 2000)
+  },
+
+  clearVideo: async (episodeId, shotId) => {
+    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
+      method: "PATCH",
+      body: { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null },
+    })
+    set({
+      scriptShotPlans: get().scriptShotPlans.map((sb) =>
+        sb.id === episodeId
+          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
+          : sb
+      ),
+    })
+  },
+
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
   setActiveShotId: (shotId) => set({ activeShotId: shotId, detailPanelOpen: !!shotId }),
   setDetailPanelOpen: (open) => set({ detailPanelOpen: open, activeShotId: open ? get().activeShotId : null }),
@@ -535,6 +703,9 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       imageGeneratingIds: new Set(),
       batchImageStatus: "idle",
       batchImageProgress: null,
+      videoGeneratingIds: new Set(),
+      batchVideoStatus: "idle",
+      batchVideoProgress: null,
     })
   },
 }))

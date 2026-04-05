@@ -51,6 +51,9 @@ export default function ScriptShotPage() {
     imageGeneratingIds,
     batchImageStatus,
     batchImageProgress,
+    videoGeneratingIds,
+    batchVideoStatus,
+    batchVideoProgress,
     fetchScriptShotPlans,
     fetchEpisodes,
     fetchAssets,
@@ -62,6 +65,9 @@ export default function ScriptShotPage() {
     generateImage,
     generateBatchImages,
     clearImage,
+    generateVideo,
+    generateBatchVideos,
+    clearVideo,
     reorderShots,
     setActiveEpisodeId,
     setActiveShotId,
@@ -105,46 +111,7 @@ export default function ScriptShotPage() {
   const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
-  // Video generation mock state
-  const [videoGeneratingIds, setVideoGeneratingIds] = useState<Set<string>>(new Set())
-  const [batchVideoStatus, setBatchVideoStatus] = useState<"idle" | "generating" | "completed" | "error">("idle")
-  const [batchVideoProgress, setBatchVideoProgress] = useState<{ current: number; total: number } | null>(null)
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
-
-  const runBatchVideoGeneration = useCallback(
-    (targets: Array<{ episodeId: string; shot: Shot }>) => {
-      if (targets.length === 0) return
-
-      setBatchVideoStatus("generating")
-      setBatchVideoProgress({ current: 0, total: targets.length })
-
-      targets.forEach((target, i) => {
-        const delay = (i + 1) * 1500 + Math.random() * 1000
-        setVideoGeneratingIds((prev) => new Set(prev).add(target.shot.id))
-        setTimeout(() => {
-          setVideoGeneratingIds((prev) => {
-            const next = new Set(prev)
-            next.delete(target.shot.id)
-            return next
-          })
-          updateShot(target.episodeId, target.shot.id, {
-            videoUrl: `/testVideo.mp4`,
-            videoStatus: "completed",
-            videoDuration: "5s",
-          } as Partial<ShotInput>)
-          setBatchVideoProgress((prev) => prev ? { ...prev, current: prev.current + 1 } : null)
-          if (i === targets.length - 1) {
-            setBatchVideoStatus("completed")
-            setTimeout(() => {
-              setBatchVideoStatus("idle")
-              setBatchVideoProgress(null)
-            }, 2000)
-          }
-        }, delay)
-      })
-    },
-    [updateShot]
-  )
 
   useEffect(() => {
     const init = async () => {
@@ -321,59 +288,30 @@ export default function ScriptShotPage() {
     }
   }, [currentActiveShot, clearImage])
 
-  // Mock: simulate single shot video generation (3-5s delay)
   const handleGenerateVideo = useCallback(
-    (scriptId: string, shotId: string) => {
-      setVideoGeneratingIds((prev) => new Set(prev).add(shotId))
-      const delay = 3000 + Math.random() * 2000
-      setTimeout(() => {
-        setVideoGeneratingIds((prev) => {
-          const next = new Set(prev)
-          next.delete(shotId)
-          return next
-        })
-        updateShot(scriptId, shotId, {
-          videoUrl: `/testVideo.mp4`,
-          videoStatus: "completed",
-          videoDuration: "5s",
-        } as Partial<ShotInput>)
-      }, delay)
+    (episodeId: string, shotId: string) => {
+      generateVideo(episodeId, shotId)
     },
-    [updateShot]
+    [generateVideo]
   )
 
   const handleClearVideo = useCallback(() => {
     if (currentActiveShot) {
-      updateShot(currentActiveShot.scriptShotPlan.id, currentActiveShot.shot.id, {
-        videoUrl: undefined,
-        videoStatus: undefined,
-        videoDuration: undefined,
-      } as Partial<ShotInput>)
+      clearVideo(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)
     }
-  }, [currentActiveShot, updateShot])
+  }, [currentActiveShot, clearVideo])
 
-  // Mock: batch video generation
   const handleBatchGenerateVideos = useCallback(
     (mode: "all" | "missing_only") => {
-      const allShots = scriptShotPlans.flatMap((plan) =>
-        plan.shots.filter((s) => s.imageUrl).map((s) => ({ episodeId: plan.id, shot: s }))
-      )
-      const targets = mode === "missing_only"
-        ? allShots.filter((s) => !s.shot.videoUrl)
-        : allShots
-      runBatchVideoGeneration(targets)
+      generateBatchVideos(params.id as string, { mode })
     },
-    [scriptShotPlans, runBatchVideoGeneration]
+    [generateBatchVideos, params.id]
   )
 
   const handleBatchGenerateEpisodeVideos = useCallback(() => {
     if (!activeEpisodeId) return
-    const episodePlans = scriptShotPlans.filter((plan) => plan.episodeId === activeEpisodeId)
-    const targets = episodePlans.flatMap((plan) =>
-      plan.shots.filter((s) => s.imageUrl && !s.videoUrl).map((s) => ({ episodeId: plan.id, shot: s }))
-    )
-    runBatchVideoGeneration(targets)
-  }, [activeEpisodeId, scriptShotPlans, runBatchVideoGeneration])
+    generateBatchVideos(params.id as string, { episodeId: activeEpisodeId, mode: "missing_only" })
+  }, [activeEpisodeId, generateBatchVideos, params.id])
 
   const handlePlayVideo = useCallback(
     (shotId: string) => {

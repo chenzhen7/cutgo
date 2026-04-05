@@ -297,6 +297,8 @@ model Shot {
   videoStatus   String?
   videoPrompt   String?
   videoDuration String?
+  /// 视频生成异步任务 ID（用于轮询进度）
+  videoTaskId   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

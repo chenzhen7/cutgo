@@ -476,6 +476,7 @@ export interface Shot {
   videoStatus: VideoStatus | null
   videoPrompt: string | null
   videoDuration: string | null
+  videoTaskId: string | null
   createdAt: string
   updatedAt: string
 }
