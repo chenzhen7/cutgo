@@ -135,8 +135,16 @@ async function callAIGenerateScriptShots(
     return {
       shots,
     }
-  } catch {
-    throwCutGoError("LLM_INVALID_RESPONSE", "LLM 返回的分镜结果不是有效 JSON")
+  } catch (err) {
+    console.error("[LLM Response Parse Error]", {
+      error: err,
+      rawText: text,
+    })
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    throwCutGoError(
+      "LLM_INVALID_RESPONSE",
+      `LLM 返回的分镜结果解析失败: ${errorMsg}。`
+    )
   }
 }
 
