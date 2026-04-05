@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Check, X, Pencil, MapPin, User, Package, ListOrdered, BookOpen, School, Loader2 } from "lucide-react"
-import { cn, parseJsonArray } from "@/lib/utils"
+import { parseJsonArray } from "@/lib/utils"
 import type {
   AssetCharacter,
   AssetProp,
@@ -86,10 +86,7 @@ export function ScriptEditor({
   const characterIds = parseJsonArray(episode.characters)
   const sceneIds = parseJsonArray(episode.scenes)
   const propIds = parseJsonArray(episode.props)
-  const selectedSceneId = sceneIds[0] || ""
-  const boundScene = selectedSceneId
-    ? assetScenes.find((s) => s.id === selectedSceneId) ?? null
-    : null
+  const boundScenes = assetScenes.filter((s) => sceneIds.includes(s.id))
   const boundCharacters = assetCharacters.filter((c) => characterIds.includes(c.id))
   const boundProps = assetProps.filter((p) => propIds.includes(p.id))
 
@@ -166,11 +163,12 @@ export function ScriptEditor({
     await onUpdateEpisode({ characters: JSON.stringify(next) })
   }
 
-  const handleChangeScene = async (sceneId: string) => {
+  const handleToggleScene = async (sceneId: string) => {
     if (!onUpdateEpisode) return
-    await onUpdateEpisode({
-      scenes: sceneId === "__none__" ? JSON.stringify([]) : JSON.stringify([sceneId]),
-    })
+    const next = sceneIds.includes(sceneId)
+      ? sceneIds.filter((id) => id !== sceneId)
+      : [...sceneIds, sceneId]
+    await onUpdateEpisode({ scenes: JSON.stringify(next) })
   }
 
   const handleToggleProp = async (propId: string) => {
@@ -386,6 +384,9 @@ export function ScriptEditor({
                       <div className="flex items-center gap-1">
                         <MapPin className="size-3 text-muted-foreground" />
                         <span className="text-[11px] font-medium">场景</span>
+                        {sceneIds.length > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{sceneIds.length}</Badge>
+                        )}
                       </div>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -393,28 +394,16 @@ export function ScriptEditor({
                         </PopoverTrigger>
                         <PopoverContent className="w-56 p-2" align="start">
                           <div className="space-y-1 max-h-48 overflow-y-auto">
-                            <button
-                              onClick={() => handleChangeScene("__none__")}
-                              className={cn(
-                                "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors",
-                                !selectedSceneId && "bg-muted font-medium"
-                              )}
-                            >
-                              无
-                            </button>
                             {assetScenes.length === 0 ? (
                               <p className="text-xs text-muted-foreground py-2 text-center">暂无场景资产</p>
                             ) : (
                               assetScenes.map((s) => (
-                                <button
-                                  key={s.id}
-                                  onClick={() => handleChangeScene(s.id)}
-                                  className={cn(
-                                    "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs text-left transition-colors",
-                                    selectedSceneId === s.id && "bg-muted font-medium text-primary"
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2 min-w-0 text-[11px]">
+                                <label key={s.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer transition-colors">
+                                  <Checkbox
+                                    checked={sceneIds.includes(s.id)}
+                                    onCheckedChange={() => handleToggleScene(s.id)}
+                                  />
+                                  <div className="flex items-center gap-2 min-w-0">
                                     {s.imageUrl ? (
                                       <img src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
                                     ) : (
@@ -422,33 +411,41 @@ export function ScriptEditor({
                                         <MapPin className="size-3 text-muted-foreground" />
                                       </div>
                                     )}
-                                    <span className="truncate">{s.name}</span>
+                                    <span className="text-[11px] truncate">{s.name}</span>
                                   </div>
-                                </button>
+                                </label>
                               ))
                             )}
                           </div>
                         </PopoverContent>
                       </Popover>
                     </div>
-                    {boundScene ? (
-                      <div className="rounded-lg overflow-hidden border bg-muted/30">
-                        {boundScene.imageUrl ? (
-                          <img src={boundScene.imageUrl} alt={boundScene.name} className="w-full h-16 object-cover" />
-                        ) : (
-                          <div className="w-full h-12 flex items-center justify-center bg-muted/50">
-                            <MapPin className="size-4 text-muted-foreground/20" />
+                    {boundScenes.length > 0 ? (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {boundScenes.map((s) => (
+                          <div key={s.id} className="flex flex-col items-center gap-0.5">
+                            <div className="size-9 rounded-md overflow-hidden bg-muted border">
+                              {s.imageUrl ? (
+                                <img src={s.imageUrl} alt={s.name} className="size-full object-cover" />
+                              ) : (
+                                <div className="size-full flex items-center justify-center">
+                                  <MapPin className="size-4 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground truncate max-w-[36px]">{s.name}</span>
                           </div>
-                        )}
-                        <div className="px-1.5 py-1 border-t bg-card">
-                          <p className="text-[10px] font-medium truncate">{boundScene.name}</p>
-                        </div>
+                        ))}
+                      </div>
+                    ) : sceneIds.length > 0 ? (
+                      <div className="flex gap-1 flex-wrap">
+                        {sceneIds.map((id) => (
+                          <Badge key={id} variant="outline" className="text-[9px] px-1.5">{id}</Badge>
+                        ))}
                       </div>
                     ) : (
                       <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center">
-                        <p className="text-[10px] text-muted-foreground/40 italic">
-                          {selectedSceneId || "未绑定"}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
                       </div>
                     )}
                   </div>
