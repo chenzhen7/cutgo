@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
 import { createLLMProviderFromConfig, callLLM } from "@/lib/ai/llm"
 import { createImageProviderFromConfig } from "@/lib/ai/image"
-import { createVideoProviderFromConfig } from "@/lib/ai/video"
+import { createVideoProviderFromConfig, queryVideoTask } from "@/lib/ai/video"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
 const TEST_TIMEOUT_MS = 300_000
@@ -249,7 +249,7 @@ async function testVideo({
   try {
     // 查询一个不存在的任务 ID，用于验证 API Key 可用性
     // 401/403 → 鉴权失败；404/任务不存在 → 鉴权通过
-    await withTimeout(videoProvider.queryTask("test-connectivity-check"), 10_000)
+    await withTimeout(queryVideoTask("test-connectivity-check", videoProvider), 10_000)
     return NextResponse.json({ success: true, message: "连接成功" })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
