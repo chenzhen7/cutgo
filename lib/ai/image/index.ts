@@ -4,6 +4,7 @@ import { DoubaoImageProvider } from "./doubao"
 import { PlaceholderImageProvider } from "./placeholder"
 import { StabilityImageProvider } from "./stability"
 import type { ImageGenerateOptions, ImageGenerateResult, ImageProvider } from "../types"
+import { logAIEvent } from "../logging"
 
 /** 图像模型配置运行时参数定义 */
 export interface ImageProviderRuntimeConfig {
@@ -72,5 +73,17 @@ export async function callImage(
     throwCutGoError("IMAGE_NOT_CONFIGURED")
   }
 
-  return provider.generate(options)
+  logAIEvent("image", "request", {
+    provider: provider.id,
+    body: options,
+  })
+
+  
+  const result = await provider.generate(options)
+  logAIEvent("image", "response", {
+    provider: provider.id,
+    body: result,
+  })
+  return result
+
 }

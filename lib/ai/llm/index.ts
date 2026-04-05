@@ -3,6 +3,7 @@ import { GoogleLLMProvider } from "./google"
 import { OpenAILLMProvider } from "./openai"
 import type { LLMGenerateOptions, LLMGenerateResult, LLMProvider } from "../types"
 import { throwCutGoError } from "@/lib/api-error"
+import { logAIEvent } from "../logging"
 
 // 模型配置运行时参数定义
 export interface LLMProviderRuntimeConfig {
@@ -67,5 +68,17 @@ export async function callLLM(
   if (!llmProvider) {
     throwCutGoError("LLM_NOT_CONFIGURED")
   }
-  return llmProvider.chat(options)
+
+  logAIEvent("llm", "request", {
+    provider: llmProvider.id,
+    body: options,
+  })
+
+  const result = await llmProvider.chat(options)
+  logAIEvent("llm", "response", {
+    provider: llmProvider.id,
+    body: result,
+  })
+  return result
+  
 }

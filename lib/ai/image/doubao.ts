@@ -48,16 +48,6 @@ export class DoubaoImageProvider implements ImageProvider {
     const url = `${this.baseUrl}/images/generations`
     const imageInput = await this.resolveImageInput(referenceImages)
 
-    console.log("[Doubao Image] request", {
-      url,
-      model: this.config.model,
-      size,
-      prompt
-    });
-    (imageInput as string[])?.forEach((item: string) => {
-      console.log("[Doubao Image] referenceImages", item.length > 300 ? `${item.slice(0, 300)}…` : item)
-    })
-
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -74,8 +64,6 @@ export class DoubaoImageProvider implements ImageProvider {
       signal: AbortSignal.timeout(300_000),
     })
 
-    console.log("[Doubao Image] response status", res.status, res.statusText)
-
     if (!res.ok) {
       const errorText = await res.text()
 
@@ -85,12 +73,6 @@ export class DoubaoImageProvider implements ImageProvider {
     }
 
     const json = (await res.json()) as DoubaoImageResponse
-
-    const raw = JSON.stringify(json)
-    console.log(
-      "[Doubao Image] response body (truncated)",
-      raw.length > 300 ? `${raw.slice(0, 300)}…` : raw
-    )
 
     const first = json.data?.[0]
     if (!first) {
