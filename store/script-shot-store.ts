@@ -546,7 +546,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       const after = new Set(get().videoGeneratingIds)
       after.delete(shotId)
       set({ videoGeneratingIds: after })
-      toast.error(`视频生成启动失败：${(err as Error).message}`)
+      toast.error(`视频生成失败：${(err as Error).message}`)
     }
   },
 

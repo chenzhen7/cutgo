@@ -22,12 +22,11 @@ interface DoubaoVideoCreateResponse {
 /** 查询任务响应 */
 interface DoubaoVideoQueryResponse {
   id?: string
-  status?: "queuing" | "running" | "succeeded" | "failed"
-  content?: Array<{
-    type: string
-    video_url?: { url: string }
-  }>
-  error?: { code: string; message: string }
+  status?: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "expired"
+  content?: {
+    video_url?: string
+  }
+  error?: { code: string; message: string } | null
 }
 
 /**
@@ -98,7 +97,7 @@ export class DoubaoVideoProvider implements VideoProvider {
         Authorization: `Bearer ${this.config.apiKey}`,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(300_000),
     })
 
     if (!res.ok) {
@@ -143,13 +142,12 @@ export class DoubaoVideoProvider implements VideoProvider {
     }
 
     switch (json.status) {
-      case "queuing":
+      case "queued":
         return { status: "pending" }
       case "running":
         return { status: "processing" }
       case "succeeded": {
-        const videoItem = json.content?.find((c) => c.type === "video_url")
-        const videoUrl = videoItem?.video_url?.url
+        const videoUrl = json.content?.video_url
         if (!videoUrl) {
           throwCutGoError("INTERNAL", "豆包视频任务成功但未返回视频 URL")
         }
@@ -157,6 +155,9 @@ export class DoubaoVideoProvider implements VideoProvider {
       }
       case "failed":
         return { status: "failed", reason: apiErrorMsg }
+      case "expired":
+      case "cancelled":
+        return { status: "failed", reason: `任务${json.status === "expired" ? "超时" : "取消"}` }
       default:
         return { status: "processing" }
     }

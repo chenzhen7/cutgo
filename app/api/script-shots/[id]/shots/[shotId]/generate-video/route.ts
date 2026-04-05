@@ -74,7 +74,6 @@ export const POST = withError(async (
     return NextResponse.json({ shot: updated })
   } catch (err) {
     await markAiTaskFailed(task.id, err)
-    if (err instanceof CutGoError) throw err
-    throwCutGoError("INTERNAL", (err as Error).message)
+    throw err
   }
 })
