@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
 import { getImageProvider } from "@/lib/ai/image"
 import type { ImageProvider } from "@/lib/ai/types"
+import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
 
 function resolveSize(aspectRatio: string): { width: number; height: number } {
   return aspectRatio === "16:9"
@@ -56,16 +57,10 @@ async function generateForShot(
   }
 
   if (shot.imageType === "multi_grid" && shot.gridPrompts) {
-    let prompts: string[] = []
-    try { prompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
-    if (prompts.length > 0) {
-      const promptObj: Record<string, string> = {}
-      prompts.forEach((p, i) => {
-        promptObj[String(i + 1)] = p
-      })
-      const jsonBlock = JSON.stringify(promptObj, null, 2)
-      const layoutText = shot.gridLayout ? `宫格布局：${shot.gridLayout}\n` : ""
-      const combinedPrompt = `${shot.prompt}\n\n保持原图场景和风格不变，拍摄一套多宫格布局的分镜摄影图。保持每张图不重复，并且具有叙事感和连贯性，分镜之间紧挨着、无边框，4k高清画质${layoutText}\n\n以下 JSON 中数字键 "1"、"2"… 依次对应各子画面（建议从左到右、从上到下）：\n\n${jsonBlock}`
+    let gridPrompts: string[] = []
+    try { gridPrompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
+    if (gridPrompts.length > 0) {
+      const combinedPrompt = buildMultiGridPrompt(shot.prompt, gridPrompts, shot.gridLayout)
 
       const result = await provider.generate({
         prompt: combinedPrompt,

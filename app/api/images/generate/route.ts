@@ -7,6 +7,7 @@ import {
   markAiTaskSucceeded,
 } from "@/lib/ai-task-service"
 import { getImageProvider } from "@/lib/ai/image"
+import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
 
 interface GenerateImageRequest {
   shotId: string
@@ -14,10 +15,8 @@ interface GenerateImageRequest {
   prompt: string
   promptEnd?: string
   gridPrompts?: string[]
-  gridLayout?: string
   negativePrompt?: string
   aspectRatio?: string
-  stylePreset?: string
   referenceImages?: string[]
 }
 
@@ -29,7 +28,7 @@ function resolveSize(aspectRatio?: string): { width: number; height: number } {
 
 export async function POST(request: NextRequest) {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, gridLayout, negativePrompt, aspectRatio, referenceImages } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, referenceImages } = body
 
   if (!shotId || !prompt) {
     return NextResponse.json({ error: "shotId and prompt are required" }, { status: 400 })
@@ -129,13 +128,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "gridPrompts are required for multi_grid type" }, { status: 400 })
       }
 
-      const promptObj: Record<string, string> = {}
-      gridPrompts.forEach((p, i) => {
-        promptObj[String(i + 1)] = p
-      })
-      const jsonBlock = JSON.stringify(promptObj, null, 2)
-      const layoutText = shot.gridLayout ? `宫格布局：${shot.gridLayout}\n` : ""
-      const combinedPrompt = `${shot.prompt}\n\n保持原图场景和风格不变，拍摄一套多宫格布局的分镜摄影图。保持每张图不重复，并且具有叙事感和连贯性，分镜之间紧挨着、无边框，4k高清画质${layoutText}\n\n以下 JSON 中数字键 "1"、"2"… 依次对应各子画面（建议从左到右、从上到下）：\n\n${jsonBlock}`
+      const combinedPrompt = buildMultiGridPrompt(prompt, gridPrompts, shot.gridLayout)
       const result = await provider.generate({
         prompt: combinedPrompt,
         projectId: shot.episode.projectId,
