@@ -457,7 +457,7 @@ export default function SettingsPage() {
 
       {/* 新增/编辑对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingConfig ? "编辑配置" : "添加模型配置"}</DialogTitle>
             <DialogDescription>
