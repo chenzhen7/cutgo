@@ -119,7 +119,15 @@ export async function queryVideoTask(
     taskId,
   })
 
-  const status = await provider.queryTask(taskId)
+  let status: VideoTaskStatus
+  try {
+    status = await provider.queryTask(taskId)
+  } catch (err: any) {
+    // 返回失败状态而不是抛出异常
+    console.error("queryVideoTask failed ", err)
+    status = { status: "failed", reason: (err as Error)?.message || String(err) }
+  }
+
 
   logAIEvent("video", "response", {
     provider: provider.id,
