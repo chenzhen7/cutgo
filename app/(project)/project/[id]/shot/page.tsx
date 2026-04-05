@@ -28,7 +28,6 @@ import { ShotDetailPanel } from "./components/shot-detail-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
-import type { ShotCardLayout } from "./components/shot-card"
 import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout, Project } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
@@ -308,15 +307,15 @@ export default function ScriptShotPage() {
 
   const handleBatchGenerateVideos = useCallback(
     (mode: "all" | "missing_only") => {
-      generateBatchVideos(params.id as string, { mode })
+      generateBatchVideos(projectId, { mode })
     },
-    [generateBatchVideos, params.id]
+    [generateBatchVideos, projectId]
   )
 
   const handleBatchGenerateEpisodeVideos = useCallback(() => {
     if (!activeEpisodeId) return
-    generateBatchVideos(params.id as string, { episodeId: activeEpisodeId, mode: "missing_only" })
-  }, [activeEpisodeId, generateBatchVideos, params.id])
+    generateBatchVideos(projectId, { episodeId: activeEpisodeId, mode: "missing_only" })
+  }, [activeEpisodeId, generateBatchVideos, projectId])
 
   const handlePlayVideo = useCallback(
     (shotId: string) => {
@@ -536,6 +535,7 @@ export default function ScriptShotPage() {
                           currentActiveShot.scriptShotPlan.episodeId
                         ) ?? 1
                       }
+                      aspectRatio={aspectRatio}
                       isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
                       isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
                       assetCharacters={assetCharacters}
