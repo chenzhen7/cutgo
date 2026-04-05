@@ -35,7 +35,8 @@ export class StabilityImageProvider implements ImageProvider {
   constructor(private readonly config: StabilityImageConfig) { }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
-    const { prompt, negativePrompt, width, height, numOutputs = 1, projectId, scope } = options
+    const { prompt, negativePrompt, resolution, numOutputs = 1, projectId, scope } = options
+    const [width, height] = resolution.split("x").map(Number)
 
     const baseUrl = this.config.baseUrl.replace(/\/$/, "")
     const engineId = this.config.model || "stable-diffusion-xl-1024-v1-0"

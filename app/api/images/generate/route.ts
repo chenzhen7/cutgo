@@ -17,18 +17,13 @@ interface GenerateImageRequest {
   gridPrompts?: string[]
   negativePrompt?: string
   aspectRatio?: string
+  resolution?: string
   referenceImages?: string[]
-}
-
-function resolveSize(aspectRatio?: string): { width: number; height: number } {
-  return aspectRatio === "16:9"
-    ? { width: 768, height: 432 }
-    : { width: 432, height: 768 }
 }
 
 export const POST = withError(async (request: NextRequest) => {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, referenceImages } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, aspectRatio, resolution, referenceImages } = body
 
   if (!shotId || !prompt) {
     throwCutGoError("MISSING_PARAMS", "shotId and prompt are required")
@@ -43,7 +38,7 @@ export const POST = withError(async (request: NextRequest) => {
           projectId: true,
           index: true,
           title: true,
-          project: { select: { name: true } },
+          project: { select: { name: true, aspectRatio: true, resolution: true } },
         },
       },
     },
@@ -63,7 +58,7 @@ export const POST = withError(async (request: NextRequest) => {
   try {
     const provider = await getImageProvider()
     const type = imageType || "keyframe"
-    const { width, height } = resolveSize(aspectRatio)
+ 
 
     if (type === "keyframe") {
       const result = await provider.generate({
@@ -71,8 +66,8 @@ export const POST = withError(async (request: NextRequest) => {
         projectId: shot.episode.projectId,
         scope: "shot",
         negativePrompt,
-        width,
-        height,
+        aspectRatio,
+        resolution,
         referenceImages,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
@@ -95,8 +90,8 @@ export const POST = withError(async (request: NextRequest) => {
           projectId: shot.episode.projectId,
           scope: "shot",
           negativePrompt,
-          width,
-          height,
+          aspectRatio,
+          resolution,
           referenceImages,
         }),
         provider.generate({
@@ -104,8 +99,8 @@ export const POST = withError(async (request: NextRequest) => {
           projectId: shot.episode.projectId,
           scope: "shot",
           negativePrompt,
-          width,
-          height,
+          aspectRatio,
+          resolution,
           referenceImages,
         }),
       ])
@@ -132,8 +127,8 @@ export const POST = withError(async (request: NextRequest) => {
         projectId: shot.episode.projectId,
         scope: "shot",
         negativePrompt,
-        width,
-        height,
+        aspectRatio,
+        resolution,
         referenceImages,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url

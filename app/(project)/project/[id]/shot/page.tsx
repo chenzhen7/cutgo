@@ -123,7 +123,7 @@ export default function ScriptShotPage() {
         fetchAssets(projectId),
         apiFetch<Project>(`/api/projects/${projectId}`).then((proj) => {
           setAspectRatio(proj.aspectRatio || "9:16")
-        }).catch(() => {}),
+        }).catch(() => { }),
       ])
 
       const currentActiveEpisodeId = useScriptShotsStore.getState().activeEpisodeId

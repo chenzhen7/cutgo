@@ -6,12 +6,6 @@ import type { ImageProvider } from "@/lib/ai/types"
 import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
 import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 
-function resolveSize(aspectRatio: string): { width: number; height: number } {
-  return aspectRatio === "16:9"
-    ? { width: 768, height: 432 }
-    : { width: 432, height: 768 }
-}
-
 async function generateForShot(
   provider: ImageProvider,
   projectId: string,
@@ -24,9 +18,9 @@ async function generateForShot(
     gridLayout: string | null
     negativePrompt: string | null
   },
-  aspectRatio: string
+  aspectRatio: string,
+  resolution: string
 ) {
-  const { width, height } = resolveSize(aspectRatio)
   const neg = shot.negativePrompt ?? undefined
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
@@ -36,16 +30,16 @@ async function generateForShot(
         projectId,
         scope: "shot",
         negativePrompt: neg,
-        width,
-        height,
+        aspectRatio,
+        resolution,
       }),
       provider.generate({
         prompt: shot.promptEnd,
         projectId,
         scope: "shot",
         negativePrompt: neg,
-        width,
-        height,
+        aspectRatio,
+        resolution,
       }),
     ])
     const firstUrl = Array.isArray(r1) ? r1[0].url : r1.url
@@ -68,8 +62,8 @@ async function generateForShot(
         projectId,
         scope: "shot",
         negativePrompt: neg,
-        width,
-        height,
+        aspectRatio,
+        resolution,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
       await prisma.shot.update({
@@ -85,8 +79,8 @@ async function generateForShot(
     projectId,
     scope: "shot",
     negativePrompt: neg,
-    width,
-    height,
+    aspectRatio,
+    resolution,
   })
   const imageUrl = Array.isArray(result) ? result[0].url : result.url
   await prisma.shot.update({
@@ -148,7 +142,7 @@ export const POST = withError(async (request: NextRequest) => {
 
     for (const shot of shots) {
       try {
-        const result = await generateForShot(provider, projectId, shot, project.aspectRatio)
+        const result = await generateForShot(provider, projectId, shot, project.aspectRatio, project.resolution)
         results.push(result)
         success++
       } catch {

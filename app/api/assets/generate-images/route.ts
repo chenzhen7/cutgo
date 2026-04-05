@@ -12,10 +12,10 @@ interface GenerateAssetImageRequest {
 }
 
 /** 各资产类型的默认生图尺寸 */
-const SIZE_MAP: Record<AssetType, { width: number; height: number }> = {
-  character: { width: 512, height: 512 },
-  scene: { width: 768, height: 512 },
-  prop: { width: 512, height: 512 },
+const SIZE_MAP: Record<AssetType, { aspectRatio: string; resolution: string }> = {
+  character: { aspectRatio: "1:1", resolution: "1024x1024" },
+  scene: { aspectRatio: "3:2", resolution: "1080x1920" },
+  prop: { aspectRatio: "1:1", resolution: "512x512" },
 }
 
 /** 任务列表展示用（与 API 请求体中的英文 type 区分） */
@@ -66,16 +66,16 @@ async function runAssetImageTask({
   id,
   projectId,
   prompt,
-  width,
-  height,
+  aspectRatio,
+  resolution,
 }: {
   taskId: string
   type: AssetType
   id: string
   projectId: string
   prompt: string
-  width: number
-  height: number
+  aspectRatio: string
+  resolution: string
 }) {
   try {
     const provider = await getImageProvider()
@@ -83,8 +83,8 @@ async function runAssetImageTask({
       prompt,
       projectId,
       scope: "asset",
-      width,
-      height,
+      aspectRatio,
+      resolution,
     })
     const imageUrl = Array.isArray(result) ? result[0].url : result.url
     await updateAssetImage(type, id, imageUrl)
@@ -105,7 +105,7 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "type 必须是 character、scene 或 prop")
   }
 
-  const { width, height } = SIZE_MAP[type]
+  const { aspectRatio, resolution } = SIZE_MAP[type]
   const asset = await findAsset(type, id)
   const prompt = asset.prompt?.trim() || asset.name
   const task = await createRunningAiTask({
@@ -120,8 +120,8 @@ export const POST = withError(async (request: NextRequest) => {
     id,
     projectId: asset.projectId,
     prompt,
-    width,
-    height,
+    aspectRatio,
+    resolution,
   })
 
   return NextResponse.json({

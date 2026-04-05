@@ -32,11 +32,11 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
       scriptShotPlans: store.scriptShotPlans.map((sb) =>
         sb.id === episodeId
           ? {
-              ...sb,
-              shots: sb.shots.map((sh) =>
-                sh.id === shotId ? { ...sh, videoStatus: "error" as const } : sh
-              ),
-            }
+            ...sb,
+            shots: sb.shots.map((sh) =>
+              sh.id === shotId ? { ...sh, videoStatus: "error" as const } : sh
+            ),
+          }
           : sb
       ),
     })

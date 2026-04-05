@@ -76,10 +76,10 @@ export interface ImageGenerateOptions {
   negativePrompt?: string
   /** 参考图 URL / Base64（data:image/...;base64,...） */
   referenceImages?: string[]
-  /** 生图尺寸字符串（如豆包 OpenAI 兼容接口的 `1024x1024`）；未传则由 width/height 拼接 */
-  size?: string
-  width: number
-  height: number
+  /** 宽高比例，如 "9:16"、"16:9"、"1:1" */
+  aspectRatio?: string
+  /** 分辨率，如 "1080x1920"、"1920x1080"、"512x512" */
+  resolution?: string
   stylePreset?: string
   /** 生成图片的数量 默认1 */
   numOutputs?: number

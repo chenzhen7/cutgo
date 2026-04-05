@@ -25,7 +25,8 @@ export class PlaceholderImageProvider implements ImageProvider {
    * 模拟生成图片
    */
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
-    const { prompt, width, height, numOutputs = 1, projectId, scope } = options
+    const { prompt, resolution, numOutputs = 1, projectId, scope } = options
+    const [width, height] = resolution.split("x").map(Number)
     if (numOutputs > 1) {
       const results = Array.from({ length: numOutputs }, (_, i) => ({
         url: this.makePlaceholderUrl(prompt, width, height, i),
