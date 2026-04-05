@@ -1,5 +1,5 @@
 ---
-description: Enforce unified LLM provider usage in API code; avoid direct env var reads and raw fetch calls for LLM requests.
+description: Enforce unified AI model provider usage in API code; avoid direct env var reads, raw fetch calls, or raw generate calls for LLM and Image requests.
 globs:
   - "app/api/**/*.ts"
   - "lib/ai/**/*.ts"
@@ -7,11 +7,15 @@ globs:
 alwaysApply: false
 ---
 
-# LLM 调用规范
+# AI 模型调用规范
 
-所有 API 路由调用 LLM 时，**必须**使用项目封装的统一入口 `callLLM()`，**禁止**直接读取环境变量并裸调 `fetch`。
+所有 API 路由调用 AI 模型时，**必须**使用项目封装的统一入口，**禁止**直接读取环境变量并裸调，或直接调用 Provider 底层接口。
 
-## 正确用法
+## 1. LLM 调用规范
+
+使用统一入口 `callLLM()`，**禁止**裸调 `fetch`。
+
+### 正确用法
 
 ```ts
 import { callLLM } from "@/lib/ai/llm"
@@ -26,7 +30,7 @@ const result = await callLLM({
 const text = result.content
 ```
 
-## 禁止写法
+### 禁止写法
 
 ```ts
 // ❌ 禁止：直接读取环境变量 + 裸 fetch
@@ -41,7 +45,7 @@ const response = await fetch(`${baseUrl}/chat/completions`, {
 })
 ```
 
-## LLM 未配置的错误处理
+### LLM 未配置的错误处理
 
 - 统一调用路径：使用 `callLLM()`，当 LLM 未配置时它会直接抛出 `throwCutGoError("LLM_NOT_CONFIGURED")`
 - 若业务层需要兜底 `catch`（例如 JSON 解析），应优先透传 `CutGoError`，避免把 `LLM_NOT_CONFIGURED` 包装成其他错误
@@ -63,7 +67,7 @@ try {
 }
 ```
 
-## LLM 返回内容解析
+### LLM 返回内容解析
 
 解析前去掉可能的 markdown 代码块包裹，并用 `try/catch` 保护：
 
@@ -75,7 +79,36 @@ function parseLLMJson<T>(raw: string): T {
 }
 ```
 
+## 2. 图像生成调用规范
+
+业务路由中**必须**使用项目封装的统一入口 `callImage()`，**禁止**在 `getImageProvider()` 之后裸调 `provider.generate()`。
+
+### 正确用法
+
+```ts
+import { callImage } from "@/lib/ai/image"
+
+// callImage 内部已处理日志上报和未配置时的抛错
+const result = await callImage({
+  prompt,
+  projectId,
+  scope: "shot",
+  aspectRatio,
+  resolution
+})
+```
+
+### 禁止写法
+
+```ts
+// ❌ 禁止：直接获取 provider 后裸调 generate，丢失了日志监控和统一异常处理
+import { getImageProvider } from "@/lib/ai/image"
+
+const provider = await getImageProvider()
+const result = await provider.generate({ ... })
+```
+
 ## Provider 支持情况
 
-`getLLMProvider()` / `createLLMProviderFromConfig()` 用于底层获取 Provider，`callLLM()` 自动适配以下所有 Provider：
-`openai` / `deepseek` / `google` / `anthropic` / `qwen` / `doubao` / `zhipu` / `custom-openai`
+`getLLMProvider()` / `createLLMProviderFromConfig()` 用于底层获取 Provider，`callLLM()` 自动适配。
+`getImageProvider()` / `createImageProviderFromConfig()` 用于底层获取 Provider，`callImage()` 自动适配。

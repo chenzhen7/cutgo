@@ -160,8 +160,9 @@ export const POST = withError(async (request: NextRequest) => {
 | LLM 响应无效 | `throwCutGoError("LLM_INVALID_RESPONSE", msg?)` | 500 |
 | 服务端内部错误 | `throwCutGoError("INTERNAL", msg?)` | 500 |
 
-### LLM 调用规范
+### AI 模型调用规范
 
+**1. LLM 调用**
 业务路由中必须使用项目封装的统一入口 `callLLM()`，禁止直接读取环境变量裸调 `fetch`；`getLLMProvider()` / `llmProvider.chat()` 仅允许在 `lib/ai/llm` 封装层内部使用：
 
 ```ts
@@ -182,6 +183,21 @@ LLM 返回 JSON 时需去除 markdown 代码块包裹再解析：
 ```ts
 let text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
 const data = JSON.parse(text)
+```
+
+**2. 图像生成调用**
+业务路由中必须使用项目封装的统一入口 `callImage()`，禁止直接调用 `getImageProvider()` 之后裸调 `provider.generate()`：
+
+```ts
+import { callImage } from "@/lib/ai/image"
+
+const result = await callImage({
+  prompt,
+  projectId,
+  scope: "shot",
+  aspectRatio,
+  resolution
+})
 ```
 
 ### 前端 API 调用规范
