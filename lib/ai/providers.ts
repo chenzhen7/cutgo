@@ -179,7 +179,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
           label: "Seedance 1.0 Pro Fast（快速模式）",
         },
       ],
-      defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+      defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks",
     },
     runway: {
       label: "Runway",

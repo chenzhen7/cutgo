@@ -72,6 +72,7 @@ export async function callVideo(
 
   if (!provider) {
     throwCutGoError("VIDEO_NOT_CONFIGURED")
+
   }
 
   logAIEvent("video", "request", {
