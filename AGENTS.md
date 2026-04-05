@@ -33,12 +33,6 @@
 | 构建工具 | PostCSS（`@tailwindcss/postcss`）|
 | 代码规范 | ESLint 9（eslint-config-next） |
 
-**支持的 AI Provider**：
-- LLM：`openai` / `deepseek` / `google` / `anthropic` / `qwen` / `doubao` / `zhipu` / `custom-openai`
-- 图像：`doubao` / `stability` / `placeholder`（mock）
-- 视频：`placeholder`（mock，待扩展）
-- TTS：`edge-tts`
-
 ---
 
 ## 项目结构
@@ -120,12 +114,9 @@ cutgo/
 ## 编码规范
 
 ### 通用规则
-- 在已有功能基础上添加新功能时，必须确保：
-  - 不影响原有功能
-  - 不添加其他功能、代码、逻辑、文件、配置、依赖
+- 在已有功能基础上添加新功能时，必须确保，不影响原有功能
 - 遵循架构设计，保持代码风格一致
 - 代码修改遵循单一职责原则，不混合多个变更
-- 在进行代码设计规划时，请符合"第一性原理"
 - 尽量复用已有代码，避免重复代码
 - 确保代码可读性与可维护性，必要时加简要注释
 - 代码变更范围最小化，避免大范围修改
