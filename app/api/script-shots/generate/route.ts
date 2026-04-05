@@ -18,6 +18,7 @@ interface AIScriptShotResult {
     prompt: string
     promptEnd?: string
     gridPrompts?: string[]
+    videoPrompt?: string
     characters: string[]
     scene: string
     props: string[]
@@ -81,6 +82,7 @@ async function callAIGenerateScriptShots(
           shot?: unknown
           promptEnd?: unknown
           gridPrompts?: unknown
+          videoPrompt?: unknown
           characters?: unknown
           scene?: unknown
           props?: unknown
@@ -102,6 +104,10 @@ async function callAIGenerateScriptShots(
             .map((v) => v.trim())
             .filter(Boolean)
           : undefined
+        const videoPrompt =
+          typeof raw.videoPrompt === "string" && raw.videoPrompt.trim()
+            ? raw.videoPrompt.trim()
+            : undefined
         const characters = Array.isArray(raw.characters)
           ? raw.characters
             .filter((v): v is string => typeof v === "string")
@@ -119,6 +125,7 @@ async function callAIGenerateScriptShots(
           prompt,
           promptEnd,
           gridPrompts,
+          videoPrompt,
           characters,
           scene,
           props,
@@ -231,6 +238,7 @@ export const POST = withError(async (request: NextRequest) => {
               imageType: imageType as string,
               gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
               gridPrompts: item.gridPrompts?.length ? JSON.stringify(item.gridPrompts) : null,
+              videoPrompt: item.videoPrompt ?? null,
               dialogueText: null,
               actionNote: null,
               characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
