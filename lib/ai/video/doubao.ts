@@ -5,6 +5,7 @@ import type {
   VideoTaskStatus,
 } from "../types"
 import { throwCutGoError } from "@/lib/api-error"
+import { fetchImageAsBase64 } from "@/lib/utils/local-image"
 
 export interface DoubaoVideoConfig {
   apiKey: string
@@ -62,13 +63,16 @@ export class DoubaoVideoProvider implements VideoProvider {
     const content: ContentItem[] = [{ type: "text", text: prompt }]
 
     if (imageUrls && imageUrls.length > 0) {
-      if (imageUrls.length === 1) {
+      const base64Urls = await Promise.all(
+        imageUrls.map((url) => fetchImageAsBase64(url))
+      )
+      if (base64Urls.length === 1) {
         // 单图：首帧参考
-        content.push({ type: "image_url", image_url: { url: imageUrls[0] } })
+        content.push({ type: "image_url", image_url: { url: base64Urls[0] } })
       } else {
         // 双图：首尾帧，按官方 role 字段区分
-        content.push({ type: "image_url", image_url: { url: imageUrls[0] }, role: "first_frame" })
-        content.push({ type: "image_url", image_url: { url: imageUrls[1] }, role: "last_frame" })
+        content.push({ type: "image_url", image_url: { url: base64Urls[0] }, role: "first_frame" })
+        content.push({ type: "image_url", image_url: { url: base64Urls[1] }, role: "last_frame" })
       }
     }
 
