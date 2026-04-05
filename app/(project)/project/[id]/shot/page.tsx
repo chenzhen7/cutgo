@@ -29,8 +29,9 @@ import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
 import type { ShotCardLayout } from "./components/shot-card"
-import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout } from "@/lib/types"
+import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout, Project } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
+import { apiFetch } from "@/lib/api-client"
 
 export default function ScriptShotPage() {
   const params = useParams()
@@ -107,6 +108,7 @@ export default function ScriptShotPage() {
 
   const [initialLoading, setInitialLoading] = useState(true)
   const [episodeLoading, setEpisodeLoading] = useState(false)
+  const [aspectRatio, setAspectRatio] = useState<string>("9:16")
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
@@ -119,6 +121,9 @@ export default function ScriptShotPage() {
       const [eps] = await Promise.all([
         fetchEpisodes(projectId),
         fetchAssets(projectId),
+        apiFetch<Project>(`/api/projects/${projectId}`).then((proj) => {
+          setAspectRatio(proj.aspectRatio || "9:16")
+        }).catch(() => {}),
       ])
 
       const currentActiveEpisodeId = useScriptShotsStore.getState().activeEpisodeId
@@ -474,6 +479,7 @@ export default function ScriptShotPage() {
                           imageGeneratingIds={imageGeneratingIds}
                           videoGeneratingIds={videoGeneratingIds}
                           layout={shotLayout}
+                          aspectRatio={aspectRatio}
                           assetCharacters={assetCharacters}
                           assetScenes={assetScenes}
                           assetProps={assetProps}

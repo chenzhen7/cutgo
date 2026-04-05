@@ -40,6 +40,8 @@ interface SceneSwimlaneProps {
   imageGeneratingIds: Set<string>
   videoGeneratingIds: Set<string>
   layout?: ShotCardLayout
+  /** 项目画幅比，如 "9:16" 或 "16:9" */
+  aspectRatio?: string
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
   assetProps: AssetProp[]
@@ -63,6 +65,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   imageGeneratingIds,
   videoGeneratingIds,
   layout = "list",
+  aspectRatio = "9:16",
   assetCharacters,
   assetScenes,
   assetProps,
@@ -216,7 +219,11 @@ export const SceneSwimlane = memo(function SceneSwimlane({
             <div className={cn(
               "p-2.5 @[640px]:p-3",
               layout === "grid"
-                ? "grid gap-2 grid-cols-2 @[360px]:grid-cols-3 @[540px]:grid-cols-4 @[720px]:grid-cols-5 @[900px]:grid-cols-6 @[1080px]:grid-cols-7 @[1260px]:grid-cols-8"
+                ? aspectRatio === "16:9"
+                  // 横屏：卡片宽，列数少
+                  ? "grid gap-2.5 grid-cols-1 @[480px]:grid-cols-2 @[720px]:grid-cols-3 @[960px]:grid-cols-4 @[1200px]:grid-cols-5 @[1440px]:grid-cols-6"
+                  // 竖屏（9:16 及其他）：卡片窄高，列数多
+                  : "grid gap-2 grid-cols-2 @[360px]:grid-cols-3 @[540px]:grid-cols-4 @[720px]:grid-cols-5 @[900px]:grid-cols-6 @[1080px]:grid-cols-7 @[1260px]:grid-cols-8"
                 : "flex flex-col gap-2.5 @[640px]:gap-3"
             )}>
               {localShots.map((shot) => (
@@ -229,6 +236,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                   isGeneratingImage={imageGeneratingIds.has(shot.id)}
                   isGeneratingVideo={videoGeneratingIds.has(shot.id)}
                   layout={layout}
+                  aspectRatio={aspectRatio}
                   assetCharacters={assetCharacters}
                   assetScenes={assetScenes}
                   assetProps={assetProps}
@@ -266,6 +274,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                 isGeneratingImage={false}
                 isGeneratingVideo={false}
                 layout={layout}
+                aspectRatio={aspectRatio}
                 isDragging={true}
                 assetCharacters={assetCharacters}
                 assetScenes={assetScenes}

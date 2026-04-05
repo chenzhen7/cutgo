@@ -25,6 +25,8 @@ interface ShotCardProps {
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
   layout?: ShotCardLayout
+  /** 项目画幅比，如 "9:16" 或 "16:9" */
+  aspectRatio?: string
   isDragging?: boolean
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
@@ -73,14 +75,16 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
   return null
 }
 
-function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo }: { shot: Shot; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void }) {
+function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo, aspectRatio }: { shot: Shot; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void; aspectRatio?: string }) {
   const imageType = shot.imageType || "keyframe"
   const hasImage = !!shot.imageUrl
   const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
-  // 统一的缩略图容器：使用 self-stretch 撑开高度，内部用 absolute 填充确保 100% 高度
-  const containerClassName = "relative w-[92px] self-stretch shrink-0 @[640px]:w-[100px] @[900px]:w-[116px]"
+  // 列表模式缩略图宽度：横屏(16:9)用更宽容器，竖屏(9:16)用窄容器
+  const containerClassName = aspectRatio === "16:9"
+    ? "relative w-[140px] self-stretch shrink-0 @[640px]:w-[156px] @[900px]:w-[176px]"
+    : "relative w-[76px] self-stretch shrink-0 @[640px]:w-[84px] @[900px]:w-[96px]"
   const contentClassName = "absolute inset-0 rounded-lg overflow-hidden"
 
   if (isGeneratingImage) {
@@ -156,6 +160,7 @@ export const ShotCard = memo(function ShotCard({
   isGeneratingImage,
   isGeneratingVideo,
   layout = "list",
+  aspectRatio = "9:16",
   isDragging = false,
   assetCharacters,
   assetScenes,
@@ -218,8 +223,11 @@ export const ShotCard = memo(function ShotCard({
           isDragging && "shadow-2xl ring-2 ring-primary/50"
         )}
       >
-        {/* Thumbnail — 正方形 */}
-        <div className="relative w-full aspect-square bg-muted/30 overflow-hidden">
+        {/* Thumbnail — 按项目画幅比 */}
+        <div className={cn(
+          "relative w-full bg-muted/30 overflow-hidden",
+          aspectRatio === "16:9" ? "aspect-[16/9]" : "aspect-[9/16]"
+        )}>
           {isGeneratingImage ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
               <Loader2 className="size-5 animate-spin text-primary" />
@@ -315,7 +323,7 @@ export const ShotCard = memo(function ShotCard({
       </div>
 
       {/* Left: Thumbnail */}
-      <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} />
+      <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} aspectRatio={aspectRatio} />
 
       {/* Center: Index + Content */}
       <div className="flex-1 min-w-0 flex gap-2 @[640px]:gap-2.5">
