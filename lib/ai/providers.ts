@@ -162,6 +162,25 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
   },
   video: {
+    doubao: {
+      label: "字节豆包（火山方舟·Seedance）",
+      logo: "/logos/doubao.svg",
+      models: [
+        {
+          value: "doubao-seedance-1-5-pro-251215",
+          label: "Seedance 1.5 Pro（最新，支持有声视频）",
+        },
+        {
+          value: "doubao-seedance-1-0-pro-250528",
+          label: "Seedance 1.0 Pro（首帧/首尾帧）",
+        },
+        {
+          value: "doubao-seedance-1-0-pro-fast-251015",
+          label: "Seedance 1.0 Pro Fast（快速模式）",
+        },
+      ],
+      defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+    },
     runway: {
       label: "Runway",
       models: [{ value: "gen3a_turbo", label: "Gen-3 Alpha Turbo" }],

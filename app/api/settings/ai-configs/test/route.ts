@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getProviderDefaultBaseUrl } from "@/lib/ai/providers"
 import { createLLMProviderFromConfig, callLLM } from "@/lib/ai/llm"
 import { createImageProviderFromConfig } from "@/lib/ai/image"
+import { createVideoProviderFromConfig } from "@/lib/ai/video"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
 const TEST_TIMEOUT_MS = 300_000
@@ -40,7 +41,10 @@ export const POST = withError(async (req: NextRequest) => {
     return await testTTS({ provider, apiKey, baseUrl })
   }
 
-  // video 等暂不支持在线测试
+  if (type === "video") {
+    return await testVideo({ provider, model, apiKey, baseUrl })
+  }
+
   return NextResponse.json({
     success: true,
     message: "该类型暂不支持在线测试，配置已保存",
@@ -204,5 +208,61 @@ async function testTTS({
   }
 
   return NextResponse.json({ success: true, message: "连接成功" })
+}
+
+/**
+ * 测试视频生成接口连通性
+ * 通过查询一个不存在的任务 ID 来验证 API Key 是否有效：
+ * - 返回 404/任务不存在 → API Key 有效
+ * - 返回 401/403 → API Key 无效
+ */
+async function testVideo({
+  provider,
+  model,
+  apiKey,
+  baseUrl,
+}: {
+  provider: string
+  model: string
+  apiKey: string
+  baseUrl: string
+}) {
+  const resolvedBaseUrl = baseUrl || getProviderDefaultBaseUrl(provider)
+  if (!resolvedBaseUrl) {
+    throwCutGoError("MISSING_PARAMS", "缺少 Base URL")
+  }
+  if (!apiKey) {
+    throwCutGoError("MISSING_PARAMS", "缺少 API Key")
+  }
+
+  const videoProvider = createVideoProviderFromConfig({
+    provider,
+    model,
+    apiKey,
+    baseUrl: resolvedBaseUrl,
+  })
+
+  if (!videoProvider) {
+    throwCutGoError("VALIDATION", `当前暂不支持该视频 Provider 的在线测试：${provider}`)
+  }
+
+  try {
+    // 查询一个不存在的任务 ID，用于验证 API Key 可用性
+    // 401/403 → 鉴权失败；404/任务不存在 → 鉴权通过
+    await withTimeout(videoProvider.queryTask("test-connectivity-check"), 10_000)
+    return NextResponse.json({ success: true, message: "连接成功" })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message === "timeout") {
+      throwCutGoError("VALIDATION", "连接超时，请检查网络或 Base URL")
+    }
+    // 若错误信息包含"任务不存在"等非鉴权错误，说明 API Key 有效
+    const lower = message.toLowerCase()
+    if (lower.includes("401") || lower.includes("403") || lower.includes("unauthorized") || lower.includes("forbidden")) {
+      throwCutGoError("VALIDATION", `API Key 验证失败: ${message.slice(0, 200)}`)
+    }
+    // 其他错误（404、任务不存在等）视为连通正常
+    return NextResponse.json({ success: true, message: "连接成功（API Key 有效）" })
+  }
 }
 
