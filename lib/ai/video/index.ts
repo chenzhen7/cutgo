@@ -56,14 +56,20 @@ export function createVideoProviderFromConfig(
  * 未配置时抛出 VIDEO_NOT_CONFIGURED，由上层 route 统一转换为标准错误响应。
  */
 export async function callVideo(
-  options: VideoGenerateOptions
+  options: VideoGenerateOptions,
+  providerOverride?: VideoProvider
 ): Promise<VideoGenerateResult> {
-  const config = await getVideoConfig()
-  if (!config) {
-    throwCutGoError("VIDEO_NOT_CONFIGURED")
+  let provider = providerOverride
+
+  if (!provider) {
+    const config = await getVideoConfig()
+    if (!config) {
+      throwCutGoError("VIDEO_NOT_CONFIGURED")
+    }
+
+    provider = createVideoProviderFromConfig(config) ?? undefined
   }
 
-  const provider = createVideoProviderFromConfig(config)
   if (!provider) {
     throwCutGoError("VIDEO_NOT_CONFIGURED")
   }
@@ -87,16 +93,39 @@ export async function callVideo(
  * 查询视频生成任务状态。
  * 未配置时抛出 VIDEO_NOT_CONFIGURED。
  */
-export async function queryVideoTask(taskId: string): Promise<VideoTaskStatus> {
-  const config = await getVideoConfig()
-  if (!config) {
-    throwCutGoError("VIDEO_NOT_CONFIGURED")
+export async function queryVideoTask(
+  taskId: string,
+  providerOverride?: VideoProvider
+): Promise<VideoTaskStatus> {
+  let provider = providerOverride
+
+  if (!provider) {
+    const config = await getVideoConfig()
+    if (!config) {
+      throwCutGoError("VIDEO_NOT_CONFIGURED")
+    }
+
+    provider = createVideoProviderFromConfig(config) ?? undefined
   }
 
-  const provider = createVideoProviderFromConfig(config)
   if (!provider) {
     throwCutGoError("VIDEO_NOT_CONFIGURED")
   }
 
-  return provider.queryTask(taskId)
+  logAIEvent("video", "request", {
+    provider: provider.id,
+    action: "queryTask",
+    taskId,
+  })
+
+  const status = await provider.queryTask(taskId)
+
+  logAIEvent("video", "response", {
+    provider: provider.id,
+    action: "queryTask",
+    taskId,
+    status,
+  })
+
+  return status
 }
