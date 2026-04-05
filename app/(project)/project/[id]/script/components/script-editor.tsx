@@ -433,13 +433,13 @@ export function ScriptEditor({
                       </Popover>
                     </div>
                     {boundScenes.length > 0 ? (
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {boundScenes.map((s) => (
                           <div key={s.id} className="flex flex-col items-center gap-1">
                             <button
                               onClick={() => setEditingScene(s)}
                               className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
-                              title={`编辑 ${s.name}`}
+                              title={`${s.name}`}
                             >
                               {s.imageUrl ? (
                                 <img src={s.imageUrl} alt={s.name} className="size-full object-cover" />
@@ -515,7 +515,7 @@ export function ScriptEditor({
                             <button
                               onClick={() => setEditingCharacter(c)}
                               className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
-                              title={`编辑 ${c.name}`}
+                              title={`${c.name}`}
                             >
                               {c.imageUrl ? (
                                 <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
@@ -591,7 +591,7 @@ export function ScriptEditor({
                             <button
                               onClick={() => setEditingProp(p)}
                               className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
-                              title={`编辑 ${p.name}`}
+                              title={`${p.name}`}
                             >
                               {p.imageUrl ? (
                                 <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
