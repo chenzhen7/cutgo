@@ -1,5 +1,5 @@
 export function logAIEvent(
-  type: "llm" | "image",
+  type: "llm" | "image" | "video",
   action: "request" | "response",
   payload: any
 ) {

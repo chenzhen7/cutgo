@@ -1,20 +1,102 @@
 import { getVideoConfig } from "../config"
+import { throwCutGoError } from "@/lib/api-error"
+import { DoubaoVideoProvider } from "./doubao"
 import { PlaceholderVideoProvider } from "./placeholder"
-import type { VideoProvider } from "../types"
+import { logAIEvent } from "../logging"
+import type {
+  VideoProvider,
+  VideoGenerateOptions,
+  VideoGenerateResult,
+  VideoTaskStatus,
+} from "../types"
+
+/** 视频模型配置运行时参数定义 */
+export interface VideoProviderRuntimeConfig {
+  provider: string
+  apiKey: string
+  baseUrl: string
+  model: string
+}
 
 /**
  * 获取当前配置的视频生成 Provider（异步，从数据库读取配置）。
- * 如果没有 API Key，则返回占位实现。
+ * 无配置时返回 PlaceholderVideoProvider，确保业务流程不中断。
  */
 export async function getVideoProvider(): Promise<VideoProvider> {
   const config = await getVideoConfig()
+  if (!config) return new PlaceholderVideoProvider()
 
-  if (config?.provider === "runway" && config.apiKey) {
-    // 待实现：Runway Gen-2/Gen-3 接口
-    // const { RunwayVideoProvider } = await import("./runway")
-    // return new RunwayVideoProvider(config)
-    return new PlaceholderVideoProvider()
-  } else {
-    return new PlaceholderVideoProvider()
+  const provider = createVideoProviderFromConfig(config)
+  return provider ?? new PlaceholderVideoProvider()
+}
+
+/**
+ * 根据运行时传入的配置创建视频 Provider。
+ * 不读取数据库，适合"测试连接"等场景。
+ * 未能匹配任何已知 provider 时返回 null。
+ */
+export function createVideoProviderFromConfig(
+  config: VideoProviderRuntimeConfig
+): VideoProvider | null {
+  if (!config.apiKey) return null
+
+  if (config.provider === "doubao") {
+    return new DoubaoVideoProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl || "https://ark.cn-beijing.volces.com/api/v3",
+      model: config.model,
+    })
   }
+
+  return null
+}
+
+/**
+ * 使用当前生效配置发起视频生成任务。
+ * 未配置时抛出 VIDEO_NOT_CONFIGURED，由上层 route 统一转换为标准错误响应。
+ */
+export async function callVideo(
+  options: VideoGenerateOptions
+): Promise<VideoGenerateResult> {
+  const config = await getVideoConfig()
+  if (!config) {
+    throwCutGoError("VIDEO_NOT_CONFIGURED")
+  }
+
+  const provider = createVideoProviderFromConfig(config)
+  if (!provider) {
+    throwCutGoError("VIDEO_NOT_CONFIGURED")
+  }
+
+  logAIEvent("video", "request", {
+    provider: provider.id,
+    body: options,
+  })
+
+  const result = await provider.generate(options)
+
+  logAIEvent("video", "response", {
+    provider: provider.id,
+    body: result,
+  })
+
+  return result
+}
+
+/**
+ * 查询视频生成任务状态。
+ * 未配置时抛出 VIDEO_NOT_CONFIGURED。
+ */
+export async function queryVideoTask(taskId: string): Promise<VideoTaskStatus> {
+  const config = await getVideoConfig()
+  if (!config) {
+    throwCutGoError("VIDEO_NOT_CONFIGURED")
+  }
+
+  const provider = createVideoProviderFromConfig(config)
+  if (!provider) {
+    throwCutGoError("VIDEO_NOT_CONFIGURED")
+  }
+
+  return provider.queryTask(taskId)
 }

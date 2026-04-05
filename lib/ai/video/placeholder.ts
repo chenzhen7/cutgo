@@ -1,13 +1,17 @@
-import type { VideoProvider, VideoGenerateOptions, VideoGenerateResult } from "../types"
+import type { VideoProvider, VideoGenerateOptions, VideoGenerateResult, VideoTaskStatus } from "../types"
 
 /**
- * 视频生成占位实现（构造器方式）
- * 用于测试或未配置 API Key 的情况。
+ * 视频生成占位实现
+ * 用于未配置 API Key 的情况，返回模拟任务 ID。
  */
 export class PlaceholderVideoProvider implements VideoProvider {
   readonly id = "placeholder"
 
   async generate(_options: VideoGenerateOptions): Promise<VideoGenerateResult> {
-    return { taskId: "placeholder", statusUrl: "" }
+    return { taskId: "placeholder-task-id" }
+  }
+
+  async queryTask(_taskId: string): Promise<VideoTaskStatus> {
+    return { status: "success", url: "" }
   }
 }

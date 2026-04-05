@@ -101,24 +101,46 @@ export interface ImageProvider {
 
 /** 视频生成配置选项 */
 export interface VideoGenerateOptions {
-  imageUrl?: string
   prompt: string
+  /** 首帧/首尾帧图片 URL 列表（1 张=首帧，2 张=首尾帧） */
+  imageUrls?: string[]
+  /** 视频时长（秒），2-12 */
   durationSeconds?: number
-  aspectRatio?: string
+  /** 宽高比，如 "16:9"、"9:16"、"1:1"、"adaptive" */
+  ratio?: string
+  /** 分辨率："480p" | "720p" | "1080p"，默认 "1080p" */
+  resolution?: "480p" | "720p" | "1080p"
+  /** 帧率，默认 24 */
+  fps?: number
+  /** 随机种子，-1 表示随机 */
+  seed?: number
+  /** 是否添加水印，默认 false */
+  watermark?: boolean
+  /** 是否固定镜头，默认 false */
+  cameraFixed?: boolean
+  /** 是否生成音频（仅部分模型支持），默认 false */
+  generateAudio?: boolean
 }
 
+/** 视频生成任务状态 */
+export type VideoTaskStatus =
+  | { status: "pending" | "processing" }
+  | { status: "success"; url: string }
+  | { status: "failed"; reason?: string }
+
 /** 
- * 视频生成结果
- * 同步返回：直接给出视频 URL
- * 异步返回：返回任务 ID 和状态查询地址
+ * 视频生成结果（异步任务）
+ * 返回任务 ID，通过 queryTask 轮询状态
  */
-export type VideoGenerateResult =
-  | { url: string }
-  | { taskId: string; statusUrl?: string }
+export interface VideoGenerateResult {
+  taskId: string
+}
 
 /** 视频生成服务提供商接口定义 */
 export interface VideoProvider {
   id: string
-  /** 发起生视频请求 */
+  /** 发起视频生成任务，返回 taskId */
   generate(options: VideoGenerateOptions): Promise<VideoGenerateResult>
+  /** 查询异步任务状态 */
+  queryTask(taskId: string): Promise<VideoTaskStatus>
 }
