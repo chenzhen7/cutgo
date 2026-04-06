@@ -16,6 +16,7 @@ import {
   Volume2,
   VolumeX,
   Video,
+  ListVideo,
 } from "lucide-react"
 import type { Shot } from "@/lib/types"
 
@@ -27,6 +28,13 @@ interface VideoPreviewDialogProps {
   onNext: (() => void) | null
 }
 
+function formatTime(seconds: number) {
+  if (!seconds || isNaN(seconds)) return "0:00"
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, "0")}`
+}
+
 export function VideoPreviewDialog({
   open,
   onOpenChange,
@@ -36,15 +44,36 @@ export function VideoPreviewDialog({
 }: VideoPreviewDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [autoPlayNext, setAutoPlayNext] = useState(true)
 
   useEffect(() => {
     if (!open) {
       setIsPlaying(false)
       setProgress(0)
+      setCurrentTime(0)
+      setDuration(0)
     }
-  }, [open, shot?.id])
+  }, [open])
+
+  useEffect(() => {
+    if (open && shot?.videoUrl) {
+      setProgress(0)
+      setCurrentTime(0)
+      // 视频源改变时尝试自动播放
+      if (videoRef.current) {
+        // 重置播放时间
+        videoRef.current.currentTime = 0
+        videoRef.current.play().catch(() => {
+          // 忽略自动播放失败（例如浏览器限制非静音自动播放）
+          setIsPlaying(false)
+        })
+      }
+    }
+  }, [shot?.id, shot?.videoUrl, open])
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current
@@ -68,6 +97,8 @@ export function VideoPreviewDialog({
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current
     if (!video || !video.duration) return
+    setCurrentTime(video.currentTime)
+    setDuration(video.duration)
     setProgress((video.currentTime / video.duration) * 100)
   }, [])
 
@@ -79,6 +110,14 @@ export function VideoPreviewDialog({
     const pct = x / rect.width
     video.currentTime = pct * video.duration
   }, [])
+
+  const handleEnded = useCallback(() => {
+    if (autoPlayNext && onNext) {
+      onNext()
+    } else {
+      setIsPlaying(false)
+    }
+  }, [autoPlayNext, onNext])
 
   useEffect(() => {
     if (!open) return
@@ -95,8 +134,8 @@ export function VideoPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden bg-black/95 border-0">
-        <DialogHeader className="px-4 pt-4 pb-2">
+      <DialogContent className=" sm:max-w-xl max-w-xl p-0 overflow-hidden bg-black/95 border-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-sm text-white/90 flex items-center gap-2">
             <Video className="size-4 text-violet-400" />
             镜头 #{shot.index + 1} 视频预览
@@ -106,19 +145,20 @@ export function VideoPreviewDialog({
           )}
         </DialogHeader>
 
-        <div className="relative flex items-center justify-center px-4">
-          <div className="relative w-full max-w-[320px] mx-auto">
+        <div className="relative flex items-center justify-center px-6">
+          <div className="relative w-full max-w-[400px] mx-auto">
             <video
               ref={videoRef}
               src={shot.videoUrl}
               className="w-full aspect-[9/16] rounded-lg object-cover bg-black"
-              loop
+              autoPlay
+              loop={!autoPlayNext}
               playsInline
               muted={isMuted}
               onTimeUpdate={handleTimeUpdate}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
-              onEnded={() => setIsPlaying(false)}
+              onEnded={handleEnded}
             />
 
             <button
@@ -135,7 +175,7 @@ export function VideoPreviewDialog({
         </div>
 
         {/* Controls */}
-        <div className="px-4 pb-4 pt-3 space-y-2">
+        <div className="px-6 pb-6 pt-3 space-y-2">
           {/* Progress bar */}
           <div
             className="h-1 bg-white/10 rounded-full cursor-pointer group/progress"
@@ -167,12 +207,23 @@ export function VideoPreviewDialog({
               >
                 {isMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
               </Button>
-              <span className="text-[10px] text-white/40 ml-1">
-                {shot.videoDuration || "5s"}
+              <span className="text-[10px] text-white/40 ml-1 font-mono">
+                {formatTime(currentTime)} / {formatTime(duration || Number(shot.videoDuration) || 5)}
               </span>
             </div>
 
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 px-2 text-xs hover:bg-white/10 ${autoPlayNext ? "text-violet-400 hover:text-violet-300" : "text-white/70 hover:text-white"}`}
+                onClick={() => setAutoPlayNext(!autoPlayNext)}
+                title="自动连播"
+              >
+                <ListVideo className="size-4 mr-1" />
+                连播
+              </Button>
+              <div className="w-px h-4 bg-white/20 mx-1" />
               <Button
                 variant="ghost"
                 size="sm"
