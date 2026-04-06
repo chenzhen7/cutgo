@@ -60,14 +60,16 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
           <Video className="size-2.5" />
           {shot.videoDuration || "5s"}
         </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); onPlayVideo?.() }}
+        <div
           className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30 rounded-lg"
         >
-          <div className="size-8 rounded-full bg-white/90 flex items-center justify-center">
+          <button
+            onClick={(e) => { e.stopPropagation(); onPlayVideo?.() }}
+            className="size-8 rounded-full bg-white/90 flex items-center justify-center hover:scale-110 transition-transform"
+          >
             <Play className="size-4 text-violet-600 ml-0.5" />
-          </div>
-        </button>
+          </button>
+        </div>
       </>
     )
   }
