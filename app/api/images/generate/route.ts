@@ -76,7 +76,7 @@ export const POST = withError(async (request: NextRequest) => {
 
 
     if (type === "keyframe") {
-      const generatedPrompt = buildImagePrompt(type, finalContent, finalPromptBase, refLabels)
+      const generatedPrompt = buildImagePrompt(finalContent, finalPromptBase, refLabels)
       const result = await callImage({
         prompt: generatedPrompt,
         projectId: episode.projectId,
@@ -100,8 +100,8 @@ export const POST = withError(async (request: NextRequest) => {
         await markAiTaskFailed(task.id, { code: "VALIDATION_ERROR", message: "promptEnd is required for first_last type" })
         throwCutGoError("VALIDATION", "promptEnd is required for first_last type")
       }
-      const promptStart = buildImagePrompt(type, finalContent, finalPromptBase, refLabels)
-      const promptEndGen = buildImagePrompt(type, finalContent, finalPromptEndBase, refLabels)
+      const promptStart = buildImagePrompt(finalContent, finalPromptBase, refLabels)
+      const promptEndGen = buildImagePrompt(finalContent, finalPromptEndBase, refLabels)
       const [r1, r2] = await Promise.all([
         callImage({
           prompt: promptStart,
@@ -139,8 +139,7 @@ export const POST = withError(async (request: NextRequest) => {
         throwCutGoError("VALIDATION", "gridPrompts are required for multi_grid type")
       }
 
-      const multiGridBase = buildImagePrompt(type, finalContent, null, refLabels)
-      const combinedPrompt = buildMultiGridPrompt(multiGridBase, gridPrompts, shot.gridLayout)
+      const combinedPrompt = buildMultiGridPrompt(finalContent, gridPrompts, shot.gridLayout, refLabels)
       const result = await callImage({
         prompt: combinedPrompt,
         projectId: episode.projectId,

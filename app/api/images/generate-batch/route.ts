@@ -23,8 +23,8 @@ async function generateForShot(
   const neg = shot.negativePrompt ?? undefined
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
-    const promptStart = buildImagePrompt("first_last", shot.content, shot.prompt)
-    const promptEndGen = buildImagePrompt("first_last", shot.content, shot.promptEnd)
+    const promptStart = buildImagePrompt(shot.content, shot.prompt)
+    const promptEndGen = buildImagePrompt(shot.content, shot.promptEnd)
     const [r1, r2] = await Promise.all([
       callImage({
         prompt: promptStart,
@@ -56,8 +56,7 @@ async function generateForShot(
     let gridPrompts: string[] = []
     try { gridPrompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
     if (gridPrompts.length > 0) {
-      const multiGridBase = buildImagePrompt("multi_grid", shot.content, null)
-      const combinedPrompt = buildMultiGridPrompt(multiGridBase, gridPrompts, shot.gridLayout)
+      const combinedPrompt = buildMultiGridPrompt(shot.content, gridPrompts, shot.gridLayout)
 
       const result = await callImage({
         prompt: combinedPrompt,
@@ -76,7 +75,7 @@ async function generateForShot(
     }
   }
 
-  const finalPrompt = buildImagePrompt("keyframe", shot.content, shot.prompt)
+  const finalPrompt = buildImagePrompt(shot.content, shot.prompt)
   const result = await callImage({
     prompt: finalPrompt,
     projectId,
