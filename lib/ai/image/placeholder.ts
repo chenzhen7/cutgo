@@ -31,7 +31,7 @@ export class PlaceholderImageProvider implements ImageProvider {
       body: options,
     })
 
-    const { prompt, resolution, numOutputs = 1, projectId, scope } = options
+    const { prompt, resolution = "1080x1920", numOutputs = 1, projectId, scope } = options
     const [width, height] = resolution.split("x").map(Number)
     if (numOutputs > 1) {
       const results = Array.from({ length: numOutputs }, (_, i) => ({

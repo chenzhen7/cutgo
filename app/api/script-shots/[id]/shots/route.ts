@@ -11,7 +11,7 @@ export async function POST(
   const {
     prompt,
     negativePrompt,
-    duration = "3s",
+    duration = 3,
     scriptLineIds,
     dialogueText,
     actionNote,

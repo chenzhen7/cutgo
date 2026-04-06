@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -43,7 +44,7 @@ import {
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn, parseJsonArray } from "@/lib/utils"
-import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS, VIDEO_DURATION_OPTIONS, VIDEO_MOTION_OPTIONS } from "@/lib/types"
+import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
 import {
@@ -119,8 +120,7 @@ export function ShotDetailPanel({
   const [promptEnd, setPromptEnd] = useState(shot.promptEnd || "")
   const [gridPrompts, setGridPrompts] = useState<string[]>([])
   const [videoPrompt, setVideoPrompt] = useState(shot.videoPrompt || "")
-  const [videoDuration, setVideoDuration] = useState(shot.videoDuration || "5s")
-  const [videoMotion, setVideoMotion] = useState("medium")
+  const [videoDuration, setVideoDuration] = useState<string>(shot.videoDuration?.toString() || "5")
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoRef = useCallback((node: HTMLVideoElement | null) => {
     if (node) {
@@ -134,7 +134,7 @@ export function ShotDetailPanel({
     setPrompt(shot.prompt || "")
     setPromptEnd(shot.promptEnd || "")
     setVideoPrompt(shot.videoPrompt || "")
-    setVideoDuration(shot.videoDuration || "5s")
+    setVideoDuration(shot.videoDuration?.toString() || "5")
     try {
       setGridPrompts(shot.gridPrompts ? JSON.parse(shot.gridPrompts) : [])
     } catch {
@@ -731,7 +731,7 @@ export function ShotDetailPanel({
                   )}
                   <div className="absolute bottom-2 left-2 bg-violet-600/80 text-white text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
                     <Video className="size-2.5" />
-                    {shot.videoDuration || "5s"}
+                    {shot.videoDuration ? `${shot.videoDuration}s` : "5s"}
                   </div>
                 </div>
               ) : (
@@ -764,31 +764,21 @@ export function ShotDetailPanel({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-[10px] text-muted-foreground mb-1 block">视频时长</Label>
-                  <Select value={videoDuration} onValueChange={(v) => { setVideoDuration(v); updateShotData({ videoDuration: v }) }}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VIDEO_DURATION_OPTIONS.map((d) => (
-                        <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">视频时长(秒)</Label>
+                  <Input 
+                    value={videoDuration} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d+(\.\d*)?$/.test(val)) {
+                        setVideoDuration(val);
+                        debouncedUpdate({ videoDuration: val ? parseFloat(val) : undefined });
+                      }
+                    }}
+                    placeholder="如: 5"
+                    className="h-7 text-xs" 
+                  />
                 </div>
-                <div>
-                  <Label className="text-[10px] text-muted-foreground mb-1 block">运动强度</Label>
-                  <Select value={videoMotion} onValueChange={setVideoMotion}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VIDEO_MOTION_OPTIONS.map((m) => (
-                        <SelectItem key={m.value} value={m.value} className="text-xs">{m.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                
               </div>
 
               <Button

@@ -58,7 +58,7 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
       <>
         <div className="absolute bottom-1 left-1 z-10 bg-violet-600/80 text-white text-[8px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
           <Video className="size-2.5" />
-          {shot.videoDuration || "5s"}
+          {shot.videoDuration ? `${shot.videoDuration}s` : "5s"}
         </div>
         <div
           className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30 rounded-lg"

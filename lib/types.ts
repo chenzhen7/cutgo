@@ -459,7 +459,7 @@ export interface Shot {
   index: number
   prompt: string
   negativePrompt: string | null
-  duration: string
+  duration: number
   imageUrl: string | null
   imageType: ImageType
   imageUrls: string | null
@@ -475,20 +475,13 @@ export interface Shot {
   videoUrl: string | null
   videoStatus: VideoStatus | null
   videoPrompt: string | null
-  videoDuration: string | null
+  videoDuration: number | null
   videoTaskId: string | null
   createdAt: string
   updatedAt: string
 }
 
 export type VideoStatus = "idle" | "generating" | "completed" | "error"
-
-export const VIDEO_DURATION_OPTIONS = ["3s", "5s", "8s"] as const
-export const VIDEO_MOTION_OPTIONS: { value: string; label: string }[] = [
-  { value: "low", label: "低" },
-  { value: "medium", label: "中" },
-  { value: "high", label: "高" },
-]
 
 export interface ScriptShotPlan {
   id: string
@@ -519,7 +512,7 @@ export interface ScriptShotGenerateProgress {
 export interface ShotInput {
   prompt: string
   negativePrompt?: string
-  duration?: string
+  duration?: number
   imageType?: ImageType
   imageUrl?: string
   imageUrls?: string
@@ -535,7 +528,7 @@ export interface ShotInput {
   videoUrl?: string
   videoStatus?: VideoStatus
   videoPrompt?: string
-  videoDuration?: string
+  videoDuration?: number
   insertAfter?: string
 }
 

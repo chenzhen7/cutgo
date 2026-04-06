@@ -268,7 +268,7 @@ model Shot {
   prompt         String
   negativePrompt String?
   /// 镜头时长
-  duration       String  @default("3s")
+  duration       Float  @default(3)
   imageUrl       String?
   /// keyframe | first_last | multi_grid
   imageType      String  @default("keyframe")
@@ -296,7 +296,7 @@ model Shot {
   /// idle | generating | completed | error
   videoStatus   String?
   videoPrompt   String?
-  videoDuration String?
+  videoDuration Float?
   /// 视频生成异步任务 ID（用于轮询进度）
   videoTaskId   String?
 

@@ -35,8 +35,8 @@ export const POST = withError(async (
     imageUrls = [shot.imageUrl]
   }
 
-  // 从 shot.duration（如 "3s"、"5s"）解析秒数
-  const durationSeconds = parseInt(shot.duration ?? "3") || 3
+  // 从 shot.duration 解析秒数
+  const durationSeconds = shot.duration || 3
 
   // 获取项目宽高比用于视频输出
   const episode = await prisma.episode.findUnique({

@@ -22,6 +22,7 @@ interface AIScriptShotResult {
     characters: string[]
     scene: string
     props: string[]
+    duration?: number
   }>
 }
 
@@ -86,6 +87,7 @@ async function callAIGenerateScriptShots(
           characters?: unknown
           scene?: unknown
           props?: unknown
+          duration?: unknown
         }
         const prompt =
           typeof raw.prompt === "string"
@@ -121,6 +123,9 @@ async function callAIGenerateScriptShots(
             .map((v) => v.trim())
             .filter(Boolean)
           : []
+        const duration = typeof raw.duration === "number"
+          ? raw.duration
+          : typeof raw.duration === "string" ? parseInt(raw.duration) : undefined
         return {
           prompt,
           promptEnd,
@@ -129,6 +134,7 @@ async function callAIGenerateScriptShots(
           characters,
           scene,
           props,
+          duration,
         }
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -242,7 +248,7 @@ export const POST = withError(async (request: NextRequest) => {
               prompt,
               promptEnd: item.promptEnd ?? null,
               negativePrompt: null,
-              duration: "3s",
+              duration: item.duration ?? 3,
               imageType: imageType as string,
               gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
               gridPrompts: item.gridPrompts?.length ? JSON.stringify(item.gridPrompts) : null,

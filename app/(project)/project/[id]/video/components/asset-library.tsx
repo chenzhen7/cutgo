@@ -13,11 +13,6 @@ import {
 } from "@/components/ui/tooltip"
 import type { Shot } from "@/lib/types"
 
-function parseDuration(dur: string): number {
-  const match = dur.match(/(\d+(?:\.\d+)?)\s*s?/)
-  return match ? parseFloat(match[1]) : 5
-}
-
 interface AssetItem {
   shot: Shot
   isInTimeline: boolean
@@ -43,7 +38,7 @@ export function AssetLibrary() {
 
   const handleAddToTimeline = (shot: Shot) => {
     if (!shot.videoUrl) return
-    const dur = parseDuration(shot.videoDuration || shot.duration || "5s")
+    const dur = typeof shot.videoDuration === 'number' ? shot.videoDuration : (typeof shot.duration === 'number' ? shot.duration : 5)
     addVideoClip({
       shotId: shot.id,
       trackId: "video-main",
@@ -81,7 +76,7 @@ export function AssetLibrary() {
           <div className="grid grid-cols-2 gap-1.5 p-2">
             {assets.map(({ shot, isInTimeline }) => {
               const hasVideo = !!shot.videoUrl
-              const dur = parseDuration(shot.videoDuration || shot.duration || "5s")
+              const dur = typeof shot.videoDuration === 'number' ? shot.videoDuration : (typeof shot.duration === 'number' ? shot.duration : 5)
 
               return (
                 <Tooltip key={shot.id}>

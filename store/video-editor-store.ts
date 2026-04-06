@@ -193,7 +193,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
 
     let currentTime = 0
     const videoClips: TimelineClip[] = shotsWithVideo.map((shot) => {
-      const dur = parseDuration(shot.videoDuration || shot.duration || "5s")
+      const dur = typeof shot.videoDuration === 'number' ? shot.videoDuration : (typeof shot.duration === 'number' ? shot.duration : 5)
       const clip: TimelineClip = {
         id: genId(),
         shotId: shot.id,
@@ -470,8 +470,3 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
     })
   },
 }))
-
-function parseDuration(dur: string): number {
-  const match = dur.match(/(\d+(?:\.\d+)?)\s*s?/)
-  return match ? parseFloat(match[1]) : 5
-}

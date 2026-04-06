@@ -36,7 +36,7 @@ export class StabilityImageProvider implements ImageProvider {
   constructor(private readonly config: StabilityImageConfig) { }
 
   async generate(options: ImageGenerateOptions): Promise<ImageGenerateResult | ImageGenerateResult[]> {
-    const { prompt, negativePrompt, resolution, numOutputs = 1, projectId, scope } = options
+    const { prompt, negativePrompt, resolution = "1080x1920", numOutputs = 1, projectId, scope } = options
     const [width, height] = resolution.split("x").map(Number)
 
     const baseUrl = this.config.baseUrl.replace(/\/$/, "")
