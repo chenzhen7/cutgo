@@ -10,6 +10,8 @@ interface PreviewableImageProps extends React.ImgHTMLAttributes<HTMLImageElement
   alt: string
   /** 预览弹窗顶部显示的标题 */
   title?: string
+  /** 是否支持点击预览，默认为 true */
+  previewable?: boolean
 }
 
 /**
@@ -21,6 +23,7 @@ export function PreviewableImage({
   src,
   alt,
   title,
+  previewable = true,
   className,
   onClick,
   ...props
@@ -28,6 +31,10 @@ export function PreviewableImage({
   const [open, setOpen] = React.useState(false)
 
   const handleClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!previewable) {
+      onClick?.(e)
+      return
+    }
     e.preventDefault()
     e.stopPropagation()
     onClick?.(e)
@@ -39,38 +46,40 @@ export function PreviewableImage({
       <img
         src={src}
         alt={alt}
-        className={cn("cursor-zoom-in", className)}
+        className={cn(previewable ? "cursor-zoom-in" : "", className)}
         onClick={handleClick}
         {...props}
       />
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent 
-          showCloseButton={false}
-          className="max-w-[90vw] sm:max-w-[90vw] w-fit overflow-hidden border-white/10 bg-black/95 p-0 flex flex-col"
-        >
-          {/* 关闭按钮 */}
-          <button
-            onClick={() => setOpen(false)}
-            className="absolute right-3 top-3 z-10 rounded-full bg-black/60 p-1.5 text-white/80 transition-colors hover:bg-black/80 hover:text-white"
-            aria-label="关闭预览"
+      {previewable && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent 
+            showCloseButton={false}
+            className="max-w-[90vw] sm:max-w-[90vw] w-fit overflow-hidden border-white/10 bg-black/95 p-0 flex flex-col"
           >
-            <X className="size-4" />
-          </button>
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setOpen(false)}
+              className="absolute right-3 top-3 z-10 rounded-full bg-black/60 p-1.5 text-white/80 transition-colors hover:bg-black/80 hover:text-white"
+              aria-label="关闭预览"
+            >
+              <X className="size-4" />
+            </button>
 
-          {title && (
-            <div className="px-4 pt-4 pb-2 text-sm font-medium text-white/70 shrink-0">{title}</div>
-          )}
+            {title && (
+              <div className="px-4 pt-4 pb-2 text-sm font-medium text-white/70 shrink-0">{title}</div>
+            )}
 
-          <div className="flex items-center justify-center p-2 sm:p-4 min-h-0">
-            <img
-              src={src}
-              alt={alt}
-              className="h-[60vh] sm:h-[70vh] max-h-[720px] w-auto max-w-full rounded object-contain block"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+            <div className="flex items-center justify-center p-2 sm:p-4 min-h-0">
+              <img
+                src={src}
+                alt={alt}
+                className="h-[60vh] sm:h-[70vh] max-h-[720px] w-auto max-w-full rounded object-contain block"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }

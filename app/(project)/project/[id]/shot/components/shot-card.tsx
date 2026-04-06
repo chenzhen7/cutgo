@@ -234,7 +234,7 @@ export const ShotCard = memo(function ShotCard({
               <span className="text-[8px] text-muted-foreground">生成中</span>
             </div>
           ) : shot.imageUrl ? (
-            <PreviewableImage src={shot.imageUrl} alt="分镜" className="size-full object-contain bg-black" />
+            <PreviewableImage src={shot.imageUrl} alt="分镜" previewable={false} className="size-full object-contain bg-black" />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
               <ImageIcon className="size-6 text-muted-foreground/25" />
