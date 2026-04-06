@@ -4,10 +4,15 @@ export function buildImagePrompt(
   prompt: string | null | undefined,
   refLabels?: string[]
 ): string {
-  const basePrompt = imageType === "multi_grid"
-    ? (content || "")
-    : (content ? `分镜描述：${content}\n画面提示词：${prompt || ""}` : (prompt || ""))
-  
+  let basePrompt: string;
+
+  if (imageType === "multi_grid") {
+    basePrompt = content ? `分镜描述：${content}` : "";
+  } else if (content) {
+    basePrompt = `分镜描述：${content}\n画面提示词：${prompt ?? ""}`;
+  } else {
+    basePrompt = prompt ?? "";
+  }
   if (refLabels && refLabels.length > 0) {
     return `${basePrompt}\n\n参考图说明：${refLabels.join("，")}`
   }
