@@ -277,7 +277,7 @@ export const ShotCard = memo(function ShotCard({
 
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete() }}
-              className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-destructive/10 transition-colors"
+              className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
               title="删除"
             >
               <Trash2 className="size-3.5 text-destructive/70 hover:text-destructive" />
@@ -448,7 +448,7 @@ export const ShotCard = memo(function ShotCard({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleDelete() }}
-            className="rounded-lg p-2 hover:bg-destructive/10 transition-colors"
+            className="rounded-lg p-2 hover:bg-muted transition-colors"
             title="删除"
           >
             <Trash2 className="size-3.5 text-destructive/70 hover:text-destructive" />
