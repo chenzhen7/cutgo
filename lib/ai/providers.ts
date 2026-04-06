@@ -164,10 +164,11 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       label: "Google (Nano Banana)",
       logo: "/logos/gemini.svg",
       models: [
-        { value: "gemini-3.1-flash-image", label: "Gemini 3.1 Flash Image" },
-        { value: "gemini-3-pro-image-preview", label: "Gemini 3 Pro Image Preview" }
+        { value: "gemini-3.1-flash-image-preview", label: "Gemini 3.1 Flash Image" },
+        { value: "gemini-3-pro-image-preview", label: "Gemini 3 Pro Image Preview" },
+        { value: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash Image" },
       ],
-      defaultBaseUrl: "https://api.nanobananaapi.dev/v1/images/generate",
+      defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
     },
   },
   video: {

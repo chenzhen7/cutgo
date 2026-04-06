@@ -56,7 +56,7 @@ export class NanobananaImageProvider implements ImageProvider {
     const { prompt: rawPrompt, negativePrompt, aspectRatio, projectId, scope, referenceImages } = options
     const prompt = this.buildPrompt(rawPrompt, negativePrompt)
 
-    const url = `${this.baseUrl}/models/${this.config.model}:generateContent`
+    const url = `${this.baseUrl}/${this.config.model}:generateContent`
 
     const parts: any[] = [{ text: prompt }]
 
