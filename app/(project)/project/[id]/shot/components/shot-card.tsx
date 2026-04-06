@@ -270,6 +270,38 @@ export const ShotCard = memo(function ShotCard({
           {/* Hover actions */}
           <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
             <button
+              onClick={(e) => { e.stopPropagation(); handleGenerateImage() }}
+              className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
+              title={shot.imageUrl ? "重新生成画面" : "生成画面"}
+            >
+              <Paintbrush className="size-3.5 text-primary/70 hover:text-primary" />
+            </button>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (shot.imageUrl) handleGenerateVideo() }}
+                  className={cn(
+                    "rounded-lg p-1.5 bg-background/80 backdrop-blur-sm transition-colors",
+                    shot.imageUrl
+                      ? "hover:bg-muted"
+                      : "opacity-40 cursor-not-allowed"
+                  )}
+                  title={shot.videoUrl ? "重新生成视频" : "生成视频"}
+                  disabled={!shot.imageUrl || isGeneratingVideo}
+                >
+                  <Video className={cn(
+                    "size-3.5",
+                    shot.imageUrl ? "text-violet-500/70 hover:text-violet-500" : "text-muted-foreground/40"
+                  )} />
+                </button>
+              </TooltipTrigger>
+              {!shot.imageUrl && (
+                <TooltipContent side="left" className="text-xs">请先生成画面</TooltipContent>
+              )}
+            </Tooltip>
+
+            <button
               onClick={(e) => { e.stopPropagation(); handleDuplicate() }}
               className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
               title="复制"
