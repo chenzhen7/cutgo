@@ -579,7 +579,7 @@ export function ShotDetailPanel({
                         setPrompt(e.target.value)
                         debouncedUpdate({ prompt: e.target.value })
                       }}
-                      className="text-[13px] min-h-[60px] resize-none leading-relaxed"
+                      className="text-[13px] min-h-[60px]  leading-relaxed"
                       placeholder="描述该镜头的首帧提示词（英文）..."
                     />
                   </div>
@@ -594,7 +594,7 @@ export function ShotDetailPanel({
                         setPromptEnd(e.target.value)
                         debouncedUpdate({ promptEnd: e.target.value })
                       }}
-                      className="text-[13px] min-h-[60px] resize-none leading-relaxed"
+                      className="text-[13px] min-h-[60px]  leading-relaxed"
                       placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
                     />
                   </div>
@@ -625,7 +625,7 @@ export function ShotDetailPanel({
                         <Textarea
                           value={gridPrompts[i] || ""}
                           onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                          className="text-xs min-h-[40px] resize-none"
+                          className="text-xs min-h-[40px] "
                           placeholder={`第 ${i + 1} 格画面提示词...`}
                         />
                       </div>
@@ -647,7 +647,7 @@ export function ShotDetailPanel({
                       setPrompt(e.target.value)
                       debouncedUpdate({ prompt: e.target.value })
                     }}
-                    className="text-[13px] min-h-[80px] max-h-[160px] resize-none leading-relaxed"
+                    className="text-[13px] min-h-[80px] max-h-[160px]  leading-relaxed"
                     placeholder="描述该镜头的分镜提示词（英文）..."
                   />
                 </div>
@@ -757,7 +757,7 @@ export function ShotDetailPanel({
                     setVideoPrompt(e.target.value)
                     debouncedUpdate({ videoPrompt: e.target.value })
                   }}
-                  className="text-[13px] min-h-[60px] max-h-[120px] resize-none leading-relaxed"
+                  className="text-[13px] min-h-[60px] max-h-[120px]  leading-relaxed"
                   placeholder="描述视频运动效果和转场（英文），留空则自动生成..."
                 />
               </div>
