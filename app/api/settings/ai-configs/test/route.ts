@@ -159,7 +159,6 @@ async function testImage({
         projectId: "test",
         scope: "asset",
         aspectRatio: "1:1",
-        resolution: "512x512",
       }, imageProvider)
     )
 

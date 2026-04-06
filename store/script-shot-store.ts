@@ -27,19 +27,22 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
     const store = useScriptShotsStore.getState()
     const videoGeneratingIds = new Set(store.videoGeneratingIds)
     videoGeneratingIds.delete(shotId)
-    useScriptShotsStore.setState({
-      videoGeneratingIds,
-      scriptShotPlans: store.scriptShotPlans.map((sb) =>
-        sb.id === episodeId
-          ? {
-            ...sb,
-            shots: sb.shots.map((sh) =>
-              sh.id === shotId ? { ...sh, videoStatus: "error" as const } : sh
-            ),
-          }
-          : sb
-      ),
-    })
+    
+    // 找到对应镜头并更新其状态
+    const targetPlan = store.scriptShotPlans.find(p => p.id === episodeId)
+    const targetShot = targetPlan?.shots.find(s => s.id === shotId)
+    
+    if (targetShot) {
+      useScriptShotsStore.setState({
+        videoGeneratingIds,
+        scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, { 
+          ...targetShot, 
+          videoStatus: "error" as const 
+        }),
+      })
+    } else {
+      useScriptShotsStore.setState({ videoGeneratingIds })
+    }
     toast.error("视频生成超时，请重试")
     return
   }
@@ -56,11 +59,7 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
         videoGeneratingIds.delete(shotId)
         useScriptShotsStore.setState({
           videoGeneratingIds,
-          scriptShotPlans: store.scriptShotPlans.map((sb) =>
-            sb.id === episodeId
-              ? { ...sb, shots: sb.shots.map((sh) => (sh.id === shotId ? data.shot : sh)) }
-              : sb
-          ),
+          scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, data.shot),
         })
         toast.success("视频生成完成")
       } else if (data.videoStatus === "error") {
@@ -68,11 +67,7 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
         videoGeneratingIds.delete(shotId)
         useScriptShotsStore.setState({
           videoGeneratingIds,
-          scriptShotPlans: store.scriptShotPlans.map((sb) =>
-            sb.id === episodeId
-              ? { ...sb, shots: sb.shots.map((sh) => (sh.id === shotId ? data.shot : sh)) }
-              : sb
-          ),
+          scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, data.shot),
         })
         toast.error("视频生成失败")
       } else {
@@ -85,6 +80,14 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
 }
 
 type ShotWithPlan = { shot: Shot; scriptShotPlan: ScriptShotPlan }
+
+function updateShotInPlans(plans: ScriptShotPlan[], episodeId: string, shotId: string, updatedShot: Shot): ScriptShotPlan[] {
+  return plans.map((sb) =>
+    sb.id === episodeId
+      ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updatedShot : s)) }
+      : sb
+  )
+}
 
 function flattenShotsByActiveEpisode(scriptShotPlans: ScriptShotPlan[], activeEpisodeId: string | null): ShotWithPlan[] {
   const episodeSbs = activeEpisodeId
@@ -286,11 +289,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       body: data,
     })
     set({
-      scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === episodeId
-          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
-          : sb
-      ),
+      scriptShotPlans: updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated),
     })
   },
 
@@ -412,9 +411,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       }
     }
 
+    const basePrompt = shot.imageType === "multi_grid" ? (shot.content || "") : shot.prompt
     const annotatedPrompt = refLabels.length > 0
-      ? `${shot.prompt}\n\n参考图说明：${refLabels.join("，")}`
-      : shot.prompt
+      ? `${basePrompt}\n\n参考图说明：${refLabels.join("，")}`
+      : basePrompt
 
     const generating = new Set(get().imageGeneratingIds)
     generating.add(shotId)
@@ -446,11 +446,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       const updatedShot = data.shot
 
       set({
-        scriptShotPlans: get().scriptShotPlans.map((s) =>
-          s.id === episodeId
-            ? { ...s, shots: s.shots.map((sh) => (sh.id === shotId ? updatedShot : sh)) }
-            : s
-        ),
+        scriptShotPlans: updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updatedShot),
       })
     } finally {
       const after = new Set(get().imageGeneratingIds)
@@ -503,17 +499,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   clearImage: async (episodeId, shotId) => {
-    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
-      method: "PATCH",
-      body: { imageUrl: null, imageUrls: null },
-    })
-    set({
-      scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === episodeId
-          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
-          : sb
-      ),
-    })
+    await get().updateShot(episodeId, shotId, { imageUrl: null, imageUrls: null } as any)
   },
 
   generateVideo: async (episodeId, shotId) => {
@@ -535,11 +521,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         { method: "POST" }
       )
       set({
-        scriptShotPlans: get().scriptShotPlans.map((s) =>
-          s.id === episodeId
-            ? { ...s, shots: s.shots.map((sh) => (sh.id === shotId ? data.shot : sh)) }
-            : s
-        ),
+        scriptShotPlans: updateShotInPlans(get().scriptShotPlans, episodeId, shotId, data.shot),
       })
       startVideoPolling(episodeId, shotId)
     } catch (err) {
@@ -594,17 +576,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   clearVideo: async (episodeId, shotId) => {
-    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
-      method: "PATCH",
-      body: { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null },
-    })
-    set({
-      scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === episodeId
-          ? { ...sb, shots: sb.shots.map((s) => (s.id === shotId ? updated : s)) }
-          : sb
-      ),
-    })
+    await get().updateShot(episodeId, shotId, { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null } as any)
   },
 
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),

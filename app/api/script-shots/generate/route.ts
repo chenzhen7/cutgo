@@ -15,6 +15,7 @@ import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
 
 interface AIScriptShotResult {
   shots: Array<{
+    content?: string
     prompt: string
     promptEnd?: string
     gridPrompts?: string[]
@@ -69,6 +70,7 @@ async function callAIGenerateScriptShots(
         if (typeof item === "string") {
           // 兼容历史输出结构：["镜头1", "镜头2"]
           return {
+            content: "",
             prompt: item.trim(),
             promptEnd: undefined,
             gridPrompts: undefined,
@@ -79,6 +81,7 @@ async function callAIGenerateScriptShots(
         }
         if (!item || typeof item !== "object") return null
         const raw = item as {
+          content?: unknown
           prompt?: unknown
           shot?: unknown
           promptEnd?: unknown
@@ -89,13 +92,14 @@ async function callAIGenerateScriptShots(
           props?: unknown
           duration?: unknown
         }
+        const content = typeof raw.content === "string" ? raw.content.trim() : ""
         const prompt =
           typeof raw.prompt === "string"
             ? raw.prompt.trim()
             : typeof raw.shot === "string"
               ? raw.shot.trim()
               : ""
-        if (!prompt) return null
+        if (!prompt && !content) return null
         const promptEnd =
           typeof raw.promptEnd === "string" && raw.promptEnd.trim()
             ? raw.promptEnd.trim()
@@ -127,6 +131,7 @@ async function callAIGenerateScriptShots(
           ? raw.duration
           : typeof raw.duration === "string" ? parseInt(raw.duration) : undefined
         return {
+          content,
           prompt,
           promptEnd,
           gridPrompts,
@@ -230,8 +235,8 @@ export const POST = withError(async (request: NextRequest) => {
 
         const shotData = (aiResult.shots || [])
           .map((item, si) => {
-            const prompt = item.prompt.trim()
-            if (!prompt) return null
+            const prompt = item.prompt?.trim() || ""
+            if (!prompt && !item.content) return null
             const characterIds = item.characters
               .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
               .filter((id): id is string => Boolean(id))
@@ -245,6 +250,7 @@ export const POST = withError(async (request: NextRequest) => {
             return {
               episodeId: episode.id,
               index: si,
+              content: item.content ?? null,
               prompt,
               promptEnd: item.promptEnd ?? null,
               negativePrompt: null,

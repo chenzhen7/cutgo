@@ -9,6 +9,7 @@ export async function POST(
   const body = await request.json()
 
   const {
+    content,
     prompt,
     negativePrompt,
     duration = 3,
@@ -53,6 +54,7 @@ export async function POST(
     data: {
       episodeId,
       index: newIndex,
+      content: content || null,
       prompt,
       negativePrompt: negativePrompt || null,
       duration,

@@ -323,9 +323,11 @@ export const ShotCard = memo(function ShotCard({
         <div className="px-2 py-1.5 flex flex-col gap-0.5">
           <p className={cn(
             "text-[11px] leading-relaxed line-clamp-2",
-            shot.prompt ? "text-foreground/90" : "text-muted-foreground italic"
+            (shot.imageType === "multi_grid" ? shot.content : shot.prompt) ? "text-foreground/90" : "text-muted-foreground italic"
           )}>
-            {shot.prompt || "暂无分镜提示词"}
+            {shot.imageType === "multi_grid" 
+              ? (shot.content || "暂无内容描述")
+              : (shot.prompt || "暂无分镜提示词")}
           </p>
         </div>
       </div>
@@ -375,15 +377,24 @@ export const ShotCard = memo(function ShotCard({
 
           <div className="flex-1 min-w-0 flex flex-col gap-1.5 @[900px]:gap-2">
             <div className="flex flex-col gap-2">
-              <div className="flex items-start gap-1.5">
-                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
-                  <Type className="size-2.5 mr-0.5" />
-                  分镜
-                </Badge>
-                <p className="text-[11px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[12px]">
-                  {shot.prompt || "暂无分镜提示词"}
-                </p>
-              </div>
+              {shot.content && (
+                <div className="flex items-start gap-1.5 mb-1">
+                  <span className="text-[12px] font-medium text-foreground/90 line-clamp-2 leading-relaxed">
+                    {shot.content}
+                  </span>
+                </div>
+              )}
+              {shot.imageType !== "multi_grid" && (
+                <div className="flex items-start gap-1.5">
+                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
+                    <Type className="size-2.5 mr-0.5" />
+                    分镜
+                  </Badge>
+                  <p className="text-[11px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[12px]">
+                    {shot.prompt || "暂无分镜提示词"}
+                  </p>
+                </div>
+              )}
               <div className="flex items-start gap-1.5">
                 <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
                   <Film className="size-2.5 mr-0.5" />

@@ -308,6 +308,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 
 [
   {
+    "content": "镜头描述",
     "prompt": "首帧镜头提示词",
     "promptEnd": "尾帧镜头提示词（镜头结束画面，与首帧形成运镜变化）",
     "videoPrompt": "视频提示词",
@@ -319,15 +320,16 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 ]
 
 字段约束：
-1. prompt: 必填，首帧镜头提示词
-2. promptEnd: 必填，尾帧镜头提示词
-3. videoPrompt: 必填，视频提示词
-4. characters: 该镜头实际出场角色名数组；没有则输出 []
-5. scene: 该镜头对应场景名；不确定时优先使用当前分集主场景
-6. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
-7. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
-8. 确保提示词完整性，不要省略任何信息
-9. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
+1. content: 必填，对该镜头的剧情内容和画面意图描述（一两句话，描述人物动作与意图）
+2. prompt: 必填，首帧镜头提示词
+3. promptEnd: 必填，尾帧镜头提示词
+4. videoPrompt: 必填，视频提示词
+5. characters: 该镜头实际出场角色名数组；没有则输出 []
+6. scene: 该镜头对应场景名；不确定时优先使用当前分集主场景
+7. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
+8. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
+9. 确保提示词完整性，不要省略任何信息
+10. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
   }
 
   if (imageType === "multi_grid") {
@@ -339,7 +341,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 
 [
   {
-    "prompt": "整体镜头描述（概括该镜头的场景与氛围）",
+    "content": "对该镜头的剧情内容描述（一两句话，描述人物动作与意图）",
     "gridPrompts": [${gridPromptsExample}],
     "videoPrompt": "视频提示词",
     "characters": ["角色A", "角色B"],
@@ -350,7 +352,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 ]
 
 字段约束：
-1. prompt: 必填，对整体镜头的概括性描述
+1. content: 必填，对该镜头的剧情内容和画面意图描述
 2. gridPrompts: 必填，数组长度必须为 ${count}，对应 ${layout.label} 宫格布局中每个格子镜头的画面提示词，各格子画面应体现该镜头内的时间/动作推进
 3. videoPrompt: 必填，视频提示词
 4. characters: 该镜头实际出场角色名数组；没有则输出 []
@@ -367,6 +369,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 
 [
   {
+    "content": "镜头描述",
     "prompt": "镜头提示词",
     "videoPrompt": "视频提示词",
     "characters": ["角色A", "角色B"],
@@ -377,14 +380,15 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 ]
 
 字段约束：
-1. prompt: 必填，镜头提示词
-2. videoPrompt: 必填，视频提示词
-3. characters: 该镜头实际出场角色名数组；没有则输出 []
-4. scene: 该镜头对应场景名；不确定时优先使用当前分集主场景
-5. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
-6. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
-7. 确保提示词完整性，不要省略任何信息
-8. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
+1. content: 必填，对该镜头的剧情内容和画面意图描述（一两句话，描述人物动作与意图）
+2. prompt: 必填，镜头提示词
+3. videoPrompt: 必填，视频提示词
+4. characters: 该镜头实际出场角色名数组；没有则输出 []
+5. scene: 该镜头对应场景名；不确定时优先使用当前分集主场景
+6. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
+7. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
+8. 确保提示词完整性，不要省略任何信息
+9. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
 }
 
 export function buildScriptShotsSystemPrompt(

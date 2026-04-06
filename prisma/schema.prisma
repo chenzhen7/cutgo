@@ -264,6 +264,8 @@ model Shot {
 
   /// 镜头序号
   index          Int
+  /// 分镜内容描述（剧情和画面意图）
+  content        String?
   /// 分镜提示词（用于生图）
   prompt         String
   negativePrompt String?

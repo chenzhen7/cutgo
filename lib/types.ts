@@ -457,6 +457,7 @@ export interface Shot {
   id: string
   episodeId: string
   index: number
+  content: string | null
   prompt: string
   negativePrompt: string | null
   duration: number
@@ -510,6 +511,7 @@ export interface ScriptShotGenerateProgress {
 }
 
 export interface ShotInput {
+  content?: string
   prompt: string
   negativePrompt?: string
   duration?: number

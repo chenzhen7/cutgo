@@ -9,6 +9,7 @@ async function generateForShot(
   projectId: string,
   shot: {
     id: string
+    content: string | null
     prompt: string
     promptEnd: string | null
     imageType: string
@@ -53,7 +54,8 @@ async function generateForShot(
     let gridPrompts: string[] = []
     try { gridPrompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
     if (gridPrompts.length > 0) {
-      const combinedPrompt = buildMultiGridPrompt(shot.prompt, gridPrompts, shot.gridLayout)
+      const basePrompt = shot.content || ""
+      const combinedPrompt = buildMultiGridPrompt(basePrompt, gridPrompts, shot.gridLayout)
 
       const result = await callImage({
         prompt: combinedPrompt,
@@ -110,6 +112,7 @@ export const POST = withError(async (request: NextRequest) => {
     orderBy: [{ episodeId: "asc" }, { index: "asc" }],
     select: {
       id: true,
+      content: true,
       prompt: true,
       promptEnd: true,
       imageType: true,

@@ -116,6 +116,7 @@ export function ShotDetailPanel({
   }, [fetchAssets, projectId])
 
   const [activeTab, setActiveTab] = useState<"image" | "video">("image")
+  const [content, setContent] = useState(shot.content || "")
   const [prompt, setPrompt] = useState(shot.prompt || "")
   const [promptEnd, setPromptEnd] = useState(shot.promptEnd || "")
   const [gridPrompts, setGridPrompts] = useState<string[]>([])
@@ -131,6 +132,7 @@ export function ShotDetailPanel({
   }, [])
 
   useEffect(() => {
+    setContent(shot.content || "")
     setPrompt(shot.prompt || "")
     setPromptEnd(shot.promptEnd || "")
     setVideoPrompt(shot.videoPrompt || "")
@@ -140,7 +142,7 @@ export function ShotDetailPanel({
     } catch {
       setGridPrompts([])
     }
-  }, [shot.id, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.videoDuration, shot.videoPrompt])
+  }, [shot.id, shot.content, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.videoDuration, shot.videoPrompt])
 
   const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
@@ -563,6 +565,22 @@ export function ShotDetailPanel({
                     </TooltipProvider>
                   ))}
                 </div>
+              </div>
+
+              {/* === Content Area === */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Label className="text-xs">分镜描述</Label>
+                </div>
+                <Textarea
+                  value={content}
+                  onChange={(e) => {
+                    setContent(e.target.value)
+                    debouncedUpdate({ content: e.target.value })
+                  }}
+                  className="text-[13px] min-h-[60px] max-h-[120px] leading-relaxed"
+                  placeholder="描述该镜头的剧情内容与画面意图（给人看的描述）..."
+                />
               </div>
 
               {/* Prompts by Type */}
