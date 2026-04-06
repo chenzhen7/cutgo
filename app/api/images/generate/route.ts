@@ -23,7 +23,7 @@ interface GenerateImageRequest {
 
 export const POST = withError(async (request: NextRequest) => {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt,  referenceImages } = body
+  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, referenceImages } = body
 
   if (!shotId || !prompt) {
     throwCutGoError("MISSING_PARAMS", "shotId and prompt are required")
@@ -68,8 +68,8 @@ export const POST = withError(async (request: NextRequest) => {
         projectId: episode.projectId,
         scope: "shot",
         negativePrompt,
-        aspectRatio : project.aspectRatio,
-        resolution : project.resolution,
+        aspectRatio: project.aspectRatio,
+        resolution: project.resolution,
         referenceImages,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
@@ -92,8 +92,8 @@ export const POST = withError(async (request: NextRequest) => {
           projectId: episode.projectId,
           scope: "shot",
           negativePrompt,
-          aspectRatio : project.aspectRatio,
-          resolution : project.resolution,
+          aspectRatio: project.aspectRatio,
+          resolution: project.resolution,
           referenceImages,
         }),
         callImage({
@@ -101,8 +101,8 @@ export const POST = withError(async (request: NextRequest) => {
           projectId: episode.projectId,
           scope: "shot",
           negativePrompt,
-          aspectRatio : project.aspectRatio,
-          resolution : project.resolution,
+          aspectRatio: project.aspectRatio,
+          resolution: project.resolution,
           referenceImages,
         }),
       ])
@@ -129,8 +129,8 @@ export const POST = withError(async (request: NextRequest) => {
         projectId: episode.projectId,
         scope: "shot",
         negativePrompt,
-        aspectRatio : project.aspectRatio,
-        resolution : project.resolution ,
+        aspectRatio: project.aspectRatio,
+        resolution: project.resolution,
         referenceImages,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url

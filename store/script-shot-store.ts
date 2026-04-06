@@ -27,17 +27,17 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
     const store = useScriptShotsStore.getState()
     const videoGeneratingIds = new Set(store.videoGeneratingIds)
     videoGeneratingIds.delete(shotId)
-    
+
     // 找到对应镜头并更新其状态
     const targetPlan = store.scriptShotPlans.find(p => p.id === episodeId)
     const targetShot = targetPlan?.shots.find(s => s.id === shotId)
-    
+
     if (targetShot) {
       useScriptShotsStore.setState({
         videoGeneratingIds,
-        scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, { 
-          ...targetShot, 
-          videoStatus: "error" as const 
+        scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, {
+          ...targetShot,
+          videoStatus: "error" as const
         }),
       })
     } else {

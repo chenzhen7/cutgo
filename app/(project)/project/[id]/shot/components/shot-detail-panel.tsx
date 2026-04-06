@@ -597,7 +597,7 @@ export function ShotDetailPanel({
                         setPrompt(e.target.value)
                         debouncedUpdate({ prompt: e.target.value })
                       }}
-                      className="text-[13px] min-h-[60px]  leading-relaxed"
+                      className="text-[13px] h-[120px] leading-relaxed"
                       placeholder="描述该镜头的首帧提示词（英文）..."
                     />
                   </div>
@@ -612,7 +612,7 @@ export function ShotDetailPanel({
                         setPromptEnd(e.target.value)
                         debouncedUpdate({ promptEnd: e.target.value })
                       }}
-                      className="text-[13px] min-h-[60px]  leading-relaxed"
+                      className="text-[13px] h-[120px] leading-relaxed"
                       placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
                     />
                   </div>
@@ -643,7 +643,7 @@ export function ShotDetailPanel({
                         <Textarea
                           value={gridPrompts[i] || ""}
                           onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                          className="text-xs min-h-[40px] "
+                          className="text-xs h-[40px]"
                           placeholder={`第 ${i + 1} 格画面提示词...`}
                         />
                       </div>
@@ -653,7 +653,7 @@ export function ShotDetailPanel({
               )}
 
               {/* Image prompt */}
-              {imageType !== "first_last" && (
+              {imageType !== "first_last" && imageType !== "multi_grid" && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
                     <Label className="text-xs">分镜提示词</Label>
