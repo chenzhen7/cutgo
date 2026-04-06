@@ -763,6 +763,22 @@ export function ShotDetailPanel({
             {/* Right Column (9:16) / Bottom Section (16:9) */}
             <div className={cn("space-y-4", aspectRatio === "9:16" ? "flex-1 min-w-0" : "w-full")}>
 
+              {/* === Content Area === */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Label className="text-xs">分镜描述</Label>
+                </div>
+                <Textarea
+                  value={content}
+                  onChange={(e) => {
+                    setContent(e.target.value)
+                    debouncedUpdate({ content: e.target.value })
+                  }}
+                  className="text-[13px] min-h-[60px] max-h-[120px] leading-relaxed"
+                  placeholder="描述该镜头的剧情内容与画面意图（给人看的描述）..."
+                />
+              </div>
+
               {/* Video prompt */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">

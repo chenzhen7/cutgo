@@ -55,8 +55,17 @@ export const POST = withError(async (
   })
 
   try {
+    const promptParts = []
+    if (shot.content) {
+      promptParts.push(`分镜描述：${shot.content}`)
+    }
+    if (shot.videoPrompt) {
+      promptParts.push(shot.videoPrompt)
+    }
+    const combinedPrompt = promptParts.join("\n")
+
     const result = await callVideo({
-      prompt: shot.videoPrompt || "",
+      prompt: combinedPrompt,
       imageUrls,
       durationSeconds,
       ratio,
