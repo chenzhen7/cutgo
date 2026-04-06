@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
 import { callImage } from "@/lib/ai/image"
-import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
+import { buildMultiGridPrompt, buildImagePrompt } from "@/app/api/images/prompt-utils"
 import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
 
 async function generateForShot(
@@ -23,9 +23,11 @@ async function generateForShot(
   const neg = shot.negativePrompt ?? undefined
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
+    const promptStart = buildImagePrompt("first_last", shot.content, shot.prompt)
+    const promptEndGen = buildImagePrompt("first_last", shot.content, shot.promptEnd)
     const [r1, r2] = await Promise.all([
       callImage({
-        prompt: shot.prompt,
+        prompt: promptStart,
         projectId,
         scope: "shot",
         negativePrompt: neg,
@@ -33,7 +35,7 @@ async function generateForShot(
         resolution,
       }),
       callImage({
-        prompt: shot.promptEnd,
+        prompt: promptEndGen,
         projectId,
         scope: "shot",
         negativePrompt: neg,
@@ -54,8 +56,8 @@ async function generateForShot(
     let gridPrompts: string[] = []
     try { gridPrompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
     if (gridPrompts.length > 0) {
-      const basePrompt = shot.content || ""
-      const combinedPrompt = buildMultiGridPrompt(basePrompt, gridPrompts, shot.gridLayout)
+      const multiGridBase = buildImagePrompt("multi_grid", shot.content, null)
+      const combinedPrompt = buildMultiGridPrompt(multiGridBase, gridPrompts, shot.gridLayout)
 
       const result = await callImage({
         prompt: combinedPrompt,
@@ -74,8 +76,9 @@ async function generateForShot(
     }
   }
 
+  const finalPrompt = buildImagePrompt("keyframe", shot.content, shot.prompt)
   const result = await callImage({
-    prompt: shot.prompt,
+    prompt: finalPrompt,
     projectId,
     scope: "shot",
     negativePrompt: neg,

@@ -7,26 +7,29 @@ import {
   markAiTaskSucceeded,
 } from "@/lib/ai-task-service"
 import { callImage } from "@/lib/ai/image"
-import { buildMultiGridPrompt } from "@/app/api/images/prompt-utils"
+import { buildMultiGridPrompt, buildImagePrompt } from "@/app/api/images/prompt-utils"
 
 interface GenerateImageRequest {
   shotId: string
-  imageType: "keyframe" | "first_last" | "multi_grid"
-  prompt: string
+  imageType?: "keyframe" | "first_last" | "multi_grid"
+  content?: string
+  prompt?: string
   promptEnd?: string
   gridPrompts?: string[]
+  gridLayout?: string
   negativePrompt?: string
   aspectRatio?: string
   resolution?: string
   referenceImages?: string[]
+  refLabels?: string[]
 }
 
 export const POST = withError(async (request: NextRequest) => {
   const body: GenerateImageRequest = await request.json()
-  const { shotId, imageType, prompt, promptEnd, gridPrompts, negativePrompt, referenceImages } = body
+  const { shotId, imageType, content, prompt, promptEnd, gridPrompts, negativePrompt, referenceImages, refLabels } = body
 
-  if (!shotId || !prompt) {
-    throwCutGoError("MISSING_PARAMS", "shotId and prompt are required")
+  if (!shotId) {
+    throwCutGoError("MISSING_PARAMS", "shotId is required")
   }
 
   const shot = await prisma.shot.findUnique({
@@ -47,6 +50,16 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("NOT_FOUND", "Shot not found")
   }
 
+  // Use values from request body or fallback to database values
+  const type = imageType || shot.imageType || "keyframe"
+  const finalContent = content ?? shot.content
+  const finalPromptBase = prompt ?? shot.prompt
+  const finalPromptEndBase = promptEnd ?? shot.promptEnd
+  
+  if (type !== "multi_grid" && !finalPromptBase) {
+    throwCutGoError("MISSING_PARAMS", "prompt is required")
+  }
+
   const episode = shot.episode;
   const project = episode.project;
 
@@ -63,8 +76,9 @@ export const POST = withError(async (request: NextRequest) => {
 
 
     if (type === "keyframe") {
+      const generatedPrompt = buildImagePrompt(type, finalContent, finalPromptBase, refLabels)
       const result = await callImage({
-        prompt,
+        prompt: generatedPrompt,
         projectId: episode.projectId,
         scope: "shot",
         negativePrompt,
@@ -82,13 +96,15 @@ export const POST = withError(async (request: NextRequest) => {
     }
 
     if (type === "first_last") {
-      if (!promptEnd) {
+      if (!finalPromptEndBase) {
         await markAiTaskFailed(task.id, { code: "VALIDATION_ERROR", message: "promptEnd is required for first_last type" })
         throwCutGoError("VALIDATION", "promptEnd is required for first_last type")
       }
+      const promptStart = buildImagePrompt(type, finalContent, finalPromptBase, refLabels)
+      const promptEndGen = buildImagePrompt(type, finalContent, finalPromptEndBase, refLabels)
       const [r1, r2] = await Promise.all([
         callImage({
-          prompt,
+          prompt: promptStart,
           projectId: episode.projectId,
           scope: "shot",
           negativePrompt,
@@ -97,7 +113,7 @@ export const POST = withError(async (request: NextRequest) => {
           referenceImages,
         }),
         callImage({
-          prompt: promptEnd,
+          prompt: promptEndGen,
           projectId: episode.projectId,
           scope: "shot",
           negativePrompt,
@@ -123,7 +139,8 @@ export const POST = withError(async (request: NextRequest) => {
         throwCutGoError("VALIDATION", "gridPrompts are required for multi_grid type")
       }
 
-      const combinedPrompt = buildMultiGridPrompt(prompt, gridPrompts, shot.gridLayout)
+      const multiGridBase = buildImagePrompt(type, finalContent, null, refLabels)
+      const combinedPrompt = buildMultiGridPrompt(multiGridBase, gridPrompts, shot.gridLayout)
       const result = await callImage({
         prompt: combinedPrompt,
         projectId: episode.projectId,

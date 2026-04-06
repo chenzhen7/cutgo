@@ -783,8 +783,8 @@ export function ShotDetailPanel({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">视频时长(秒)</Label>
-                  <Input 
-                    value={videoDuration} 
+                  <Input
+                    value={videoDuration}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === '' || /^\d+(\.\d*)?$/.test(val)) {
@@ -793,10 +793,10 @@ export function ShotDetailPanel({
                       }
                     }}
                     placeholder="如: 5"
-                    className="h-7 text-xs" 
+                    className="h-7 text-xs"
                   />
                 </div>
-                
+
               </div>
 
               <Button

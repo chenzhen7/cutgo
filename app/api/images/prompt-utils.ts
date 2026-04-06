@@ -1,3 +1,19 @@
+export function buildImagePrompt(
+  imageType: string,
+  content: string | null | undefined,
+  prompt: string | null | undefined,
+  refLabels?: string[]
+): string {
+  const basePrompt = imageType === "multi_grid"
+    ? (content || "")
+    : (content ? `分镜描述：${content}\n画面提示词：${prompt || ""}` : (prompt || ""))
+  
+  if (refLabels && refLabels.length > 0) {
+    return `${basePrompt}\n\n参考图说明：${refLabels.join("，")}`
+  }
+  return basePrompt
+}
+
 export function buildMultiGridPrompt(
   basePrompt: string,
   gridPrompts: string[],

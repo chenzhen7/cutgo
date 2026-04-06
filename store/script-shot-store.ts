@@ -411,11 +411,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       }
     }
 
-    const basePrompt = shot.imageType === "multi_grid" ? (shot.content || "") : shot.prompt
-    const annotatedPrompt = refLabels.length > 0
-      ? `${basePrompt}\n\n参考图说明：${refLabels.join("，")}`
-      : basePrompt
-
     const generating = new Set(get().imageGeneratingIds)
     generating.add(shotId)
     set({ imageGeneratingIds: generating })
@@ -424,16 +419,14 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       const body: Record<string, unknown> = {
         shotId,
         imageType: shot.imageType || "keyframe",
-        prompt: annotatedPrompt,
+        content: shot.content,
+        prompt: shot.prompt,
+        promptEnd: shot.promptEnd,
         negativePrompt: shot.negativePrompt,
         referenceImages,
+        refLabels,
       }
-      if (shot.imageType === "first_last") {
-        const rawEnd = shot.promptEnd || shot.prompt
-        body.promptEnd = refLabels.length > 0
-          ? `${rawEnd}\n\n参考图说明：${refLabels.join("，")}`
-          : rawEnd
-      }
+      
       if (shot.imageType === "multi_grid") {
         body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
         body.gridLayout = shot.gridLayout || "2x2"
