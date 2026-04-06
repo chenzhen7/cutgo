@@ -134,23 +134,23 @@ export function VideoPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className=" sm:max-w-xl max-w-xl p-0 overflow-hidden bg-black/95 border-0">
+      <DialogContent className="sm:max-w-xl max-w-xl p-0 overflow-hidden bg-background border">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="text-sm text-white/90 flex items-center gap-2">
-            <Video className="size-4 text-violet-400" />
+          <DialogTitle className="text-sm font-medium flex items-center gap-2">
+            <Video className="size-4 text-primary" />
             镜头 #{shot.index + 1} 视频预览
           </DialogTitle>
           {shot.prompt && (
-            <p className="text-xs text-white/50 line-clamp-1 mt-1">{shot.prompt}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{shot.prompt}</p>
           )}
         </DialogHeader>
 
-        <div className="relative flex items-center justify-center px-6">
-          <div className="relative w-full max-w-[400px] mx-auto">
+        <div className="relative flex items-center justify-center px-6 py-2">
+          <div className="relative w-full max-w-[400px] mx-auto overflow-hidden rounded-xl border bg-muted shadow-sm">
             <video
               ref={videoRef}
               src={shot.videoUrl}
-              className="w-full aspect-[9/16] rounded-lg object-cover bg-black"
+              className="w-full aspect-[9/16] object-cover bg-black"
               autoPlay
               loop={!autoPlayNext}
               playsInline
@@ -163,11 +163,11 @@ export function VideoPreviewDialog({
 
             <button
               onClick={togglePlay}
-              className="absolute inset-0 flex items-center justify-center group/play"
+              className="absolute inset-0 flex items-center justify-center group/play bg-black/5 hover:bg-black/10 transition-colors"
             >
               {!isPlaying && (
-                <div className="size-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform group-hover/play:scale-110">
-                  <Play className="size-7 text-white ml-1" />
+                <div className="size-16 rounded-full bg-background/20 backdrop-blur-md flex items-center justify-center transition-transform group-hover/play:scale-110 border border-white/20">
+                  <Play className="size-8 text-white fill-white ml-1" />
                 </div>
               )}
             </button>
@@ -175,75 +175,79 @@ export function VideoPreviewDialog({
         </div>
 
         {/* Controls */}
-        <div className="px-6 pb-6 pt-3 space-y-2">
+        <div className="px-6 pb-6 pt-2 space-y-4">
           {/* Progress bar */}
           <div
-            className="h-1 bg-white/10 rounded-full cursor-pointer group/progress"
+            className="h-1.5 bg-secondary rounded-full cursor-pointer group/progress overflow-hidden"
             onClick={handleProgressClick}
           >
             <div
-              className="h-full bg-violet-500 rounded-full transition-[width] relative"
+              className="h-full bg-primary rounded-full transition-[width] relative"
               style={{ width: `${progress}%` }}
             >
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 size-2.5 rounded-full bg-white opacity-0 group-hover/progress:opacity-100 transition-opacity" />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 size-3 rounded-full bg-white border-2 border-primary opacity-0 group-hover/progress:opacity-100 transition-opacity" />
             </div>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
                 onClick={togglePlay}
               >
                 {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 ml-0.5" />}
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
                 onClick={toggleMute}
               >
                 {isMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
               </Button>
-              <span className="text-[10px] text-white/40 ml-1 font-mono">
-                {formatTime(currentTime)} / {formatTime(duration || Number(shot.videoDuration) || 5)}
-              </span>
+              <div>
+                <span className="text-[11px] text-muted-foreground ml-2 font-mono tabular-nums">
+                  {formatTime(currentTime)} / {formatTime(duration || Number(shot.videoDuration) || 5)}
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant={autoPlayNext ? "secondary" : "ghost"}
                 size="sm"
-                className={`h-8 px-2 text-xs hover:bg-white/10 ${autoPlayNext ? "text-violet-400 hover:text-violet-300" : "text-white/70 hover:text-white"}`}
+                className={`h-8 px-3 text-xs flex items-center gap-1.5 ${autoPlayNext ? "text-primary" : "text-muted-foreground"}`}
                 onClick={() => setAutoPlayNext(!autoPlayNext)}
                 title="自动连播"
               >
-                <ListVideo className="size-4 mr-1" />
+                <ListVideo className="size-4" />
                 连播
               </Button>
-              <div className="w-px h-4 bg-white/20 mx-1" />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10"
-                disabled={!onPrev}
-                onClick={onPrev || undefined}
-              >
-                <ChevronLeft className="size-4 mr-0.5" />
-                上一个
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10"
-                disabled={!onNext}
-                onClick={onNext || undefined}
-              >
-                下一个
-                <ChevronRight className="size-4 ml-0.5" />
-              </Button>
+              <div className="w-px h-4 bg-border mx-1" />
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  disabled={!onPrev}
+                  onClick={onPrev || undefined}
+                >
+                  <ChevronLeft className="size-4" />
+                  
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  disabled={!onNext}
+                  onClick={onNext || undefined}
+                >
+                  
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
