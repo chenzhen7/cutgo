@@ -57,10 +57,20 @@ export const POST = withError(async (
   try {
     const promptParts = []
     if (shot.content) {
-      promptParts.push(`分镜描述：${shot.content}`)
+      promptParts.push(`画面讲述了：${shot.content}`)
     }
     if (shot.videoPrompt) {
       promptParts.push(shot.videoPrompt)
+    }
+    if (shot.imageType === "multi_grid") {
+      let gridCount = 9
+      if (shot.gridLayout) {
+        const match = shot.gridLayout.match(/(\d+)x(\d+)/i)
+        if (match) {
+          gridCount = parseInt(match[1]) * parseInt(match[2])
+        }
+      }
+      promptParts.push(`立即从0.1秒处剪切，参考分镜顺序。起始于左上角第一格，依次在视频里串联${gridCount}宫格图片，人物动作流程自然。`)
     }
     const combinedPrompt = promptParts.join("\n")
 
