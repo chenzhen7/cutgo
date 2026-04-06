@@ -160,6 +160,15 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       models: [{ value: "stable-diffusion-xl-1024-v1-0", label: "SDXL 1.0" }],
       defaultBaseUrl: "https://api.stability.ai/v1",
     },
+    nanobanana: {
+      label: "Google (Nano Banana)",
+      logo: "/logos/gemini.svg",
+      models: [
+        { value: "gemini-3.1-flash-image", label: "Gemini 3.1 Flash Image" },
+        { value: "gemini-3-pro-image-preview", label: "Gemini 3 Pro Image Preview" }
+      ],
+      defaultBaseUrl: "https://api.nanobananaapi.dev/v1/images/generate",
+    },
   },
   video: {
     doubao: {

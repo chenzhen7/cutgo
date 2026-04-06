@@ -3,6 +3,7 @@ import {throwCutGoError} from "@/lib/api-error"
 import {DoubaoImageProvider} from "./doubao"
 import {PlaceholderImageProvider} from "./placeholder"
 import {StabilityImageProvider} from "./stability"
+import {NanobananaImageProvider} from "./nanobanana"
 import type {ImageGenerateOptions, ImageGenerateResult, ImageProvider} from "../types"
 
 /** 图像模型配置运行时参数定义 */
@@ -45,6 +46,14 @@ export function createImageProviderFromConfig(
 
   if (config.provider === "stability") {
     return new StabilityImageProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model,
+    })
+  }
+
+  if (config.provider === "nanobanana") {
+    return new NanobananaImageProvider({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
       model: config.model,
