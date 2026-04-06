@@ -23,19 +23,31 @@ export function buildMultiGridPrompt(
   refLabels?: string[]
 ): string {
   const promptObj: Record<string, string> = {}
+
   gridPrompts.forEach((p, i) => {
     promptObj[String(i + 1)] = p
   })
 
   const jsonBlock = JSON.stringify(promptObj, null, 2)
-  const layoutText = gridLayout ? `宫格布局：${gridLayout}\n` : ""
+  const gridSum = gridPrompts.length
 
-  let basePrompt = content ? `分镜描述：${content}` : "";
+  const parts: string[] = []
+
+  // 1. 要求放在最上面
+  parts.push(`生成一张 ${gridLayout} 的电影分镜脚本,由 ${gridSum} 个独立的分镜组成,呈网格状排列。保持每张图不重复,保持原图场景和风格不变,并且具有叙事感和连贯性，分镜之间紧挨着、无边框，4k高清画质`)
+
+  // 2. 参考图说明
   if (refLabels && refLabels.length > 0) {
-    basePrompt = basePrompt ? `${basePrompt}\n\n参考图说明：${refLabels.join("，")}` : `参考图说明：${refLabels.join("，")}`;
+    parts.push(`上传的参考图说明：${refLabels.join("，")}`)
   }
 
-  const prefix = basePrompt ? `${basePrompt}\n\n` : "";
+  // 3. 画面描述
+  if (content) {
+    parts.push(`画面描述了：${content}`)
+  }
 
-  return `${prefix}保持原图场景和风格不变，拍摄一套多宫格布局的分镜摄影图。保持每张图不重复，并且具有叙事感和连贯性，分镜之间紧挨着、无边框，4k高清画质${layoutText}\n\n以下 JSON 中数字键 "1"、"2"… 依次对应各子画面（建议从左到右、从上到下）：\n\n${jsonBlock}`
+  // 4. 多宫格json
+  parts.push(`以下 JSON 按序号顺序依次对应各个格子（建议从左到右、从上到下）：\n${jsonBlock}`)
+
+  return parts.join("\n\n")
 }
