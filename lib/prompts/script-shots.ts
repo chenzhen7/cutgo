@@ -302,7 +302,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
     "characters": ["角色A", "角色B"],
     "scene": "场景名",
     "props": ["道具A", "道具B"],
-    "duration": 3
+    "duration": 1
   }
 ]
 
@@ -315,7 +315,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 6. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
 7. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
 8. 确保提示词完整性，不要省略任何信息
-9. duration: 必填，视频时长（数字类型，如 3、5 等，根据镜头内容合理预估秒数）`
+9. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
   }
 
   if (imageType === "multi_grid") {
@@ -333,7 +333,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
     "characters": ["角色A", "角色B"],
     "scene": "场景名",
     "props": ["道具A", "道具B"],
-    "duration": 3
+    "duration": 1
   }
 ]
 
@@ -346,7 +346,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 6. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
 7. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
 8. 确保提示词完整性，不要省略任何信息
-9. duration: 必填，视频时长（数字类型，如 3、5 等，根据镜头内容合理预估秒数）`
+9. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
   }
 
   // keyframe（默认）
@@ -360,7 +360,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
     "characters": ["角色A", "角色B"],
     "scene": "场景名",
     "props": ["道具A", "道具B"],
-    "duration": 3
+    "duration": 1
   }
 ]
 
@@ -372,7 +372,7 @@ function buildImageTypeOutputInstructions(imageType: ImageType, gridLayout?: Gri
 5. props: 该镜头实际出现或重点关联道具名数组；没有则输出 []
 6. 角色名/场景名/道具名需尽量使用用户提供的名称，不要随意改写
 7. 确保提示词完整性，不要省略任何信息
-8. duration: 必填，视频时长（数字类型，如 3、5 等，根据镜头内容合理预估秒数）`
+8. duration: 必填，视频时长（数字类型，根据镜头内容合理预估秒数）`
 }
 
 export function buildScriptShotsSystemPrompt(
