@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { throwCutGoError, withError, CutGoError } from "@/lib/api-error"
+import { throwCutGoError, withError } from "@/lib/api-error"
 import { callVideo } from "@/lib/ai/video"
 import { createRunningAiTask, markAiTaskFailed } from "@/lib/ai-task-service"
 
@@ -43,11 +43,14 @@ export const POST = withError(async (
     where: { id: episodeId },
     include: { project: { select: { aspectRatio: true } } },
   })
-  const ratio = episode?.project?.aspectRatio ?? "9:16"
+  if (!episode) {
+    throwCutGoError("NOT_FOUND", "分集不存在")
+  }
+  const ratio = episode.project?.aspectRatio ?? "9:16"
 
-  const targetInfo = `第${episode?.index !== undefined ? episode.index + 1 : "?"}集 ${episode?.title || "未知"} - 镜头${shot.index + 1}`
+  const targetInfo = `第${episode.index + 1}集 ${episode.title || "未知"} - 镜头${shot.index + 1}`
   const task = await createRunningAiTask({
-    projectId: episode?.projectId || shot.episodeId,
+    projectId: episode.projectId,
     episodeId: episodeId,
     shotId: shot.id,
     targetInfo,

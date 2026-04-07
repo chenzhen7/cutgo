@@ -426,7 +426,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         referenceImages,
         refLabels,
       }
-      
+
       if (shot.imageType === "multi_grid") {
         body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
         body.gridLayout = shot.gridLayout || "2x2"

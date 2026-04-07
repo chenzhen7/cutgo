@@ -32,37 +32,63 @@ export const GET = withError(async (
     const status = await queryVideoTask(shot.videoTaskId)
 
     if (status.status === "success") {
-      let localVideoUrl = status.url
-      if (status.url) {
-        try {
-          localVideoUrl = await persistGeneratedVideoLocally({
-            sourceUrl: status.url,
-            projectId: shot.episode.projectId,
-            scope: "shot",
-          })
-        } catch (err) {
-          console.error("Failed to save video locally:", err)
+      try {
+        if (!status.url) {
+          throwCutGoError("INTERNAL", "视频任务成功但未返回视频地址")
         }
-      }
 
-      const updated = await prisma.shot.update({
-        where: { id: shotId },
-        data: {
-          videoUrl: localVideoUrl,
-          videoStatus: "completed",
-          videoTaskId: null,
-        },
-      })
-      
-      const aiTask = await prisma.aiTask.findFirst({
-        where: { shotId, taskType: "shot_video_generate", status: "running" },
-        orderBy: { createdAt: "desc" },
-      })
-      if (aiTask) {
-        await markAiTaskSucceeded(aiTask.id)
-      }
+        const localVideoUrl = await persistGeneratedVideoLocally({
+          sourceUrl: status.url,
+          projectId: shot.episode.projectId,
+          scope: "shot",
+        })
 
-      return NextResponse.json({ videoStatus: "completed", videoUrl: localVideoUrl, shot: updated })
+        if (!localVideoUrl.startsWith("/")) {
+          throwCutGoError("INTERNAL", "视频入库失败：未生成本地链接")
+        }
+
+        const updated = await prisma.shot.update({
+          where: { id: shotId },
+          data: {
+            videoUrl: localVideoUrl,
+            videoStatus: "completed",
+            videoTaskId: null,
+          },
+        })
+
+        const aiTask = await prisma.aiTask.findFirst({
+          where: { shotId, taskType: "shot_video_generate", status: "running" },
+          orderBy: { createdAt: "desc" },
+        })
+        if (aiTask) {
+          await markAiTaskSucceeded(aiTask.id)
+        }
+
+        return NextResponse.json({ videoStatus: "completed", videoUrl: localVideoUrl, shot: updated })
+      } catch (err) {
+        const reason = (err as Error)?.message || "视频入库失败"
+        const updated = await prisma.shot.update({
+          where: { id: shotId },
+          data: {
+            videoUrl: null,
+            videoStatus: "error",
+            videoTaskId: null,
+          },
+        })
+        const aiTask = await prisma.aiTask.findFirst({
+          where: { shotId, taskType: "shot_video_generate", status: "running" },
+          orderBy: { createdAt: "desc" },
+        })
+        if (aiTask) {
+          await markAiTaskFailed(aiTask.id, { message: reason })
+        }
+        return NextResponse.json({
+          videoStatus: "error",
+          videoUrl: null,
+          shot: updated,
+          reason,
+        })
+      }
     }
 
     if (status.status === "failed") {
