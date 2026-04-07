@@ -16,7 +16,7 @@ function extFromMimeType(mimeType?: string): string {
 
 export async function fetchRemoteVideo(sourceUrl: string): Promise<{ buffer: Buffer; mimeType?: string }> {
   const response = await fetch(sourceUrl, {
-    signal: AbortSignal.timeout(300_000), // 5 minutes timeout for video downloading
+    signal: AbortSignal.timeout(3000_000), // 5 minutes timeout for video downloading
   })
   if (!response.ok) {
     throw new Error(`Fetch video failed: ${response.status} ${response.statusText}`)
