@@ -84,11 +84,7 @@ export class ViduVideoProvider implements VideoProvider {
       body.duration = durationSeconds
     }
 
-    if (this.config.resolution) {
-      body.resolution = this.config.resolution
-    } else if (options.resolution) {
-      body.resolution = options.resolution
-    }
+    body.resolution = this.config.resolution || "1080p"
 
     if (ratio) {
       body.aspect_ratio = ratio

@@ -12,6 +12,7 @@ export interface DoubaoVideoConfig {
   apiKey: string
   baseUrl: string
   model: string
+  resolution?: string
 }
 
 /** 创建任务响应 */
@@ -81,6 +82,8 @@ export class DoubaoVideoProvider implements VideoProvider {
       content,
       ratio,
     }
+
+    body.resolution = this.config.resolution || "1080p"
 
     if (durationSeconds !== undefined) {
       body.duration = durationSeconds

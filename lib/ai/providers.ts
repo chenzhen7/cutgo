@@ -84,7 +84,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
           value: "doubao-seed-1-8-251228",
           label: "Doubao-Seed-1.8（兼容）",
         }
-        
+
       ],
       defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
     },
@@ -126,7 +126,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       label: "其他",
       logo: "/logos/OpenAi.svg",
       models: [
-       
+
       ],
       defaultBaseUrl: "https://api.openai.com/v1",
     },
@@ -139,8 +139,8 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
         { value: "doubao-seedream-5-0-260128", label: "Doubao Seedream 5.0" },
         { value: "doubao-seedream-4-5-251128", label: "Doubao Seedream 4.5" },
         { value: "doubao-seedream-4-0-250828", label: "Doubao Seedream 4.0" },
-      
-        
+
+
       ],
       defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
     },
@@ -174,17 +174,18 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
   video: {
     vidu: {
       label: "Vidu",
+      logo: "/logos/vidu.svg",
       models: [
-        { value: "viduq3-pro", label: "Vidu Q3 Pro" },
-        { value: "viduq3-turbo", label: "Vidu Q3 Turbo" },
-        { value: "viduq2-pro-fast", label: "Vidu Q2 Pro Fast" },
-        { value: "viduq2-turbo", label: "Vidu Q2 Turbo" },
-        { value: "viduq2-pro", label: "Vidu Q2 Pro" },
+        { value: "viduq3-pro", label: "Vidu Q3 Pro (支持音画同出，支持智能切镜)" },
+        { value: "viduq3-turbo", label: "Vidu Q3 Turbo (支持音画同出，支持智能切镜)" },
+        { value: "viduq2-pro-fast", label: "Vidu Q2 Pro Fast (速度快，价格低，效果稳定)" },
+        { value: "viduq2-turbo", label: "Vidu Q2 Turbo (新模型，速度快)" },
+        { value: "viduq2-pro", label: "Vidu Q2 Pro (新模型，细节丰富)" },
       ],
       defaultBaseUrl: "https://api.vidu.com",
     },
     doubao: {
-      label: "字节豆包（火山方舟·Seedance）",
+      label: "火山方舟·即梦·Seedance",
       logo: "/logos/doubao.svg",
       models: [
         {

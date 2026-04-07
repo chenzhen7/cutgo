@@ -108,8 +108,6 @@ export interface VideoGenerateOptions {
   durationSeconds?: number
   /** 宽高比，如 "16:9"、"9:16"、"1:1"、"adaptive" */
   ratio?: string
-  /** 分辨率："480p" | "720p" | "1080p"，默认 "1080p" */
-  resolution?: "480p" | "720p" | "1080p"
   /** 帧率，默认 24 */
   fps?: number
   /** 随机种子，-1 表示随机 */

@@ -84,6 +84,7 @@ const emptyForm = {
   apiKey: "",
   baseUrl: "",
   isDefault: false,
+  config: {} as Record<string, unknown>,
 }
 
 // ── 主组件 ──
@@ -160,6 +161,7 @@ export default function SettingsPage() {
       apiKey: cfg.apiKey,
       baseUrl: cfg.baseUrl,
       isDefault: cfg.isDefault,
+      config: cfg.config || {},
     })
 
     // 判断是否是自定义模型：如果当前提供商的模型列表中不包含该模型，则认为是自定义
@@ -578,6 +580,24 @@ export default function SettingsPage() {
             </div>
 
             {/* 设为默认 */}
+            {form.type === "video" && (form.provider === "doubao" || form.provider === "vidu") && (
+              <div className="space-y-1.5">
+                <Label>视频分辨率</Label>
+                <Select
+                  value={(form.config?.resolution as string) || "720p"}
+                  onValueChange={(v) => setForm((p) => ({ ...p, config: { ...p.config, resolution: v } }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择视频分辨率" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="720p">720p</SelectItem>
+                    <SelectItem value="1080p">1080p</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <input
                 id="isDefault"
