@@ -1,6 +1,7 @@
 import { getVideoConfig } from "../config"
 import { throwCutGoError } from "@/lib/api-error"
 import { DoubaoVideoProvider } from "./doubao"
+import { ViduVideoProvider } from "./vidu"
 import { PlaceholderVideoProvider } from "./placeholder"
 import { logAIEvent } from "../logging"
 import type {
@@ -16,6 +17,7 @@ export interface VideoProviderRuntimeConfig {
   apiKey: string
   baseUrl: string
   model: string
+  config?: Record<string, any>
 }
 
 /**
@@ -45,6 +47,16 @@ export function createVideoProviderFromConfig(
       apiKey: config.apiKey,
       baseUrl: config.baseUrl || "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks",
       model: config.model,
+      resolution: config.config?.resolution,
+    })
+  }
+
+  if (config.provider === "vidu") {
+    return new ViduVideoProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl || "https://api.vidu.com",
+      model: config.model,
+      resolution: config.config?.resolution,
     })
   }
 
@@ -52,7 +64,7 @@ export function createVideoProviderFromConfig(
 }
 
 /**
- * 使用当前生效配置发起视频生成任务。
+ * 使用当前生效配置发起视频生成任务。1
  * 未配置时抛出 VIDEO_NOT_CONFIGURED，由上层 route 统一转换为标准错误响应。
  */
 export async function callVideo(

@@ -172,6 +172,17 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
   },
   video: {
+    vidu: {
+      label: "Vidu",
+      models: [
+        { value: "viduq3-pro", label: "Vidu Q3 Pro" },
+        { value: "viduq3-turbo", label: "Vidu Q3 Turbo" },
+        { value: "viduq2-pro-fast", label: "Vidu Q2 Pro Fast" },
+        { value: "viduq2-turbo", label: "Vidu Q2 Turbo" },
+        { value: "viduq2-pro", label: "Vidu Q2 Pro" },
+      ],
+      defaultBaseUrl: "https://api.vidu.com",
+    },
     doubao: {
       label: "字节豆包（火山方舟·Seedance）",
       logo: "/logos/doubao.svg",
