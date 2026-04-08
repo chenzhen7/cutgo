@@ -14,8 +14,6 @@ export {
   buildEpisodeScriptUserPrompt,
 } from "./episode-script"
 export {
-  buildScriptShotsSystemPrompt,
-  buildScriptShotsUserPrompt,
   buildShotListSystemPrompt,
   buildShotListUserPrompt,
   buildShotImagePromptSystemPrompt,
