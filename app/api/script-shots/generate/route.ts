@@ -150,6 +150,7 @@ async function callAIGenerateScriptShots(
     console.error("[LLM Response Parse Error]", {
       error: err,
       rawText: text,
+      result: result.content?.trim() ?? null,
     })
     const errorMsg = err instanceof Error ? err.message : String(err)
     throwCutGoError(

@@ -3,10 +3,19 @@ export function logAIEvent(
   action: "request" | "response",
   payload: any
 ) {
-  // 递归截断超过 1000 字符的字符串
+  // 递归处理字符串，仅截断 base64 等巨长字符串，其他全量打印
   const truncateStrings = (obj: any): any => {
     if (typeof obj === "string") {
-      return obj.length > 3000 ? obj.substring(0, 3000) + "... [truncated]" : obj;
+      // 判断是否是 base64 data URI
+      if (obj.startsWith("data:") && obj.includes("base64,")) {
+        return obj.substring(0, 50) + "... [base64 data truncated]";
+      }
+      // 判断是否是纯 base64 字符串（极长且只包含 base64 字符及换行，不含普通标点空格）
+      if (obj.length > 1000 && /^[a-zA-Z0-9+/=\n\r]+$/.test(obj)) {
+        return obj.substring(0, 50) + "... [base64 string truncated]";
+      }
+      // 其他字符串全部打印
+      return obj;
     }
     if (Array.isArray(obj)) {
       return obj.map(truncateStrings);
