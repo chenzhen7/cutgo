@@ -9,46 +9,59 @@ import {
   markAiTaskSucceeded,
   toErrorInfo,
 } from "@/lib/ai-task-service"
-import { buildScriptShotsSystemPrompt, buildScriptShotsUserPrompt } from "@/lib/prompts"
+import {
+  buildShotListSystemPrompt,
+  buildShotListUserPrompt,
+  buildShotImagePromptSystemPrompt,
+  buildShotImagePromptUserPrompt,
+  buildShotVideoPromptSystemPrompt,
+  buildShotVideoPromptUserPrompt,
+} from "@/lib/prompts"
+import type { ShotListItem } from "@/lib/prompts"
 import { parseJsonArray } from "@/lib/utils"
 import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
+import type { ImageType, GridLayout } from "@/lib/types"
 
-interface AIScriptShotResult {
-  shots: Array<{
-    content?: string
-    prompt: string
-    promptEnd?: string
-    gridPrompts?: string[]
-    videoPrompt?: string
-    characters: string[]
-    scene: string
-    props: string[]
-    duration?: number
-  }>
+interface AIShotImagePromptsItem {
+  prompt?: string
+  promptEnd?: string
+  gridPrompts?: string[]
 }
 
-async function callAIGenerateScriptShots(
+interface AIShotVideoPromptsItem {
+  videoPrompt?: string
+}
+
+function parseLLMJsonArray<T>(raw: string, label: string): T[] {
+  let text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
+  try {
+    const parsed = JSON.parse(text) as unknown
+    if (!Array.isArray(parsed)) throw new Error("response is not an array")
+    return parsed as T[]
+  } catch (err) {
+    console.error(`[LLM Response Parse Error] ${label}`, { error: err, rawText: text })
+    const msg = err instanceof Error ? err.message : String(err)
+    throwCutGoError("LLM_INVALID_RESPONSE", `${label} 解析失败: ${msg}`)
+  }
+}
+
+// Call 1: 提取分镜列表（content / characters / scene / props / duration）
+async function callAIExtractShotList(
   episodeTitle: string,
   scriptContent: string,
   episodeCharacters: string,
   episodeProps: string,
   episodeScenes: string,
-  previousShotStr: string | null,
-  imageType: string = "keyframe",
-  gridLayout: string | null = null
-): Promise<AIScriptShotResult> {
-  const systemPrompt = buildScriptShotsSystemPrompt(
-    undefined,
-    imageType as import("@/lib/types").ImageType,
-    gridLayout as import("@/lib/types").GridLayout | null
-  )
-  const userPrompt = buildScriptShotsUserPrompt({
+  previousShotContent: string | null
+): Promise<ShotListItem[]> {
+  const systemPrompt = buildShotListSystemPrompt()
+  const userPrompt = buildShotListUserPrompt({
     episodeTitle,
     episodeScenes,
     episodeCharacters,
     episodeProps,
     scriptContent: scriptContent.slice(0, 6000),
-    previousShot: previousShotStr,
+    previousShotContent,
   })
 
   const result = await callLLM({
@@ -57,107 +70,90 @@ async function callAIGenerateScriptShots(
       { role: "user", content: userPrompt },
     ],
   })
-  let text = result.content?.trim() || ""
-  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
 
-  try {
-    const parsed = JSON.parse(text) as unknown
-    if (!Array.isArray(parsed)) {
-      throw new Error("invalid script shots structure")
-    }
-    const shots = parsed
-      .map((item) => {
-        if (typeof item === "string") {
-          // 兼容历史输出结构：["镜头1", "镜头2"]
-          return {
-            content: "",
-            prompt: item.trim(),
-            promptEnd: undefined,
-            gridPrompts: undefined,
-            characters: [],
-            scene: "",
-            props: [],
-          }
-        }
-        if (!item || typeof item !== "object") return null
-        const raw = item as {
-          content?: unknown
-          prompt?: unknown
-          shot?: unknown
-          promptEnd?: unknown
-          gridPrompts?: unknown
-          videoPrompt?: unknown
-          characters?: unknown
-          scene?: unknown
-          props?: unknown
-          duration?: unknown
-        }
-        const content = typeof raw.content === "string" ? raw.content.trim() : ""
-        const prompt =
-          typeof raw.prompt === "string"
-            ? raw.prompt.trim()
-            : typeof raw.shot === "string"
-              ? raw.shot.trim()
-              : ""
-        if (!prompt && !content) return null
-        const promptEnd =
-          typeof raw.promptEnd === "string" && raw.promptEnd.trim()
-            ? raw.promptEnd.trim()
+  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "分镜列表提取")
+
+  return rawItems
+    .map((item) => {
+      if (!item || typeof item !== "object") return null
+      const content = typeof item.content === "string" ? item.content.trim() : ""
+      if (!content) return null
+      const characters = Array.isArray(item.characters)
+        ? (item.characters as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
+        : []
+      const scene = typeof item.scene === "string" ? item.scene.trim() : ""
+      const props = Array.isArray(item.props)
+        ? (item.props as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
+        : []
+      const duration =
+        typeof item.duration === "number"
+          ? item.duration
+          : typeof item.duration === "string"
+            ? parseInt(item.duration)
             : undefined
-        const gridPrompts = Array.isArray(raw.gridPrompts)
-          ? raw.gridPrompts
-            .filter((v): v is string => typeof v === "string")
-            .map((v) => v.trim())
-            .filter(Boolean)
-          : undefined
-        const videoPrompt =
-          typeof raw.videoPrompt === "string" && raw.videoPrompt.trim()
-            ? raw.videoPrompt.trim()
-            : undefined
-        const characters = Array.isArray(raw.characters)
-          ? raw.characters
-            .filter((v): v is string => typeof v === "string")
-            .map((v) => v.trim())
-            .filter(Boolean)
-          : []
-        const scene = typeof raw.scene === "string" ? raw.scene.trim() : ""
-        const props = Array.isArray(raw.props)
-          ? raw.props
-            .filter((v): v is string => typeof v === "string")
-            .map((v) => v.trim())
-            .filter(Boolean)
-          : []
-        const duration = typeof raw.duration === "number"
-          ? raw.duration
-          : typeof raw.duration === "string" ? parseInt(raw.duration) : undefined
-        return {
-          content,
-          prompt,
-          promptEnd,
-          gridPrompts,
-          videoPrompt,
-          characters,
-          scene,
-          props,
-          duration,
-        }
-      })
-      .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    return {
-      shots,
-    }
-  } catch (err) {
-    console.error("[LLM Response Parse Error]", {
-      error: err,
-      rawText: text,
-      result: result.content?.trim() ?? null,
+      const shotItem: ShotListItem = { content, characters, scene, props, duration }
+      return shotItem
     })
-    const errorMsg = err instanceof Error ? err.message : String(err)
-    throwCutGoError(
-      "LLM_INVALID_RESPONSE",
-      `LLM 返回的分镜结果解析失败: ${errorMsg}。`
-    )
-  }
+    .filter((item): item is ShotListItem => item !== null)
+}
+
+// Call 2: 并行 — 生成生图提示词
+async function callAIGenerateShotImagePrompts(
+  shots: ShotListItem[],
+  episodeTitle: string,
+  episodeCharacters: string,
+  episodeScenes: string,
+  imageType: ImageType,
+  gridLayout: GridLayout | null
+): Promise<AIShotImagePromptsItem[]> {
+  const systemPrompt = buildShotImagePromptSystemPrompt(imageType, gridLayout)
+  const userPrompt = buildShotImagePromptUserPrompt({ episodeTitle, episodeCharacters, episodeScenes, shots })
+
+  const result = await callLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  })
+
+  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "生图提示词生成")
+
+  return rawItems.map((item) => {
+    if (!item || typeof item !== "object") return {}
+    const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : undefined
+    const promptEnd = typeof item.promptEnd === "string" && item.promptEnd.trim() ? item.promptEnd.trim() : undefined
+    const gridPrompts = Array.isArray(item.gridPrompts)
+      ? (item.gridPrompts as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
+      : undefined
+    return { prompt, promptEnd, gridPrompts }
+  })
+}
+
+// Call 3: 并行 — 生成视频提示词
+async function callAIGenerateShotVideoPrompts(
+  shots: ShotListItem[],
+  episodeTitle: string,
+  episodeCharacters: string,
+  episodeScenes: string
+): Promise<AIShotVideoPromptsItem[]> {
+  const systemPrompt = buildShotVideoPromptSystemPrompt()
+  const userPrompt = buildShotVideoPromptUserPrompt({ episodeTitle, episodeCharacters, episodeScenes, shots })
+
+  const result = await callLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  })
+
+  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "视频提示词生成")
+
+  return rawItems.map((item) => {
+    if (!item || typeof item !== "object") return {}
+    const videoPrompt =
+      typeof item.videoPrompt === "string" && item.videoPrompt.trim() ? item.videoPrompt.trim() : undefined
+    return { videoPrompt }
+  })
 }
 
 export const POST = withError(async (request: NextRequest) => {
@@ -191,7 +187,8 @@ export const POST = withError(async (request: NextRequest) => {
   const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
   const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
 
-  let previousShotStr: string | null = null
+  // 上一集最后一个镜头的 content，用于 Call 1 叙事衔接
+  let previousShotContent: string | null = null
 
   try {
     for (const episode of targetEpisodes) {
@@ -212,54 +209,85 @@ export const POST = withError(async (request: NextRequest) => {
         : null
       const matchedProps = assetProps.filter((p) => episodePropIds.includes(p.id))
 
+      const episodeCharactersStr = matchedCharacters.map((c) => c.name).join("; ")
+      const episodePropsStr = matchedProps.map((p) => p.name).join("; ")
+      const episodeScenesStr = matchedScene?.name || ""
+
       try {
-        const aiResult = await callAIGenerateScriptShots(
+        // Call 1: 串行提取分镜列表
+        const shotList = await callAIExtractShotList(
           episode.title,
           episode.script,
-          matchedCharacters.map((c) => c.name).join("; "),
-          matchedProps.map((p) => p.name).join("; "),
-          matchedScene?.name || "",
-          previousShotStr,
-          imageType,
-          gridLayout
+          episodeCharactersStr,
+          episodePropsStr,
+          episodeScenesStr,
+          previousShotContent
         )
 
+        // Call 2 & Call 3: 并行生成生图提示词和视频提示词
+        const [imagePrompts, videoPrompts] = await Promise.all([
+          callAIGenerateShotImagePrompts(
+            shotList,
+            episode.title,
+            episodeCharactersStr,
+            episodeScenesStr,
+            imageType as ImageType,
+            gridLayout as GridLayout | null
+          ),
+          callAIGenerateShotVideoPrompts(
+            shotList,
+            episode.title,
+            episodeCharactersStr,
+            episodeScenesStr
+          ),
+        ])
+
+        // 资产名称 → ID 映射
         const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
         const projectCharacterMap = new Map(assetCharacters.map((c) => [c.name.trim(), c.id]))
         const episodePropMap = new Map(matchedProps.map((p) => [p.name.trim(), p.id]))
         const projectPropMap = new Map(assetProps.map((p) => [p.name.trim(), p.id]))
         const episodeSceneMap = new Map(
-          (matchedScene ? [matchedScene] : [])
-            .map((s) => [s.name.trim(), s.id] as const)
+          (matchedScene ? [matchedScene] : []).map((s) => [s.name.trim(), s.id] as const)
         )
         const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
-        const shotData = (aiResult.shots || [])
-          .map((item, si) => {
-            const prompt = item.prompt?.trim() || ""
-            if (!prompt && !item.content) return null
-            const characterIds = item.characters
+        // 按 index 合并三次结果
+        const shotData = shotList
+          .map((shot, si) => {
+            const imageItem = imagePrompts[si] ?? {}
+            const videoItem = videoPrompts[si] ?? {}
+
+            const prompt = imageItem.prompt?.trim() || ""
+            // 无 content 且无 prompt 的镜头跳过
+            if (!shot.content && !prompt) return null
+
+            const characterIds = shot.characters
               .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
               .filter((id): id is string => Boolean(id))
-            const propIds = item.props
+            const propIds = shot.props
               .map((name) => episodePropMap.get(name) ?? projectPropMap.get(name))
               .filter((id): id is string => Boolean(id))
             const sceneId =
-              (item.scene ? (episodeSceneMap.get(item.scene) ?? projectSceneMap.get(item.scene)) : null)
+              (shot.scene ? (episodeSceneMap.get(shot.scene) ?? projectSceneMap.get(shot.scene)) : null)
               ?? matchedScene?.id
               ?? null
+
+            const gridPrompts =
+              imageItem.gridPrompts?.length ? JSON.stringify(imageItem.gridPrompts) : null
+
             return {
               episodeId: episode.id,
               index: si,
-              content: item.content ?? null,
+              content: shot.content ?? null,
               prompt,
-              promptEnd: item.promptEnd ?? null,
+              promptEnd: imageItem.promptEnd ?? null,
               negativePrompt: null,
-              duration: item.duration ?? 3,
+              duration: shot.duration ?? 3,
               imageType: imageType as string,
               gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
-              gridPrompts: item.gridPrompts?.length ? JSON.stringify(item.gridPrompts) : null,
-              videoPrompt: item.videoPrompt ?? null,
+              gridPrompts,
+              videoPrompt: videoItem.videoPrompt ?? null,
               dialogueText: null,
               actionNote: null,
               characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
@@ -281,11 +309,10 @@ export const POST = withError(async (request: NextRequest) => {
         }
         await prisma.$transaction(txOperations)
 
-        if (aiResult.shots?.length) {
-          const lastPrompt = aiResult.shots[aiResult.shots.length - 1]?.prompt?.trim() || ""
-          if (lastPrompt) {
-            previousShotStr = `分镜提示词: ${lastPrompt}`
-          }
+        // 更新 previousShotContent 供下一集 Call 1 使用
+        const lastContent = shotList[shotList.length - 1]?.content?.trim() || ""
+        if (lastContent) {
+          previousShotContent = lastContent
         }
 
         await markAiTaskSucceeded(task.id)
@@ -310,7 +337,8 @@ export const POST = withError(async (request: NextRequest) => {
       stats: {
         episodeCount: generatedPlans.length,
         totalShots,
-        avgShotsPerEpisode: generatedPlans.length > 0 ? Math.round(totalShots / generatedPlans.length * 10) / 10 : 0,
+        avgShotsPerEpisode:
+          generatedPlans.length > 0 ? Math.round((totalShots / generatedPlans.length) * 10) / 10 : 0,
         generatedEpisodes: targetEpisodes.length,
       },
     })
