@@ -436,32 +436,30 @@ export default function ScriptShotPage() {
           <ResizablePanelGroup orientation="horizontal" className="h-full">
             {/* Center: Timeline editor */}
             <ResizablePanel defaultSize={60} minSize="450px">
-              <div
-                className={cn(
-                  "custom-scrollbar h-full min-w-0 space-y-3 overflow-y-auto  pb-12 ",
-                  detailPanelOpen
-                    ? "bg-muted/10"
-                    : "border-border border-b bg-background"
+              <div className="relative h-full min-w-0">
+                {isGenerating && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border bg-background p-6 shadow-lg">
+                      <Loader2 className="size-8 animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-sm font-medium">正在生成分镜</p>
+                        <p className="mt-1 text-xs text-muted-foreground">这可能需要几十秒时间...</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              >
+                <div
+                  className={cn(
+                    "custom-scrollbar h-full min-w-0 space-y-3 overflow-y-auto pb-12",
+                    detailPanelOpen ? "bg-muted/10" : "border-border border-b bg-background"
+                  )}
+                >
                 {episodeLoading ? (
                   <div className="flex min-h-[240px] items-center justify-center">
                     <Loader2 className="size-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : currentScriptShotPlans.length > 0 ? (
-                  <div className="relative min-h-full">
-                    {isGenerating && (
-                      <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
-                        <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-background p-6 shadow-lg border">
-                          <Loader2 className="size-8 animate-spin text-primary" />
-                          <div className="text-center">
-                            <p className="text-sm font-medium">正在生成分镜</p>
-                            <p className="text-xs text-muted-foreground mt-1">这可能需要几十秒时间...</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div className={cn(
+                  <div className={cn(
                       "space-y-3",
                       detailPanelOpen ? "p-0" : "",
                       isGenerating ? "pointer-events-none opacity-60" : ""
@@ -494,7 +492,6 @@ export default function ScriptShotPage() {
                           onReorderShots={handleReorderShots}
                         />
                       ))}
-                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -518,6 +515,7 @@ export default function ScriptShotPage() {
                     )}
                   </div>
                 )}
+                </div>
               </div>
             </ResizablePanel>
 
