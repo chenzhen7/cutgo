@@ -1,12 +1,8 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
-  ChevronLeft,
-  ChevronRight,
-  X,
   Loader2,
   ImageIcon,
   Trash2,
@@ -15,7 +11,6 @@ import {
   Pause,
   Maximize2,
 } from "lucide-react"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn, parseJsonArray } from "@/lib/utils"
 import type { Shot } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
@@ -26,13 +21,9 @@ interface ShotPreviewPanelProps {
   activeTab: "image" | "video"
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
-  onTabChange: (tab: "image" | "video") => void
   onClearImage: () => void
   onClearVideo: () => void
   onPlayVideo?: () => void
-  onPrev: (() => void) | null
-  onNext: (() => void) | null
-  onClose: () => void
 }
 
 export function ShotPreviewPanel({
@@ -41,13 +32,9 @@ export function ShotPreviewPanel({
   activeTab,
   isGeneratingImage,
   isGeneratingVideo,
-  onTabChange,
   onClearImage,
   onClearVideo,
   onPlayVideo,
-  onPrev,
-  onNext,
-  onClose,
 }: ShotPreviewPanelProps) {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoRef = useCallback((node: HTMLVideoElement | null) => {
@@ -64,104 +51,70 @@ export function ShotPreviewPanel({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">镜头详情</span>
-          <span className="text-xs text-muted-foreground font-mono">#{shot.index + 1}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={!onPrev} onClick={onPrev || undefined}>
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={!onNext} onClick={onNext || undefined}>
-            <ChevronRight className="size-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
-        </div>
-      </div>
-
       {/* Preview content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 flex flex-col gap-3">
-        <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as "image" | "video")}>
-          <TabsList className="w-full">
-            <TabsTrigger value="image" className="flex-1 gap-1.5 text-xs">
-              <ImageIcon className="size-3.5" />
-              画面生成
-            </TabsTrigger>
-            <TabsTrigger value="video" className="flex-1 gap-1.5 text-xs">
-              <Video className="size-3.5" />
-              视频生成
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Image preview */}
-          <TabsContent value="image" className="mt-3">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面预览</Label>
-                {hasImage && (
-                  <button onClick={onClearImage} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
-                    <Trash2 className="size-3" />清除
-                  </button>
-                )}
-              </div>
-
-              {isGeneratingImage ? (
-                <div className={cn(
-                  "w-full rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2",
-                  aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]"
-                )}>
-                  <Loader2 className="size-6 animate-spin text-primary" />
-                  <span className="text-xs text-muted-foreground">生成中...</span>
-                </div>
-              ) : imageType === "first_last" && imageUrls.length >= 2 ? (
-                <div className="flex gap-2">
-                  <div className="flex-1 space-y-1">
-                    <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
-                    <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                      <PreviewableImage
-                        src={imageUrls[0]}
-                        alt="首帧"
-                        className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[420px]")}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
-                    <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                      <PreviewableImage
-                        src={imageUrls[1]}
-                        alt="尾帧"
-                        className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[420px]")}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : hasImage ? (
-                <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                  <PreviewableImage
-                    src={shot.imageUrl!}
-                    alt="画面预览"
-                    className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[400px]" : "max-h-[600px]")}
-                  />
-                </div>
-              ) : (
-                <div className={cn(
-                  "w-full rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2",
-                  aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]"
-                )}>
-                  <ImageIcon className="size-8 text-muted-foreground/20" />
-                  <span className="text-xs text-muted-foreground/40">暂无画面</span>
-                </div>
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6">
+        {activeTab === "image" ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面预览</Label>
+              {hasImage && (
+                <button onClick={onClearImage} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5">
+                  <Trash2 className="size-3" />清除
+                </button>
               )}
             </div>
-          </TabsContent>
 
-          {/* Video preview */}
-          <TabsContent value="video" className="mt-3">
+            {isGeneratingImage ? (
+              <div className={cn(
+                "w-full rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2",
+                aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]"
+              )}>
+                <Loader2 className="size-6 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">生成中...</span>
+              </div>
+            ) : imageType === "first_last" && imageUrls.length >= 2 ? (
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
+                  <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
+                    <PreviewableImage
+                      src={imageUrls[0]}
+                      alt="首帧"
+                      className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[420px]")}
+                    />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
+                  <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
+                    <PreviewableImage
+                      src={imageUrls[1]}
+                      alt="尾帧"
+                      className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[420px]")}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : hasImage ? (
+              <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
+                <PreviewableImage
+                  src={shot.imageUrl!}
+                  alt="画面预览"
+                  className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[400px]" : "max-h-[600px]")}
+                />
+              </div>
+            ) : (
+              <div className={cn(
+                "w-full rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2",
+                aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]"
+              )}>
+                <ImageIcon className="size-8 text-muted-foreground/20" />
+                <span className="text-xs text-muted-foreground/40">暂无画面</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -239,8 +192,8 @@ export function ShotPreviewPanel({
                 </div>
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -533,13 +533,9 @@ export default function ScriptShotPage() {
                       activeTab={activeDetailTab}
                       isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
                       isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
-                      onTabChange={setActiveDetailTab}
                       onClearImage={handleClearImage}
                       onClearVideo={handleClearVideo}
                       onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
-                      onPrev={hasPrevShot ? handlePrevShot : null}
-                      onNext={hasNextShot ? handleNextShot : null}
-                      onClose={() => setDetailPanelOpen(false)}
                     />
                   </div>
                 </ResizablePanel>
@@ -567,6 +563,9 @@ export default function ScriptShotPage() {
                       assetCharacters={assetCharacters}
                       assetScenes={assetScenes}
                       assetProps={assetProps}
+                      onPrev={hasPrevShot ? handlePrevShot : null}
+                      onNext={hasNextShot ? handleNextShot : null}
+                      onClose={() => setDetailPanelOpen(false)}
                       onTabChange={setActiveDetailTab}
                       onUpdate={handleUpdateShot}
                       onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
