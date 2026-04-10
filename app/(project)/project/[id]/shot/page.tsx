@@ -546,7 +546,7 @@ export default function ScriptShotPage() {
             {detailPanelOpen && currentActiveShot && (
               <>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={25} minSize="300px">
+                <ResizablePanel defaultSize={25} minSize="400px">
                   <div className="h-full shrink-0 overflow-hidden bg-card">
                     <ShotDetailPanel
                       shot={currentActiveShot.shot}
