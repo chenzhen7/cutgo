@@ -437,7 +437,7 @@ export default function ScriptShotPage() {
         <div className="min-h-0 flex-1">
           <ResizablePanelGroup orientation="horizontal" className="h-full">
             {/* Left: Timeline editor */}
-            <ResizablePanel defaultSize={50} minSize="350px">
+            <ResizablePanel defaultSize={50} minSize="300px">
               <div className="relative h-full min-w-0">
                 {isGenerating && (
                   <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">

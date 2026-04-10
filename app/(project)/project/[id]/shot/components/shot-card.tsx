@@ -363,7 +363,7 @@ export const ShotCard = memo(function ShotCard({
         <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} aspectRatio={aspectRatio} />
 
         {/* Center: Index + Content */}
-        <div className="flex-1 min-w-0 flex gap-2 @[640px]:gap-2.5">
+        <div className="flex-1 min-w-0  flex gap-2 @[640px]:gap-2.5">
           <div className="flex flex-col items-center shrink-0">
             <div className={cn(
               "size-[22px] rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors @[640px]:size-6 @[640px]:text-[10px] @[900px]:size-[26px]",
@@ -379,34 +379,34 @@ export const ShotCard = memo(function ShotCard({
             <div className="flex flex-col gap-2">
               {shot.content && (
                 <div className="flex items-start gap-1.5 mb-1">
-                  <span className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] font-medium text-foreground/90 line-clamp-4 @[640px]:line-clamp-3 leading-relaxed">
+                  <span className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] font-medium text-foreground/90  @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5leading-relaxed">
                     {shot.content}
                   </span>
                 </div>
               )}
               {shot.imageType !== "multi_grid" && (
-                <div className="hidden @[600px]:flex items-start gap-1.5">
+                <div className="hidden @[480px]:flex items-start gap-1.5">
                   <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
                     <Type className="size-2.5 mr-0.5" />
                     分镜
                   </Badge>
-                  <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed">
+                  <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
                     {shot.prompt || "暂无分镜提示词"}
                   </p>
                 </div>
               )}
-              <div className="hidden @[600px]:flex items-start gap-1.5">
+              <div className="hidden @[480px]:flex items-start gap-1.5">
                 <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
                   <Film className="size-2.5 mr-0.5" />
                   视频
                 </Badge>
-                <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed">
+                <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
                   {shot.videoPrompt || "暂无视频提示词"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="hidden @[350px]:flex items-center gap-3 flex-wrap ">
               <div className="flex items-center gap-2 flex-wrap">
                 {boundCharacters.length > 0 && (
                   <div className="flex items-center -space-x-1.5">
