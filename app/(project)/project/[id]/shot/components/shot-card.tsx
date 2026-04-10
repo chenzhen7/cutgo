@@ -322,7 +322,7 @@ export const ShotCard = memo(function ShotCard({
         {/* Bottom info */}
         <div className="px-2 py-1.5 flex flex-col gap-0.5">
           <p className={cn(
-            "text-[11px] leading-relaxed line-clamp-2",
+            "text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] leading-relaxed line-clamp-2",
             (shot.imageType === "multi_grid" ? shot.content : shot.prompt) ? "text-foreground/90" : "text-muted-foreground italic"
           )}>
             {shot.imageType === "multi_grid"
@@ -379,7 +379,7 @@ export const ShotCard = memo(function ShotCard({
             <div className="flex flex-col gap-2">
               {shot.content && (
                 <div className="flex items-start gap-1.5 mb-1">
-                  <span className="text-[11px] @[600px]:text-[12px] font-medium text-foreground/90 line-clamp-4 @[600px]:line-clamp-3 leading-relaxed">
+                  <span className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] font-medium text-foreground/90 line-clamp-4 @[640px]:line-clamp-3 leading-relaxed">
                     {shot.content}
                   </span>
                 </div>
@@ -390,7 +390,7 @@ export const ShotCard = memo(function ShotCard({
                     <Type className="size-2.5 mr-0.5" />
                     分镜
                   </Badge>
-                  <p className="text-[11px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[12px]">
+                  <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed">
                     {shot.prompt || "暂无分镜提示词"}
                   </p>
                 </div>
@@ -400,7 +400,7 @@ export const ShotCard = memo(function ShotCard({
                   <Film className="size-2.5 mr-0.5" />
                   视频
                 </Badge>
-                <p className="text-[11px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed @[900px]:text-[12px]">
+                <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[480px]:line-clamp-3 leading-relaxed">
                   {shot.videoPrompt || "暂无视频提示词"}
                 </p>
               </div>
