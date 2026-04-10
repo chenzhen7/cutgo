@@ -272,7 +272,7 @@ export function ShotDetailPanel({
           <TabsContent value="image" className={cn(aspectRatio === "9:16" ? "flex gap-4 items-start" : "flex flex-col gap-4")}>
 
             {/* Left Column (9:16) / Top Section (16:9) */}
-            <div className={cn("flex flex-col gap-3", aspectRatio === "9:16" ? "w-[35%] min-w-[200px] max-w-[360px] shrink-0 sticky top-0" : "w-full")}>
+            <div className={cn("flex flex-col gap-3", aspectRatio === "9:16" ? "w-[240px] shrink-0 sticky top-0" : "w-full")}>
               {/* Image preview */}
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -285,7 +285,7 @@ export function ShotDetailPanel({
                 </div>
 
                 {isGeneratingImage ? (
-                  <div className={cn("w-full rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]")}>
+                  <div className={cn("w-full rounded-lg bg-muted/50 flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video max-h-[300px]" : "aspect-[9/16] max-h-[420px]")}>
                     <Loader2 className="size-6 animate-spin text-primary" />
                     <span className="text-xs text-muted-foreground">生成中...</span>
                   </div>
@@ -294,22 +294,22 @@ export function ShotDetailPanel({
                     <div className="flex-1 space-y-1">
                       <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
                       <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                        <PreviewableImage src={imageUrls[0]} alt="首帧" className="h-auto w-auto max-w-full max-h-[50vh] rounded-md object-contain" />
+                        <PreviewableImage src={imageUrls[0]} alt="首帧" className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[210px]")} />
                       </div>
                     </div>
                     <div className="flex-1 space-y-1">
                       <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
                       <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                        <PreviewableImage src={imageUrls[1]} alt="尾帧" className="h-auto w-auto max-w-full max-h-[50vh] rounded-md object-contain" />
+                        <PreviewableImage src={imageUrls[1]} alt="尾帧" className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[210px]")} />
                       </div>
                     </div>
                   </div>
                 ) : hasImage ? (
                   <div className="w-full rounded-lg border bg-muted/20 p-1 flex items-center justify-center">
-                    <PreviewableImage src={shot.imageUrl!} alt="画面预览" className="h-auto w-auto max-w-full max-h-[70vh] rounded-md object-contain" />
+                    <PreviewableImage src={shot.imageUrl!} alt="画面预览" className={cn("h-auto w-auto max-w-full rounded-md", aspectRatio === "16:9" ? "max-h-[300px]" : "max-h-[420px]")} />
                   </div>
                 ) : (
-                  <div className={cn("w-full rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]")}>
+                  <div className={cn("w-full rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video max-h-[200px]" : "aspect-[9/16] max-h-[420px]")}>
                     <ImageIcon className="size-8 text-muted-foreground/20" />
                     <span className="text-xs text-muted-foreground/40">暂无画面</span>
                   </div>
@@ -690,7 +690,7 @@ export function ShotDetailPanel({
           <TabsContent value="video" className={cn(aspectRatio === "9:16" ? "flex gap-4 items-start" : "flex flex-col gap-4")}>
 
             {/* Left Column (9:16) / Top Section (16:9) */}
-            <div className={cn("flex flex-col gap-3", aspectRatio === "9:16" ? "w-[35%] min-w-[200px] max-w-[360px] shrink-0 sticky top-0" : "w-full")}>
+            <div className={cn("flex flex-col gap-3", aspectRatio === "9:16" ? "w-[240px] shrink-0 sticky top-0" : "w-full")}>
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <Video className="size-3.5 text-violet-500" />
@@ -704,7 +704,7 @@ export function ShotDetailPanel({
               </div>
 
               {isGeneratingVideo ? (
-                <div className={cn("w-full rounded-lg bg-violet-500/5 border border-violet-500/20 flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]")}>
+                <div className={cn("w-full rounded-lg bg-violet-500/5 border border-violet-500/20 flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video max-h-[300px]" : "aspect-[9/16] max-h-[420px]")}>
                   <Loader2 className="size-6 animate-spin text-violet-500" />
                   <span className="text-xs text-violet-600 dark:text-violet-400">视频生成中...</span>
                   <span className="text-[10px] text-muted-foreground">预计需要 30-60 秒</span>
@@ -714,7 +714,7 @@ export function ShotDetailPanel({
                   <video
                     ref={videoRef}
                     src={shot.videoUrl}
-                    className={cn("w-full object-contain bg-black", aspectRatio === "16:9" ? "aspect-video max-h-[70vh]" : "aspect-[9/16] max-h-[70vh]")}
+                    className={cn("w-full object-contain bg-black", aspectRatio === "16:9" ? "aspect-video max-h-[300px]" : "aspect-[9/16] max-h-[420px]")}
                     loop
                     playsInline
                     muted
@@ -752,7 +752,7 @@ export function ShotDetailPanel({
                   </div>
                 </div>
               ) : (
-                <div className={cn("w-full rounded-lg border border-dashed border-violet-500/20 bg-violet-500/[0.02] flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16]")}>
+                <div className={cn("w-full rounded-lg border border-dashed border-violet-500/20 bg-violet-500/[0.02] flex flex-col items-center justify-center gap-2", aspectRatio === "16:9" ? "aspect-video max-h-[260px]" : "aspect-[9/16] max-h-[420px]")}>
                   <Video className="size-8 text-violet-500/20" />
                   <span className="text-xs text-muted-foreground/40">暂无视频</span>
                 </div>
