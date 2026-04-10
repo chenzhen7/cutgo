@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -8,6 +8,83 @@ import { Shot, ScriptShotPlan, ShotInput } from "@/lib/types"
 import { Image as ImageIcon, Loader2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+// ─── 行级 memo 组件：仅在自身相关 props 变化时重渲染 ───────────────────────
+
+interface ShotRowProps {
+  shot: Shot
+  scriptShotPlan: ScriptShotPlan
+  index: number
+  isSelected: boolean
+  promptValue: string
+  onToggle: (id: string) => void
+  onPromptChange: (shotId: string, prompt: string) => void
+  onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
+}
+
+const ShotRow = memo(function ShotRow({
+  shot,
+  scriptShotPlan,
+  index,
+  isSelected,
+  promptValue,
+  onToggle,
+  onPromptChange,
+  onUpdateShot,
+}: ShotRowProps) {
+  return (
+    <div
+      className="flex items-start gap-4 p-2 hover:bg-muted/50 rounded-md cursor-pointer"
+      onClick={() => onToggle(shot.id)}
+    >
+      <div className="pt-2">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggle(shot.id)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="w-8 pt-2 text-center text-sm text-muted-foreground shrink-0">
+        {index + 1}
+      </div>
+      <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1">
+        {shot.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={shot.imageUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <ImageIcon className="size-6 text-muted-foreground/50" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+        <Textarea
+          value={promptValue}
+          onChange={(e) => onPromptChange(shot.id, e.target.value)}
+          placeholder="提示词"
+          className="min-h-[60px] text-sm resize-y"
+          onPointerDown={(e) => e.stopPropagation()}
+        />
+        <div className="flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
+          <span className="text-xs text-muted-foreground">类型:</span>
+          <Select
+            value={shot.imageType || "keyframe"}
+            onValueChange={(val: string) => onUpdateShot(scriptShotPlan.episodeId, shot.id, { imageType: val as ShotInput["imageType"] })}
+          >
+            <SelectTrigger className="h-7 text-xs w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="keyframe">单图</SelectItem>
+              <SelectItem value="first_last">首尾帧</SelectItem>
+              <SelectItem value="multi_grid">多宫格</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+// ─── 对话框主体 ─────────────────────────────────────────────────────────────
 
 interface BatchGenerateImagesDialogProps {
   open: boolean
@@ -29,6 +106,7 @@ export function BatchGenerateImagesDialog({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [promptValues, setPromptValues] = useState<Record<string, string>>({})
   const promptDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
   const shotMetaMap = useMemo(
     () => new Map(shots.map(({ shot, scriptShotPlan }) => [shot.id, { episodeId: scriptShotPlan.episodeId, originalPrompt: shot.prompt || "" }])),
     [shots]
@@ -36,12 +114,9 @@ export function BatchGenerateImagesDialog({
 
   useEffect(() => {
     if (open) {
-      // 默认选中没有图片的镜头
       const missingIds = new Set(shots.filter((s) => !s.shot.imageUrl).map((s) => s.shot.id))
       setSelectedIds(missingIds)
-      setPromptValues(
-        Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.prompt || ""]))
-      )
+      setPromptValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.prompt || ""])))
     }
   }, [open, shots])
 
@@ -52,27 +127,27 @@ export function BatchGenerateImagesDialog({
     }
   }, [])
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     setSelectedIds(new Set(shots.map((s) => s.shot.id)))
-  }
+  }, [shots])
 
-  const handleSelectMissing = () => {
+  const handleSelectMissing = useCallback(() => {
     setSelectedIds(new Set(shots.filter((s) => !s.shot.imageUrl).map((s) => s.shot.id)))
-  }
+  }, [shots])
 
-  const handleSelectNone = () => {
+  const handleSelectNone = useCallback(() => {
     setSelectedIds(new Set())
-  }
+  }, [])
 
-  const toggleShot = (id: string) => {
-    const next = new Set(selectedIds)
-    if (next.has(id)) {
-      next.delete(id)
-    } else {
-      next.add(id)
-    }
-    setSelectedIds(next)
-  }
+  // 使用函数式更新，避免 selectedIds 进入依赖数组导致每次选择变化都重建函数
+  const handleToggleShot = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   const flushPromptUpdates = useCallback(() => {
     promptDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
@@ -105,10 +180,10 @@ export function BatchGenerateImagesDialog({
     [onUpdateShot, shotMetaMap]
   )
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     flushPromptUpdates()
     onConfirm(Array.from(selectedIds))
-  }
+  }, [flushPromptUpdates, onConfirm, selectedIds])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,55 +209,17 @@ export function BatchGenerateImagesDialog({
 
         <div className="flex-1 overflow-y-auto min-h-0 border rounded-md p-2 space-y-2">
           {shots.map(({ shot, scriptShotPlan }, index) => (
-            <div
+            <ShotRow
               key={shot.id}
-              className="flex items-start gap-4 p-2 hover:bg-muted/50 rounded-md cursor-pointer"
-              onClick={() => toggleShot(shot.id)}
-            >
-              <div className="pt-2">
-                <Checkbox
-                  checked={selectedIds.has(shot.id)}
-                  onCheckedChange={() => toggleShot(shot.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <div className="w-8 pt-2 text-center text-sm text-muted-foreground shrink-0">
-                {index + 1}
-              </div>
-              <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1">
-                {shot.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={shot.imageUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon className="size-6 text-muted-foreground/50" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                <Textarea
-                  value={promptValues[shot.id] ?? shot.prompt ?? ""}
-                  onChange={(e) => handlePromptChange(shot.id, e.target.value)}
-                  placeholder="提示词"
-                  className="min-h-[60px] text-sm resize-y"
-                  onPointerDown={(e) => e.stopPropagation()}
-                />
-                <div className="flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
-                  <span className="text-xs text-muted-foreground">类型:</span>
-                  <Select
-                    value={shot.imageType || "keyframe"}
-                    onValueChange={(val: any) => onUpdateShot(scriptShotPlan.episodeId, shot.id, { imageType: val })}
-                  >
-                    <SelectTrigger className="h-7 text-xs w-[120px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="keyframe">单图</SelectItem>
-                      <SelectItem value="first_last">首尾帧</SelectItem>
-                      <SelectItem value="multi_grid">多宫格</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
+              shot={shot}
+              scriptShotPlan={scriptShotPlan}
+              index={index}
+              isSelected={selectedIds.has(shot.id)}
+              promptValue={promptValues[shot.id] ?? shot.prompt ?? ""}
+              onToggle={handleToggleShot}
+              onPromptChange={handlePromptChange}
+              onUpdateShot={onUpdateShot}
+            />
           ))}
           {shots.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm">

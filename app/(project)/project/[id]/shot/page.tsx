@@ -318,28 +318,32 @@ export default function ScriptShotPage() {
     generateBatchVideos(projectId, { episodeId: activeEpisodeId, mode: "missing_only" })
   }, [activeEpisodeId, generateBatchVideos, projectId])
 
+  // 通过 getState() 在回调内读取最新数据，避免将 scriptShotPlans 列入依赖
+  // 使得这三个函数引用稳定，防止任意 shot 更新都触发 SceneSwimlane 重渲染
   const handlePlayVideo = useCallback(
     (shotId: string) => {
-      const allShots = scriptShotPlans.flatMap((plan) => plan.shots)
-      const shot = allShots.find((s) => s.id === shotId)
+      const { scriptShotPlans: plans } = useScriptShotsStore.getState()
+      const shot = plans.flatMap((plan) => plan.shots).find((s) => s.id === shotId)
       if (shot?.videoUrl) setVideoPreviewShot(shot)
     },
-    [scriptShotPlans]
+    []
   )
 
   const handleVideoPreviewPrev = useCallback(() => {
     if (!videoPreviewShot) return
-    const allShots = scriptShotPlans.flatMap((plan) => plan.shots).filter((s) => s.videoUrl)
-    const idx = allShots.findIndex((s) => s.id === videoPreviewShot.id)
-    if (idx > 0) setVideoPreviewShot(allShots[idx - 1])
-  }, [videoPreviewShot, scriptShotPlans])
+    const { scriptShotPlans: plans } = useScriptShotsStore.getState()
+    const shotsWithVideo = plans.flatMap((plan) => plan.shots).filter((s) => s.videoUrl)
+    const idx = shotsWithVideo.findIndex((s) => s.id === videoPreviewShot.id)
+    if (idx > 0) setVideoPreviewShot(shotsWithVideo[idx - 1])
+  }, [videoPreviewShot])
 
   const handleVideoPreviewNext = useCallback(() => {
     if (!videoPreviewShot) return
-    const allShots = scriptShotPlans.flatMap((plan) => plan.shots).filter((s) => s.videoUrl)
-    const idx = allShots.findIndex((s) => s.id === videoPreviewShot.id)
-    if (idx < allShots.length - 1) setVideoPreviewShot(allShots[idx + 1])
-  }, [videoPreviewShot, scriptShotPlans])
+    const { scriptShotPlans: plans } = useScriptShotsStore.getState()
+    const shotsWithVideo = plans.flatMap((plan) => plan.shots).filter((s) => s.videoUrl)
+    const idx = shotsWithVideo.findIndex((s) => s.id === videoPreviewShot.id)
+    if (idx < shotsWithVideo.length - 1) setVideoPreviewShot(shotsWithVideo[idx + 1])
+  }, [videoPreviewShot])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -375,6 +379,20 @@ export default function ScriptShotPage() {
   const episodeDisplayMap = useMemo(
     () => buildEpisodeDisplayNumberMap(episodesForProject),
     [episodesForProject]
+  )
+
+  // 在 page 层统一构建，避免每个 SceneSwimlane 重复构建相同的 Map
+  const assetCharacterMap = useMemo(
+    () => new Map(assetCharacters.map((c) => [c.id, c])),
+    [assetCharacters]
+  )
+  const assetSceneMap = useMemo(
+    () => new Map(assetScenes.map((s) => [s.id, s])),
+    [assetScenes]
+  )
+  const assetPropMap = useMemo(
+    () => new Map(assetProps.map((p) => [p.id, p])),
+    [assetProps]
   )
 
   if (initialLoading) {
@@ -477,9 +495,9 @@ export default function ScriptShotPage() {
                           videoGeneratingIds={videoGeneratingIds}
                           layout={shotLayout}
                           aspectRatio={aspectRatio}
-                          assetCharacters={assetCharacters}
-                          assetScenes={assetScenes}
-                          assetProps={assetProps}
+                          assetCharacterMap={assetCharacterMap}
+                          assetSceneMap={assetSceneMap}
+                          assetPropMap={assetPropMap}
                           onSelectShot={handleSelectShot}
                           onDuplicateShot={handleDuplicateShot}
                           onDeleteShot={handleConfirmDeleteShot}

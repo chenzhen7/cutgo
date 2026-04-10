@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -42,9 +42,10 @@ interface SceneSwimlaneProps {
   layout?: ShotCardLayout
   /** 项目画幅比，如 "9:16" 或 "16:9" */
   aspectRatio?: string
-  assetCharacters: AssetCharacter[]
-  assetScenes: AssetScene[]
-  assetProps: AssetProp[]
+  /** 由父层统一构建后传入，避免每个泳道重复建 Map */
+  assetCharacterMap: Map<string, AssetCharacter>
+  assetSceneMap: Map<string, AssetScene>
+  assetPropMap: Map<string, AssetProp>
   onSelectShot: (shotId: string) => void
   onDuplicateShot: (episodeId: string, shotId: string) => void
   onDeleteShot: (episodeId: string, shotId: string) => void
@@ -66,9 +67,9 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   videoGeneratingIds,
   layout = "list",
   aspectRatio = "9:16",
-  assetCharacters,
-  assetScenes,
-  assetProps,
+  assetCharacterMap,
+  assetSceneMap,
+  assetPropMap,
   onSelectShot,
   onDuplicateShot,
   onDeleteShot,
@@ -97,18 +98,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   const shotsWithVideo = localShots.filter((s) => s.videoUrl).length
 
   const [activeDragShot, setActiveDragShot] = useState<Shot | null>(null)
-  const assetCharacterMap = useMemo(
-    () => new Map(assetCharacters.map((item) => [item.id, item])),
-    [assetCharacters]
-  )
-  const assetSceneMap = useMemo(
-    () => new Map(assetScenes.map((item) => [item.id, item])),
-    [assetScenes]
-  )
-  const assetPropMap = useMemo(
-    () => new Map(assetProps.map((item) => [item.id, item])),
-    [assetProps]
-  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
