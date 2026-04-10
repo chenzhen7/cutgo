@@ -456,12 +456,12 @@ export default function ScriptShotPage() {
                     detailPanelOpen ? "bg-muted/10" : "border-border border-b bg-background"
                   )}
                 >
-                {episodeLoading ? (
-                  <div className="flex min-h-[240px] items-center justify-center">
-                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : currentScriptShotPlans.length > 0 ? (
-                  <div className={cn(
+                  {episodeLoading ? (
+                    <div className="flex min-h-[240px] items-center justify-center">
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : currentScriptShotPlans.length > 0 ? (
+                    <div className={cn(
                       "space-y-3",
                       detailPanelOpen ? "p-0" : "",
                       isGenerating ? "pointer-events-none opacity-60" : ""
@@ -494,29 +494,29 @@ export default function ScriptShotPage() {
                           onReorderShots={handleReorderShots}
                         />
                       ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                    <Clapperboard className="size-12 text-muted-foreground mb-4" />
-                    <h3 className="text-base font-medium mb-2">
-                      {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {activeEpisodeId
-                        ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
-                        : "从上方选择一个分集进行查看和编辑"}
-                    </p>
-                    {activeEpisodeId && (
-                      <Button
-                        size="sm"
-                        onClick={handleGenerateCurrentEpisode}
-                        disabled={isGenerating}
-                      >
-                        生成该集分镜
-                      </Button>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <Clapperboard className="size-12 text-muted-foreground mb-4" />
+                      <h3 className="text-base font-medium mb-2">
+                        {activeEpisodeId ? "该分集尚未生成分镜" : "选择一个分集"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {activeEpisodeId
+                          ? "点击上方「AI 生成分镜」按钮为该分集生成分镜设计"
+                          : "从上方选择一个分集进行查看和编辑"}
+                      </p>
+                      {activeEpisodeId && (
+                        <Button
+                          size="sm"
+                          onClick={handleGenerateCurrentEpisode}
+                          disabled={isGenerating}
+                        >
+                          生成该集分镜
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>
