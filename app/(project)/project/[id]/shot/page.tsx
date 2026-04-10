@@ -25,6 +25,7 @@ import { ScriptShotToolbar } from "./components/script-shot-toolbar"
 import { EpisodeSelector } from "./components/episode-selector"
 import { SceneSwimlane } from "./components/scene-swimlane"
 import { ShotDetailPanel } from "./components/shot-detail-panel"
+import { ShotPreviewPanel } from "./components/shot-preview-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
@@ -108,6 +109,7 @@ export default function ScriptShotPage() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [episodeLoading, setEpisodeLoading] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<string>("9:16")
+  const [activeDetailTab, setActiveDetailTab] = useState<"image" | "video">("image")
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
@@ -431,11 +433,11 @@ export default function ScriptShotPage() {
           </div>
         </div>
 
-        {/* Two-column layout — 主区水平贴边 */}
+        {/* Main layout — 主区水平贴边 */}
         <div className="min-h-0 flex-1">
           <ResizablePanelGroup orientation="horizontal" className="h-full">
-            {/* Center: Timeline editor */}
-            <ResizablePanel defaultSize={60} minSize="450px">
+            {/* Left: Timeline editor */}
+            <ResizablePanel defaultSize={50} minSize="350px">
               <div className="relative h-full min-w-0">
                 {isGenerating && (
                   <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
@@ -519,12 +521,37 @@ export default function ScriptShotPage() {
               </div>
             </ResizablePanel>
 
+            {/* Middle: Image/Video preview */}
+            {detailPanelOpen && currentActiveShot && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={25} minSize="220px">
+                  <div className="h-full overflow-hidden border-r border-border bg-card">
+                    <ShotPreviewPanel
+                      shot={currentActiveShot.shot}
+                      aspectRatio={aspectRatio}
+                      activeTab={activeDetailTab}
+                      isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
+                      isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
+                      onTabChange={setActiveDetailTab}
+                      onClearImage={handleClearImage}
+                      onClearVideo={handleClearVideo}
+                      onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
+                      onPrev={hasPrevShot ? handlePrevShot : null}
+                      onNext={hasNextShot ? handleNextShot : null}
+                      onClose={() => setDetailPanelOpen(false)}
+                    />
+                  </div>
+                </ResizablePanel>
+              </>
+            )}
+
             {/* Right: Shot detail panel */}
             {detailPanelOpen && currentActiveShot && (
               <>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={40} minSize="450px">
-                  <div className="h-full shrink-0 overflow-hidden border-r border-border bg-card">
+                <ResizablePanel defaultSize={25} minSize="300px">
+                  <div className="h-full shrink-0 overflow-hidden bg-card">
                     <ShotDetailPanel
                       shot={currentActiveShot.shot}
                       scriptShotPlan={currentActiveShot.scriptShotPlan}
@@ -534,20 +561,16 @@ export default function ScriptShotPage() {
                         ) ?? 1
                       }
                       aspectRatio={aspectRatio}
+                      activeTab={activeDetailTab}
                       isGeneratingImage={imageGeneratingIds.has(currentActiveShot.shot.id)}
                       isGeneratingVideo={videoGeneratingIds.has(currentActiveShot.shot.id)}
                       assetCharacters={assetCharacters}
                       assetScenes={assetScenes}
                       assetProps={assetProps}
+                      onTabChange={setActiveDetailTab}
                       onUpdate={handleUpdateShot}
                       onGenerateImage={() => handleGenerateImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
-                      onClearImage={handleClearImage}
                       onGenerateVideo={() => handleGenerateVideo(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)}
-                      onClearVideo={handleClearVideo}
-                      onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
-                      onPrev={hasPrevShot ? handlePrevShot : null}
-                      onNext={hasNextShot ? handleNextShot : null}
-                      onClose={() => setDetailPanelOpen(false)}
                     />
                   </div>
                 </ResizablePanel>
