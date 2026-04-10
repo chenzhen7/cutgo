@@ -1,8 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Clapperboard, Loader2, Paintbrush, Video, ChevronDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Clapperboard , ChevronDown, Loader2, Paintbrush, Video } from "lucide-react"
 import type { ScriptShotGenerateStatus } from "@/lib/types"
 
 interface ScriptShotToolbarProps {
@@ -11,8 +11,7 @@ interface ScriptShotToolbarProps {
   batchImageProgress: { current: number; total: number } | null
   canGenerateCurrentEpisode: boolean
   onGenerateCurrentEpisode: () => void
-  onBatchGenerateImages: (mode: "all" | "missing_only") => void
-  onBatchGenerateEpisodeImages: () => void
+  onOpenBatchImageDialog: () => void
   batchVideoStatus: "idle" | "generating" | "completed" | "error"
   batchVideoProgress: { current: number; total: number } | null
   onBatchGenerateVideos: (mode: "all" | "missing_only") => void
@@ -25,8 +24,7 @@ export function ScriptShotToolbar({
   batchImageProgress,
   canGenerateCurrentEpisode,
   onGenerateCurrentEpisode,
-  onBatchGenerateImages,
-  onBatchGenerateEpisodeImages,
+  onOpenBatchImageDialog,
   batchVideoStatus,
   batchVideoProgress,
   onBatchGenerateVideos,
@@ -39,25 +37,14 @@ export function ScriptShotToolbar({
   return (
     <div className="flex shrink-0 items-center gap-2">
       <div className="flex items-center gap-2 shrink-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={isImageGenerating} size="sm">
-              {isImageGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Paintbrush className="size-4 mr-2" />}
-              {isImageGenerating
-                ? batchImageProgress
-                  ? `生成画面 ${batchImageProgress.current}/${batchImageProgress.total}`
-                  : "生成画面中..."
-                : "批量生成画面"}
-              <ChevronDown className="size-4 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onBatchGenerateImages("missing_only")}>生成全部画面（跳过已有）</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onBatchGenerateImages("all")}>重新生成全部画面</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onBatchGenerateEpisodeImages}>生成当前分集画面</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button variant="outline" disabled={isImageGenerating} size="sm" onClick={onOpenBatchImageDialog}>
+          {isImageGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Paintbrush className="size-4 mr-2" />}
+          {isImageGenerating
+            ? batchImageProgress
+              ? `生成画面 ${batchImageProgress.current}/${batchImageProgress.total}`
+              : "生成画面中..."
+            : "批量生成画面"}
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

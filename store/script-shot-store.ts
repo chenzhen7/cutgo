@@ -148,7 +148,7 @@ interface ScriptShotState {
   optimizePrompt: (episodeId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
 
   generateImage: (episodeId: string, shotId: string) => Promise<void>
-  generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
+  generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only"; shotIds?: string[] }) => Promise<void>
   clearImage: (episodeId: string, shotId: string) => Promise<void>
 
   generateVideo: (episodeId: string, shotId: string) => Promise<void>
@@ -460,6 +460,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
           projectId,
           episodeId: options?.episodeId,
           mode: options?.mode || "missing_only",
+          shotIds: options?.shotIds,
         },
       })
 

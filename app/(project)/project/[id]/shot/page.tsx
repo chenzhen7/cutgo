@@ -29,6 +29,7 @@ import { ShotPreviewPanel } from "./components/shot-preview-panel"
 import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
+import { BatchGenerateImagesDialog } from "./components/batch-generate-images-dialog"
 import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout, Project } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
@@ -112,6 +113,7 @@ export default function ScriptShotPage() {
   const [activeDetailTab, setActiveDetailTab] = useState<"image" | "video">("image")
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
+  const [showBatchImageDialog, setShowBatchImageDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
@@ -276,17 +278,16 @@ export default function ScriptShotPage() {
   )
 
   const handleBatchGenerateImages = useCallback(
-    (mode: "all" | "missing_only") => {
-      generateBatchImages(projectId, { mode })
+    (shotIds: string[]) => {
+      generateBatchImages(projectId, { shotIds })
+      setShowBatchImageDialog(false)
     },
     [projectId, generateBatchImages]
   )
 
-  const handleBatchGenerateEpisodeImages = useCallback(() => {
-    if (activeEpisodeId) {
-      generateBatchImages(projectId, { episodeId: activeEpisodeId, mode: "missing_only" })
-    }
-  }, [projectId, activeEpisodeId, generateBatchImages])
+  const handleOpenBatchImageDialog = useCallback(() => {
+    setShowBatchImageDialog(true)
+  }, [])
 
   const handleClearImage = useCallback(() => {
     if (currentActiveShot) {
@@ -423,8 +424,7 @@ export default function ScriptShotPage() {
               batchImageProgress={batchImageProgress}
               canGenerateCurrentEpisode={!!activeEpisodeId}
               onGenerateCurrentEpisode={handleGenerateCurrentEpisode}
-              onBatchGenerateImages={handleBatchGenerateImages}
-              onBatchGenerateEpisodeImages={handleBatchGenerateEpisodeImages}
+              onOpenBatchImageDialog={handleOpenBatchImageDialog}
               batchVideoStatus={batchVideoStatus}
               batchVideoProgress={batchVideoProgress}
               onBatchGenerateVideos={handleBatchGenerateVideos}
@@ -621,6 +621,15 @@ export default function ScriptShotPage() {
         defaultShotType={defaultShotType}
         onCancel={() => setShowShotTypeDialog(false)}
         onConfirm={handleConfirmGenerate}
+      />
+
+      {/* Batch generate images dialog */}
+      <BatchGenerateImagesDialog
+        open={showBatchImageDialog}
+        onOpenChange={setShowBatchImageDialog}
+        shots={allFlatShots.map(s => s.shot)}
+        onConfirm={handleBatchGenerateImages}
+        isGenerating={batchImageStatus === "generating"}
       />
 
       {/* Video preview dialog */}

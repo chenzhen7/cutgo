@@ -94,7 +94,7 @@ async function generateForShot(
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
-  const { projectId, episodeId, mode = "missing_only" } = body
+  const { projectId, episodeId, mode = "missing_only", shotIds } = body
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
@@ -107,7 +107,12 @@ export const POST = withError(async (request: NextRequest) => {
 
   const where: Record<string, unknown> = { episode: { projectId } }
   if (episodeId) where.episodeId = episodeId
-  if (mode === "missing_only") where.imageUrl = null
+  
+  if (shotIds && Array.isArray(shotIds) && shotIds.length > 0) {
+    where.id = { in: shotIds }
+  } else if (mode === "missing_only") {
+    where.imageUrl = null
+  }
 
   const shots = await prisma.shot.findMany({
     where,
