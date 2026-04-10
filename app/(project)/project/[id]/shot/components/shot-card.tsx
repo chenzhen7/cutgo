@@ -83,10 +83,10 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
-  // 列表模式缩略图宽度：横屏(16:9)用更宽容器，竖屏(9:16)用窄容器
+  // 列表模式缩略图宽度：横屏(16:9)用更宽容器，竖屏(9:16)用窄容器，并保持比例
   const containerClassName = aspectRatio === "16:9"
-    ? "relative w-[150px] self-stretch shrink-0 @[480px]:w-[180px] @[640px]:w-[230px] @[900px]:w-[280px] @[1200px]:w-[340px] transition-all duration-300"
-    : "relative w-[80px] self-stretch shrink-0 @[480px]:w-[105px] @[640px]:w-[130px] @[900px]:w-[160px] @[1200px]:w-[200px] transition-all duration-300"
+    ? "relative w-[150px] shrink-0 self-start @[480px]:w-[180px] @[640px]:w-[230px] @[900px]:w-[280px] @[1200px]:w-[340px] aspect-[16/9] transition-all duration-300"
+    : "relative w-[80px] shrink-0 self-start @[480px]:w-[105px] @[640px]:w-[130px] @[900px]:w-[160px] @[1200px]:w-[200px] aspect-[9/16] transition-all duration-300"
   const contentClassName = "absolute inset-0 rounded-lg overflow-hidden border bg-muted/20"
 
   if (isGeneratingImage) {
@@ -114,9 +114,9 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   if (imageType === "first_last" && imageUrls.length >= 2) {
     return (
       <div className={containerClassName}>
-        <div className={cn(contentClassName, "flex flex-col gap-0.5")}>
-          <PreviewableImage src={imageUrls[0]} alt="首帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
-          <PreviewableImage src={imageUrls[1]} alt="尾帧" className="h-1/2 min-h-0 w-full object-contain bg-black" />
+        <div className={cn(contentClassName, "flex flex-row gap-0.5")}>
+          <PreviewableImage src={imageUrls[0]} alt="首帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
+          <PreviewableImage src={imageUrls[1]} alt="尾帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
           </div>
