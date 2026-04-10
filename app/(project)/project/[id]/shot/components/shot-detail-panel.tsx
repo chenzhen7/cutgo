@@ -672,8 +672,7 @@ export function ShotDetailPanel({
               )}
 
               <Button
-                size="sm"
-                className="w-full text-xs"
+                className="w-full"
                 onClick={onGenerateImage}
                 disabled={isGeneratingImage}
               >
@@ -816,8 +815,7 @@ export function ShotDetailPanel({
               </div>
 
               <Button
-                size="sm"
-                className="w-full text-xs bg-violet-600 hover:bg-violet-700 text-white"
+                className="w-full"
                 onClick={onGenerateVideo}
                 disabled={isGeneratingVideo || !hasImage}
               >
