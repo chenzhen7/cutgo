@@ -38,45 +38,43 @@ export default function ScriptShotPage() {
   const params = useParams()
   const projectId = params.id as string
 
-  const {
-    scriptShotPlans,
-    episodes,
-    assetCharacters,
-    assetScenes,
-    assetProps,
-    generateStatus,
-    generateError,
-    activeEpisodeId,
-    activeShotId,
-    selectedShotIds,
-    detailPanelOpen,
-    imageGeneratingIds,
-    batchImageStatus,
-    batchImageProgress,
-    videoGeneratingIds,
-    batchVideoStatus,
-    batchVideoProgress,
-    fetchScriptShotPlans,
-    fetchEpisodes,
-    fetchAssets,
-    generateScriptShots,
-    addShot,
-    updateShot,
-    deleteShot,
-    duplicateShot,
-    generateImage,
-    generateBatchImages,
-    clearImage,
-    generateVideo,
-    generateBatchVideos,
-    clearVideo,
-    reorderShots,
-    setActiveEpisodeId,
-    setActiveShotId,
-    setDetailPanelOpen,
-    shotLayout,
-    setShotLayout,
-  } = useScriptShotsStore()
+  const scriptShotPlans = useScriptShotsStore((s) => s.scriptShotPlans)
+  const episodes = useScriptShotsStore((s) => s.episodes)
+  const assetCharacters = useScriptShotsStore((s) => s.assetCharacters)
+  const assetScenes = useScriptShotsStore((s) => s.assetScenes)
+  const assetProps = useScriptShotsStore((s) => s.assetProps)
+  const generateStatus = useScriptShotsStore((s) => s.generateStatus)
+  const generateError = useScriptShotsStore((s) => s.generateError)
+  const activeEpisodeId = useScriptShotsStore((s) => s.activeEpisodeId)
+  const activeShotId = useScriptShotsStore((s) => s.activeShotId)
+  const selectedShotIds = useScriptShotsStore((s) => s.selectedShotIds)
+  const detailPanelOpen = useScriptShotsStore((s) => s.detailPanelOpen)
+  const imageGeneratingIds = useScriptShotsStore((s) => s.imageGeneratingIds)
+  const batchImageStatus = useScriptShotsStore((s) => s.batchImageStatus)
+  const batchImageProgress = useScriptShotsStore((s) => s.batchImageProgress)
+  const videoGeneratingIds = useScriptShotsStore((s) => s.videoGeneratingIds)
+  const batchVideoStatus = useScriptShotsStore((s) => s.batchVideoStatus)
+  const batchVideoProgress = useScriptShotsStore((s) => s.batchVideoProgress)
+  const fetchScriptShotPlans = useScriptShotsStore((s) => s.fetchScriptShotPlans)
+  const fetchEpisodes = useScriptShotsStore((s) => s.fetchEpisodes)
+  const fetchAssets = useScriptShotsStore((s) => s.fetchAssets)
+  const generateScriptShots = useScriptShotsStore((s) => s.generateScriptShots)
+  const addShot = useScriptShotsStore((s) => s.addShot)
+  const updateShot = useScriptShotsStore((s) => s.updateShot)
+  const deleteShot = useScriptShotsStore((s) => s.deleteShot)
+  const duplicateShot = useScriptShotsStore((s) => s.duplicateShot)
+  const generateImage = useScriptShotsStore((s) => s.generateImage)
+  const generateBatchImages = useScriptShotsStore((s) => s.generateBatchImages)
+  const clearImage = useScriptShotsStore((s) => s.clearImage)
+  const generateVideo = useScriptShotsStore((s) => s.generateVideo)
+  const generateBatchVideos = useScriptShotsStore((s) => s.generateBatchVideos)
+  const clearVideo = useScriptShotsStore((s) => s.clearVideo)
+  const reorderShots = useScriptShotsStore((s) => s.reorderShots)
+  const setActiveEpisodeId = useScriptShotsStore((s) => s.setActiveEpisodeId)
+  const setActiveShotId = useScriptShotsStore((s) => s.setActiveShotId)
+  const setDetailPanelOpen = useScriptShotsStore((s) => s.setDetailPanelOpen)
+  const shotLayout = useScriptShotsStore((s) => s.shotLayout)
+  const setShotLayout = useScriptShotsStore((s) => s.setShotLayout)
 
   const currentScriptShotPlans = useMemo(() => {
     if (!activeEpisodeId) return scriptShotPlans
@@ -627,8 +625,9 @@ export default function ScriptShotPage() {
       <BatchGenerateImagesDialog
         open={showBatchImageDialog}
         onOpenChange={setShowBatchImageDialog}
-        shots={allFlatShots.map(s => s.shot)}
+        shots={allFlatShots}
         onConfirm={handleBatchGenerateImages}
+        onUpdateShot={handleUpdateShot}
         isGenerating={batchImageStatus === "generating"}
       />
 

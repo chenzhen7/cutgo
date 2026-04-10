@@ -515,22 +515,23 @@ export interface ShotInput {
   prompt: string
   negativePrompt?: string
   duration?: number
-  imageType?: ImageType
-  imageUrl?: string
-  imageUrls?: string
-  promptEnd?: string
-  gridLayout?: GridLayout
-  gridPrompts?: string
-  scriptLineIds?: string
-  dialogueText?: string
-  actionNote?: string
-  characterIds?: string
-  sceneId?: string
-  propIds?: string
-  videoUrl?: string
-  videoStatus?: VideoStatus
-  videoPrompt?: string
-  videoDuration?: number
+  imageType?: ImageType | null
+  imageUrl?: string | null
+  imageUrls?: string | null
+  promptEnd?: string | null
+  gridLayout?: GridLayout | null
+  gridPrompts?: string | null
+  scriptLineIds?: string | null
+  dialogueText?: string | null
+  actionNote?: string | null
+  characterIds?: string | null
+  sceneId?: string | null
+  propIds?: string | null
+  videoUrl?: string | null
+  videoStatus?: VideoStatus | null
+  videoPrompt?: string | null
+  videoDuration?: number | null
+  videoTaskId?: string | null
   insertAfter?: string
 }
 

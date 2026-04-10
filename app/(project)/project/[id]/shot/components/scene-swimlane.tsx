@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useCallback, useEffect, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -97,6 +97,18 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   const shotsWithVideo = localShots.filter((s) => s.videoUrl).length
 
   const [activeDragShot, setActiveDragShot] = useState<Shot | null>(null)
+  const assetCharacterMap = useMemo(
+    () => new Map(assetCharacters.map((item) => [item.id, item])),
+    [assetCharacters]
+  )
+  const assetSceneMap = useMemo(
+    () => new Map(assetScenes.map((item) => [item.id, item])),
+    [assetScenes]
+  )
+  const assetPropMap = useMemo(
+    () => new Map(assetProps.map((item) => [item.id, item])),
+    [assetProps]
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -237,9 +249,9 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                   isGeneratingVideo={videoGeneratingIds.has(shot.id)}
                   layout={layout}
                   aspectRatio={aspectRatio}
-                  assetCharacters={assetCharacters}
-                  assetScenes={assetScenes}
-                  assetProps={assetProps}
+                  assetCharacterMap={assetCharacterMap}
+                  assetSceneMap={assetSceneMap}
+                  assetPropMap={assetPropMap}
                   onSelect={onSelectShot}
                   onDuplicate={onDuplicateShot}
                   onDelete={onDeleteShot}
@@ -278,9 +290,9 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                 layout={layout}
                 aspectRatio={aspectRatio}
                 isDragging={true}
-                assetCharacters={assetCharacters}
-                assetScenes={assetScenes}
-                assetProps={assetProps}
+                assetCharacterMap={assetCharacterMap}
+                assetSceneMap={assetSceneMap}
+                assetPropMap={assetPropMap}
                 onSelect={onSelectShot}
                 onDuplicate={onDuplicateShot}
                 onDelete={onDeleteShot}

@@ -28,9 +28,9 @@ interface ShotCardProps {
   /** 项目画幅比，如 "9:16" 或 "16:9" */
   aspectRatio?: string
   isDragging?: boolean
-  assetCharacters: AssetCharacter[]
-  assetScenes: AssetScene[]
-  assetProps: AssetProp[]
+  assetCharacterMap: Map<string, AssetCharacter>
+  assetSceneMap: Map<string, AssetScene>
+  assetPropMap: Map<string, AssetProp>
   onSelect: (shotId: string) => void
   onDuplicate: (episodeId: string, shotId: string) => void
   onDelete: (episodeId: string, shotId: string) => void
@@ -164,9 +164,9 @@ export const ShotCard = memo(function ShotCard({
   layout = "list",
   aspectRatio = "9:16",
   isDragging = false,
-  assetCharacters,
-  assetScenes,
-  assetProps,
+  assetCharacterMap,
+  assetSceneMap,
+  assetPropMap,
   onSelect,
   onDuplicate,
   onDelete,
@@ -192,16 +192,16 @@ export const ShotCard = memo(function ShotCard({
   const boundPropIds = useMemo(() => parseJsonArray(shot.propIds), [shot.propIds])
 
   const boundCharacters = useMemo(
-    () => assetCharacters.filter((c) => boundCharacterIds.includes(c.id)),
-    [assetCharacters, boundCharacterIds]
+    () => boundCharacterIds.map((id) => assetCharacterMap.get(id)).filter((v): v is AssetCharacter => !!v),
+    [boundCharacterIds, assetCharacterMap]
   )
   const boundScene = useMemo(
-    () => (shot.sceneId ? assetScenes.find((s) => s.id === shot.sceneId) : null),
-    [assetScenes, shot.sceneId]
+    () => (shot.sceneId ? assetSceneMap.get(shot.sceneId) || null : null),
+    [assetSceneMap, shot.sceneId]
   )
   const boundProps = useMemo(
-    () => assetProps.filter((p) => boundPropIds.includes(p.id)),
-    [assetProps, boundPropIds]
+    () => boundPropIds.map((id) => assetPropMap.get(id)).filter((v): v is AssetProp => !!v),
+    [boundPropIds, assetPropMap]
   )
 
   const style = {

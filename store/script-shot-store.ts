@@ -210,10 +210,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         ? `/api/script-shots?projectId=${projectId}&episodeId=${episodeId}`
         : `/api/script-shots?projectId=${projectId}`
 
-      if (episodeId) {
-        set({ scriptShotPlans: [] })
-      }
-
       const data = await apiFetch<ScriptShotPlan[]>(url)
 
       if (currentFetchToken !== scriptShotPlansFetchToken) {
@@ -493,7 +489,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   clearImage: async (episodeId, shotId) => {
-    await get().updateShot(episodeId, shotId, { imageUrl: null, imageUrls: null } as any)
+    await get().updateShot(episodeId, shotId, { imageUrl: null, imageUrls: null })
   },
 
   generateVideo: async (episodeId, shotId) => {
@@ -570,7 +566,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   clearVideo: async (episodeId, shotId) => {
-    await get().updateShot(episodeId, shotId, { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null } as any)
+    await get().updateShot(episodeId, shotId, { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null })
   },
 
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
