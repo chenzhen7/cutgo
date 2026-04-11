@@ -57,28 +57,32 @@ export class ViduVideoProvider implements VideoProvider {
       seed,
     } = options
 
-    const hasImage = imageUrls && imageUrls.length > 0
-    const endpoint = hasImage ? "/ent/v2/img2video" : "/ent/v2/text2video"
+    const hasTwoImages = imageUrls && imageUrls.length >= 2
+    const endpoint = hasTwoImages ? "/ent/v2/start-end2video" : "/ent/v2/img2video"
     const url = `${this.baseUrl}${endpoint}`
-
+    // 没有图片不能生成视频，图片最多只能有2张，超过进行切割
+    if (!imageUrls || imageUrls.length === 0) {
+      throw new Error("生成视频至少需要1张图片")
+    }
+    let usedImageUrls = imageUrls
+    if (imageUrls.length > 2) {
+      usedImageUrls = imageUrls.slice(0, 2)
+    }
     const body: Record<string, any> = {
       model: this.config.model,
       prompt,
     }
-
-    if (hasImage) {
-      // Vidu 需要 data:image/png;base64, 前缀或图片 URL
-      const base64Urls = await Promise.all(
-        imageUrls!.map(async (url) => {
-          if (url.startsWith("http")) {
-            return url
-          }
-          const b64 = await fetchImageAsBase64(url)
-          return b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`
-        })
-      )
-      body.images = base64Urls
-    }
+    // Vidu 需要 data:image/png;base64, 前缀或图片 URL
+    const base64Urls = await Promise.all(
+      usedImageUrls!.map(async (url) => {
+        if (url.startsWith("http")) {
+          return url
+        }
+        const b64 = await fetchImageAsBase64(url)
+        return b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`
+      })
+    )
+    body.images = base64Urls
 
     if (durationSeconds !== undefined) {
       body.duration = durationSeconds
@@ -100,6 +104,7 @@ export class ViduVideoProvider implements VideoProvider {
 
     logAIEvent("video", "request", {
       provider: this.id,
+      url,
       body,
     })
 

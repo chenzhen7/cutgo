@@ -270,11 +270,15 @@ export const ShotCard = memo(function ShotCard({
           {/* Hover actions */}
           <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
             <button
-              onClick={(e) => { e.stopPropagation(); handleGenerateImage() }}
-              className="rounded-lg p-1.5 bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors"
+              onClick={(e) => { e.stopPropagation(); if (!isGeneratingImage) handleGenerateImage() }}
+              className={cn(
+                "rounded-lg p-1.5 bg-background/80 backdrop-blur-sm transition-colors",
+                isGeneratingImage ? "opacity-40 cursor-not-allowed" : "hover:bg-muted"
+              )}
               title={shot.imageUrl ? "重新生成画面" : "生成画面"}
+              disabled={isGeneratingImage}
             >
-              <Paintbrush className="size-3.5 text-primary/70 hover:text-primary" />
+              <Paintbrush className={cn("size-3.5", isGeneratingImage ? "text-muted-foreground" : "text-primary/70 hover:text-primary")} />
             </button>
 
             <Tooltip>
@@ -455,11 +459,15 @@ export const ShotCard = memo(function ShotCard({
         {/* Right Actions */}
         <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
           <button
-            onClick={(e) => { e.stopPropagation(); handleGenerateImage() }}
-            className="rounded-lg p-2 hover:bg-primary/10 transition-colors"
+            onClick={(e) => { e.stopPropagation(); if (!isGeneratingImage) handleGenerateImage() }}
+            className={cn(
+              "rounded-lg p-2 transition-colors",
+              isGeneratingImage ? "opacity-40 cursor-not-allowed" : "hover:bg-primary/10"
+            )}
             title={shot.imageUrl ? "重新生成画面" : "生成画面"}
+            disabled={isGeneratingImage}
           >
-            <Paintbrush className="size-3.5 text-primary/70 hover:text-primary" />
+            <Paintbrush className={cn("size-3.5", isGeneratingImage ? "text-muted-foreground" : "text-primary/70 hover:text-primary")} />
           </button>
           <Tooltip>
             <TooltipTrigger asChild>

@@ -37,7 +37,7 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
           targetShot = { ...existing, videoStatus: statusOverride }
         }
       }
-      
+
       if (targetShot) {
         useScriptShotsStore.setState({
           videoGeneratingIds,
@@ -46,7 +46,7 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
         return
       }
     }
-    
+
     useScriptShotsStore.setState({ videoGeneratingIds })
   }
 
@@ -441,47 +441,49 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   generateBatchImages: async (projectId, options) => {
-    set({ batchImageStatus: "generating", batchImageProgress: null })
-    try {
-      const data = await apiFetch<{
-        results: Array<{ status: string; shotId: string; imageUrl?: string; imageUrls?: string[] }>
-        stats: { total: number }
-      }>("/api/images/generate-batch", {
-        method: "POST",
-        body: {
-          projectId,
-          episodeId: options?.episodeId,
-          mode: options?.mode || "missing_only",
-          shotIds: options?.shotIds,
-        },
-      })
+    const { scriptShotPlans } = get()
+    const mode = options?.mode ?? "missing_only"
+    const episodeId = options?.episodeId
+    const shotIds = options?.shotIds
 
-      const resultMap = new Map<string, { imageUrl?: string; imageUrls?: string[] }>()
-      for (const r of data.results) {
-        if (r.status === "success") {
-          resultMap.set(r.shotId, { imageUrl: r.imageUrl, imageUrls: r.imageUrls })
-        }
-      }
+    const plans = episodeId
+      ? scriptShotPlans.filter((sb) => sb.episodeId === episodeId)
+      : scriptShotPlans
 
-      set({
-        scriptShotPlans: get().scriptShotPlans.map((sb) => ({
-          ...sb,
-          shots: sb.shots.map((shot) => {
-            const update = resultMap.get(shot.id)
-            if (!update) return shot
-            return {
-              ...shot,
-              imageUrl: update.imageUrl || shot.imageUrl,
-              imageUrls: update.imageUrls ? JSON.stringify(update.imageUrls) : shot.imageUrls,
-            }
-          }),
-        })),
-        batchImageStatus: "completed",
-        batchImageProgress: { current: data.stats.total, total: data.stats.total },
-      })
-    } catch {
-      set({ batchImageStatus: "error", batchImageProgress: null })
+    const targets = plans.flatMap((plan) =>
+      plan.shots.filter((s) => {
+        if (shotIds) return shotIds.includes(s.id)
+        if (mode === "missing_only") return !s.imageUrl
+        return true
+      }).map((s) => ({ episodeId: plan.id, shot: s }))
+    )
+
+    if (targets.length === 0) {
+      toast.info("没有需要生成图片的镜头")
+      return
     }
+
+    set({ batchImageStatus: "generating", batchImageProgress: { current: 0, total: targets.length } })
+
+    let completed = 0
+    const total = targets.length
+
+    await Promise.all(
+      targets.map(async (target) => {
+        try {
+          await get().generateImage(target.episodeId, target.shot.id)
+        } catch {
+          // 单镜失败不中断批量
+        }
+        completed++
+        set({ batchImageProgress: { current: completed, total } })
+      })
+    )
+
+    set({ batchImageStatus: "completed" })
+    setTimeout(() => {
+      set({ batchImageStatus: "idle", batchImageProgress: null })
+    }, 2000)
   },
 
   clearImage: async (episodeId, shotId) => {
