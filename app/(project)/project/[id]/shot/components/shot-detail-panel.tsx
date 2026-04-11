@@ -33,7 +33,6 @@ import {
   User,
   MapPin,
   Package,
-  Paintbrush,
   Loader2,
   ImageIcon,
   Video,
@@ -616,7 +615,7 @@ export function ShotDetailPanel({
                 {isGeneratingImage ? (
                   <Loader2 className="size-3 mr-1.5 animate-spin" />
                 ) : (
-                  <Paintbrush className="size-3 mr-1.5" />
+                  <ImageIcon className="size-3 mr-1.5" />
                 )}
                 {hasImage ? "重新生成" : "生成画面"}
               </Button>

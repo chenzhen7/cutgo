@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Paintbrush, Video, Play, Type, Film, GripVertical } from "lucide-react"
+import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Video, Play, Type, Film, GripVertical } from "lucide-react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { IMAGE_TYPE_OPTIONS } from "@/lib/types"
@@ -278,7 +278,7 @@ export const ShotCard = memo(function ShotCard({
               title={shot.imageUrl ? "重新生成画面" : "生成画面"}
               disabled={isGeneratingImage}
             >
-              <Paintbrush className={cn("size-3.5", isGeneratingImage ? "text-muted-foreground" : "text-primary/70 hover:text-primary")} />
+              <ImageIcon className={cn("size-3.5", isGeneratingImage ? "text-muted-foreground" : "text-primary/70 hover:text-primary")} />
             </button>
 
             <Tooltip>
@@ -391,7 +391,7 @@ export const ShotCard = memo(function ShotCard({
               {shot.imageType !== "multi_grid" && (
                 <div className="hidden @[480px]:flex items-start gap-1.5">
                   <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
-                    <Type className="size-2.5 mr-0.5" />
+                    <ImageIcon className="size-2.5 mr-0.5" />
                     分镜
                   </Badge>
                   <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
@@ -467,7 +467,7 @@ export const ShotCard = memo(function ShotCard({
             title={shot.imageUrl ? "重新生成画面" : "生成画面"}
             disabled={isGeneratingImage}
           >
-            <Paintbrush className={cn("size-3.5", isGeneratingImage ? "text-muted-foreground" : "text-primary/70 hover:text-primary")} />
+            <ImageIcon className={cn("size-3.5", isGeneratingImage ? "text-muted-foreground" : "text-primary/70 hover:text-primary")} />
           </button>
           <Tooltip>
             <TooltipTrigger asChild>

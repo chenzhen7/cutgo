@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Clapperboard, Loader2, Paintbrush, Video } from "lucide-react"
+import { Clapperboard, Loader2, ImageIcon, Video } from "lucide-react"
 import type { ScriptShotGenerateStatus } from "@/lib/types"
 
 interface ScriptShotToolbarProps {
@@ -68,7 +68,7 @@ export function ScriptShotToolbar({
         <ToolbarButton
           isGenerating={isImageGenerating}
           onClick={onOpenBatchImageDialog}
-          icon={Paintbrush}
+          icon={ImageIcon}
           progress={batchImageProgress}
           generatingText="生成画面"
           idleText="批量生成画面"
