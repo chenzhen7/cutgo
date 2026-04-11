@@ -16,6 +16,7 @@ interface ShotRowProps {
   scriptShotPlan: ScriptShotPlan
   index: number
   isSelected: boolean
+  isGeneratingImage: boolean
   promptValue: string
   promptEndValue: string
   gridPromptsValue: string
@@ -31,6 +32,7 @@ const ShotRow = memo(function ShotRow({
   scriptShotPlan,
   index,
   isSelected,
+  isGeneratingImage,
   promptValue,
   promptEndValue,
   gridPromptsValue,
@@ -78,13 +80,18 @@ const ShotRow = memo(function ShotRow({
 
   return (
     <div
-      className="flex items-start gap-4 p-2 hover:bg-muted/50 rounded-md cursor-pointer"
-      onClick={() => onToggle(shot.id)}
+      className={`flex items-start gap-4 p-2 rounded-md cursor-pointer ${isGeneratingImage ? "opacity-50 grayscale" : "hover:bg-muted/50"}`}
+      onClick={() => {
+        if (!isGeneratingImage) onToggle(shot.id)
+      }}
     >
       <div className="pt-2">
         <Checkbox
           checked={isSelected}
-          onCheckedChange={() => onToggle(shot.id)}
+          disabled={isGeneratingImage}
+          onCheckedChange={() => {
+            if (!isGeneratingImage) onToggle(shot.id)
+          }}
           onClick={(e) => e.stopPropagation()}
         />
       </div>
@@ -92,7 +99,12 @@ const ShotRow = memo(function ShotRow({
         {index + 1}
       </div>
       <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1 relative">
-        {shot.imageUrl ? (
+        {isGeneratingImage ? (
+          <div className="flex flex-col items-center justify-center gap-1 w-full h-full bg-muted/50">
+            <Loader2 className="size-5 animate-spin text-primary" />
+            <span className="text-[10px] text-muted-foreground">生成中</span>
+          </div>
+        ) : shot.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={shot.imageUrl} alt="" className="w-full h-full object-cover" />
         ) : imageType === "first_last" && parsedImageUrls.length >= 2 ? (
@@ -206,7 +218,7 @@ interface BatchGenerateImagesDialogProps {
   shots: { shot: Shot; scriptShotPlan: ScriptShotPlan }[]
   onConfirm: (shotIds: string[]) => void
   onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
-  isGenerating: boolean
+  imageGeneratingIds: Set<string>
 }
 
 export function BatchGenerateImagesDialog({
@@ -215,7 +227,7 @@ export function BatchGenerateImagesDialog({
   shots,
   onConfirm,
   onUpdateShot,
-  isGenerating,
+  imageGeneratingIds,
 }: BatchGenerateImagesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [promptValues, setPromptValues] = useState<Record<string, string>>({})
@@ -240,13 +252,13 @@ export function BatchGenerateImagesDialog({
 
   useEffect(() => {
     if (open) {
-      const missingIds = new Set(shots.filter((s) => !s.shot.imageUrl).map((s) => s.shot.id))
+      const missingIds = new Set(shots.filter((s) => !s.shot.imageUrl && !imageGeneratingIds.has(s.shot.id)).map((s) => s.shot.id))
       setSelectedIds(missingIds)
       setPromptValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.prompt || ""])))
       setPromptEndValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.promptEnd || ""])))
       setGridPromptsValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.gridPrompts || ""])))
     }
-  }, [open, shots])
+  }, [open, shots, imageGeneratingIds])
 
   useEffect(() => {
     return () => {
@@ -260,12 +272,12 @@ export function BatchGenerateImagesDialog({
   }, [])
 
   const handleSelectAll = useCallback(() => {
-    setSelectedIds(new Set(shots.map((s) => s.shot.id)))
-  }, [shots])
+    setSelectedIds(new Set(shots.filter((s) => !imageGeneratingIds.has(s.shot.id)).map((s) => s.shot.id)))
+  }, [shots, imageGeneratingIds])
 
   const handleSelectMissing = useCallback(() => {
-    setSelectedIds(new Set(shots.filter((s) => !s.shot.imageUrl).map((s) => s.shot.id)))
-  }, [shots])
+    setSelectedIds(new Set(shots.filter((s) => !s.shot.imageUrl && !imageGeneratingIds.has(s.shot.id)).map((s) => s.shot.id)))
+  }, [shots, imageGeneratingIds])
 
   const handleSelectNone = useCallback(() => {
     setSelectedIds(new Set())
@@ -273,6 +285,7 @@ export function BatchGenerateImagesDialog({
 
   // 使用函数式更新，避免 selectedIds 进入依赖数组导致每次选择变化都重建函数
   const handleToggleShot = useCallback((id: string) => {
+    if (imageGeneratingIds.has(id)) return
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -404,6 +417,7 @@ export function BatchGenerateImagesDialog({
               scriptShotPlan={scriptShotPlan}
               index={index}
               isSelected={selectedIds.has(shot.id)}
+              isGeneratingImage={imageGeneratingIds.has(shot.id)}
               promptValue={promptValues[shot.id] ?? shot.prompt ?? ""}
               promptEndValue={promptEndValues[shot.id] ?? shot.promptEnd ?? ""}
               gridPromptsValue={gridPromptsValues[shot.id] ?? shot.gridPrompts ?? ""}
@@ -422,14 +436,13 @@ export function BatchGenerateImagesDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={selectedIds.size === 0 || isGenerating}
+            disabled={selectedIds.size === 0}
           >
-            {isGenerating && <Loader2 className="size-4 mr-2 animate-spin" />}
             生成选中项 ({selectedIds.size})
           </Button>
         </DialogFooter>

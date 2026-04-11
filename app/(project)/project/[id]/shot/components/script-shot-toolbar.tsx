@@ -36,7 +36,7 @@ function ToolbarButton({
   variant?: "default" | "outline"
 }) {
   return (
-    <Button variant={variant} disabled={disabled || isGenerating} size="sm" onClick={onClick}>
+    <Button variant={variant} disabled={disabled} size="sm" onClick={onClick}>
       {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Icon className="size-4 mr-2" />}
       {isGenerating
         ? progress
@@ -85,7 +85,7 @@ export function ScriptShotToolbar({
 
         <ToolbarButton
           isGenerating={isGenerating}
-          disabled={!canGenerateCurrentEpisode}
+          disabled={!canGenerateCurrentEpisode || isGenerating}
           onClick={onGenerateCurrentEpisode}
           icon={Clapperboard}
           generatingText="生成"

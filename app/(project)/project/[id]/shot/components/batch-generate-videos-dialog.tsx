@@ -36,18 +36,18 @@ const ShotRow = memo(function ShotRow({
 
   return (
     <div
-      className={`flex items-start gap-4 p-2 rounded-md cursor-pointer ${hasImage ? "hover:bg-muted/50" : "opacity-50 grayscale"
+      className={`flex items-start gap-4 p-2 rounded-md cursor-pointer ${isGeneratingVideo ? "opacity-50 grayscale" : hasImage ? "hover:bg-muted/50" : "opacity-50 grayscale"
         }`}
       onClick={() => {
-        if (hasImage) onToggle(shot.id)
+        if (hasImage && !isGeneratingVideo) onToggle(shot.id)
       }}
     >
       <div className="pt-2">
         <Checkbox
           checked={isSelected}
-          disabled={!hasImage}
+          disabled={!hasImage || isGeneratingVideo}
           onCheckedChange={() => {
-            if (hasImage) onToggle(shot.id)
+            if (hasImage && !isGeneratingVideo) onToggle(shot.id)
           }}
           onClick={(e) => e.stopPropagation()}
         />
@@ -100,7 +100,6 @@ interface BatchGenerateVideosDialogProps {
   shots: { shot: Shot; scriptShotPlan: ScriptShotPlan }[]
   onConfirm: (shotIds: string[]) => void
   onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
-  isGenerating: boolean
   videoGeneratingIds: Set<string>
 }
 
@@ -110,7 +109,6 @@ export function BatchGenerateVideosDialog({
   shots,
   onConfirm,
   onUpdateShot,
-  isGenerating,
   videoGeneratingIds,
 }: BatchGenerateVideosDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -131,12 +129,12 @@ export function BatchGenerateVideosDialog({
   useEffect(() => {
     if (open) {
       const missingIds = new Set(
-        shots.filter((s) => s.shot.imageUrl && !s.shot.videoUrl).map((s) => s.shot.id)
+        shots.filter((s) => s.shot.imageUrl && !s.shot.videoUrl && !videoGeneratingIds.has(s.shot.id)).map((s) => s.shot.id)
       )
       setSelectedIds(missingIds)
       setVideoPromptValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.videoPrompt || ""])))
     }
-  }, [open, shots])
+  }, [open, shots, videoGeneratingIds])
 
   useEffect(() => {
     return () => {
@@ -146,25 +144,26 @@ export function BatchGenerateVideosDialog({
   }, [])
 
   const handleSelectAll = useCallback(() => {
-    setSelectedIds(new Set(shots.filter((s) => s.shot.imageUrl).map((s) => s.shot.id)))
-  }, [shots])
+    setSelectedIds(new Set(shots.filter((s) => s.shot.imageUrl && !videoGeneratingIds.has(s.shot.id)).map((s) => s.shot.id)))
+  }, [shots, videoGeneratingIds])
 
   const handleSelectMissing = useCallback(() => {
-    setSelectedIds(new Set(shots.filter((s) => s.shot.imageUrl && !s.shot.videoUrl).map((s) => s.shot.id)))
-  }, [shots])
+    setSelectedIds(new Set(shots.filter((s) => s.shot.imageUrl && !s.shot.videoUrl && !videoGeneratingIds.has(s.shot.id)).map((s) => s.shot.id)))
+  }, [shots, videoGeneratingIds])
 
   const handleSelectNone = useCallback(() => {
     setSelectedIds(new Set())
   }, [])
 
   const handleToggleShot = useCallback((id: string) => {
+    if (videoGeneratingIds.has(id)) return
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }, [])
+  }, [videoGeneratingIds])
 
   const flushPromptUpdates = useCallback(() => {
     videoPromptDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
@@ -248,14 +247,13 @@ export function BatchGenerateVideosDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={selectedIds.size === 0 || isGenerating}
+            disabled={selectedIds.size === 0}
           >
-            {isGenerating && <Loader2 className="size-4 mr-2 animate-spin" />}
             生成选中项 ({selectedIds.size})
           </Button>
         </DialogFooter>
