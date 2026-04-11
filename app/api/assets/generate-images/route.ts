@@ -90,22 +90,24 @@ async function runAssetImageTask({
 
     const imageUrl = type === "character"
       ? await (async () => {
-          const turnaroundResult = await callImage({
-            prompt: CHARACTER_TURNAROUND_PROMPT,
-            projectId,
-            scope: "asset",
-            referenceImages: [firstImageUrl],
-            aspectRatio,
-            resolution,
-          })
-          return Array.isArray(turnaroundResult) ? turnaroundResult[0].url : turnaroundResult.url
-        })()
+        const turnaroundResult = await callImage({
+          prompt: CHARACTER_TURNAROUND_PROMPT,
+          projectId,
+          scope: "asset",
+          referenceImages: [firstImageUrl],
+          aspectRatio,
+          resolution,
+        })
+        return Array.isArray(turnaroundResult) ? turnaroundResult[0].url : turnaroundResult.url
+      })()
       : firstImageUrl
 
     await updateAssetImage(type, id, imageUrl)
     await markAiTaskSucceeded(taskId)
+    return imageUrl
   } catch (err) {
     await markAiTaskFailed(taskId, err)
+    throw err
   }
 }
 
@@ -129,18 +131,22 @@ export const POST = withError(async (request: NextRequest) => {
     taskType: "image_generate",
   })
 
-  void runAssetImageTask({
-    taskId: task.id,
-    type,
-    id,
-    projectId: asset.projectId,
-    prompt,
-    aspectRatio,
-    resolution,
-  })
+  try {
+    const imageUrl = await runAssetImageTask({
+      taskId: task.id,
+      type,
+      id,
+      projectId: asset.projectId,
+      prompt,
+      aspectRatio,
+      resolution,
+    })
 
-  return NextResponse.json({
-    accepted: true,
-    taskId: task.id,
-  })
+    return NextResponse.json({
+      success: true,
+      imageUrl,
+    })
+  } catch (err) {
+    throwCutGoError("INTERNAL", err instanceof Error ? err.message : "图片生成失败")
+  }
 })

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Loader2, Upload, Sparkles } from "lucide-react"
 import { apiFetch, ApiError } from "@/lib/api-client"
+import { useAssetStore } from "@/store/asset-store"
 import type {
   AssetCharacter,
   AssetScene,
@@ -38,11 +39,13 @@ export function ImagePreviewUploader({
   onChange,
   title,
   secondAction,
+  isGenerating,
 }: {
   imageUrl: string
   onChange: (value: string) => void
   title: string
   secondAction?: React.ReactNode
+  isGenerating?: boolean
 }) {
   const [readingFile, setReadingFile] = useState(false)
 
@@ -67,7 +70,12 @@ export function ImagePreviewUploader({
     <div className="space-y-2">
       <Label htmlFor={`${title}-upload`} className="block cursor-pointer">
         <div className="group relative aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
-          {imageUrl ? (
+          {isGenerating ? (
+            <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+              <Loader2 className="size-6 animate-spin" />
+              <span className="text-xs">生成中...</span>
+            </div>
+          ) : imageUrl ? (
             <>
               <img
                 src={imageUrl}
@@ -121,24 +129,37 @@ export function ImagePreviewUploader({
 function GenerateImageButton({
   assetType,
   assetId,
+  projectId,
+  onSuccess,
 }: {
   assetType: "character" | "scene" | "prop"
   assetId: string
+  projectId: string
+  onSuccess?: (imageUrl: string) => void
 }) {
+  const { setGeneratingAsset, fetchAssets } = useAssetStore()
   const [generating, setGenerating] = useState(false)
 
   const handleGenerate = async () => {
     setGenerating(true)
+    setGeneratingAsset(assetId, true)
+    toast.success("已开始生成图片")
     try {
-      await apiFetch<{ accepted: boolean; taskId: string }>("/api/assets/generate-images", {
+      const res = await apiFetch<{ success: boolean; imageUrl: string }>("/api/assets/generate-images", {
         method: "POST",
         body: { type: assetType, id: assetId },
       })
-      toast.success("已提交图片生成任务，请到任务中心查看进度")
+      if (res.success) {
+        await fetchAssets(projectId)
+        onSuccess?.(res.imageUrl)
+      } else {
+        toast.error("图片生成失败")
+      }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "提交失败，请稍后重试")
     } finally {
       setGenerating(false)
+      setGeneratingAsset(assetId, false)
     }
   }
 
@@ -227,6 +248,9 @@ export function CharacterFormDialog({
     }
   }
 
+  const { generatingAssets } = useAssetStore()
+  const isGenerating = character ? generatingAssets[character.id] : false
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -238,9 +262,10 @@ export function CharacterFormDialog({
             imageUrl={imageUrl}
             onChange={setImageUrl}
             title="角色图片"
+            isGenerating={isGenerating}
             secondAction={
               character ? (
-                <GenerateImageButton assetType="character" assetId={character.id} />
+                <GenerateImageButton assetType="character" assetId={character.id} projectId={character.projectId} onSuccess={setImageUrl} />
               ) : undefined
             }
           />
@@ -362,6 +387,9 @@ export function SceneFormDialog({
     }
   }
 
+  const { generatingAssets } = useAssetStore()
+  const isGenerating = scene ? generatingAssets[scene.id] : false
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -373,9 +401,10 @@ export function SceneFormDialog({
             imageUrl={imageUrl}
             onChange={setImageUrl}
             title="场景图片"
+            isGenerating={isGenerating}
             secondAction={
               scene ? (
-                <GenerateImageButton assetType="scene" assetId={scene.id} />
+                <GenerateImageButton assetType="scene" assetId={scene.id} projectId={scene.projectId} onSuccess={setImageUrl} />
               ) : undefined
             }
           />
@@ -473,6 +502,9 @@ export function PropFormDialog({
     }
   }
 
+  const { generatingAssets } = useAssetStore()
+  const isGenerating = prop ? generatingAssets[prop.id] : false
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -484,9 +516,10 @@ export function PropFormDialog({
             imageUrl={imageUrl}
             onChange={setImageUrl}
             title="道具图片"
+            isGenerating={isGenerating}
             secondAction={
               prop ? (
-                <GenerateImageButton assetType="prop" assetId={prop.id} />
+                <GenerateImageButton assetType="prop" assetId={prop.id} projectId={prop.projectId} onSuccess={setImageUrl} />
               ) : undefined
             }
           />

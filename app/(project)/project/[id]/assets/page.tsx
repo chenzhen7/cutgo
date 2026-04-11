@@ -152,7 +152,7 @@ export default function AssetsPage() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button
-        
+
             onClick={() => setShowGenerateDialog(true)}
             disabled={totalAssets === 0}
           >
@@ -401,6 +401,7 @@ export default function AssetsPage() {
         characters={characters}
         scenes={scenes}
         props={props}
+        projectId={projectId}
       />
     </div>
   )
@@ -414,13 +415,16 @@ function GenerateAssetImagesDialog({
   characters,
   scenes,
   props,
+  projectId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   characters: AssetCharacter[]
   scenes: AssetScene[]
   props: AssetProp[]
+  projectId: string
 }) {
+  const { setGeneratingAsset, fetchAssets } = useAssetStore()
   const buildItems = useCallback((): GenerateItem[] => {
     const charItems: GenerateItem[] = characters.map((c) => ({
       type: "character" as const,
@@ -475,28 +479,40 @@ function GenerateAssetImagesDialog({
   const handleGenerate = async () => {
     const toGenerate = items.filter((i) => i.selected)
     if (toGenerate.length === 0) return
-    setSubmitting(true)
-
-    const results = await Promise.allSettled(
-      toGenerate.map((item) =>
-        apiFetch<{ accepted: boolean; taskId: string }>(`/api/assets/generate-images`, {
-          method: "POST",
-          body: { type: item.type, id: item.id },
-        })
-      )
-    )
-
-    const failedCount = results.filter((r) => r.status === "rejected").length
-    const successCount = toGenerate.length - failedCount
-
-    if (failedCount > 0) {
-      toast.warning(`已提交 ${successCount} 个后台任务，${failedCount} 个提交失败`)
-    } else {
-      toast.success(`已提交 ${successCount} 个后台任务，请到任务中心查看进度`)
-    }
-
+    
+    // 立即关闭弹窗
     onOpenChange(false)
     setSubmitting(false)
+
+    toGenerate.forEach((item) => {
+      setGeneratingAsset(item.id, true)
+    })
+
+    toast.success(`已开始生成 ${toGenerate.length} 个资产图片`)
+
+    // 在后台并行执行生成请求
+    void Promise.allSettled(
+      toGenerate.map(async (item) => {
+        try {
+          const res = await apiFetch<{ success: boolean; imageUrl: string }>(`/api/assets/generate-images`, {
+            method: "POST",
+            body: { type: item.type, id: item.id },
+          })
+          
+          if (res.success) {
+            await fetchAssets(projectId)
+          } else {
+            toast.error(`资产 [${item.name}] 图片生成失败`)
+          }
+          return res
+        } catch (e) {
+          toast.error(`资产 [${item.name}] 图片生成失败`)
+          throw e
+        } finally {
+          setGeneratingAsset(item.id, false)
+        }
+      })
+    )
   }
 
   const typeLabel: Record<AssetGenerateType, string> = {
@@ -673,6 +689,7 @@ const CharacterList = memo(function CharacterList({
   onDelete: (id: string) => void
   onToggleLock: (id: string, locked: boolean) => void
 }) {
+  const { generatingAssets } = useAssetStore()
   const normalizeGender = (gender: string | null | undefined): "male" | "female" | "other" | null => {
     if (!gender) return null
     const value = gender.trim().toLowerCase()
@@ -730,7 +747,9 @@ const CharacterList = memo(function CharacterList({
           <CardContent className="pt-4">
             <div className="flex items-start gap-3">
               <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
-                {char.imageUrl ? (
+                {generatingAssets[char.id] ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
+                ) : char.imageUrl ? (
                   <PreviewableImage
                     src={char.imageUrl}
                     alt={char.name}
@@ -802,6 +821,7 @@ const SceneList = memo(function SceneList({
   onEdit: (s: AssetScene) => void
   onDelete: (id: string) => void
 }) {
+  const { generatingAssets } = useAssetStore()
   const filtered = useMemo(
     () =>
       scenes.filter(
@@ -823,7 +843,9 @@ const SceneList = memo(function SceneList({
         >
           <CardContent className="pt-4">
             <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3" onClick={(e) => e.stopPropagation()}>
-              {scene.imageUrl ? (
+              {generatingAssets[scene.id] ? (
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
+              ) : scene.imageUrl ? (
                 <PreviewableImage
                   src={scene.imageUrl}
                   alt={scene.name}
@@ -878,6 +900,7 @@ const PropList = memo(function PropList({
   onEdit: (p: AssetProp) => void
   onDelete: (id: string) => void
 }) {
+  const { generatingAssets } = useAssetStore()
   const filtered = useMemo(
     () =>
       props.filter(
@@ -900,7 +923,9 @@ const PropList = memo(function PropList({
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
-                {prop.imageUrl ? (
+                {generatingAssets[prop.id] ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" />
+                ) : prop.imageUrl ? (
                   <PreviewableImage
                     src={prop.imageUrl}
                     alt={prop.name}

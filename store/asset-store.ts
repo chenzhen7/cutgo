@@ -13,8 +13,10 @@ interface AssetState {
   characters: AssetCharacter[]
   scenes: AssetScene[]
   props: AssetProp[]
+  generatingAssets: Record<string, boolean>
 
   fetchAssets: (projectId: string) => Promise<void>
+  setGeneratingAsset: (id: string, isGenerating: boolean) => void
 
   addCharacter: (projectId: string, data: AssetCharacterInput) => Promise<void>
   updateCharacter: (id: string, data: Partial<AssetCharacterInput>) => Promise<void>
@@ -42,6 +44,19 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   characters: [],
   scenes: [],
   props: [],
+  generatingAssets: {},
+
+  setGeneratingAsset: (id, isGenerating) => {
+    set((state) => {
+      const newGenerating = { ...state.generatingAssets }
+      if (isGenerating) {
+        newGenerating[id] = true
+      } else {
+        delete newGenerating[id]
+      }
+      return { generatingAssets: newGenerating }
+    })
+  },
 
   fetchAssets: async (projectId) => {
     try {
@@ -136,6 +151,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       characters: [],
       scenes: [],
       props: [],
+      generatingAssets: {},
     })
   },
 }))
