@@ -67,6 +67,7 @@ interface GenerateItem {
   name: string
   hasImage: boolean
   selected: boolean
+  isGenerating: boolean
 }
 
 export default function AssetsPage() {
@@ -424,31 +425,34 @@ function GenerateAssetImagesDialog({
   props: AssetProp[]
   projectId: string
 }) {
-  const { setGeneratingAsset, fetchAssets } = useAssetStore()
+  const { setGeneratingAsset, fetchAssets, generatingAssets } = useAssetStore()
   const buildItems = useCallback((): GenerateItem[] => {
     const charItems: GenerateItem[] = characters.map((c) => ({
       type: "character" as const,
       id: c.id,
       name: c.name,
       hasImage: !!c.imageUrl,
-      selected: !c.imageUrl,
+      selected: !c.imageUrl && !generatingAssets[c.id],
+      isGenerating: !!generatingAssets[c.id],
     }))
     const sceneItems: GenerateItem[] = scenes.map((s) => ({
       type: "scene" as const,
       id: s.id,
       name: s.name,
       hasImage: !!s.imageUrl,
-      selected: !s.imageUrl,
+      selected: !s.imageUrl && !generatingAssets[s.id],
+      isGenerating: !!generatingAssets[s.id],
     }))
     const propItems: GenerateItem[] = props.map((p) => ({
       type: "prop" as const,
       id: p.id,
       name: p.name,
       hasImage: !!p.imageUrl,
-      selected: !p.imageUrl,
+      selected: !p.imageUrl && !generatingAssets[p.id],
+      isGenerating: !!generatingAssets[p.id],
     }))
     return [...charItems, ...sceneItems, ...propItems]
-  }, [characters, scenes, props])
+  }, [characters, scenes, props, generatingAssets])
 
   const [items, setItems] = useState<GenerateItem[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -462,17 +466,17 @@ function GenerateAssetImagesDialog({
 
   const selectedItems = items.filter((i) => i.selected)
 
-  const allSelected = items.length > 0 && items.every((i) => i.selected)
-  const noneSelected = items.every((i) => !i.selected)
+  const allSelected = items.length > 0 && items.filter(i => !i.isGenerating).every((i) => i.selected)
+  const noneSelected = items.filter(i => !i.isGenerating).every((i) => !i.selected)
 
   const toggleAll = () => {
     const newVal = !allSelected
-    setItems((prev) => prev.map((i) => ({ ...i, selected: newVal })))
+    setItems((prev) => prev.map((i) => (i.isGenerating ? i : { ...i, selected: newVal })))
   }
 
   const toggleItem = (id: string) => {
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i))
+      prev.map((i) => (i.id === id && !i.isGenerating ? { ...i, selected: !i.selected } : i))
     )
   }
 
@@ -568,23 +572,30 @@ function GenerateAssetImagesDialog({
                 key={item.id}
                 className={cn(
                   "flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-muted/60 transition-colors",
-                  item.selected && "bg-muted/40"
+                  item.selected && "bg-muted/40",
+                  item.isGenerating && "opacity-60 cursor-not-allowed"
                 )}
               >
                 <Checkbox
                   checked={item.selected}
                   onCheckedChange={() => toggleItem(item.id)}
+                  disabled={item.isGenerating}
                 />
                 <span className="flex items-center gap-1.5 flex-1 min-w-0">
                   {typeIcon[item.type]}
-                  <span className="text-sm truncate">{item.name}</span>
+                  <span className={cn("text-sm truncate", item.isGenerating && "text-muted-foreground")}>{item.name}</span>
                   <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
                     {typeLabel[item.type]}
                   </Badge>
                 </span>
-                {item.hasImage && (
+                {item.isGenerating ? (
+                  <span className="text-[10px] text-blue-500 shrink-0 flex items-center gap-1">
+                    <Loader2 className="size-3 animate-spin" />
+                    生成中
+                  </span>
+                ) : item.hasImage ? (
                   <span className="text-[10px] text-muted-foreground shrink-0">已有图片</span>
-                )}
+                ) : null}
               </label>
             ))}
           </div>

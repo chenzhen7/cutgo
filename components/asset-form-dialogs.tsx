@@ -137,11 +137,11 @@ function GenerateImageButton({
   projectId: string
   onSuccess?: (imageUrl: string) => void
 }) {
-  const { setGeneratingAsset, fetchAssets } = useAssetStore()
-  const [generating, setGenerating] = useState(false)
+  const { setGeneratingAsset, fetchAssets, generatingAssets } = useAssetStore()
+  const isGenerating = generatingAssets[assetId]
 
   const handleGenerate = async () => {
-    setGenerating(true)
+    if (isGenerating) return
     setGeneratingAsset(assetId, true)
     toast.success("已开始生成图片")
     try {
@@ -158,7 +158,6 @@ function GenerateImageButton({
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "提交失败，请稍后重试")
     } finally {
-      setGenerating(false)
       setGeneratingAsset(assetId, false)
     }
   }
@@ -168,9 +167,9 @@ function GenerateImageButton({
       type="button"
       size="sm"
       onClick={() => void handleGenerate()}
-      disabled={generating}
+      disabled={isGenerating}
     >
-      {generating ? (
+      {isGenerating ? (
         <Loader2 className="mr-1.5 size-3.5 animate-spin" />
       ) : (
         <Sparkles className="mr-1.5 size-3.5" />
