@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Loader2, Upload, Sparkles } from "lucide-react"
-import { PreviewableImage } from "@/components/ui/previewable-image"
 import { apiFetch, ApiError } from "@/lib/api-client"
 import type {
   AssetCharacter,
@@ -38,10 +37,12 @@ export function ImagePreviewUploader({
   imageUrl,
   onChange,
   title,
+  secondAction,
 }: {
   imageUrl: string
   onChange: (value: string) => void
   title: string
+  secondAction?: React.ReactNode
 }) {
   const [readingFile, setReadingFile] = useState(false)
 
@@ -63,46 +64,54 @@ export function ImagePreviewUploader({
   }
 
   return (
-    <div className="space-y-3">
-      <div
-        className="aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {imageUrl ? (
-          <PreviewableImage
-            src={imageUrl}
-            alt={title}
-            className="h-full w-full object-cover"
-            onClick={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <div className="text-xs text-muted-foreground text-center px-4">暂无图片</div>
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${title}-upload`} className="inline-flex">
-          <Button type="button" variant="outline" size="sm" asChild disabled={readingFile}>
-            <span className="cursor-pointer">
+    <div className="space-y-2">
+      <Label htmlFor={`${title}-upload`} className="block cursor-pointer">
+        <div className="group relative aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
+          {imageUrl ? (
+            <>
+              <img
+                src={imageUrl}
+                alt={title}
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                {readingFile ? (
+                  <Loader2 className="size-5 text-white animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="size-5 text-white" />
+                    <span className="text-xs text-white">点击更换</span>
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors">
               {readingFile ? (
-                <Loader2 className="mr-2 size-3.5 animate-spin" />
+                <Loader2 className="size-6 animate-spin" />
               ) : (
-                <Upload className="mr-2 size-3.5" />
+                <>
+                  <Upload className="size-6" />
+                  <span className="text-xs">点击上传</span>
+                </>
               )}
-              上传本地图片
-            </span>
-          </Button>
-        </Label>
-        <Input
-          id={`${title}-upload`}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            void handleFileChange(e.target.files?.[0])
-            e.currentTarget.value = ""
-          }}
-        />
-      </div>
+            </div>
+          )}
+        </div>
+      </Label>
+      <Input
+        id={`${title}-upload`}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          void handleFileChange(e.target.files?.[0])
+          e.currentTarget.value = ""
+        }}
+      />
+      {secondAction && (
+        <div className="w-full [&>button]:w-full">{secondAction}</div>
+      )}
     </div>
   )
 }
@@ -136,15 +145,14 @@ function GenerateImageButton({
   return (
     <Button
       type="button"
-      variant="outline"
       size="sm"
       onClick={() => void handleGenerate()}
       disabled={generating}
     >
       {generating ? (
-        <Loader2 className="mr-2 size-3.5 animate-spin" />
+        <Loader2 className="mr-1.5 size-3.5 animate-spin" />
       ) : (
-        <Sparkles className="mr-2 size-3.5" />
+        <Sparkles className="mr-1.5 size-3.5" />
       )}
       生成图片
     </Button>
@@ -221,25 +229,25 @@ export function CharacterFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{character ? "编辑角色" : "添加角色"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-5 py-1 sm:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="space-y-3">
-            <ImagePreviewUploader
-              imageUrl={imageUrl}
-              onChange={setImageUrl}
-              title="角色图片"
-            />
-            {character && (
-              <GenerateImageButton assetType="character" assetId={character.id} />
-            )}
-          </div>
-          <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>角色名 *</Label>
+        <div className="grid gap-4 py-1 sm:grid-cols-[160px_minmax(0,1fr)]">
+          <ImagePreviewUploader
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            title="角色图片"
+            secondAction={
+              character ? (
+                <GenerateImageButton assetType="character" assetId={character.id} />
+              ) : undefined
+            }
+          />
+          <div className="grid gap-3 content-start">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">角色名 *</Label>
                 <Input
                   value={name}
                   onChange={(e) => {
@@ -249,8 +257,8 @@ export function CharacterFormDialog({
                   placeholder="角色名称"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label>角色类型</Label>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">角色类型</Label>
                 <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -262,27 +270,27 @@ export function CharacterFormDialog({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">性别</Label>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">男</SelectItem>
+                    <SelectItem value="female">女</SelectItem>
+                    <SelectItem value="other">其他</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label>性别</Label>
-              <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择性别" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">男</SelectItem>
-                  <SelectItem value="female">女</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>提示词</Label>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">提示词</Label>
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="角色简介（可包含外貌特征、身份背景等）"
-                rows={4}
+                rows={5}
               />
             </div>
           </div>
@@ -356,24 +364,24 @@ export function SceneFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{scene ? "编辑场景" : "添加场景"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-5 py-1 sm:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="space-y-3">
-            <ImagePreviewUploader
-              imageUrl={imageUrl}
-              onChange={setImageUrl}
-              title="场景图片"
-            />
-            {scene && (
-              <GenerateImageButton assetType="scene" assetId={scene.id} />
-            )}
-          </div>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label>场景名称 *</Label>
+        <div className="grid gap-4 py-1 sm:grid-cols-[160px_minmax(0,1fr)]">
+          <ImagePreviewUploader
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            title="场景图片"
+            secondAction={
+              scene ? (
+                <GenerateImageButton assetType="scene" assetId={scene.id} />
+              ) : undefined
+            }
+          />
+          <div className="grid gap-3 content-start">
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">场景名称 *</Label>
               <Input
                 value={name}
                 onChange={(e) => {
@@ -383,17 +391,17 @@ export function SceneFormDialog({
                 placeholder="如 总裁办公室"
               />
             </div>
-            <div className="grid gap-2">
-              <Label>提示词</Label>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">提示词</Label>
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="场景生图提示词"
-                rows={3}
+                rows={4}
               />
             </div>
-            <div className="grid gap-2">
-              <Label>标签</Label>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">标签</Label>
               <Input
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
@@ -467,24 +475,24 @@ export function PropFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{prop ? "编辑道具" : "添加道具"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-5 py-1 sm:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="space-y-3">
-            <ImagePreviewUploader
-              imageUrl={imageUrl}
-              onChange={setImageUrl}
-              title="道具图片"
-            />
-            {prop && (
-              <GenerateImageButton assetType="prop" assetId={prop.id} />
-            )}
-          </div>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label>道具名称 *</Label>
+        <div className="grid gap-4 py-1 sm:grid-cols-[160px_minmax(0,1fr)]">
+          <ImagePreviewUploader
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            title="道具图片"
+            secondAction={
+              prop ? (
+                <GenerateImageButton assetType="prop" assetId={prop.id} />
+              ) : undefined
+            }
+          />
+          <div className="grid gap-3 content-start">
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">道具名称 *</Label>
               <Input
                 value={name}
                 onChange={(e) => {
@@ -494,13 +502,13 @@ export function PropFormDialog({
                 placeholder="如 合同文件"
               />
             </div>
-            <div className="grid gap-2">
-              <Label>提示词</Label>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">提示词</Label>
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="道具生图提示词"
-                rows={3}
+                rows={5}
               />
             </div>
           </div>
