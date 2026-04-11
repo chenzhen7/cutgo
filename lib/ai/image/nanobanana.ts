@@ -139,7 +139,7 @@ export class NanobananaImageProvider implements ImageProvider {
     }
 
     if (!imageDataUrl) {
-      throwCutGoError("INTERNAL", "Gemini 生图服务未返回有效图片数据")
+      throwCutGoError("INTERNAL", "Gemini 生图服务未返回有效图片数据，responseParts: " + JSON.stringify(responseParts))
     }
 
     const persistedUrl = await persistGeneratedImageLocally({
