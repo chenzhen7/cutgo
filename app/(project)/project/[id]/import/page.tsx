@@ -154,7 +154,7 @@ export default function ImportPage() {
                 <Sparkles className="size-4" />
                 AI 提取资产
               </Button>
-              
+
             </>
           )}
         </div>

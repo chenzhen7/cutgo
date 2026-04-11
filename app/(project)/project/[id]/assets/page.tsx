@@ -44,8 +44,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useAssetStore } from "@/store/asset-store"
-import { useNovelStore } from "@/store/novel-store"
-import { ExtractAssetsDialog } from "../import/components/extract-assets-dialog"
 import { apiFetch } from "@/lib/api-client"
 import { PreviewableImage } from "@/components/ui/previewable-image"
 import {
@@ -90,7 +88,6 @@ export default function AssetsPage() {
     updateProp,
     deleteProp,
   } = useAssetStore()
-  const { novel, chapters, fetchNovel } = useNovelStore()
 
   const [activeTab, setActiveTab] = useState<AssetTab>("characters")
   const [loading, setLoading] = useState(true)
@@ -108,24 +105,15 @@ export default function AssetsPage() {
   const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
   const [deletingPropId, setDeletingPropId] = useState<string | null>(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
-  const [showExtractDialog, setShowExtractDialog] = useState(false)
-  const [extractSuccessMsg] = useState<string | null>(null)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
   useEffect(() => {
     const init = async () => {
       setLoading(true)
-      await Promise.all([fetchAssets(projectId), fetchNovel(projectId)])
+      await fetchAssets(projectId)
       setLoading(false)
     }
     init()
-  }, [projectId, fetchAssets, fetchNovel])
-
-  const handleExtractSuccess = useCallback(
-    async () => {
-      await fetchAssets(projectId)
-    },
-    [projectId, fetchAssets]
-  )
+  }, [projectId, fetchAssets])
   const handleToggleCharacterLock = useCallback(
     (id: string, locked: boolean) => {
       void updateCharacter(id, { locked })
@@ -158,36 +146,21 @@ export default function AssetsPage() {
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground">资产库</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              项目全局共享的角色、场景与道具库，剧本与分镜等环节均可引用；支持从大纲 AI 提取与手动维护
+              项目全局共享的角色、场景与道具库，剧本与分镜等环节均可引用；支持手动维护与图片生成
             </p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button
-            size="sm"
-            variant="outline"
+        
             onClick={() => setShowGenerateDialog(true)}
             disabled={totalAssets === 0}
           >
             <Image className="size-4" />
             生成图片
           </Button>
-          <Button
-            size="sm"
-            onClick={() => setShowExtractDialog(true)}
-            disabled={!novel || chapters.length === 0}
-          >
-            <Sparkles className="size-4" />
-            AI 提取资产
-          </Button>
         </div>
       </div>
-
-      {extractSuccessMsg && (
-        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-          <p className="text-xs text-primary">{extractSuccessMsg}</p>
-        </div>
-      )}
 
 
 
@@ -421,17 +394,6 @@ export default function AssetsPage() {
           }
         }}
       />
-
-      {novel && (
-        <ExtractAssetsDialog
-          open={showExtractDialog}
-          onOpenChange={setShowExtractDialog}
-          projectId={projectId}
-          novelId={novel.id}
-          chapters={chapters}
-          onSuccess={() => void handleExtractSuccess()}
-        />
-      )}
 
       <GenerateAssetImagesDialog
         open={showGenerateDialog}
