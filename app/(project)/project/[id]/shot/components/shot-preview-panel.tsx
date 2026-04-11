@@ -130,9 +130,7 @@ export function ShotPreviewPanel({
                     ref={videoRef}
                     src={shot.videoUrl}
                     className="h-full w-full object-contain bg-black"
-                    loop
                     playsInline
-                    muted
                   />
                   <button
                     onClick={onClearVideo}
