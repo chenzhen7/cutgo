@@ -58,7 +58,6 @@ export class AliyunVideoProvider implements VideoProvider {
       prompt,
       imageUrls,
       durationSeconds,
-      generateAudio,
     } = options
 
     if (!imageUrls || imageUrls.length === 0) {
@@ -69,23 +68,38 @@ export class AliyunVideoProvider implements VideoProvider {
       imageUrls.map((url) => fetchImageAsBase64(url))
     )
 
+    const isWan27 = this.config.model.startsWith("wan2.7")
     const isKeyframe = base64Urls.length >= 2
 
     // 确定请求 URL
-    const endpoint = isKeyframe
-      ? "/services/aigc/image2video/video-synthesis"
-      : "/services/aigc/video-generation/video-synthesis"
+    let endpoint = ""
+    if (isWan27) {
+      endpoint = "/services/aigc/video-generation/video-synthesis"
+    } else {
+      endpoint = isKeyframe
+        ? "/services/aigc/image2video/video-synthesis"
+        : "/services/aigc/video-generation/video-synthesis"
+    }
     const url = `${this.baseUrl}${endpoint}`
 
     const input: Record<string, unknown> = {
       prompt,
     }
 
-    if (isKeyframe) {
-      input.first_frame_url = base64Urls[0]
-      input.last_frame_url = base64Urls[1]
+    if (isWan27) {
+      const media: { type: string; url: string }[] = []
+      media.push({ type: "first_frame", url: base64Urls[0] })
+      if (isKeyframe) {
+        media.push({ type: "last_frame", url: base64Urls[1] })
+      }
+      input.media = media
     } else {
-      input.img_url = base64Urls[0]
+      if (isKeyframe) {
+        input.first_frame_url = base64Urls[0]
+        input.last_frame_url = base64Urls[1]
+      } else {
+        input.img_url = base64Urls[0]
+      }
     }
 
     const parameters: Record<string, unknown> = {
@@ -96,12 +110,8 @@ export class AliyunVideoProvider implements VideoProvider {
       parameters.resolution = this.config.resolution
     }
 
-    if (durationSeconds !== undefined && !isKeyframe) {
+    if (durationSeconds !== undefined) {
       parameters.duration = durationSeconds
-    }
-
-    if (generateAudio !== undefined && !isKeyframe) {
-      parameters.audio = generateAudio
     }
 
     const body = {

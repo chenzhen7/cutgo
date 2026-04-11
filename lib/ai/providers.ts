@@ -176,6 +176,7 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       label: "阿里云百炼（万相）",
       logo: "/logos/qwen.svg",
       models: [
+        { value: "wan2.7-i2v", label: "Wan2.7-I2V (新版图生视频, 支持首尾帧及音频)" },
         { value: "wan2.6-i2v-flash", label: "Wan2.6-I2V-Flash (图生视频, 支持音频)" },
         { value: "wan2.6-i2v", label: "Wan2.6-I2V (图生视频)" },
         { value: "wan2.5-i2v-preview", label: "Wan2.5-I2V-Preview (图生视频)" },
