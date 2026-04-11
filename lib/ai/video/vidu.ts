@@ -108,7 +108,7 @@ export class ViduVideoProvider implements VideoProvider {
       url,
       body,
     })
-    
+
 
     const res = await fetch(url, {
       method: "POST",

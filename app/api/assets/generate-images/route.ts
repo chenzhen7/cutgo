@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { withError, throwCutGoError } from "@/lib/api-error"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
 import { callImage } from "@/lib/ai/image"
+import { CHARACTER_TURNAROUND_PROMPT } from "@/lib/ai/image/prompts"
 
 type AssetType = "character" | "scene" | "prop"
 
@@ -85,7 +86,22 @@ async function runAssetImageTask({
       aspectRatio,
       resolution,
     })
-    const imageUrl = Array.isArray(result) ? result[0].url : result.url
+    const firstImageUrl = Array.isArray(result) ? result[0].url : result.url
+
+    const imageUrl = type === "character"
+      ? await (async () => {
+          const turnaroundResult = await callImage({
+            prompt: CHARACTER_TURNAROUND_PROMPT,
+            projectId,
+            scope: "asset",
+            referenceImages: [firstImageUrl],
+            aspectRatio,
+            resolution,
+          })
+          return Array.isArray(turnaroundResult) ? turnaroundResult[0].url : turnaroundResult.url
+        })()
+      : firstImageUrl
+
     await updateAssetImage(type, id, imageUrl)
     await markAiTaskSucceeded(taskId)
   } catch (err) {
