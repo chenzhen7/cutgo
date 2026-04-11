@@ -50,6 +50,13 @@ const ShotRow = memo(function ShotRow({
     parsedGridPrompts = []
   }
 
+  let parsedImageUrls: string[] = []
+  try {
+    parsedImageUrls = shot.imageUrls ? JSON.parse(shot.imageUrls) : []
+  } catch {
+    parsedImageUrls = []
+  }
+
   const handleGridLayoutChange = (layout: string) => {
     const layoutOpt = GRID_LAYOUT_OPTIONS.find((o) => o.value === layout)
     if (!layoutOpt) return
@@ -84,8 +91,18 @@ const ShotRow = memo(function ShotRow({
       <div className="w-8 pt-2 text-center text-sm text-muted-foreground shrink-0">
         {index + 1}
       </div>
-      <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1">
-        {shot.imageUrl ? (
+      <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1 relative">
+        {imageType === "first_last" && parsedImageUrls.length >= 2 ? (
+          <div className="flex flex-row gap-0.5 w-full h-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={parsedImageUrls[0]} alt="首帧" className="w-1/2 h-full object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={parsedImageUrls[1]} alt="尾帧" className="w-1/2 h-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="bg-black/40 text-white text-[8px] px-1 py-0.5 rounded">首尾帧</div>
+            </div>
+          </div>
+        ) : shot.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={shot.imageUrl} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -112,16 +129,18 @@ const ShotRow = memo(function ShotRow({
           </div>
         ) : imageType === "multi_grid" ? (
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto px-1">
               {Array.from({ length: currentGridLayout.count }).map((_, i) => (
-                <Textarea
-                  key={i}
-                  value={parsedGridPrompts[i] || ""}
-                  onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                  className="min-h-[40px] text-xs resize-y"
-                  placeholder={`第 ${i + 1} 格提示词`}
-                  onPointerDown={(e) => e.stopPropagation()}
-                />
+                <div key={i} className="space-y-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
+                  <Textarea
+                    value={parsedGridPrompts[i] || ""}
+                    onChange={(e) => handleGridPromptChange(i, e.target.value)}
+                    className="min-h-[40px] text-xs resize-y"
+                    placeholder={`第 ${i + 1} 格提示词`}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  />
+                </div>
               ))}
             </div>
           </div>
