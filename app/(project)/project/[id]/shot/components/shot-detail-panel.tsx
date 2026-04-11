@@ -113,20 +113,20 @@ export function ShotDetailPanel({
   const [promptEnd, setPromptEnd] = useState(shot.promptEnd || "")
   const [gridPrompts, setGridPrompts] = useState<string[]>([])
   const [videoPrompt, setVideoPrompt] = useState(shot.videoPrompt || "")
-  const [videoDuration, setVideoDuration] = useState<string>(shot.videoDuration?.toString() || "5")
+  const [duration, setDuration] = useState<string>(shot.duration?.toString() || "5")
 
   useEffect(() => {
     setContent(shot.content || "")
     setPrompt(shot.prompt || "")
     setPromptEnd(shot.promptEnd || "")
     setVideoPrompt(shot.videoPrompt || "")
-    setVideoDuration(shot.videoDuration?.toString() || "5")
+    setDuration(shot.duration?.toString() || "5")
     try {
       setGridPrompts(shot.gridPrompts ? JSON.parse(shot.gridPrompts) : [])
     } catch {
       setGridPrompts([])
     }
-  }, [shot.id, shot.content, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.videoDuration, shot.videoPrompt])
+  }, [shot.id, shot.content, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.duration, shot.videoPrompt])
 
   const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
@@ -662,14 +662,14 @@ export function ShotDetailPanel({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-[10px] text-muted-foreground mb-1 block">视频时长(秒)</Label>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">分镜时长(秒)</Label>
                   <Input
-                    value={videoDuration}
+                    value={duration}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === '' || /^\d+(\.\d*)?$/.test(val)) {
-                        setVideoDuration(val);
-                        debouncedUpdate({ videoDuration: val ? parseFloat(val) : undefined });
+                        setDuration(val);
+                        debouncedUpdate({ duration: val ? parseFloat(val) : undefined });
                       }
                     }}
                     placeholder="如: 5"
