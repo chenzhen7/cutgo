@@ -203,6 +203,18 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
       ],
       defaultBaseUrl: "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks",
     },
+    google: {
+      label: "Google (Veo)",
+      logo: "/logos/gemini.svg",
+      models: [
+        { value: "veo-3.1-generate-preview", label: "Veo 3.1" },
+        { value: "veo-3.1-fast-generate-preview", label: "Veo 3.1 fast"},
+        { value: "veo-3.1-lite-generate-preview", label: "Veo 3.1 lite"},
+        { value: "veo-3.0-generate-001", label: "Veo 3.0"},
+        { value: "veo-3.0-fast-generate-001", label: "Veo 3.0 fast" },
+      ],
+      defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
+    },
     runway: {
       label: "Runway",
       models: [{ value: "gen3a_turbo", label: "Gen-3 Alpha Turbo" }],

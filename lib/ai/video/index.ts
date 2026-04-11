@@ -2,6 +2,7 @@ import { getVideoConfig } from "../config"
 import { throwCutGoError } from "@/lib/api-error"
 import { DoubaoVideoProvider } from "./doubao"
 import { ViduVideoProvider } from "./vidu"
+import { GoogleVideoProvider } from "./google"
 import { PlaceholderVideoProvider } from "./placeholder"
 import { logAIEvent } from "../logging"
 import type {
@@ -58,6 +59,15 @@ export function createVideoProviderFromConfig(
       model: config.model,
       resolution: config.config?.resolution,
       authPrefix: config.config?.authPrefix,
+    })
+  }
+
+  if (config.provider === "google") {
+    return new GoogleVideoProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model,
+      config: config.config,
     })
   }
 

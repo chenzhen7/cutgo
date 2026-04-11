@@ -580,7 +580,7 @@ export default function SettingsPage() {
             </div>
 
             {/* 设为默认 */}
-            {form.type === "video" && (form.provider === "doubao" || form.provider === "vidu") && (
+            {form.type === "video" && (form.provider === "doubao" || form.provider === "vidu" || form.provider === "google") && (
               <div className="space-y-1.5">
                 <Label>视频分辨率</Label>
                 <Select
@@ -593,6 +593,7 @@ export default function SettingsPage() {
                   <SelectContent>
                     <SelectItem value="720p">720p</SelectItem>
                     <SelectItem value="1080p">1080p</SelectItem>
+                    {form.provider === "google" && <SelectItem value="4k">4k</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
