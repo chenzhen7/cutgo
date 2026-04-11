@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Shot, ScriptShotPlan, ShotInput } from "@/lib/types"
+import { Shot, ScriptShotPlan, ShotInput, GRID_LAYOUT_OPTIONS } from "@/lib/types"
 import { Image as ImageIcon, Loader2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -17,8 +17,12 @@ interface ShotRowProps {
   index: number
   isSelected: boolean
   promptValue: string
+  promptEndValue: string
+  gridPromptsValue: string
   onToggle: (id: string) => void
   onPromptChange: (shotId: string, prompt: string) => void
+  onPromptEndChange: (shotId: string, promptEnd: string) => void
+  onGridPromptsChange: (shotId: string, gridPrompts: string) => void
   onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
 }
 
@@ -28,10 +32,43 @@ const ShotRow = memo(function ShotRow({
   index,
   isSelected,
   promptValue,
+  promptEndValue,
+  gridPromptsValue,
   onToggle,
   onPromptChange,
+  onPromptEndChange,
+  onGridPromptsChange,
   onUpdateShot,
 }: ShotRowProps) {
+  const imageType = shot.imageType || "keyframe"
+  const currentGridLayout = GRID_LAYOUT_OPTIONS.find((o) => o.value === (shot.gridLayout || "2x2")) || GRID_LAYOUT_OPTIONS[0]
+  
+  let parsedGridPrompts: string[] = []
+  try {
+    parsedGridPrompts = gridPromptsValue ? JSON.parse(gridPromptsValue) : []
+  } catch {
+    parsedGridPrompts = []
+  }
+
+  const handleGridLayoutChange = (layout: string) => {
+    const layoutOpt = GRID_LAYOUT_OPTIONS.find((o) => o.value === layout)
+    if (!layoutOpt) return
+    const currentPrompts = parsedGridPrompts.length > 0 ? parsedGridPrompts : []
+    const newPrompts = Array.from({ length: layoutOpt.count }, (_, i) => currentPrompts[i] || "")
+    const newPromptsStr = JSON.stringify(newPrompts)
+    onGridPromptsChange(shot.id, newPromptsStr)
+    onUpdateShot(scriptShotPlan.episodeId, shot.id, {
+      gridLayout: layout as ShotInput["gridLayout"],
+      gridPrompts: newPromptsStr,
+    })
+  }
+
+  const handleGridPromptChange = (i: number, value: string) => {
+    const newPrompts = [...parsedGridPrompts]
+    newPrompts[i] = value
+    onGridPromptsChange(shot.id, JSON.stringify(newPrompts))
+  }
+
   return (
     <div
       className="flex items-start gap-4 p-2 hover:bg-muted/50 rounded-md cursor-pointer"
@@ -56,17 +93,51 @@ const ShotRow = memo(function ShotRow({
         )}
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-        <Textarea
-          value={promptValue}
-          onChange={(e) => onPromptChange(shot.id, e.target.value)}
-          placeholder="提示词"
-          className="min-h-[60px] text-sm resize-y"
-          onPointerDown={(e) => e.stopPropagation()}
-        />
+        {imageType === "first_last" ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Textarea
+              value={promptValue}
+              onChange={(e) => onPromptChange(shot.id, e.target.value)}
+              placeholder="首帧提示词"
+              className="min-h-[60px] text-sm resize-y"
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+            <Textarea
+              value={promptEndValue}
+              onChange={(e) => onPromptEndChange(shot.id, e.target.value)}
+              placeholder="尾帧提示词"
+              className="min-h-[60px] text-sm resize-y"
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+          </div>
+        ) : imageType === "multi_grid" ? (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1">
+              {Array.from({ length: currentGridLayout.count }).map((_, i) => (
+                <Textarea
+                  key={i}
+                  value={parsedGridPrompts[i] || ""}
+                  onChange={(e) => handleGridPromptChange(i, e.target.value)}
+                  className="min-h-[40px] text-xs resize-y"
+                  placeholder={`第 ${i + 1} 格提示词`}
+                  onPointerDown={(e) => e.stopPropagation()}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <Textarea
+            value={promptValue}
+            onChange={(e) => onPromptChange(shot.id, e.target.value)}
+            placeholder="提示词"
+            className="min-h-[60px] text-sm resize-y"
+            onPointerDown={(e) => e.stopPropagation()}
+          />
+        )}
         <div className="flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
           <span className="text-xs text-muted-foreground">类型:</span>
           <Select
-            value={shot.imageType || "keyframe"}
+            value={imageType}
             onValueChange={(val: string) => onUpdateShot(scriptShotPlan.episodeId, shot.id, { imageType: val as ShotInput["imageType"] })}
           >
             <SelectTrigger className="h-7 text-xs w-[120px]">
@@ -78,6 +149,27 @@ const ShotRow = memo(function ShotRow({
               <SelectItem value="multi_grid">多宫格</SelectItem>
             </SelectContent>
           </Select>
+          
+          {imageType === "multi_grid" && (
+            <>
+              <span className="text-xs text-muted-foreground ml-2">布局:</span>
+              <Select
+                value={shot.gridLayout || "2x2"}
+                onValueChange={handleGridLayoutChange}
+              >
+                <SelectTrigger className="h-7 text-xs w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRID_LAYOUT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -105,10 +197,22 @@ export function BatchGenerateImagesDialog({
 }: BatchGenerateImagesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [promptValues, setPromptValues] = useState<Record<string, string>>({})
+  const [promptEndValues, setPromptEndValues] = useState<Record<string, string>>({})
+  const [gridPromptsValues, setGridPromptsValues] = useState<Record<string, string>>({})
   const promptDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const promptEndDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const gridPromptsDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const shotMetaMap = useMemo(
-    () => new Map(shots.map(({ shot, scriptShotPlan }) => [shot.id, { episodeId: scriptShotPlan.episodeId, originalPrompt: shot.prompt || "" }])),
+    () => new Map(shots.map(({ shot, scriptShotPlan }) => [
+      shot.id, 
+      { 
+        episodeId: scriptShotPlan.episodeId, 
+        originalPrompt: shot.prompt || "",
+        originalPromptEnd: shot.promptEnd || "",
+        originalGridPrompts: shot.gridPrompts || ""
+      }
+    ])),
     [shots]
   )
 
@@ -117,6 +221,8 @@ export function BatchGenerateImagesDialog({
       const missingIds = new Set(shots.filter((s) => !s.shot.imageUrl).map((s) => s.shot.id))
       setSelectedIds(missingIds)
       setPromptValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.prompt || ""])))
+      setPromptEndValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.promptEnd || ""])))
+      setGridPromptsValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.gridPrompts || ""])))
     }
   }, [open, shots])
 
@@ -124,6 +230,10 @@ export function BatchGenerateImagesDialog({
     return () => {
       promptDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
       promptDebounceTimersRef.current.clear()
+      promptEndDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+      promptEndDebounceTimersRef.current.clear()
+      gridPromptsDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+      gridPromptsDebounceTimersRef.current.clear()
     }
   }, [])
 
@@ -152,13 +262,29 @@ export function BatchGenerateImagesDialog({
   const flushPromptUpdates = useCallback(() => {
     promptDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
     promptDebounceTimersRef.current.clear()
+    promptEndDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+    promptEndDebounceTimersRef.current.clear()
+    gridPromptsDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+    gridPromptsDebounceTimersRef.current.clear()
 
     Object.entries(promptValues).forEach(([shotId, prompt]) => {
       const meta = shotMetaMap.get(shotId)
       if (!meta || prompt === meta.originalPrompt) return
       onUpdateShot(meta.episodeId, shotId, { prompt })
     })
-  }, [onUpdateShot, promptValues, shotMetaMap])
+
+    Object.entries(promptEndValues).forEach(([shotId, promptEnd]) => {
+      const meta = shotMetaMap.get(shotId)
+      if (!meta || promptEnd === meta.originalPromptEnd) return
+      onUpdateShot(meta.episodeId, shotId, { promptEnd })
+    })
+
+    Object.entries(gridPromptsValues).forEach(([shotId, gridPrompts]) => {
+      const meta = shotMetaMap.get(shotId)
+      if (!meta || gridPrompts === meta.originalGridPrompts) return
+      onUpdateShot(meta.episodeId, shotId, { gridPrompts })
+    })
+  }, [onUpdateShot, promptValues, promptEndValues, gridPromptsValues, shotMetaMap])
 
   const handlePromptChange = useCallback(
     (shotId: string, prompt: string) => {
@@ -180,6 +306,46 @@ export function BatchGenerateImagesDialog({
     [onUpdateShot, shotMetaMap]
   )
 
+  const handlePromptEndChange = useCallback(
+    (shotId: string, promptEnd: string) => {
+      setPromptEndValues((prev) => ({ ...prev, [shotId]: promptEnd }))
+
+      const timer = promptEndDebounceTimersRef.current.get(shotId)
+      if (timer) clearTimeout(timer)
+
+      const meta = shotMetaMap.get(shotId)
+      if (!meta) return
+
+      const nextTimer = setTimeout(() => {
+        onUpdateShot(meta.episodeId, shotId, { promptEnd })
+        promptEndDebounceTimersRef.current.delete(shotId)
+      }, 800)
+
+      promptEndDebounceTimersRef.current.set(shotId, nextTimer)
+    },
+    [onUpdateShot, shotMetaMap]
+  )
+
+  const handleGridPromptsChange = useCallback(
+    (shotId: string, gridPrompts: string) => {
+      setGridPromptsValues((prev) => ({ ...prev, [shotId]: gridPrompts }))
+
+      const timer = gridPromptsDebounceTimersRef.current.get(shotId)
+      if (timer) clearTimeout(timer)
+
+      const meta = shotMetaMap.get(shotId)
+      if (!meta) return
+
+      const nextTimer = setTimeout(() => {
+        onUpdateShot(meta.episodeId, shotId, { gridPrompts })
+        gridPromptsDebounceTimersRef.current.delete(shotId)
+      }, 800)
+
+      gridPromptsDebounceTimersRef.current.set(shotId, nextTimer)
+    },
+    [onUpdateShot, shotMetaMap]
+  )
+
   const handleConfirm = useCallback(() => {
     flushPromptUpdates()
     onConfirm(Array.from(selectedIds))
@@ -187,7 +353,7 @@ export function BatchGenerateImagesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-5xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>批量生成画面</DialogTitle>
         </DialogHeader>
@@ -216,8 +382,12 @@ export function BatchGenerateImagesDialog({
               index={index}
               isSelected={selectedIds.has(shot.id)}
               promptValue={promptValues[shot.id] ?? shot.prompt ?? ""}
+              promptEndValue={promptEndValues[shot.id] ?? shot.promptEnd ?? ""}
+              gridPromptsValue={gridPromptsValues[shot.id] ?? shot.gridPrompts ?? ""}
               onToggle={handleToggleShot}
               onPromptChange={handlePromptChange}
+              onPromptEndChange={handlePromptEndChange}
+              onGridPromptsChange={handleGridPromptsChange}
               onUpdateShot={onUpdateShot}
             />
           ))}
