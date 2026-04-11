@@ -172,6 +172,19 @@ export const AI_PROVIDER_OPTIONS_BY_TYPE: Record<
     },
   },
   video: {
+    aliyun: {
+      label: "阿里云百炼（万相）",
+      logo: "/logos/qwen.svg",
+      models: [
+        { value: "wan2.6-i2v-flash", label: "Wan2.6-I2V-Flash (图生视频, 支持音频)" },
+        { value: "wan2.6-i2v", label: "Wan2.6-I2V (图生视频)" },
+        { value: "wan2.5-i2v-preview", label: "Wan2.5-I2V-Preview (图生视频)" },
+        { value: "wan2.2-i2v-plus", label: "Wan2.2-I2V-Plus (图生视频)" },
+        { value: "wan2.2-kf2v-flash", label: "Wan2.2-KF2V-Flash (首尾帧生视频)" },
+        { value: "wanx2.1-kf2v-plus", label: "Wanx2.1-KF2V-Plus (首尾帧生视频)" },
+      ],
+      defaultBaseUrl: "https://dashscope.aliyuncs.com/api/v1",
+    },
     vidu: {
       label: "Vidu",
       logo: "/logos/vidu.svg",

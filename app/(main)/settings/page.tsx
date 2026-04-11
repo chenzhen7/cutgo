@@ -580,20 +580,30 @@ export default function SettingsPage() {
             </div>
 
             {/* 设为默认 */}
-            {form.type === "video" && (form.provider === "doubao" || form.provider === "vidu" || form.provider === "google") && (
+            {form.type === "video" && (form.provider === "doubao" || form.provider === "vidu" || form.provider === "google" || form.provider === "aliyun") && (
               <div className="space-y-1.5">
                 <Label>视频分辨率</Label>
                 <Select
-                  value={(form.config?.resolution as string) || "720p"}
+                  value={(form.config?.resolution as string) || (form.provider === "aliyun" ? "1080P" : "720p")}
                   onValueChange={(v) => setForm((p) => ({ ...p, config: { ...p.config, resolution: v } }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择视频分辨率" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="720p">720p</SelectItem>
-                    <SelectItem value="1080p">1080p</SelectItem>
-                    {form.provider === "google" && <SelectItem value="4k">4k</SelectItem>}
+                    {form.provider === "aliyun" ? (
+                      <>
+                        <SelectItem value="480P">480P</SelectItem>
+                        <SelectItem value="720P">720P</SelectItem>
+                        <SelectItem value="1080P">1080P</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="720p">720p</SelectItem>
+                        <SelectItem value="1080p">1080p</SelectItem>
+                        {form.provider === "google" && <SelectItem value="4k">4k</SelectItem>}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

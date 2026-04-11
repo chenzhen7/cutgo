@@ -3,6 +3,7 @@ import { throwCutGoError } from "@/lib/api-error"
 import { DoubaoVideoProvider } from "./doubao"
 import { ViduVideoProvider } from "./vidu"
 import { GoogleVideoProvider } from "./google"
+import { AliyunVideoProvider } from "./aliyun"
 import { PlaceholderVideoProvider } from "./placeholder"
 import { logAIEvent } from "../logging"
 import type {
@@ -68,6 +69,15 @@ export function createVideoProviderFromConfig(
       baseUrl: config.baseUrl,
       model: config.model,
       config: config.config,
+    })
+  }
+
+  if (config.provider === "aliyun") {
+    return new AliyunVideoProvider({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl || "https://dashscope.aliyuncs.com/api/v1",
+      model: config.model,
+      resolution: config.config?.resolution || "1080P",
     })
   }
 
