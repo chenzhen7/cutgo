@@ -57,6 +57,7 @@ export function createVideoProviderFromConfig(
       baseUrl: config.baseUrl || "https://api.vidu.com",
       model: config.model,
       resolution: config.config?.resolution,
+      authPrefix: config.config?.authPrefix,
     })
   }
 

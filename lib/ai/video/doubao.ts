@@ -146,7 +146,7 @@ export class DoubaoVideoProvider implements VideoProvider {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.config.apiKey}`,
       },
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(30_000),
     })
 
     if (!res.ok) {

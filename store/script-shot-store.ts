@@ -19,8 +19,8 @@ import { toast } from "sonner"
 
 let scriptShotPlansFetchToken = 0
 
-const POLL_INTERVAL_MS = 5000
-const MAX_POLL_ATTEMPTS = 72 // 最长 6 分钟
+const POLL_INTERVAL_MS = 10000
+const MAX_POLL_ATTEMPTS = 60 // 最长 10 分钟
 
 function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void {
   const updatePollingState = (shotData: Shot | null, statusOverride?: "error") => {

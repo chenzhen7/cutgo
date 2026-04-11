@@ -598,6 +598,21 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* Auth Prefix (for Vidu etc) */}
+            {form.provider === "vidu" && (
+              <div className="space-y-1.5">
+                <Label>
+                  Authorization 前缀
+                  <span className="ml-1 text-xs text-muted-foreground">（vidu 默认为 Token，可改为 Bearer 等）</span>
+                </Label>
+                <Input
+                  placeholder="Token"
+                  value={(form.config?.authPrefix as string) || ""}
+                  onChange={(e) => setForm((p) => ({ ...p, config: { ...p.config, authPrefix: e.target.value } }))}
+                />
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <input
                 id="isDefault"

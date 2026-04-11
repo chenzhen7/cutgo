@@ -13,6 +13,7 @@ export interface ViduVideoConfig {
   baseUrl: string
   model: string
   resolution?: string
+  authPrefix?: string
 }
 
 /** 创建任务响应 */
@@ -107,13 +108,14 @@ export class ViduVideoProvider implements VideoProvider {
       url,
       body,
     })
+    
 
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         // 注意：Vidu API 使用 Token {your_api_key} 格式
-        Authorization: `Token ${this.config.apiKey}`,
+        Authorization: `${this.config.authPrefix || "Token"} ${this.config.apiKey}`,
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(300_000),
@@ -150,9 +152,10 @@ export class ViduVideoProvider implements VideoProvider {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${this.config.apiKey}`,
+        Authorization: `${this.config.authPrefix || "Token"} ${this.config.apiKey}`,
+
       },
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(30_000),
     })
 
     if (!res.ok) {
