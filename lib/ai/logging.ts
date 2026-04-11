@@ -41,7 +41,8 @@ export function logAIEvent(
     const timestamp = new Date().toISOString();
     const logPrefix = `[${timestamp}] [AI ${type.toUpperCase()} ${action.toUpperCase()}]`;
 
-    console.log(logPrefix, '\n' + truncatedPayload);
+    const logString = JSON.stringify(truncatedPayload, null, 2);
+    console.log(logPrefix, '\n' + logString);
   } catch (err) {
     console.error(`[AI ${type.toUpperCase()} ${action.toUpperCase()}] Error logging event:`, err);
   }

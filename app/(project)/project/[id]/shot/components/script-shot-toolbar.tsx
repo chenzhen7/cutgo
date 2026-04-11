@@ -71,7 +71,7 @@ export function ScriptShotToolbar({
           size="sm"
           onClick={onGenerateCurrentEpisode}
         >
-          {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Clapperboard  className="size-4 mr-2" />}
+          {isGenerating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Clapperboard className="size-4 mr-2" />}
           {isGenerating ? "生成中..." : "生成分镜"}
         </Button>
       </div>
