@@ -118,10 +118,10 @@ export function ShotPreviewPanel({
             <div className="h-full min-h-0">
               {isGeneratingVideo ? (
                 <div className={cn(
-                  "h-full w-full rounded-lg bg-violet-500/5 flex flex-col items-center justify-center gap-2"
+                  "h-full w-full rounded-lg flex flex-col items-center justify-center gap-2"
                 )}>
-                  <Loader2 className="size-6 animate-spin text-violet-500" />
-                  <span className="text-xs text-violet-600 dark:text-violet-400">视频生成中...</span>
+                  <Loader2 className="size-6 animate-spin" />
+                  <span className="text-xs ">视频生成中...</span>
                   <span className="text-[10px] text-muted-foreground">预计需要 30-60 秒</span>
                 </div>
               ) : shot.videoUrl ? (
@@ -151,9 +151,9 @@ export function ShotPreviewPanel({
                       className="size-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg"
                     >
                       {isVideoPlaying ? (
-                        <Pause className="size-5 text-violet-600" />
+                        <Pause className="size-5" />
                       ) : (
-                        <Play className="size-5 text-violet-600 ml-0.5" />
+                        <Play className="size-5 ml-0.5" />
                       )}
                     </button>
                   </div>
