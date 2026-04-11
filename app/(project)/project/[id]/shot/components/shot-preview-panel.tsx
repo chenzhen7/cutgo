@@ -108,8 +108,8 @@ export function ShotPreviewPanel({
               <div className={cn(
                 "h-full w-full rounded-lg bg-muted/20 flex flex-col items-center justify-center gap-2"
               )}>
-                <ImageIcon className="size-8 text-muted-foreground/20" />
-                <span className="text-xs text-muted-foreground/40">暂无画面</span>
+                <ImageIcon className="size-8" />
+                <span className="text-xs ">暂无画面</span>
               </div>
             )}
           </div>
@@ -174,10 +174,10 @@ export function ShotPreviewPanel({
                 </div>
               ) : (
                 <div className={cn(
-                  "h-full w-full rounded-lg bg-violet-500/[0.02] flex flex-col items-center justify-center gap-2"
+                  "h-full w-full rounded-lg flex flex-col items-center justify-center gap-2"
                 )}>
-                  <Video className="size-8 text-violet-500/20" />
-                  <span className="text-xs text-muted-foreground/40">暂无视频</span>
+                  <Video className="size-8 " />
+                  <span className="text-xs ">暂无视频</span>
                 </div>
               )}
             </div>

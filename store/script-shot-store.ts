@@ -23,26 +23,35 @@ const POLL_INTERVAL_MS = 5000
 const MAX_POLL_ATTEMPTS = 72 // 最长 6 分钟
 
 function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void {
-  if (attempt >= MAX_POLL_ATTEMPTS) {
+  const updatePollingState = (shotData: Shot | null, statusOverride?: "error") => {
     const store = useScriptShotsStore.getState()
     const videoGeneratingIds = new Set(store.videoGeneratingIds)
     videoGeneratingIds.delete(shotId)
 
-    // 找到对应镜头并更新其状态
-    const targetPlan = store.scriptShotPlans.find(p => p.id === episodeId)
-    const targetShot = targetPlan?.shots.find(s => s.id === shotId)
-
-    if (targetShot) {
-      useScriptShotsStore.setState({
-        videoGeneratingIds,
-        scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, {
-          ...targetShot,
-          videoStatus: "error" as const
-        }),
-      })
-    } else {
-      useScriptShotsStore.setState({ videoGeneratingIds })
+    if (shotData || statusOverride) {
+      let targetShot = shotData
+      if (!targetShot && statusOverride) {
+        const plan = store.scriptShotPlans.find(p => p.id === episodeId)
+        const existing = plan?.shots.find(s => s.id === shotId)
+        if (existing) {
+          targetShot = { ...existing, videoStatus: statusOverride }
+        }
+      }
+      
+      if (targetShot) {
+        useScriptShotsStore.setState({
+          videoGeneratingIds,
+          scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, targetShot),
+        })
+        return
+      }
     }
+    
+    useScriptShotsStore.setState({ videoGeneratingIds })
+  }
+
+  if (attempt >= MAX_POLL_ATTEMPTS) {
+    updatePollingState(null, "error")
     toast.error("视频生成超时，请重试")
     return
   }
@@ -52,24 +61,11 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
       const data = await apiFetch<{ videoStatus: string; videoUrl: string | null; shot: Shot }>(
         `/api/script-shots/${episodeId}/shots/${shotId}/video-status`
       )
-      const store = useScriptShotsStore.getState()
 
-      if (data.videoStatus === "completed") {
-        const videoGeneratingIds = new Set(store.videoGeneratingIds)
-        videoGeneratingIds.delete(shotId)
-        useScriptShotsStore.setState({
-          videoGeneratingIds,
-          scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, data.shot),
-        })
-        toast.success("视频生成完成")
-      } else if (data.videoStatus === "error") {
-        const videoGeneratingIds = new Set(store.videoGeneratingIds)
-        videoGeneratingIds.delete(shotId)
-        useScriptShotsStore.setState({
-          videoGeneratingIds,
-          scriptShotPlans: updateShotInPlans(store.scriptShotPlans, episodeId, shotId, data.shot),
-        })
-        toast.error("视频生成失败")
+      if (data.videoStatus === "completed" || data.videoStatus === "error") {
+        updatePollingState(data.shot)
+        if (data.videoStatus === "completed") toast.success("视频生成完成")
+        else toast.error("视频生成失败")
       } else {
         startVideoPolling(episodeId, shotId, attempt + 1)
       }
@@ -152,7 +148,7 @@ interface ScriptShotState {
   clearImage: (episodeId: string, shotId: string) => Promise<void>
 
   generateVideo: (episodeId: string, shotId: string) => Promise<void>
-  generateBatchVideos: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only" }) => Promise<void>
+  generateBatchVideos: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only"; shotIds?: string[] }) => Promise<void>
   clearVideo: (episodeId: string, shotId: string) => Promise<void>
 
   setActiveEpisodeId: (episodeId: string | null) => void
@@ -526,14 +522,16 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const { scriptShotPlans } = get()
     const mode = options?.mode ?? "missing_only"
     const episodeId = options?.episodeId
+    const shotIds = options?.shotIds
 
     const plans = episodeId
       ? scriptShotPlans.filter((sb) => sb.episodeId === episodeId)
       : scriptShotPlans
 
-    const targets = plans.flatMap((plan) =>
+    let targets = plans.flatMap((plan) =>
       plan.shots.filter((s) => {
         if (!s.imageUrl) return false
+        if (shotIds) return shotIds.includes(s.id)
         if (mode === "missing_only") return !s.videoUrl
         return true
       }).map((s) => ({ episodeId: plan.id, shot: s }))

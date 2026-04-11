@@ -390,12 +390,13 @@ export function BatchGenerateImagesDialog({
           <Button variant="outline" size="sm" onClick={handleSelectAll}>
             全选
           </Button>
-          <Button variant="outline" size="sm" onClick={handleSelectMissing}>
-            仅选缺失图片
-          </Button>
           <Button variant="outline" size="sm" onClick={handleSelectNone}>
             清空
           </Button>
+          <Button variant="outline" size="sm" onClick={handleSelectMissing}>
+            仅选缺失图片
+          </Button>
+          
           <span className="text-sm text-muted-foreground ml-auto">
             已选 {selectedIds.size} / {shots.length}
           </span>

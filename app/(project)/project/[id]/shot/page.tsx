@@ -30,6 +30,7 @@ import { ScriptLinesDialog } from "./components/script-lines-dialog"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
 import { BatchGenerateImagesDialog } from "./components/batch-generate-images-dialog"
+import { BatchGenerateVideosDialog } from "./components/batch-generate-videos-dialog"
 import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout, Project } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
@@ -112,6 +113,7 @@ export default function ScriptShotPage() {
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
   const [showBatchImageDialog, setShowBatchImageDialog] = useState(false)
+  const [showBatchVideoDialog, setShowBatchVideoDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   const [videoPreviewShot, setVideoPreviewShot] = useState<Shot | null>(null)
@@ -307,16 +309,16 @@ export default function ScriptShotPage() {
   }, [currentActiveShot, clearVideo])
 
   const handleBatchGenerateVideos = useCallback(
-    (mode: "all" | "missing_only") => {
-      generateBatchVideos(projectId, { mode })
+    (shotIds: string[]) => {
+      generateBatchVideos(projectId, { shotIds })
+      setShowBatchVideoDialog(false)
     },
     [generateBatchVideos, projectId]
   )
 
-  const handleBatchGenerateEpisodeVideos = useCallback(() => {
-    if (!activeEpisodeId) return
-    generateBatchVideos(projectId, { episodeId: activeEpisodeId, mode: "missing_only" })
-  }, [activeEpisodeId, generateBatchVideos, projectId])
+  const handleOpenBatchVideoDialog = useCallback(() => {
+    setShowBatchVideoDialog(true)
+  }, [])
 
   // 通过 getState() 在回调内读取最新数据，避免将 scriptShotPlans 列入依赖
   // 使得这三个函数引用稳定，防止任意 shot 更新都触发 SceneSwimlane 重渲染
@@ -443,8 +445,7 @@ export default function ScriptShotPage() {
               onOpenBatchImageDialog={handleOpenBatchImageDialog}
               batchVideoStatus={batchVideoStatus}
               batchVideoProgress={batchVideoProgress}
-              onBatchGenerateVideos={handleBatchGenerateVideos}
-              onBatchGenerateEpisodeVideos={handleBatchGenerateEpisodeVideos}
+              onOpenBatchVideoDialog={handleOpenBatchVideoDialog}
             />
           </div>
         </div>
@@ -648,6 +649,17 @@ export default function ScriptShotPage() {
         onUpdateShot={handleUpdateShot}
         isGenerating={batchImageStatus === "generating"}
         imageGeneratingIds={imageGeneratingIds}
+      />
+
+      {/* Batch generate videos dialog */}
+      <BatchGenerateVideosDialog
+        open={showBatchVideoDialog}
+        onOpenChange={setShowBatchVideoDialog}
+        shots={allFlatShots}
+        onConfirm={handleBatchGenerateVideos}
+        onUpdateShot={handleUpdateShot}
+        isGenerating={batchVideoStatus === "generating"}
+        videoGeneratingIds={videoGeneratingIds}
       />
 
       {/* Video preview dialog */}
