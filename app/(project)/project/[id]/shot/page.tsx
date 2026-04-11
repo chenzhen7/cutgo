@@ -647,6 +647,7 @@ export default function ScriptShotPage() {
         onConfirm={handleBatchGenerateImages}
         onUpdateShot={handleUpdateShot}
         isGenerating={batchImageStatus === "generating"}
+        imageGeneratingIds={imageGeneratingIds}
       />
 
       {/* Video preview dialog */}

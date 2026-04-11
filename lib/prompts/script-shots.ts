@@ -139,7 +139,10 @@ function buildShotImageSystemPromptBody(): string {
 ## 重要约束
 - 严格按照输入分镜列表的顺序输出，数量必须与输入一致
 - 使用中文，详细且具体
-- 角色外貌特征、服装、表情、动作要具体描述`
+- 角色外貌特征、服装、表情、动作要具体描述
+- 给出完整的图像生成提示词，不要省略任何要素（特别是尾帧）
+`
+ 
 }
 
 function buildShotImageOutputInstructions(imageType: ImageType, gridLayout?: GridLayout | null): string {
@@ -276,13 +279,15 @@ cinematic, [风格词], [时长]s
 请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释），数组长度必须与输入分镜列表完全一致：
 
 [
-  {
-    "videoPrompt": "视频提示词"
-  }
+  "视频提示词1",
+  "视频提示词2",
+  ...
+  "视频提示词n"
 ]
 
 字段约束：
-1. videoPrompt: 必填，完整的视频生成提示词`
+- 给出完整的视频生成提示词，不要省略任何要素
+`
 
 export function buildShotVideoPromptSystemPrompt(): string {
   return SHOT_VIDEO_PROMPT_SYSTEM

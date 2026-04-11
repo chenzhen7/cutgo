@@ -16,6 +16,7 @@ interface ShotRowProps {
   scriptShotPlan: ScriptShotPlan
   index: number
   isSelected: boolean
+  isGeneratingImage: boolean
   promptValue: string
   promptEndValue: string
   gridPromptsValue: string
@@ -31,6 +32,7 @@ const ShotRow = memo(function ShotRow({
   scriptShotPlan,
   index,
   isSelected,
+  isGeneratingImage,
   promptValue,
   promptEndValue,
   gridPromptsValue,
@@ -92,7 +94,12 @@ const ShotRow = memo(function ShotRow({
         {index + 1}
       </div>
       <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1 relative">
-        {imageType === "first_last" && parsedImageUrls.length >= 2 ? (
+        {isGeneratingImage ? (
+          <div className="flex flex-col items-center justify-center gap-1 w-full h-full bg-muted/50">
+            <Loader2 className="size-5 animate-spin text-primary" />
+            <span className="text-[10px] text-muted-foreground">生成中</span>
+          </div>
+        ) : imageType === "first_last" && parsedImageUrls.length >= 2 ? (
           <div className="flex flex-row gap-0.5 w-full h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={parsedImageUrls[0]} alt="首帧" className="w-1/2 h-full object-cover" />
@@ -204,6 +211,7 @@ interface BatchGenerateImagesDialogProps {
   onConfirm: (shotIds: string[]) => void
   onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
   isGenerating: boolean
+  imageGeneratingIds: Set<string>
 }
 
 export function BatchGenerateImagesDialog({
@@ -213,6 +221,7 @@ export function BatchGenerateImagesDialog({
   onConfirm,
   onUpdateShot,
   isGenerating,
+  imageGeneratingIds,
 }: BatchGenerateImagesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [promptValues, setPromptValues] = useState<Record<string, string>>({})
@@ -400,6 +409,7 @@ export function BatchGenerateImagesDialog({
               scriptShotPlan={scriptShotPlan}
               index={index}
               isSelected={selectedIds.has(shot.id)}
+              isGeneratingImage={imageGeneratingIds.has(shot.id)}
               promptValue={promptValues[shot.id] ?? shot.prompt ?? ""}
               promptEndValue={promptEndValues[shot.id] ?? shot.promptEnd ?? ""}
               gridPromptsValue={gridPromptsValues[shot.id] ?? shot.gridPrompts ?? ""}

@@ -146,12 +146,10 @@ async function callAIGenerateShotVideoPrompts(
     ],
   })
 
-  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "视频提示词生成")
+  const rawItems = parseLLMJsonArray<string>(result.content?.trim() || "", "视频提示词生成")
 
   return rawItems.map((item) => {
-    if (!item || typeof item !== "object") return {}
-    const videoPrompt =
-      typeof item.videoPrompt === "string" && item.videoPrompt.trim() ? item.videoPrompt.trim() : undefined
+    const videoPrompt = typeof item === "string" && item.trim() ? item.trim() : undefined
     return { videoPrompt }
   })
 }
