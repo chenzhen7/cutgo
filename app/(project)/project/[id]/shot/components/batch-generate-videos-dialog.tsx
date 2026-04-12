@@ -74,17 +74,17 @@ const ShotRow = memo(function ShotRow({
             )}
             <div className="h-24 bg-muted rounded overflow-hidden flex items-center justify-center border relative">
               {isGeneratingVideo ? (
-                <div className="flex flex-col items-center justify-center gap-1 w-full h-full bg-muted/50">
-                  <Loader2 className="size-5 animate-spin text-primary" />
-                  <span className="text-[10px] text-muted-foreground">生成中</span>
+                <div className="flex flex-col items-center justify-center gap-2 w-full h-full bg-muted/50 px-1">
+                  <Loader2 className="size-8 animate-spin text-primary" />
+                  <span className="text-xs font-medium text-muted-foreground text-center leading-tight">生成中</span>
                 </div>
               ) : shot.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={shot.imageUrl} alt="首帧" className="w-full h-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center justify-center gap-1 px-1">
-                  <ImageIcon className="size-6 text-muted-foreground/50" />
-                  <span className="text-[10px] text-muted-foreground text-center">请先生成画面</span>
+                <div className="flex flex-col items-center justify-center gap-1.5 px-1">
+                  <ImageIcon className="size-7 text-muted-foreground/50" />
+                  <span className="text-xs text-muted-foreground text-center leading-tight">请先生成画面</span>
                 </div>
               )}
             </div>

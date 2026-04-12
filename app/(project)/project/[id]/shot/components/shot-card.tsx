@@ -45,9 +45,9 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
   if (isGeneratingVideo) {
     return (
       <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg z-10">
-        <div className="flex flex-col items-center gap-1">
-          <Loader2 className="size-5 animate-spin text-violet-400" />
-          <span className="text-[8px] text-white/80">生成视频</span>
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="size-8 animate-spin text-violet-400" />
+          <span className="text-xs font-medium text-white/90">生成视频</span>
         </div>
       </div>
     )
@@ -92,9 +92,10 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   if (isGeneratingImage) {
     return (
       <div className={containerClassName}>
-        <div className={cn(contentClassName, "bg-muted/50 flex items-center justify-center")}>
-          <Loader2 className="size-5 animate-spin text-primary @[900px]:size-6" />
-          <span className="absolute bottom-1 text-[9px] text-muted-foreground @[900px]:text-[10px]">{typeLabel}</span>
+        <div className={cn(contentClassName, "relative bg-muted/50 flex flex-col items-center justify-center gap-2 pb-6 @[480px]:pb-7")}>
+          <Loader2 className="size-7 animate-spin text-primary @[480px]:size-8 @[900px]:size-9" />
+          <span className="text-xs font-medium text-muted-foreground">生成中</span>
+          <span className="absolute bottom-1.5 left-0 right-0 text-center text-[10px] text-muted-foreground/80 @[640px]:text-xs px-1">{typeLabel}</span>
         </div>
       </div>
     )
@@ -231,9 +232,9 @@ export const ShotCard = memo(function ShotCard({
           aspectRatio === "16:9" ? "aspect-[16/9]" : "aspect-[9/16]"
         )}>
           {isGeneratingImage ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-              <Loader2 className="size-5 animate-spin text-primary" />
-              <span className="text-[8px] text-muted-foreground">生成中</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <span className="text-xs font-medium text-muted-foreground">生成中</span>
             </div>
           ) : shot.imageUrl ? (
             <PreviewableImage src={shot.imageUrl} alt="分镜" previewable={false} className="size-full object-contain bg-black" />

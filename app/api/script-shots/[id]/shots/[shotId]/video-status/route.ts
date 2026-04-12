@@ -47,7 +47,7 @@ export const GET = withError(async (
           throwCutGoError("INTERNAL", "视频任务成功但未返回视频地址")
         }
 
-        console.info("[视频状态] 开始保存视频到本地", { episodeId, shotId, videoTaskId: shot.videoTaskId })
+        console.info("[视频状态] 开始保存视频到本地", { sourceUrl: status.url, episodeId, shotId, videoTaskId: shot.videoTaskId })
         const localVideoUrl = await persistGeneratedVideoLocally({
           sourceUrl: status.url,
           projectId: shot.episode.projectId,

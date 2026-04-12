@@ -100,9 +100,9 @@ const ShotRow = memo(function ShotRow({
       </div>
       <div className="w-24 h-24 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center border mt-1 relative">
         {isGeneratingImage ? (
-          <div className="flex flex-col items-center justify-center gap-1 w-full h-full bg-muted/50">
-            <Loader2 className="size-5 animate-spin text-primary" />
-            <span className="text-[10px] text-muted-foreground">生成中</span>
+          <div className="flex flex-col items-center justify-center gap-2 w-full h-full bg-muted/50 px-1">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <span className="text-xs font-medium text-muted-foreground text-center leading-tight">生成中</span>
           </div>
         ) : shot.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
