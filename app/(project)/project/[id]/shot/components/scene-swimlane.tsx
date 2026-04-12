@@ -28,7 +28,7 @@ import {
 } from "@dnd-kit/sortable"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ShotCard } from "./shot-card"
-import type { ShotCardLayout } from "./shot-card"
+import type { ShotCardLayout, ShotDetailTab } from "./shot-card"
 import type { ScriptShotPlan, Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 
 interface SceneSwimlaneProps {
@@ -39,6 +39,8 @@ interface SceneSwimlaneProps {
   selectedShotIds: Set<string>
   imageGeneratingIds: Set<string>
   videoGeneratingIds: Set<string>
+  /** 与右侧详情「画面 / 视频」页签同步，控制列表提示词展示 */
+  detailTab?: ShotDetailTab
   layout?: ShotCardLayout
   /** 项目画幅比，如 "9:16" 或 "16:9" */
   aspectRatio?: string
@@ -65,6 +67,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   selectedShotIds,
   imageGeneratingIds,
   videoGeneratingIds,
+  detailTab = "image",
   layout = "list",
   aspectRatio = "9:16",
   assetCharacterMap,
@@ -236,6 +239,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                   isSelected={selectedShotIds.has(shot.id)}
                   isGeneratingImage={imageGeneratingIds.has(shot.id)}
                   isGeneratingVideo={videoGeneratingIds.has(shot.id)}
+                  detailTab={detailTab}
                   layout={layout}
                   aspectRatio={aspectRatio}
                   assetCharacterMap={assetCharacterMap}
@@ -276,6 +280,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                 isSelected={false}
                 isGeneratingImage={false}
                 isGeneratingVideo={false}
+                detailTab={detailTab}
                 layout={layout}
                 aspectRatio={aspectRatio}
                 isDragging={true}

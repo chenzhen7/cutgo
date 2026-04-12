@@ -495,6 +495,7 @@ export default function ScriptShotPage() {
                           selectedShotIds={selectedShotIds}
                           imageGeneratingIds={imageGeneratingIds}
                           videoGeneratingIds={videoGeneratingIds}
+                          detailTab={activeDetailTab}
                           layout={shotLayout}
                           aspectRatio={aspectRatio}
                           assetCharacterMap={assetCharacterMap}

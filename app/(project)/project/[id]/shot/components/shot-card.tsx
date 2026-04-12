@@ -17,6 +17,29 @@ import { PreviewableImage } from "@/components/ui/previewable-image"
 
 export type ShotCardLayout = "list" | "grid"
 
+/** 与详情侧栏「画面生成 / 视频生成」页签一致，用于列表/网格中展示对应提示词 */
+export type ShotDetailTab = "image" | "video"
+
+function imagePromptSummary(shot: Shot): string {
+  const imageType = shot.imageType || "keyframe"
+  if (imageType === "first_last") {
+    const head = shot.prompt?.trim() ?? ""
+    const tail = shot.promptEnd?.trim() ?? ""
+    if (head && tail) return `首：${head}　尾：${tail}`
+    return head || tail
+  }
+  if (imageType === "multi_grid") {
+    const cells = parseJsonArray(shot.gridPrompts)
+    const parts = cells.map((p, i) => {
+      const t = String(p).trim()
+      return t ? `格${i + 1} ${t}` : ""
+    }).filter(Boolean)
+    if (parts.length > 0) return parts.join(" · ")
+    return shot.prompt?.trim() ?? ""
+  }
+  return shot.prompt?.trim() ?? ""
+}
+
 interface ShotCardProps {
   shot: Shot
   episodeId: string
@@ -24,6 +47,8 @@ interface ShotCardProps {
   isSelected: boolean
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
+  /** 与右侧详情页签同步：画面 → 图片侧提示词，视频 → 视频提示词 */
+  detailTab?: ShotDetailTab
   layout?: ShotCardLayout
   /** 项目画幅比，如 "9:16" 或 "16:9" */
   aspectRatio?: string
@@ -162,6 +187,7 @@ export const ShotCard = memo(function ShotCard({
   isSelected,
   isGeneratingImage,
   isGeneratingVideo,
+  detailTab = "image",
   layout = "list",
   aspectRatio = "9:16",
   isDragging = false,
@@ -324,13 +350,17 @@ export const ShotCard = memo(function ShotCard({
           </div>
         </div>
 
-        {/* Bottom info — 网格下列出分镜文案描述（与列表主文案一致），非画面提示词 */}
+        {/* Bottom info — 随详情页签切换：画面提示词 / 视频提示词 */}
         <div className="px-2 py-1.5 flex flex-col gap-0.5">
           <p className={cn(
             "text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] leading-relaxed line-clamp-2",
-            shot.content?.trim() ? "text-foreground/90" : "text-muted-foreground italic"
+            (detailTab === "video"
+              ? shot.videoPrompt?.trim()
+              : imagePromptSummary(shot)) ? "text-foreground/90" : "text-muted-foreground italic"
           )}>
-            {shot.content?.trim() || "暂无分镜描述"}
+            {detailTab === "video"
+              ? (shot.videoPrompt?.trim() || "暂无视频提示词")
+              : (imagePromptSummary(shot) || "暂无画面提示词")}
           </p>
         </div>
       </div>
@@ -382,29 +412,27 @@ export const ShotCard = memo(function ShotCard({
             <div className="flex flex-col gap-2">
               {shot.content && (
                 <div className="flex items-start gap-1.5 mb-1">
-                  <span className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] font-medium text-foreground/90  @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5leading-relaxed">
+                  <span className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] font-medium text-foreground/90  @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
                     {shot.content}
                   </span>
                 </div>
               )}
-              {shot.imageType !== "multi_grid" && (
-                <div className="hidden @[480px]:flex items-start gap-1.5">
+              <div className="hidden @[480px]:flex items-start gap-1.5">
+                {detailTab === "video" ? (
+                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
+                    <Film className="size-2.5 mr-0.5" />
+                    视频
+                  </Badge>
+                ) : (
                   <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20 @[900px]:text-[9px]">
                     <ImageIcon className="size-2.5 mr-0.5" />
-                    分镜
+                    画面
                   </Badge>
-                  <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
-                    {shot.prompt || "暂无分镜提示词"}
-                  </p>
-                </div>
-              )}
-              <div className="hidden @[480px]:flex items-start gap-1.5">
-                <Badge variant="outline" className="text-[8px] px-1.5 py-0 shrink-0 mt-0.5 bg-violet-500/5 text-violet-600 dark:text-violet-400 border-violet-500/20 @[900px]:text-[9px]">
-                  <Film className="size-2.5 mr-0.5" />
-                  视频
-                </Badge>
+                )}
                 <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
-                  {shot.videoPrompt || "暂无视频提示词"}
+                  {detailTab === "video"
+                    ? (shot.videoPrompt?.trim() || "暂无视频提示词")
+                    : (imagePromptSummary(shot) || "暂无画面提示词")}
                 </p>
               </div>
             </div>
