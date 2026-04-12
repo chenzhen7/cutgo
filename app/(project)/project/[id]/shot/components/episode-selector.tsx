@@ -56,7 +56,7 @@ export function EpisodeSelector() {
           <ChevronDown className="size-3.5 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuContent align="start" className="w-80">
         {orderedEpisodes.map((episode) => {
           const displayN = displayNumberById.get(episode.id) ?? 1
           const shotCount = getEpisodeShotCount(episode.id)
