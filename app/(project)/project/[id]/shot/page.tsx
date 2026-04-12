@@ -31,7 +31,7 @@ import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
 import { BatchGenerateImagesDialog } from "./components/batch-generate-images-dialog"
 import { BatchGenerateVideosDialog } from "./components/batch-generate-videos-dialog"
-import type { ScriptShotPlan, ShotInput, Shot, ImageType, GridLayout, Project } from "@/lib/types"
+import type { ScriptShotPlan, ShotInput, Shot, Project } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
 
@@ -178,24 +178,25 @@ export default function ScriptShotPage() {
     [currentScriptShotPlans]
   )
 
-  const defaultShotType = useMemo(() => {
-    const plan = currentScriptShotPlans.find(p => p.episodeId === activeEpisodeId)
-    return plan?.episode?.shotType as ImageType | undefined
-  }, [currentScriptShotPlans, activeEpisodeId])
-
-  const handleGenerateCurrentEpisode = useCallback(() => {
-    if (!activeEpisodeId) return
-    setShowShotTypeDialog(true)
-  }, [activeEpisodeId])
-
-  const handleConfirmGenerate = useCallback(async (imageType: ImageType, gridLayout: GridLayout | null) => {
+  const handleConfirmGenerate = useCallback(async () => {
     if (!activeEpisodeId) return
     setShowShotTypeDialog(false)
     setDetailPanelOpen(false)
-    await generateScriptShots(projectId, [activeEpisodeId], imageType, gridLayout)
+    await generateScriptShots(projectId, [activeEpisodeId], "keyframe", null)
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
     await fetchScriptShotPlans(projectId)
   }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
+
+  const handleGenerateCurrentEpisode = useCallback(() => {
+    if (!activeEpisodeId) return
+
+    if (hasExistingShots) {
+      setShowShotTypeDialog(true)
+      return
+    }
+
+    void handleConfirmGenerate()
+  }, [activeEpisodeId, hasExistingShots, handleConfirmGenerate])
 
   const handleDeleteShot = useCallback(
     async (episodeId: string, shotId: string) => {
@@ -636,8 +637,6 @@ export default function ScriptShotPage() {
       {/* Generate storyboard type selection dialog */}
       <GenerateShotTypeDialog
         open={showShotTypeDialog}
-        hasExistingShots={hasExistingShots}
-        defaultShotType={defaultShotType}
         onCancel={() => setShowShotTypeDialog(false)}
         onConfirm={handleConfirmGenerate}
       />
