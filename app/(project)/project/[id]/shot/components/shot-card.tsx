@@ -324,15 +324,13 @@ export const ShotCard = memo(function ShotCard({
           </div>
         </div>
 
-        {/* Bottom info */}
+        {/* Bottom info — 网格下列出分镜文案描述（与列表主文案一致），非画面提示词 */}
         <div className="px-2 py-1.5 flex flex-col gap-0.5">
           <p className={cn(
             "text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] leading-relaxed line-clamp-2",
-            (shot.imageType === "multi_grid" ? shot.content : shot.prompt) ? "text-foreground/90" : "text-muted-foreground italic"
+            shot.content?.trim() ? "text-foreground/90" : "text-muted-foreground italic"
           )}>
-            {shot.imageType === "multi_grid"
-              ? (shot.content || "暂无内容描述")
-              : (shot.prompt || "暂无分镜提示词")}
+            {shot.content?.trim() || "暂无分镜描述"}
           </p>
         </div>
       </div>
