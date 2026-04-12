@@ -55,7 +55,7 @@ export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业
 - 状态
 
 3. 提示词结构建议：
-主体 + 材质  + 细节 + 光影 + 背景 + 质量词
+主体 + 材质  + 细节 + 光影 + 背景  
 
 ## 输出格式
 请严格按以下 JSON 格式输出，不要包含任何额外说明、注释或 markdown 代码块标记：

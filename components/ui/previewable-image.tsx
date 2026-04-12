@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 
@@ -66,9 +66,15 @@ export function PreviewableImage({
               <X className="size-4" />
             </button>
 
-            {title && (
-              <div className="px-4 pt-4 pb-2 text-sm font-medium text-white/70 shrink-0">{title}</div>
-            )}
+            <DialogTitle
+              className={cn(
+                title
+                  ? "px-4 pt-4 pb-2 text-sm font-medium text-white/70 shrink-0"
+                  : "sr-only"
+              )}
+            >
+              {title ?? alt}
+            </DialogTitle>
 
             <div className="flex items-center justify-center p-2 sm:p-4 min-h-0">
               <img
