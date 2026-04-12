@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams, usePathname } from "next/navigation"
-import { ArrowLeft, Film, FolderOpen, ListTodo, Palette } from "lucide-react"
+import { ArrowLeft, Film, FolderOpen, ListTodo, Palette, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -19,6 +19,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { NavSecondary } from "@/app/(main)/components/nav-secondary"
 import { PIPELINE_STEPS } from "@/lib/pipeline"
 import type { Project } from "@/lib/types"
 import { apiFetchSilent } from "@/lib/api-client"
@@ -139,8 +140,10 @@ export function ProjectSidebar({
           </SidebarMenu>
         </SidebarGroup>
 
-
-
+        <NavSecondary
+          className="mt-auto"
+          items={[{ title: "设置", url: "/settings", icon: Settings }]}
+        />
       </SidebarContent>
 
       <SidebarRail />
