@@ -1,7 +1,8 @@
 export function buildImagePrompt(
   content: string | null | undefined,
   prompt: string | null | undefined,
-  refLabels?: string[]
+  refLabels?: string[],
+  stylePreset?: string | null
 ): string {
   let basePrompt: string;
 
@@ -10,6 +11,11 @@ export function buildImagePrompt(
   } else {
     basePrompt = prompt ?? "";
   }
+  
+  if (stylePreset) {
+    basePrompt = basePrompt ? `${basePrompt}\n视觉风格：${stylePreset}` : `视觉风格：${stylePreset}`;
+  }
+
   if (refLabels && refLabels.length > 0) {
     return basePrompt ? `${basePrompt}\n\n参考图说明：${refLabels.join("，")}` : `参考图说明：${refLabels.join("，")}`
   }
@@ -20,7 +26,8 @@ export function buildMultiGridPrompt(
   content: string | null | undefined,
   gridPrompts: string[],
   gridLayout?: string | null,
-  refLabels?: string[]
+  refLabels?: string[],
+  stylePreset?: string | null
 ): string {
   const promptObj: Record<string, string> = {}
 
@@ -46,7 +53,12 @@ export function buildMultiGridPrompt(
     parts.push(`画面描述了：${content}`)
   }
 
-  // 4. 多宫格json
+  // 4. 视觉风格
+  if (stylePreset) {
+    parts.push(`视觉风格：${stylePreset}`)
+  }
+
+  // 5. 多宫格json
   parts.push(`以下 JSON 按序号顺序依次对应各个格子（建议从左到右、从上到下）：\n${jsonBlock}`)
 
   return parts.join("\n\n")

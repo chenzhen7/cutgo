@@ -44,13 +44,14 @@ export const POST = withError(async (
   // 获取项目宽高比用于视频输出
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
-    include: { project: { select: { aspectRatio: true } } },
+    include: { project: { select: { aspectRatio: true, stylePreset: true } } },
   })
   if (!episode) {
     console.warn("[图生视频] 分集不存在", { episodeId, shotId })
     throwCutGoError("NOT_FOUND", "分集不存在")
   }
   const ratio = episode.project?.aspectRatio ?? "9:16"
+  const stylePreset = episode.project?.stylePreset
 
   const targetInfo = `第${episode.index + 1}集 ${episode.title || "未知"} - 镜头${shot.index + 1}`
   const task = await createRunningAiTask({
@@ -87,6 +88,9 @@ export const POST = withError(async (
         }
       }
       promptParts.push(`立即从0.1秒处剪切，参考分镜顺序。起始于左上角第一格，依次在视频里串联${gridCount}宫格图片，人物动作流程自然。`)
+    }
+    if (stylePreset) {
+      promptParts.push(`视觉风格：${stylePreset}`)
     }
     const combinedPrompt = promptParts.join("\n")
 

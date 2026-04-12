@@ -31,20 +31,21 @@ type AssetRecord = {
   name: string
   prompt: string | null
   projectId: string
+  project?: { stylePreset: string | null }
 }
 
 async function findAsset(type: AssetType, id: string): Promise<AssetRecord> {
   if (type === "character") {
-    const asset = await prisma.assetCharacter.findUnique({ where: { id } })
+    const asset = await prisma.assetCharacter.findUnique({ where: { id }, include: { project: { select: { stylePreset: true } } } })
     if (!asset) throwCutGoError("NOT_FOUND", "角色不存在")
     return asset
   }
   if (type === "scene") {
-    const asset = await prisma.assetScene.findUnique({ where: { id } })
+    const asset = await prisma.assetScene.findUnique({ where: { id }, include: { project: { select: { stylePreset: true } } } })
     if (!asset) throwCutGoError("NOT_FOUND", "场景不存在")
     return asset
   }
-  const asset = await prisma.assetProp.findUnique({ where: { id } })
+  const asset = await prisma.assetProp.findUnique({ where: { id }, include: { project: { select: { stylePreset: true } } } })
   if (!asset) throwCutGoError("NOT_FOUND", "道具不存在")
   return asset
 }
@@ -69,6 +70,7 @@ async function runAssetImageTask({
   prompt,
   aspectRatio,
   resolution,
+  stylePreset,
 }: {
   taskId: string
   type: AssetType
@@ -77,10 +79,12 @@ async function runAssetImageTask({
   prompt: string
   aspectRatio: string
   resolution: string
+  stylePreset?: string | null
 }) {
   try {
+    const finalPrompt = stylePreset ? `${prompt}\n视觉风格：${stylePreset}` : prompt
     const result = await callImage({
-      prompt,
+      prompt: finalPrompt,
       projectId,
       scope: "asset",
       aspectRatio,
@@ -140,6 +144,7 @@ export const POST = withError(async (request: NextRequest) => {
       prompt,
       aspectRatio,
       resolution,
+      stylePreset: asset.project?.stylePreset,
     })
 
     return NextResponse.json({

@@ -18,13 +18,14 @@ async function generateForShot(
     negativePrompt: string | null
   },
   aspectRatio: string,
-  resolution: string
+  resolution: string,
+  stylePreset: string | null
 ) {
   const neg = shot.negativePrompt ?? undefined
 
   if (shot.imageType === "first_last" && shot.promptEnd) {
-    const promptStart = buildImagePrompt(shot.content, shot.prompt)
-    const promptEndGen = buildImagePrompt(shot.content, shot.promptEnd)
+    const promptStart = buildImagePrompt(shot.content, shot.prompt, undefined, stylePreset)
+    const promptEndGen = buildImagePrompt(shot.content, shot.promptEnd, undefined, stylePreset)
     const [r1, r2] = await Promise.all([
       callImage({
         prompt: promptStart,
@@ -56,7 +57,7 @@ async function generateForShot(
     let gridPrompts: string[] = []
     try { gridPrompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
     if (gridPrompts.length > 0) {
-      const combinedPrompt = buildMultiGridPrompt(shot.content, gridPrompts, shot.gridLayout)
+      const combinedPrompt = buildMultiGridPrompt(shot.content, gridPrompts, shot.gridLayout, undefined, stylePreset)
 
       const result = await callImage({
         prompt: combinedPrompt,
@@ -75,7 +76,7 @@ async function generateForShot(
     }
   }
 
-  const finalPrompt = buildImagePrompt(shot.content, shot.prompt)
+  const finalPrompt = buildImagePrompt(shot.content, shot.prompt, undefined, stylePreset)
   const result = await callImage({
     prompt: finalPrompt,
     projectId,
@@ -149,7 +150,7 @@ export const POST = withError(async (request: NextRequest) => {
 
     for (const shot of shots) {
       try {
-        const result = await generateForShot(projectId, shot, project.aspectRatio, project.resolution)
+        const result = await generateForShot(projectId, shot, project.aspectRatio, project.resolution, project.stylePreset)
         results.push(result)
         success++
       } catch {
