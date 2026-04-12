@@ -12,8 +12,6 @@ import {
 import {
   buildShotWithImageSystemPrompt,
   buildShotWithImageUserPrompt,
-  buildShotVideoPromptSystemPrompt,
-  buildShotVideoPromptUserPrompt,
 } from "@/lib/prompts"
 import type { ShotListItem } from "@/lib/prompts"
 import { parseJsonArray } from "@/lib/utils"
@@ -29,10 +27,6 @@ interface AIShotImagePromptsItem {
   prompt?: string
   promptEnd?: string
   gridPrompts?: string[]
-}
-
-interface AIShotVideoPromptsItem {
-  videoPrompt?: string
 }
 
 function parseLLMJsonArray<T>(raw: string, label: string): T[] {
@@ -105,31 +99,6 @@ async function callAIExtractShotWithImage(
       return { content, characters, scene, props, duration, prompt, promptEnd, gridPrompts }
     })
     .filter((item) => Boolean(item.content))
-}
-
-// Call 3: 生成视频提示词
-async function callAIGenerateShotVideoPrompts(
-  shots: ShotListItem[],
-  episodeTitle: string,
-  episodeCharacters: string,
-  episodeScenes: string
-): Promise<AIShotVideoPromptsItem[]> {
-  const systemPrompt = buildShotVideoPromptSystemPrompt()
-  const userPrompt = buildShotVideoPromptUserPrompt({ episodeTitle, episodeCharacters, episodeScenes, shots })
-
-  const result = await callLLM({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  })
-
-  const rawItems = parseLLMJsonArray<string>(result.content?.trim() || "", "视频提示词生成")
-
-  return rawItems.map((item) => {
-    const videoPrompt = typeof item === "string" && item.trim() ? item.trim() : undefined
-    return { videoPrompt }
-  })
 }
 
 export const POST = withError(async (request: NextRequest) => {
@@ -210,14 +179,6 @@ export const POST = withError(async (request: NextRequest) => {
           duration: item.duration,
         }))
 
-        // Call 3: 仅生成视频提示词
-        const videoPrompts = await callAIGenerateShotVideoPrompts(
-          shotList,
-          episode.title,
-          episodeCharactersStr,
-          episodeScenesStr
-        )
-
         // 资产名称 → ID 映射
         const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
         const projectCharacterMap = new Map(assetCharacters.map((c) => [c.name.trim(), c.id]))
@@ -228,11 +189,10 @@ export const POST = withError(async (request: NextRequest) => {
         )
         const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
-        // 按 index 合并单次分镜/生图结果 + 视频结果
+        // 按 index 合并分镜与生图结果
         const shotData = shotList
           .map((shot, si) => {
             const imageItem = shotWithImageItems[si] ?? {}
-            const videoItem = videoPrompts[si] ?? {}
 
             const prompt = imageItem.prompt?.trim() || ""
             // 无 content 且无 prompt 的镜头跳过
@@ -263,7 +223,7 @@ export const POST = withError(async (request: NextRequest) => {
               imageType: imageType as string,
               gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
               gridPrompts,
-              videoPrompt: videoItem.videoPrompt ?? null,
+              videoPrompt: null,
               dialogueText: null,
               actionNote: null,
               characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
