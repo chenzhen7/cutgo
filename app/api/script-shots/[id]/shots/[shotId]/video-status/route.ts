@@ -5,6 +5,22 @@ import { queryVideoTask } from "@/lib/ai/video"
 import { markAiTaskSucceeded, markAiTaskFailed } from "@/lib/ai-task-service"
 import { persistGeneratedVideoLocally } from "@/lib/utils/local-video"
 
+/** 日志与 AiTask.errorMessage：优先保留 Error.stack（含 message + 完整栈） */
+function formatErrorWithStack(err: unknown): string {
+  if (err instanceof Error) {
+    return err.stack?.trim() || err.message || "未知错误"
+  }
+  if (typeof err === "string") return err
+  if (err && typeof err === "object") {
+    try {
+      return JSON.stringify(err)
+    } catch {
+      return String(err)
+    }
+  }
+  return String(err)
+}
+
 export const GET = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; shotId: string }> }
@@ -79,8 +95,13 @@ export const GET = withError(async (
 
         return NextResponse.json({ videoStatus: "completed", videoUrl: localVideoUrl, shot: updated })
       } catch (err) {
-        console.error("[视频状态] 视频保存/入库失败", { episodeId, shotId, videoTaskId: shot.videoTaskId}, err)
-        const reason = (err as Error)?.message || "视频入库失败"
+        const reason = formatErrorWithStack(err)
+        console.error("[视频状态] 视频保存/入库失败", {
+          episodeId,
+          shotId,
+          videoTaskId: shot.videoTaskId,
+          reason,
+        })
         const updated = await prisma.shot.update({
           where: { id: shotId },
           data: {
