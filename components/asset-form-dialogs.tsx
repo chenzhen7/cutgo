@@ -131,11 +131,14 @@ function GenerateImageButton({
   assetId,
   projectId,
   onSuccess,
+  beforeGenerate,
 }: {
   assetType: "character" | "scene" | "prop"
   assetId: string
   projectId: string
   onSuccess?: (imageUrl: string) => void
+  /** 生成前先把当前表单写入服务端（用户可能已改提示词等） */
+  beforeGenerate: () => Promise<void>
 }) {
   const { setGeneratingAsset, fetchAssets, generatingAssets } = useAssetStore()
   const isGenerating = generatingAssets[assetId]
@@ -143,6 +146,13 @@ function GenerateImageButton({
   const handleGenerate = async () => {
     if (isGenerating) return
     setGeneratingAsset(assetId, true)
+    try {
+      await beforeGenerate()
+    } catch (err) {
+      setGeneratingAsset(assetId, false)
+      toast.error(err instanceof ApiError ? err.message : (err as Error).message || "保存失败，无法开始生成")
+      return
+    }
     toast.success("已开始生成图片")
     try {
       const res = await apiFetch<{ success: boolean; imageUrl: string }>("/api/assets/generate-images", {
@@ -247,6 +257,28 @@ export function CharacterFormDialog({
     }
   }
 
+  const saveBeforeGenerate = async () => {
+    if (!name.trim()) {
+      const msg = "请填写角色名称后再生成"
+      setError(msg)
+      throw new Error(msg)
+    }
+    setError("")
+    try {
+      await onSave({
+        name: name.trim(),
+        role,
+        gender: gender || undefined,
+        prompt: prompt || undefined,
+        imageUrl: imageUrl || undefined,
+      })
+    } catch (err) {
+      const msg = (err as Error).message
+      setError(msg)
+      throw err
+    }
+  }
+
   const { generatingAssets } = useAssetStore()
   const isGenerating = character ? generatingAssets[character.id] : false
 
@@ -264,7 +296,13 @@ export function CharacterFormDialog({
             isGenerating={isGenerating}
             secondAction={
               character ? (
-                <GenerateImageButton assetType="character" assetId={character.id} projectId={character.projectId} onSuccess={setImageUrl} />
+                <GenerateImageButton
+                  assetType="character"
+                  assetId={character.id}
+                  projectId={character.projectId}
+                  onSuccess={setImageUrl}
+                  beforeGenerate={saveBeforeGenerate}
+                />
               ) : undefined
             }
           />
@@ -386,6 +424,27 @@ export function SceneFormDialog({
     }
   }
 
+  const saveBeforeGenerate = async () => {
+    if (!name.trim()) {
+      const msg = "请填写场景名称后再生成"
+      setError(msg)
+      throw new Error(msg)
+    }
+    setError("")
+    try {
+      await onSave({
+        name: name.trim(),
+        prompt: prompt || undefined,
+        tags: tags || undefined,
+        imageUrl: imageUrl || undefined,
+      })
+    } catch (err) {
+      const msg = (err as Error).message
+      setError(msg)
+      throw err
+    }
+  }
+
   const { generatingAssets } = useAssetStore()
   const isGenerating = scene ? generatingAssets[scene.id] : false
 
@@ -403,7 +462,13 @@ export function SceneFormDialog({
             isGenerating={isGenerating}
             secondAction={
               scene ? (
-                <GenerateImageButton assetType="scene" assetId={scene.id} projectId={scene.projectId} onSuccess={setImageUrl} />
+                <GenerateImageButton
+                  assetType="scene"
+                  assetId={scene.id}
+                  projectId={scene.projectId}
+                  onSuccess={setImageUrl}
+                  beforeGenerate={saveBeforeGenerate}
+                />
               ) : undefined
             }
           />
@@ -501,6 +566,26 @@ export function PropFormDialog({
     }
   }
 
+  const saveBeforeGenerate = async () => {
+    if (!name.trim()) {
+      const msg = "请填写道具名称后再生成"
+      setError(msg)
+      throw new Error(msg)
+    }
+    setError("")
+    try {
+      await onSave({
+        name: name.trim(),
+        prompt: prompt || undefined,
+        imageUrl: imageUrl || undefined,
+      })
+    } catch (err) {
+      const msg = (err as Error).message
+      setError(msg)
+      throw err
+    }
+  }
+
   const { generatingAssets } = useAssetStore()
   const isGenerating = prop ? generatingAssets[prop.id] : false
 
@@ -518,7 +603,13 @@ export function PropFormDialog({
             isGenerating={isGenerating}
             secondAction={
               prop ? (
-                <GenerateImageButton assetType="prop" assetId={prop.id} projectId={prop.projectId} onSuccess={setImageUrl} />
+                <GenerateImageButton
+                  assetType="prop"
+                  assetId={prop.id}
+                  projectId={prop.projectId}
+                  onSuccess={setImageUrl}
+                  beforeGenerate={saveBeforeGenerate}
+                />
               ) : undefined
             }
           />

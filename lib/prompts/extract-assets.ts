@@ -50,7 +50,6 @@ export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业
 
 2. 每个道具需补全以下视觉信息（即使原文没有也要合理推测）：
 - 材质
-- 风格
 - 颜色
 - 细节装饰
 - 状态
