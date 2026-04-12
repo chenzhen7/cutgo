@@ -18,7 +18,6 @@ export {
   buildShotListUserPrompt,
   buildShotWithImageSystemPrompt,
   buildShotWithImageUserPrompt,
-  buildShotImagePromptSystemPrompt,
   buildShotImagePromptUserPrompt,
   buildShotVideoPromptSystemPrompt,
   buildShotVideoPromptUserPrompt,
