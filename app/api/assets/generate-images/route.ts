@@ -5,6 +5,8 @@ import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/li
 import { callImage } from "@/lib/ai/image"
 import { CHARACTER_TURNAROUND_PROMPT } from "@/lib/ai/image/prompts"
 
+import { getStylePresetDescription } from "@/lib/types"
+
 type AssetType = "character" | "scene" | "prop"
 
 interface GenerateAssetImageRequest {
@@ -82,7 +84,13 @@ async function runAssetImageTask({
   stylePreset?: string | null
 }) {
   try {
-    const finalPrompt = stylePreset ? `${prompt}\n视觉风格：${stylePreset}` : prompt
+    let finalPrompt = prompt
+
+    if (stylePreset) {
+      const styleText =`${stylePreset}，${getStylePresetDescription(stylePreset)}` ;
+      finalPrompt = `${prompt}，${styleText}`
+    }
+    
     const result = await callImage({
       prompt: finalPrompt,
       projectId,

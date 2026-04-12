@@ -1,3 +1,5 @@
+import { getStylePresetDescription } from "@/lib/types"
+
 export function buildImagePrompt(
   content: string | null | undefined,
   prompt: string | null | undefined,
@@ -13,7 +15,9 @@ export function buildImagePrompt(
   }
   
   if (stylePreset) {
-    basePrompt = basePrompt ? `${basePrompt}\n视觉风格：${stylePreset}` : `视觉风格：${stylePreset}`;
+    const desc = getStylePresetDescription(stylePreset);
+    const styleText =`${stylePreset}，${desc}` ;
+    basePrompt = `${basePrompt}，${styleText}`;
   }
 
   if (refLabels && refLabels.length > 0) {
@@ -55,7 +59,8 @@ export function buildMultiGridPrompt(
 
   // 4. 视觉风格
   if (stylePreset) {
-    parts.push(`视觉风格：${stylePreset}`)
+    const desc = getStylePresetDescription(stylePreset);
+    parts.push(`${stylePreset}，${desc}`)
   }
 
   // 5. 多宫格json

@@ -4,6 +4,8 @@ import { throwCutGoError, withError } from "@/lib/api-error"
 import { callVideo } from "@/lib/ai/video"
 import { createRunningAiTask, markAiTaskFailed } from "@/lib/ai-task-service"
 
+import { getStylePresetDescription } from "@/lib/types"
+
 export const POST = withError(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; shotId: string }> }
@@ -90,7 +92,9 @@ export const POST = withError(async (
       promptParts.push(`立即从0.1秒处剪切，参考分镜顺序。起始于左上角第一格，依次在视频里串联${gridCount}宫格图片，人物动作流程自然。`)
     }
     if (stylePreset) {
-      promptParts.push(`视觉风格：${stylePreset}`)
+      const desc = getStylePresetDescription(stylePreset);
+      const styleText = desc ? `${stylePreset}，${desc}` : stylePreset;
+      promptParts.push(`，${styleText}`)
     }
     const combinedPrompt = promptParts.join("\n")
 

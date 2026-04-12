@@ -267,9 +267,9 @@ export type StylePresetItem = {
   category: StylePresetCategory
 }
 
-/** 根据中文名称取预设说明（自定义风格无预设时返回 undefined） */
-export function getStylePresetDescription(label: string): string | undefined {
-  return STYLE_PRESETS.find((s) => s.label === label)?.description
+/** 根据中文名称取预设说明（自定义风格无预设时返回 "" */
+export function getStylePresetDescription(label: string): string {
+  return STYLE_PRESETS.find((s) => s.label === label)?.description || ""
 }
 
 export const STYLE_PRESETS: StylePresetItem[] = [
