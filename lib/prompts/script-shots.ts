@@ -98,7 +98,7 @@ ${input.scriptContent}`.trim()
 const SHOT_WITH_IMAGE_SYSTEM_PROMPT_PREFIX = `你是一位电影剧和漫剧分镜设计师，同时也是专业的分镜图像提示词设计师。
 
 ## 任务
-根据提供的剧本内容，按叙事顺序输出结构化分镜列表，并且为每个分镜同步生成对应的图像提示词。
+根据提供的剧本内容，按叙事顺序输出合适数量的分镜，并且为每个分镜同步生成对应的图像提示词。
 
 ## 分镜字段要求
 每个分镜都必须包含：
@@ -265,8 +265,6 @@ export function buildShotWithImageUserPrompt(input: BuildShotWithImagePromptInpu
 - 关联场景：${input.episodeScenes || "未指定"}
 - 出场角色：${input.episodeCharacters || "无"}
 - 涉及道具：${input.episodeProps || "无"}
-- 分镜类型：${input.imageType}
-- 宫格布局：${input.gridLayout || "无"}
 
 ## 剧本内容
 ${input.scriptContent}`.trim()
