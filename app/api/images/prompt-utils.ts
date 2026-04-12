@@ -45,7 +45,13 @@ export function buildMultiGridPrompt(
   const parts: string[] = []
 
   // 1. 要求放在最上面
-  parts.push(`生成一张 ${gridLayout} 的电影分镜脚本,由 ${gridSum} 个独立的分镜组成,呈网格状排列。保持每张图不重复,保持原图场景和风格不变,并且具有叙事感和连贯性，分镜之间紧挨着、无边框，4k高清画质`)
+  parts.push(`生成一张 ${gridLayout} 的电影分镜脚本,由 ${gridSum} 个独立的分镜组成,呈网格状排列。保持每张图不重复,保持原图场景和风格不变,并且具有叙事感和连贯性,分镜之间紧挨着、无边框,4k高清画质,无字幕`)
+
+  // 4. 视觉风格
+  if (stylePreset) {
+    const desc = getStylePresetDescription(stylePreset);
+    parts.push(`,${stylePreset},${desc}`)
+  }
 
   // 2. 参考图说明
   if (refLabels && refLabels.length > 0) {
@@ -54,13 +60,7 @@ export function buildMultiGridPrompt(
 
   // 3. 画面描述
   if (content) {
-    parts.push(`画面描述了：${content}`)
-  }
-
-  // 4. 视觉风格
-  if (stylePreset) {
-    const desc = getStylePresetDescription(stylePreset);
-    parts.push(`${stylePreset}，${desc}`)
+    parts.push(`分镜内容：${content}\n`)
   }
 
   // 5. 多宫格json
