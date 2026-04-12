@@ -5,9 +5,6 @@
 /** 模板中章节内容占位符，生成完整 prompt 时会被替换 */
 export const EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER = "{CHAPTERS_TEXT}" as const
 
-/** 模板中项目视觉风格占位符，生成完整 prompt 时会被替换 */
-export const EXTRACT_ASSETS_STYLE_PLACEHOLDER = "{STYLE_TEXT}" as const
-
 /**
  * 默认资产提取系统提示词模板
  */
@@ -53,6 +50,7 @@ export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业
 
 2. 每个道具需补全以下视觉信息（即使原文没有也要合理推测）：
 - 材质
+- 风格
 - 颜色
 - 细节装饰
 - 状态
@@ -94,9 +92,6 @@ export const DEFAULT_EXTRACT_ASSETS_SYSTEM_PROMPT_TEMPLATE = `你是一位专业
 export const DEFAULT_EXTRACT_ASSETS_USER_PROMPT_TEMPLATE = `
 ## 小说章节内容
 ${EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER}
-
-## 风格
-${EXTRACT_ASSETS_STYLE_PLACEHOLDER}
 `
 
 export interface BuildExtractAssetsSystemPromptOptions {
@@ -107,11 +102,6 @@ export interface BuildExtractAssetsSystemPromptOptions {
 export interface BuildExtractAssetsUserPromptOptions {
   /** 自定义用户提示词模板；须包含占位符，否则将追加在末尾 */
   template?: string
-  /**
-   * 项目视觉风格（名称与预设描述用逗号拼接后的整段文案）。
-   * 未设置时占位符替换为提示 LLM 自行推断的说明。
-   */
-  styleText?: string | null
 }
 
 /**
@@ -137,23 +127,12 @@ export function buildExtractAssetsUserPrompt(
     ? options.template
     : DEFAULT_EXTRACT_ASSETS_USER_PROMPT_TEMPLATE
 
-  let result: string
   if (raw.includes(EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER)) {
-    result = raw.split(EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER).join(chaptersText)
-  } else {
-    // 兼容用户误删占位符：在末尾追加章节内容块
-    result = `${raw}\n\n## 小说章节内容\n${chaptersText}`
+    return raw.split(EXTRACT_ASSETS_CHAPTERS_PLACEHOLDER).join(chaptersText)
   }
 
-  const styleBlock =
-    options?.styleText?.trim() ||
-    "（本项目未设置具体视觉风格，请根据原文体裁与氛围合理推断画面调性。）"
-
-  if (result.includes(EXTRACT_ASSETS_STYLE_PLACEHOLDER)) {
-    result = result.split(EXTRACT_ASSETS_STYLE_PLACEHOLDER).join(styleBlock)
-  }
-
-  return result
+  // 兼容用户误删占位符：在末尾追加章节内容块
+  return `${raw}\n\n## 小说章节内容\n${chaptersText}`
 }
 
 /**
