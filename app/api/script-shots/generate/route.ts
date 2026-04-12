@@ -10,10 +10,8 @@ import {
   toErrorInfo,
 } from "@/lib/ai-task-service"
 import {
-  buildShotListSystemPrompt,
-  buildShotListUserPrompt,
-  buildShotImagePromptSystemPrompt,
-  buildShotImagePromptUserPrompt,
+  buildShotWithImageSystemPrompt,
+  buildShotWithImageUserPrompt,
   buildShotVideoPromptSystemPrompt,
   buildShotVideoPromptUserPrompt,
 } from "@/lib/prompts"
@@ -23,6 +21,11 @@ import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
 import type { ImageType, GridLayout } from "@/lib/types"
 
 interface AIShotImagePromptsItem {
+  content?: string
+  characters?: string[]
+  scene?: string
+  props?: string[]
+  duration?: number
   prompt?: string
   promptEnd?: string
   gridPrompts?: string[]
@@ -45,23 +48,27 @@ function parseLLMJsonArray<T>(raw: string, label: string): T[] {
   }
 }
 
-// Call 1: 提取分镜列表（content / characters / scene / props / duration）
-async function callAIExtractShotList(
+// Call 1&2 合并：提取分镜列表 + 生图提示词
+async function callAIExtractShotWithImage(
   episodeTitle: string,
   scriptContent: string,
   episodeCharacters: string,
   episodeProps: string,
   episodeScenes: string,
-  previousShotContent: string | null
-): Promise<ShotListItem[]> {
-  const systemPrompt = buildShotListSystemPrompt()
-  const userPrompt = buildShotListUserPrompt({
+  previousShotContent: string | null,
+  imageType: ImageType,
+  gridLayout: GridLayout | null
+): Promise<AIShotImagePromptsItem[]> {
+  const systemPrompt = buildShotWithImageSystemPrompt(imageType, gridLayout)
+  const userPrompt = buildShotWithImageUserPrompt({
     episodeTitle,
     episodeScenes,
     episodeCharacters,
     episodeProps,
     scriptContent: scriptContent.slice(0, 6000),
     previousShotContent,
+    imageType,
+    gridLayout,
   })
 
   const result = await callLLM({
@@ -71,65 +78,36 @@ async function callAIExtractShotList(
     ],
   })
 
-  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "分镜列表提取")
+  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "分镜与生图提示词生成")
 
   return rawItems
     .map((item) => {
-      if (!item || typeof item !== "object") return null
-      const content = typeof item.content === "string" ? item.content.trim() : ""
-      if (!content) return null
+      if (!item || typeof item !== "object") return {}
+      const content = typeof item.content === "string" && item.content.trim() ? item.content.trim() : undefined
       const characters = Array.isArray(item.characters)
         ? (item.characters as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
-        : []
-      const scene = typeof item.scene === "string" ? item.scene.trim() : ""
+        : undefined
+      const scene = typeof item.scene === "string" && item.scene.trim() ? item.scene.trim() : undefined
       const props = Array.isArray(item.props)
         ? (item.props as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
-        : []
+        : undefined
       const duration =
         typeof item.duration === "number"
           ? item.duration
           : typeof item.duration === "string"
             ? parseInt(item.duration)
             : undefined
-      const shotItem: ShotListItem = { content, characters, scene, props, duration }
-      return shotItem
+      const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : undefined
+      const promptEnd = typeof item.promptEnd === "string" && item.promptEnd.trim() ? item.promptEnd.trim() : undefined
+      const gridPrompts = Array.isArray(item.gridPrompts)
+        ? (item.gridPrompts as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
+        : undefined
+      return { content, characters, scene, props, duration, prompt, promptEnd, gridPrompts }
     })
-    .filter((item): item is ShotListItem => item !== null)
+    .filter((item) => Boolean(item.content))
 }
 
-// Call 2: 并行 — 生成生图提示词
-async function callAIGenerateShotImagePrompts(
-  shots: ShotListItem[],
-  episodeTitle: string,
-  episodeCharacters: string,
-  episodeScenes: string,
-  imageType: ImageType,
-  gridLayout: GridLayout | null
-): Promise<AIShotImagePromptsItem[]> {
-  const systemPrompt = buildShotImagePromptSystemPrompt(imageType, gridLayout)
-  const userPrompt = buildShotImagePromptUserPrompt({ episodeTitle, episodeCharacters, episodeScenes, shots })
-
-  const result = await callLLM({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  })
-
-  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "生图提示词生成")
-
-  return rawItems.map((item) => {
-    if (!item || typeof item !== "object") return {}
-    const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : undefined
-    const promptEnd = typeof item.promptEnd === "string" && item.promptEnd.trim() ? item.promptEnd.trim() : undefined
-    const gridPrompts = Array.isArray(item.gridPrompts)
-      ? (item.gridPrompts as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
-      : undefined
-    return { prompt, promptEnd, gridPrompts }
-  })
-}
-
-// Call 3: 并行 — 生成视频提示词
+// Call 3: 生成视频提示词
 async function callAIGenerateShotVideoPrompts(
   shots: ShotListItem[],
   episodeTitle: string,
@@ -212,33 +190,33 @@ export const POST = withError(async (request: NextRequest) => {
       const episodeScenesStr = matchedScene?.name || ""
 
       try {
-        // Call 1: 串行提取分镜列表
-        const shotList = await callAIExtractShotList(
+        // Call 1&2: 单次调用产出分镜列表与生图提示词
+        const shotWithImageItems = await callAIExtractShotWithImage(
           episode.title,
           episode.script,
           episodeCharactersStr,
           episodePropsStr,
           episodeScenesStr,
-          previousShotContent
+          previousShotContent,
+          imageType as ImageType,
+          gridLayout as GridLayout | null
         )
 
-        // Call 2 & Call 3: 并行生成生图提示词和视频提示词
-        const [imagePrompts, videoPrompts] = await Promise.all([
-          callAIGenerateShotImagePrompts(
-            shotList,
-            episode.title,
-            episodeCharactersStr,
-            episodeScenesStr,
-            imageType as ImageType,
-            gridLayout as GridLayout | null
-          ),
-          callAIGenerateShotVideoPrompts(
-            shotList,
-            episode.title,
-            episodeCharactersStr,
-            episodeScenesStr
-          ),
-        ])
+        const shotList: ShotListItem[] = shotWithImageItems.map((item) => ({
+          content: item.content ?? "",
+          characters: item.characters ?? [],
+          scene: item.scene ?? "",
+          props: item.props ?? [],
+          duration: item.duration,
+        }))
+
+        // Call 3: 仅生成视频提示词
+        const videoPrompts = await callAIGenerateShotVideoPrompts(
+          shotList,
+          episode.title,
+          episodeCharactersStr,
+          episodeScenesStr
+        )
 
         // 资产名称 → ID 映射
         const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
@@ -250,10 +228,10 @@ export const POST = withError(async (request: NextRequest) => {
         )
         const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
-        // 按 index 合并三次结果
+        // 按 index 合并单次分镜/生图结果 + 视频结果
         const shotData = shotList
           .map((shot, si) => {
-            const imageItem = imagePrompts[si] ?? {}
+            const imageItem = shotWithImageItems[si] ?? {}
             const videoItem = videoPrompts[si] ?? {}
 
             const prompt = imageItem.prompt?.trim() || ""

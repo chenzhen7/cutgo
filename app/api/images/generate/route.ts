@@ -41,7 +41,7 @@ export const POST = withError(async (request: NextRequest) => {
           projectId: true,
           index: true,
           title: true,
-          project: { select: { name: true, aspectRatio: true, resolution: true } },
+          project: { select: { name: true, aspectRatio: true, resolution: true, stylePreset: true } },
         },
       },
     },

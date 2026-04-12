@@ -16,12 +16,19 @@ export {
 export {
   buildShotListSystemPrompt,
   buildShotListUserPrompt,
+  buildShotWithImageSystemPrompt,
+  buildShotWithImageUserPrompt,
   buildShotImagePromptSystemPrompt,
   buildShotImagePromptUserPrompt,
   buildShotVideoPromptSystemPrompt,
   buildShotVideoPromptUserPrompt,
 } from "./script-shots"
-export type { ShotListItem, BuildShotListPromptInput, BuildShotPromptsInput } from "./script-shots"
+export type {
+  ShotListItem,
+  BuildShotListPromptInput,
+  BuildShotPromptsInput,
+  BuildShotWithImagePromptInput,
+} from "./script-shots"
 export {
   ASSET_CHARACTER_IMAGE_PROMPT_PLACEHOLDER,
   ASSET_CHARACTER_TURNAROUND_IMAGE_PROMPT,
