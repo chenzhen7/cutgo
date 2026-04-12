@@ -158,7 +158,8 @@ export default function ScriptShotPage() {
       }
       prevEpisodeIdRef.current = activeEpisodeId
       try {
-        await fetchScriptShotPlans(projectId, activeEpisodeId)
+        // 拉取项目下全部分集的分镜计划，供选集下拉展示各集镜头数，并避免切换分集时丢失其他集缓存
+        await fetchScriptShotPlans(projectId)
       } finally {
         if (!cancelled) {
           setEpisodeLoading(false)
@@ -193,7 +194,7 @@ export default function ScriptShotPage() {
     setDetailPanelOpen(false)
     await generateScriptShots(projectId, [activeEpisodeId], imageType, gridLayout)
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
-    await fetchScriptShotPlans(projectId, activeEpisodeId)
+    await fetchScriptShotPlans(projectId)
   }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
 
   const handleDeleteShot = useCallback(
