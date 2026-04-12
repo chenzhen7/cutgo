@@ -3,8 +3,12 @@ import { prisma } from "@/lib/db"
 import { withError, throwCutGoError } from "@/lib/api-error"
 import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
 import { callImage } from "@/lib/ai/image"
-import { CHARACTER_TURNAROUND_PROMPT } from "@/lib/ai/image/prompts"
-
+import {
+  ASSET_CHARACTER_TURNAROUND_IMAGE_PROMPT,
+  buildAssetCharacterImagePrompt,
+  buildAssetPropImagePrompt,
+  buildAssetSceneImagePrompt,
+} from "@/lib/prompts/asset-image"
 import { getStylePresetDescription } from "@/lib/types"
 
 type AssetType = "character" | "scene" | "prop"
@@ -84,13 +88,19 @@ async function runAssetImageTask({
   stylePreset?: string | null
 }) {
   try {
-    let finalPrompt = prompt
+    const basePrompt =
+      type === "character"
+        ? buildAssetCharacterImagePrompt(prompt)
+        : type === "scene"
+          ? buildAssetSceneImagePrompt(prompt)
+          : buildAssetPropImagePrompt(prompt)
 
+    let finalPrompt = basePrompt
     if (stylePreset) {
-      const styleText =`${stylePreset}，${getStylePresetDescription(stylePreset)}` ;
-      finalPrompt = `${prompt}，${styleText}`
+      const styleText = `${stylePreset}，${getStylePresetDescription(stylePreset)}`
+      finalPrompt = `${basePrompt}，${styleText}`
     }
-    
+
     const result = await callImage({
       prompt: finalPrompt,
       projectId,
@@ -103,7 +113,7 @@ async function runAssetImageTask({
     const imageUrl = type === "character"
       ? await (async () => {
         const turnaroundResult = await callImage({
-          prompt: CHARACTER_TURNAROUND_PROMPT,
+          prompt: ASSET_CHARACTER_TURNAROUND_IMAGE_PROMPT,
           projectId,
           scope: "asset",
           referenceImages: [firstImageUrl],
