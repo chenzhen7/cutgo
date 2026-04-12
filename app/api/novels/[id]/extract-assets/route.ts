@@ -6,6 +6,7 @@ import {
   buildExtractAssetsUserPrompt,
 } from "@/lib/prompts"
 import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
+import { getStylePresetDescription } from "@/lib/types"
 
 interface AIAssetResult {
   characters: {
@@ -36,15 +37,23 @@ function parseAssetsJSON(raw: string): AIAssetResult {
   }
 }
 
+function buildProjectStyleText(stylePreset: string | null | undefined): string | null {
+  if (!stylePreset?.trim()) return null
+  const label = stylePreset.trim()
+  const desc = getStylePresetDescription(label)
+  return desc ? `${label}，${desc}` : label
+}
+
 async function callLLMExtractAssetsFromChapters(
-  chapters: { title: string | null; content: string }[]
+  chapters: { title: string | null; content: string }[],
+  styleText: string | null
 ): Promise<AIAssetResult> {
   const chaptersText = chapters
     .map((ch, i) => `【第${i + 1}章${ch.title ? ` ${ch.title}` : ""}】\n${ch.content}`)
     .join("\n\n---\n\n")
 
   const systemPrompt = buildExtractAssetsSystemPrompt()
-  const userPrompt = buildExtractAssetsUserPrompt(chaptersText)
+  const userPrompt = buildExtractAssetsUserPrompt(chaptersText, { styleText })
 
   const result = await callLLM({
     messages: [
@@ -78,6 +87,12 @@ export const POST = withError(async (
 
   const { projectId } = novel
 
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { stylePreset: true },
+  })
+  const styleText = buildProjectStyleText(project?.stylePreset)
+
   const chapters = await prisma.chapter.findMany({
     where: { id: { in: chapterIds }, novelId },
     orderBy: { index: "asc" },
@@ -103,7 +118,8 @@ export const POST = withError(async (
 
   try {
     const aiResult = await callLLMExtractAssetsFromChapters(
-      chapters.map((ch) => ({ title: ch.title, content: ch.content }))
+      chapters.map((ch) => ({ title: ch.title, content: ch.content })),
+      styleText
     )
 
     return NextResponse.json({
