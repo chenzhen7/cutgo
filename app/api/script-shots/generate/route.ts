@@ -10,8 +10,10 @@ import {
   toErrorInfo,
 } from "@/lib/ai-task-service"
 import {
-  buildShotWithImageSystemPrompt,
-  buildShotWithImageUserPrompt,
+  buildShotListSystemPrompt,
+  buildShotListUserPrompt,
+  buildShotImagePromptSystemPrompt,
+  buildShotImagePromptUserPrompt,
 } from "@/lib/prompts"
 import type { ShotListItem } from "@/lib/prompts"
 import { parseJsonArray } from "@/lib/utils"
@@ -19,11 +21,6 @@ import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
 import type { ImageType, GridLayout } from "@/lib/types"
 
 interface AIShotImagePromptsItem {
-  content?: string
-  characters?: string[]
-  scene?: string
-  props?: string[]
-  duration?: number
   prompt?: string
   promptEnd?: string
   gridPrompts?: string[]
@@ -42,27 +39,23 @@ function parseLLMJsonArray<T>(raw: string, label: string): T[] {
   }
 }
 
-// Call 1&2 合并：提取分镜列表 + 生图提示词
-async function callAIExtractShotWithImage(
+// Call 1：提取分镜列表
+async function callAIExtractShotList(
   episodeTitle: string,
   scriptContent: string,
   episodeCharacters: string,
   episodeProps: string,
   episodeScenes: string,
-  previousShotContent: string | null,
-  imageType: ImageType,
-  gridLayout: GridLayout | null
-): Promise<AIShotImagePromptsItem[]> {
-  const systemPrompt = buildShotWithImageSystemPrompt(imageType, gridLayout)
-  const userPrompt = buildShotWithImageUserPrompt({
+  previousShotContent: string | null
+): Promise<ShotListItem[]> {
+  const systemPrompt = buildShotListSystemPrompt()
+  const userPrompt = buildShotListUserPrompt({
     episodeTitle,
     episodeScenes,
     episodeCharacters,
     episodeProps,
     scriptContent: scriptContent.slice(0, 6000),
     previousShotContent,
-    imageType,
-    gridLayout,
   })
 
   const result = await callLLM({
@@ -72,7 +65,7 @@ async function callAIExtractShotWithImage(
     ],
   })
 
-  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "分镜与生图提示词生成")
+  const rawItems = parseLLMJsonArray<Record<string, unknown>>(result.content?.trim() || "", "分镜生成")
 
   return rawItems
     .map((item) => {
@@ -89,16 +82,52 @@ async function callAIExtractShotWithImage(
         typeof item.duration === "number"
           ? item.duration
           : typeof item.duration === "string"
-            ? parseInt(item.duration)
+            ? parseInt(item.duration, 10)
             : undefined
-      const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : undefined
-      const promptEnd = typeof item.promptEnd === "string" && item.promptEnd.trim() ? item.promptEnd.trim() : undefined
-      const gridPrompts = Array.isArray(item.gridPrompts)
-        ? (item.gridPrompts as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
-        : undefined
-      return { content, characters, scene, props, duration, prompt, promptEnd, gridPrompts }
+      return { content, characters, scene, props, duration }
     })
-    .filter((item) => Boolean(item.content))
+    .filter((item): item is ShotListItem => Boolean(item.content))
+}
+
+// Call 2：基于分镜列表生成生图提示词
+async function callAIExtractImagePrompts(
+  episodeTitle: string,
+  episodeCharacters: string,
+  episodeScenes: string,
+  shots: ShotListItem[],
+  imageType: ImageType,
+  gridLayout: GridLayout | null
+): Promise<AIShotImagePromptsItem[]> {
+  const systemPrompt = buildShotImagePromptSystemPrompt(imageType, gridLayout)
+  const userPrompt = buildShotImagePromptUserPrompt({
+    episodeTitle,
+    episodeCharacters,
+    episodeScenes,
+    shots,
+  })
+  const result = await callLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  })
+  const rawItems = parseLLMJsonArray<unknown>(result.content?.trim() || "", "生图提示词生成")
+
+  return rawItems.map((item) => {
+    if (typeof item === "string") {
+      const prompt = item.trim()
+      return { prompt: prompt || undefined }
+    }
+    if (!item || typeof item !== "object") return {}
+    const obj = item as Record<string, unknown>
+
+    const prompt = typeof obj.prompt === "string" && obj.prompt.trim() ? obj.prompt.trim() : undefined
+    const promptEnd = typeof obj.promptEnd === "string" && obj.promptEnd.trim() ? obj.promptEnd.trim() : undefined
+    const gridPrompts = Array.isArray(obj.gridPrompts)
+      ? (obj.gridPrompts as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
+      : undefined
+    return { prompt, promptEnd, gridPrompts }
+  })
 }
 
 export const POST = withError(async (request: NextRequest) => {
@@ -159,25 +188,28 @@ export const POST = withError(async (request: NextRequest) => {
       const episodeScenesStr = matchedScene?.name || ""
 
       try {
-        // Call 1&2: 单次调用产出分镜列表与生图提示词
-        const shotWithImageItems = await callAIExtractShotWithImage(
+        // Call 1: 先生成分镜列表
+        const shotList = await callAIExtractShotList(
           episode.title,
           episode.script,
           episodeCharactersStr,
           episodePropsStr,
           episodeScenesStr,
-          previousShotContent,
-          imageType as ImageType,
-          gridLayout as GridLayout | null
+          previousShotContent
         )
 
-        const shotList: ShotListItem[] = shotWithImageItems.map((item) => ({
-          content: item.content ?? "",
-          characters: item.characters ?? [],
-          scene: item.scene ?? "",
-          props: item.props ?? [],
-          duration: item.duration,
-        }))
+        // Call 2: 再基于分镜列表生成生图提示词
+        const shotImagePromptItems =
+          shotList.length > 0
+            ? await callAIExtractImagePrompts(
+              episode.title,
+              episodeCharactersStr,
+              episodeScenesStr,
+              shotList,
+              imageType as ImageType,
+              gridLayout as GridLayout | null
+            )
+            : []
 
         // 资产名称 → ID 映射
         const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
@@ -189,10 +221,10 @@ export const POST = withError(async (request: NextRequest) => {
         )
         const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
-        // 按 index 合并分镜与生图结果
+        // 按 index 合并分镜列表与生图提示词
         const shotData = shotList
           .map((shot, si) => {
-            const imageItem = shotWithImageItems[si] ?? {}
+            const imageItem = shotImagePromptItems[si] ?? {}
 
             const prompt = imageItem.prompt?.trim() || ""
             // 无 content 且无 prompt 的镜头跳过

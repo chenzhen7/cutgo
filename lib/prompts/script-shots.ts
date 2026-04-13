@@ -93,174 +93,6 @@ export function buildShotListUserPrompt(input: BuildShotListPromptInput): string
 ${input.scriptContent}`.trim()
 }
 
-// ── Call 1&2 合并: 分镜提取 + 生图提示词 ────────────────────────────────────────
-
-const SHOT_WITH_IMAGE_SYSTEM_PROMPT_PREFIX = `你是一位电影剧和漫剧分镜设计师，同时也是专业的分镜图像提示词设计师。
-
-## 任务
-根据提供的剧本内容，按叙事顺序输出合适数量的分镜，并且为每个分镜同步生成对应的图像提示词。
-
-## 分镜字段要求
-每个分镜都必须包含：
-1. content：分镜内容
-2. characters：该镜头出场角色数组
-3. scene：该镜头所在场景
-4. props：该镜头涉及道具数组
-5. duration：镜头时长预估（秒）
-
-## 分镜约束
-- 镜头之间要有叙事连贯性，覆盖关键情节
-- 遵循叙事节奏：建立镜头→发展镜头→情绪镜头→过渡/收尾
-- 角色名/场景名/道具名优先使用输入中提供的资产名称
-- duration 合理控制在 2-15 秒区间（按内容可微调）
-
-## 分镜内容规范
-每个分镜内容包含：
-- 景别（远景/中景/近景/特写）
-- 画面内容（人物动作+环境）
-- 镜头运动（推拉摇移）
-- 角色表情
-- 台词/旁白
-- 情绪氛围
-
-## 图像提示词规范
-每个图像提示词必须包含以下要素：
-
-### 1. 景别（必选其一）
-- 大远景、远景、全景、中景、近景、特写、大特写
-
-### 2. 机位角度（必选其一）
-- 平视、俯拍、仰拍、斜角/荷兰角、过肩镜头、主观视角
-
-### 3. 光线设计（必选）
-- 光源方向：顺光/侧光/逆光/顶光/底光
-- 光线质感：硬光/柔光
-- 光线色温：暖光（金黄/橙红）/冷光（蓝调/青白）
-- 特殊光效：丁达尔效应/轮廓光/眼神光
-
-### 4. 构图法则（选择适用）
-- 三分法、中心构图、对角线构图、框架构图、引导线构图
-
-### 5. 人物要素（涉及人物时必须包含）
-- 人物站位：画面位置、朝向、多人空间关系
-- 肢体语言：姿态、手部动作
-- 表情神态：眼神、面部表情
-- 服装状态：整洁度、穿着细节
-
-### 6. 环境与氛围
-- 时间氛围：时段、天气
-- 环境细节：前景/背景元素
-- 色彩基调：整体色调、主色调
-- 氛围情绪词：孤寂、温馨、紧张、压抑、希望等
-
-## 提示词模板结构
-\`\`\`
-[景别],[机位角度],[构图方式],
-[人物名称]位于画面[位置]，[朝向]，[姿态]，[具体动作],
-[表情神态]，[眼神描述]，[服装状态描述],
-[场景名称]，[时间氛围]，[环境细节],
-[光线设计：光源+质感+色温]，[景深设置]，[色彩基调],
-[氛围情绪词]
-\`\`\`
-
-## 重要约束
-- 仅输出 JSON，不要额外解释
-- 输出数组顺序必须与剧情发展顺序一致
-- 使用中文，内容具体且可直接用于图像生成
-`
-
-export function buildShotWithImageSystemPrompt(
-  imageType: ImageType = "keyframe",
-  gridLayout?: GridLayout | null
-): string {
-  return `${SHOT_WITH_IMAGE_SYSTEM_PROMPT_PREFIX}\n\n${buildShotWithImageOutputInstructions(imageType, gridLayout)}`
-}
-
-function buildShotWithImageOutputInstructions(imageType: ImageType, gridLayout?: GridLayout | null): string {
-  if (imageType === "first_last") {
-    return `## 输出格式
-    
-字段约束：
-1. content: 必填,分镜内容
-2. characters: 必填数组，没有则 []
-3. scene: 必填字符串，不确定时优先使用主场景
-4. props: 必填数组，没有则 []
-5. duration: 必填数字, 通常 2-15 秒
-6. prompt: 必填，首帧提示词
-7. promptEnd: 必填，尾帧提示词，需体现动作或镜头变化
-
-请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
-
-[
-  {
-    "content": "分镜内容",
-    "characters": ["角色A", "角色B"],
-    "scene": "场景名",
-    "props": ["道具A", "道具B"],
-    "duration": 5,
-    "prompt": "首帧镜头提示词（镜头开始画面）",
-    "promptEnd": "尾帧镜头提示词（镜头结束画面，与首帧形成推进）"
-  }
-]
-
-`
-  }
-
-  if (imageType === "multi_grid") {
-    const layout = GRID_LAYOUT_OPTIONS.find((o) => o.value === gridLayout) ?? GRID_LAYOUT_OPTIONS[0]
-    const count = layout.count
-    const gridPromptsExample = Array.from({ length: count }, (_, i) => `"子帧${i + 1}提示词"`).join(", ")
-    return `## 输出格式
-
-字段约束：
-1. content: 必填,分镜内容
-2. characters: 必填数组，没有则 []
-3. scene: 必填字符串，不确定时优先使用主场景
-4. props: 必填数组，没有则 []
-5. duration: 必填数字, 通常 8-15 秒
-6. gridPrompts: 必填，数组长度必须为 ${count}，对应 ${layout.label} 宫格布局中每个格子镜头的画面提示词，各格子画面应体现该镜头内的时间/动作推进
-
-请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
-
-[
-  {
-    "content": "分镜内容",
-    "characters": ["角色A", "角色B"],
-    "scene": "场景名",
-    "props": ["道具A", "道具B"],
-    "duration": 15,
-    "gridPrompts": [${gridPromptsExample}]
-  }
-]
-
-`
-  }
-
-  return `## 输出格式
-
-字段约束：
-1. content: 必填,分镜内容
-2. characters: 必填数组，没有则 []
-3. scene: 必填字符串，不确定时优先使用主场景
-4. props: 必填数组，没有则 []
-5. duration: 必填数字, 通常 2-15 秒
-6. prompt: 必填，完整镜头图像提示词
-
-请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释）：
-
-[
-  {
-    "content": "分镜内容",
-    "characters": ["角色A", "角色B"],
-    "scene": "场景名",
-    "props": ["道具A", "道具B"],
-    "duration": 3,
-    "prompt": "镜头图像提示词"
-  }
-]
-
-`
-}
 
 export function buildShotWithImageUserPrompt(input: BuildShotWithImagePromptInput): string {
   const previousShotBlock = input.previousShotContent?.trim()
@@ -275,6 +107,100 @@ export function buildShotWithImageUserPrompt(input: BuildShotWithImagePromptInpu
 
 ## 剧本内容
 ${input.scriptContent}`.trim()
+}
+
+// ── Call 2: 生图提示词生成 ─────────────────────────────────────────────────────
+
+const SHOT_IMAGE_PROMPT_SYSTEM_PREFIX = `你是一位专业的分镜图像提示词设计师。
+
+## 任务
+基于给定分镜列表，为每个镜头生成高质量、可直接用于图像生成模型的提示词。
+
+## 图像提示词规范
+每个图像提示词应尽量覆盖以下维度：
+
+### 1. 景别
+- 大远景、远景、全景、中景、近景、特写、大特写
+
+### 2. 机位角度
+- 平视、俯拍、仰拍、斜角/荷兰角、过肩镜头、主观视角
+
+### 3. 光线设计
+- 光源方向：顺光/侧光/逆光/顶光/底光
+- 光线质感：硬光/柔光
+- 光线色温：暖光（金黄/橙红）/冷光（蓝调/青白）
+- 特殊光效：丁达尔效应/轮廓光/眼神光
+
+### 4. 构图与主体
+- 构图法则：三分法、中心构图、对角线构图、框架构图、引导线构图
+- 人物站位、朝向、动作、表情、服装状态
+
+### 5. 环境与氛围
+- 时间氛围、天气、前景/背景元素、色彩基调、情绪词
+
+## 重要约束
+- 严格按输入分镜顺序输出
+- 输出数量必须与输入分镜数量一致
+- 仅输出 JSON，不要额外解释
+- 使用中文，内容具体可执行
+`
+
+export function buildShotImagePromptSystemPrompt(
+  imageType: ImageType = "keyframe",
+  gridLayout?: GridLayout | null
+): string {
+  return `${SHOT_IMAGE_PROMPT_SYSTEM_PREFIX}\n\n${buildShotImagePromptOutputInstructions(imageType, gridLayout)}`
+}
+
+function buildShotImagePromptOutputInstructions(imageType: ImageType, gridLayout?: GridLayout | null): string {
+  if (imageType === "first_last") {
+    return `## 输出格式
+
+请输出 JSON 数组，数组每一项对应一个分镜：
+
+[
+  {
+    "prompt": "首帧镜头提示词（镜头开始画面）",
+    "promptEnd": "尾帧镜头提示词（镜头结束画面，与首帧形成推进）"
+  }
+]
+
+字段约束：
+1. prompt: 必填
+2. promptEnd: 必填，且与 prompt 有连续变化关系`
+  }
+
+  if (imageType === "multi_grid") {
+    const layout = GRID_LAYOUT_OPTIONS.find((o) => o.value === gridLayout) ?? GRID_LAYOUT_OPTIONS[0]
+    const count = layout.count
+    const gridPromptsExample = Array.from({ length: count }, (_, i) => `"子帧${i + 1}提示词"`).join(", ")
+    return `## 输出格式
+
+请输出 JSON 数组，数组每一项对应一个分镜：
+
+[
+  {
+    "gridPrompts": [${gridPromptsExample}]
+  }
+]
+
+字段约束：
+1. gridPrompts: 必填
+2. gridPrompts 数组长度必须为 ${count}（对应 ${layout.label} 宫格布局）`
+  }
+
+  return `## 输出格式
+
+请输出 JSON 字符串数组，数组每一项对应一个分镜：
+
+[
+  "镜头1图像提示词",
+  "镜头2图像提示词"
+]
+
+字段约束：
+1. 每个字符串必须是完整图像提示词
+2. 数组长度必须与输入分镜数量一致`
 }
 
 
