@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { callLLM } from "@/lib/ai/llm"
 import {
@@ -63,14 +62,6 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
-  // 尝试加载关联小说（可选；分集可直接携带 rawText）
-  const novel = await prisma.novel.findUnique({
-    where: { projectId },
-    include: {
-      chapters: { orderBy: { index: "asc" } },
-    },
-  })
-
   let targetEpisodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
@@ -84,14 +75,13 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "没有可生成的分集")
   }
 
-  // 确保目标分集都有可用内容（rawText 或关联章节）
+  // 确保目标分集都有可用内容（rawText）
   const hasNoContent = targetEpisodes.some((ep) => {
-    const hasChapterIds = parseSourceChapterIds(ep).length > 0
     const hasRawText = !!ep.rawText?.trim()
-    return !hasChapterIds && !hasRawText
+    return !hasRawText
   })
-  if (hasNoContent && !novel) {
-    throwCutGoError("VALIDATION", "部分分集缺少原文内容，请先关联章节或填写原文")
+  if (hasNoContent) {
+    throwCutGoError("VALIDATION", "部分分集缺少原文内容，请先填写原文")
   }
 
   let skippedEpisodes = 0
@@ -102,13 +92,6 @@ export const POST = withError(async (request: NextRequest) => {
     skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
     // overwrite 模式：直接覆盖写入，避免生成失败时丢失原有内容
-  }
-
-  const chapterMap = new Map<string, string>()
-  if (novel) {
-    for (const ch of novel.chapters) {
-      chapterMap.set(ch.id, ch.content)
-    }
   }
 
   // 取上一集的剧本作为上下文
@@ -132,14 +115,7 @@ export const POST = withError(async (request: NextRequest) => {
         taskType: "llm_script",
       })
 
-      // 优先使用直接原文，其次从关联章节拼接
-      const sourceIds = parseSourceChapterIds(episode)
-      const chapterContent = episode.rawText?.trim()
-        ? episode.rawText.trim()
-        : sourceIds
-            .map((id) => chapterMap.get(id) || "")
-            .filter(Boolean)
-            .join("\n\n---\n\n")
+      const chapterContent = episode.rawText?.trim() ?? ""
 
       try {
         const scriptContent = await callAIGenerateScript(

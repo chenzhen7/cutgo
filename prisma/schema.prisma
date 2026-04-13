@@ -53,10 +53,7 @@ model Episode {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  /// JSON 字符串数组：本集涵盖的章节 ID（有序）；无关联章节时为 null
-  chapterIds String?
-
-  /// 本集小说原文（直接导入方式；与 chapterIds 二选一）
+  /// 本集小说原文
   rawText   String?
   /// 原文字数（冗余存储）
   wordCount Int?

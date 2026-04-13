@@ -21,9 +21,7 @@ export interface Project {
 export interface Episode {
   id: string
   projectId: string
-  /** JSON 数组字符串，本集涵盖的所有章节 ID（有序）；无关联章节时为 null */
-  chapterIds: string | null
-  /** 本集直接存储的小说原文（直接导入方式，与 chapterIds 二选一） */
+  /** 本集直接存储的小说原文 */
   rawText: string | null
   /** 原文字数 */
   wordCount: number | null
