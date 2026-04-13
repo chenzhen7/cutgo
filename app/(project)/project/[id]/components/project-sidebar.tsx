@@ -48,7 +48,7 @@ export function ProjectSidebar({
     })
   }, [projectId])
 
-  const currentStepKey = pathname.split("/").pop() || "import"
+  const currentStepKey = pathname.split("/").pop() || "script"
 
   return (
     <Sidebar collapsible="icon" className="border-r" {...props}>

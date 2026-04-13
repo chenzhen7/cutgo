@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
-  Loader2,
   Trash2,
   GripVertical,
   Plus,
@@ -45,7 +44,6 @@ import type {
   ScriptGenerateStatus,
 } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
-import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 
 interface EpisodeNavListProps {
   projectId: string
@@ -58,7 +56,7 @@ interface EpisodeNavListProps {
   onSelectEpisode: (ep: Episode) => void
   onDeleteEpisode?: (projectId: string, episodeId: string) => Promise<void>
   onReorderEpisodes?: (projectId: string, orderedIds: string[]) => Promise<void>
-  onCreateEpisodeScript?: (chapterIds: string[]) => Promise<void>
+  onAddEpisode?: () => void
 }
 
 interface SortableEpisodeItemProps {
@@ -194,7 +192,7 @@ export function EpisodeNavList({
   onSelectEpisode,
   onDeleteEpisode,
   onReorderEpisodes,
-  onCreateEpisodeScript,
+  onAddEpisode,
 }: EpisodeNavListProps) {
   const episodesForProject = useMemo(
     () =>
@@ -212,7 +210,6 @@ export function EpisodeNavList({
   const [localOrder, setLocalOrder] = useState<string[] | null>(null)
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [creating, setCreating] = useState(false)
 
   const orderedIds = localOrder ?? episodesForProject.map((e) => e.id)
   const orderedEpisodes = orderedIds
@@ -252,19 +249,6 @@ export function EpisodeNavList({
     }
   }
 
-  const handleAddEpisode = async () => {
-    if (!onCreateEpisodeScript || creating || episodesForProject.length === 0) return
-    const lastEp = orderedEpisodes[orderedEpisodes.length - 1]
-    setCreating(true)
-    try {
-      const ids = parseSourceChapterIds(lastEp)
-      await onCreateEpisodeScript(ids)
-      setLocalOrder(null)
-    } finally {
-      setCreating(false)
-    }
-  }
-
   const isGenerating = generateStatus === "generating"
 
   const deletingEpisode = episodesForProject.find((ep) => ep.id === deletingEpisodeId)
@@ -279,20 +263,16 @@ export function EpisodeNavList({
           <span className="text-xs font-semibold text-muted-foreground">
             全部分集 · {episodesForProject.length} 集
           </span>
-          {onCreateEpisodeScript && episodesForProject.length > 0 && (
+          {onAddEpisode && (
             <Button
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-              disabled={creating || isGenerating}
-              onClick={handleAddEpisode}
-              title="新增分集"
+              disabled={isGenerating}
+              onClick={onAddEpisode}
+              title="新建分集"
             >
-              {creating ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Plus className="size-3.5" />
-              )}
+              <Plus className="size-3.5" />
             </Button>
           )}
         </div>

@@ -35,7 +35,6 @@ model Project {
   /// 项目状态，如 draft
   status String @default("draft")
 
-  novel    Novel?
   episodes Episode[]
 
   assetCharacters   AssetCharacter[]
@@ -48,66 +47,6 @@ model Project {
   updatedAt DateTime @updatedAt
 }
 
-/// 项目关联的小说原文与分析产物
-model Novel {
-  id        String  @id @default(cuid())
-  projectId String  @unique
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  /// 小说标题（可空）
-  title     String?
-  /// 原始全文
-  rawText   String
-  /// 字数统计
-  wordCount Int
-
-  chapters Chapter[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// 小说章节
-model Chapter {
-  id      String @id @default(cuid())
-  novelId String
-  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
-
-  /// 章节序号（从 0 或 1 起，与业务一致）
-  index     Int
-  /// 章节标题
-  title     String?
-  /// 章节正文
-  content   String
-  /// 本章字数
-  wordCount Int
-  /// 是否参与后续分集/选用
-  selected  Boolean @default(true)
-
-  paragraphs Paragraph[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// 章节内段落（细粒度选用）
-model Paragraph {
-  id        String  @id @default(cuid())
-  chapterId String
-  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-
-  /// 段落在章内序号
-  index     Int
-  /// 段落文本
-  content   String
-  /// 段落字数
-  wordCount Int
-  /// 是否选用
-  selected  Boolean @default(true)
-
-  createdAt DateTime @default(now())
-}
-
 /// 分集
 model Episode {
   id        String  @id @default(cuid())
@@ -116,6 +55,11 @@ model Episode {
 
   /// JSON 字符串数组：本集涵盖的章节 ID（有序）；无关联章节时为 null
   chapterIds String?
+
+  /// 本集小说原文（直接导入方式；与 chapterIds 二选一）
+  rawText   String?
+  /// 原文字数（冗余存储）
+  wordCount Int?
 
   /// 集序号
   index       Int

@@ -11,17 +11,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Check, X, Pencil, MapPin, User, Package, ListOrdered, BookOpen, School, Loader2 } from "lucide-react"
+import { Check, X, Pencil, MapPin, User, Package, ListOrdered, School, Loader2 } from "lucide-react"
 import { parseJsonArray } from "@/lib/utils"
 import type {
   AssetCharacter,
   AssetProp,
   AssetScene,
   Episode,
-  Chapter,
 } from "@/lib/types"
-import { countWords, formatChapterOrdinalLabel } from "@/lib/novel-utils"
-import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
+import { countWords } from "@/lib/novel-utils"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -36,7 +34,6 @@ import { useAssetStore } from "@/store/asset-store"
 
 interface ScriptEditorProps {
   episode: Episode
-  chapters?: Chapter[]
   /** 全项目分集排序后的展示集序号（第 1、2… 集），非数据库 index 字段 */
   episodeDisplayNumber: number
   assetCharacters: AssetCharacter[]
@@ -61,7 +58,6 @@ interface ScriptEditorProps {
 
 export function ScriptEditor({
   episode,
-  chapters = [],
   episodeDisplayNumber,
   assetCharacters,
   assetScenes,
@@ -278,13 +274,6 @@ export function ScriptEditor({
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
 
-  const episodeChapterIds = parseSourceChapterIds(episode)
-  const sourceChapterCount = episodeChapterIds.length
-  const chapterOrderMap = new Map((chapters ?? []).map((ch, idx) => [ch.id, idx]))
-  const sourceChapters = (chapters ?? [])
-    .filter(c => episodeChapterIds.includes(c.id))
-    .sort((a, b) => episodeChapterIds.indexOf(a.id) - episodeChapterIds.indexOf(b.id))
-
   const lineNumbers = content.split("\n").map((_, i) => i + 1)
 
   const syncGutterScroll = () => {
@@ -326,11 +315,6 @@ export function ScriptEditor({
                   <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 )}
               </button>
-            )}
-            {sourceChapterCount > 1 && (
-              <Badge variant="secondary" className="text-[9px] shrink-0 font-normal">
-                涵盖 {sourceChapterCount} 章
-              </Badge>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -765,31 +749,6 @@ export function ScriptEditor({
                 )}
               </div>
 
-
-              {/* 关联章节 */}
-              <div className="shrink-0 space-y-2 pb-2">
-                <div className="px-4 py-2 bg-muted/20 border-y flex items-center justify-between">
-                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                    <BookOpen className="size-3" />
-                    关联章节 ({sourceChapters.length})
-                  </Label>
-                </div>
-                {sourceChapters.length > 0 && (
-                  <div className="px-4 flex flex-wrap gap-1.5">
-                    {sourceChapters.map((ch) => (
-                      <Badge
-                        key={ch.id}
-                        variant="outline"
-                        className="bg-background/50 text-[10px] font-medium py-0.5 px-2 hover:bg-muted transition-colors cursor-default"
-                        title={ch.title || undefined}
-                      >
-                        <span className="text-muted-foreground mr-1">{formatChapterOrdinalLabel(chapterOrderMap.get(ch.id) ?? 0)}</span>
-                        {ch.title || "未命名"}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
 
             </div>
           </ResizablePanel>

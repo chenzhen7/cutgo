@@ -6,5 +6,5 @@ export default async function ProjectPage({
     params: Promise<{ id: string }>
 }) {
     const {id} = await params
-    redirect(`/project/${id}/import`)
+    redirect(`/project/${id}/script`)
 }

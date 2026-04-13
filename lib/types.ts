@@ -11,45 +11,8 @@ export interface Project {
   globalNegPrompt: string | null
   styleRefUrl: string | null
   status: string
-  novel?: Novel | null
   createdAt: string
   updatedAt: string
-}
-
-// ── Novel Import Types ──
-
-export interface Novel {
-  id: string
-  projectId: string
-  title: string | null
-  rawText: string
-  wordCount: number
-  chapters: Chapter[]
-  createdAt: string
-  updatedAt: string
-}
-
-export interface Chapter {
-  id: string
-  novelId: string
-  index: number
-  title: string | null
-  content: string
-  wordCount: number
-  selected: boolean
-  paragraphs: Paragraph[]
-  createdAt: string
-  updatedAt: string
-}
-
-export interface Paragraph {
-  id: string
-  chapterId: string
-  index: number
-  content: string
-  wordCount: number
-  selected: boolean
-  createdAt: string
 }
 
 
@@ -60,6 +23,10 @@ export interface Episode {
   projectId: string
   /** JSON 数组字符串，本集涵盖的所有章节 ID（有序）；无关联章节时为 null */
   chapterIds: string | null
+  /** 本集直接存储的小说原文（直接导入方式，与 chapterIds 二选一） */
+  rawText: string | null
+  /** 原文字数 */
+  wordCount: number | null
   index: number
   title: string
   outline: string | null
@@ -142,13 +109,6 @@ export interface GenerateResult {
   }
 }
 
-export interface ImportNovelInput {
-  projectId: string
-  title?: string
-  rawText: string
-}
-
-
 // ── Asset Types ──
 
 export interface AssetCharacter {
@@ -208,8 +168,6 @@ export interface AssetPropInput {
   prompt?: string
   imageUrl?: string
 }
-
-export type AnalysisStatus = "idle" | "analyzing" | "completed" | "error"
 
 export interface AnalysisResult {
   chapters: {

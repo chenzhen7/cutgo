@@ -63,18 +63,13 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
+  // 尝试加载关联小说（可选；分集可直接携带 rawText）
   const novel = await prisma.novel.findUnique({
     where: { projectId },
     include: {
       chapters: { orderBy: { index: "asc" } },
     },
   })
-
-  if (!novel) {
-    throwCutGoError("VALIDATION", "请先导入小说并解析出章节")
-  }
-
-  const novelData = novel!
 
   let targetEpisodes = await prisma.episode.findMany({
     where: { projectId },
@@ -89,6 +84,16 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "没有可生成的分集")
   }
 
+  // 确保目标分集都有可用内容（rawText 或关联章节）
+  const hasNoContent = targetEpisodes.some((ep) => {
+    const hasChapterIds = parseSourceChapterIds(ep).length > 0
+    const hasRawText = !!ep.rawText?.trim()
+    return !hasChapterIds && !hasRawText
+  })
+  if (hasNoContent && !novel) {
+    throwCutGoError("VALIDATION", "部分分集缺少原文内容，请先关联章节或填写原文")
+  }
+
   let skippedEpisodes = 0
 
   if (mode === "skip_existing") {
@@ -100,8 +105,10 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   const chapterMap = new Map<string, string>()
-  for (const ch of novelData.chapters) {
-    chapterMap.set(ch.id, ch.content)
+  if (novel) {
+    for (const ch of novel.chapters) {
+      chapterMap.set(ch.id, ch.content)
+    }
   }
 
   // 取上一集的剧本作为上下文
@@ -125,11 +132,14 @@ export const POST = withError(async (request: NextRequest) => {
         taskType: "llm_script",
       })
 
+      // 优先使用直接原文，其次从关联章节拼接
       const sourceIds = parseSourceChapterIds(episode)
-      const chapterContent = sourceIds
-        .map((id) => chapterMap.get(id) || "")
-        .filter(Boolean)
-        .join("\n\n---\n\n")
+      const chapterContent = episode.rawText?.trim()
+        ? episode.rawText.trim()
+        : sourceIds
+            .map((id) => chapterMap.get(id) || "")
+            .filter(Boolean)
+            .join("\n\n---\n\n")
 
       try {
         const scriptContent = await callAIGenerateScript(
