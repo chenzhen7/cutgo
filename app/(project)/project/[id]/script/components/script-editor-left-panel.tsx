@@ -50,11 +50,11 @@ export function ScriptEditorLeftPanel({
       <div className="mb-4 space-y-2.5">
         <div className="px-4 py-2 bg-muted/20 border-b flex items-center justify-between">
           <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-            <School className="size-3" />
+            <School className="size-2.5" />
             关联资产
           </Label>
         </div>
-        <div className="grid grid-cols-3 gap-3 px-4">
+        <div className="flex flex-col gap-4 px-4">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -84,17 +84,17 @@ export function ScriptEditorLeftPanel({
               </Popover>
             </div>
             {boundScenes.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 {boundScenes.map((s) => (
                   <div key={s.id} className="flex flex-col items-center gap-1">
                     <button onClick={() => onPickScene(s)} className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all" title={s.name}>
-                      {s.imageUrl ? <img src={s.imageUrl} alt={s.name} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center"><MapPin className="size-4 text-muted-foreground/40" /></div>}
+                      {s.imageUrl ? <img src={s.imageUrl} alt={s.name} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center"><MapPin className="size-3 text-muted-foreground/40" /></div>}
                     </button>
                     <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{s.name}</span>
                   </div>
                 ))}
               </div>
-            ) : <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
+            ) : <div className="h-8 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
           </div>
 
           <div className="space-y-1.5">
@@ -126,17 +126,17 @@ export function ScriptEditorLeftPanel({
               </Popover>
             </div>
             {boundCharacters.length > 0 ? (
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-6 gap-1.5">
                 {boundCharacters.map((c) => (
                   <div key={c.id} className="flex flex-col items-center gap-1">
                     <button onClick={() => onPickCharacter(c)} className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all" title={c.name}>
-                      {c.imageUrl ? <img src={c.imageUrl} alt={c.name} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center"><User className="size-4 text-muted-foreground/40" /></div>}
+                      {c.imageUrl ? <img src={c.imageUrl} alt={c.name} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center"><User className="size-3 text-muted-foreground/40" /></div>}
                     </button>
                     <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{c.name}</span>
                   </div>
                 ))}
               </div>
-            ) : <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
+            ) : <div className="h-8 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
           </div>
 
           <div className="space-y-1.5">
@@ -168,17 +168,17 @@ export function ScriptEditorLeftPanel({
               </Popover>
             </div>
             {boundProps.length > 0 ? (
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-9 gap-1.5">
                 {boundProps.map((p) => (
                   <div key={p.id} className="flex flex-col items-center gap-1">
                     <button onClick={() => onPickProp(p)} className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all" title={p.name}>
-                      {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center"><Package className="size-4 text-muted-foreground/40" /></div>}
+                      {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center"><Package className="size-3 text-muted-foreground/40" /></div>}
                     </button>
                     <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{p.name}</span>
                   </div>
                 ))}
               </div>
-            ) : <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
+            ) : <div className="h-8 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
           </div>
         </div>
       </div>
