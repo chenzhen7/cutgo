@@ -8,13 +8,11 @@ import { parseJsonArray } from "@/lib/utils"
 
 interface ScriptEmptyStateProps {
   episodes: Episode[]
-  onOpenGenerate?: () => void
   onCreateEpisode?: () => void
 }
 
 export function ScriptEmptyState({
   episodes,
-  onOpenGenerate,
   onCreateEpisode,
 }: ScriptEmptyStateProps) {
   if (episodes.length === 0) {
@@ -43,7 +41,7 @@ export function ScriptEmptyState({
       <div className="text-center">
         <p className="text-sm font-medium">尚未生成剧本</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          共 {episodes.length} 个分集。请点击右上角「AI 生成剧本」，勾选要生成的分集后开始生成
+          共 {episodes.length} 个分集。新建分集时将自动生成分集的大纲和剧本
         </p>
       </div>
 
@@ -60,12 +58,6 @@ export function ScriptEmptyState({
           </Badge>
         )}
       </div>
-      {onOpenGenerate && (
-        <Button onClick={onOpenGenerate}>
-          <Sparkles className="size-4" />
-          选择分集生成剧本
-        </Button>
-      )}
     </div>
   )
 }

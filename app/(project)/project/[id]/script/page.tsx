@@ -10,8 +10,6 @@ import { apiFetch } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
-import { GenerateScriptButton } from "./components/generate-script-button"
-import { ChapterSelectDialog } from "./components/chapter-select-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
 import { CreateEpisodeDialog } from "./components/create-episode-dialog"
@@ -31,7 +29,6 @@ export default function ScriptPage() {
     generateStatus,
     generateError,
     fetchEpisodes,
-    generateScripts,
     updateScript,
     deleteEpisode,
     reorderEpisodes,
@@ -42,7 +39,6 @@ export default function ScriptPage() {
     setActiveEpisodeId,
   } = useScriptStore()
 
-  const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
   const [showCreateEpisodeDialog, setShowCreateEpisodeDialog] = useState(false)
   const [loading, setLoading] = useState(true)
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
@@ -104,18 +100,6 @@ export default function ScriptPage() {
       setActiveEpisodeId(ep.id)
     },
     [setActiveEpisodeId]
-  )
-
-  const handleGenerateEpisodes = useCallback(
-    async (episodeIdsOrdered: string[]) => {
-      try {
-        await generateScripts(projectId, episodeIdsOrdered, "overwrite")
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "生成失败")
-        throw err
-      }
-    },
-    [projectId, generateScripts]
   )
 
   // 新建分集（直接输入原文）
@@ -183,14 +167,6 @@ export default function ScriptPage() {
             <FilePlus className="size-4" />
             新建分集
           </Button>
-          {episodesForProject.length > 0 && (
-            <>
-              <GenerateScriptButton
-                generateStatus={generateStatus}
-                onClick={() => setShowEpisodeSelect(true)}
-              />
-            </>
-          )}
         </div>
       </div>
 
@@ -200,12 +176,6 @@ export default function ScriptPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs text-destructive break-all">剧本生成失败: {generateError}</p>
-              <button
-                onClick={() => setShowEpisodeSelect(true)}
-                className="text-xs text-destructive underline hover:no-underline"
-              >
-                重新选择分集
-              </button>
             </div>
             <button
               type="button"
@@ -225,7 +195,6 @@ export default function ScriptPage() {
         <div className="flex-1 overflow-hidden">
           <ScriptEmptyState
             episodes={episodesForProject}
-            onOpenGenerate={() => setShowEpisodeSelect(true)}
             onCreateEpisode={() => setShowCreateEpisodeDialog(true)}
           />
         </div>
@@ -307,14 +276,6 @@ export default function ScriptPage() {
         onOpenChange={setShowCreateEpisodeDialog}
         onSubmit={handleCreateEpisodeWithRawText}
         nextEpisodeNumber={episodesForProject.length + 1}
-      />
-
-      {/* Episode select dialog */}
-      <ChapterSelectDialog
-        open={showEpisodeSelect}
-        onOpenChange={setShowEpisodeSelect}
-        episodes={episodesForProject}
-        onGenerate={handleGenerateEpisodes}
       />
 
     </div>
