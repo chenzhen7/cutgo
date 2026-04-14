@@ -35,7 +35,7 @@ export function CreateEpisodeDialog({
 }: CreateEpisodeDialogProps) {
   const [title, setTitle] = useState("")
   const [rawText, setRawText] = useState("")
-  const [extractAssets, setExtractAssets] = useState(false)
+  const [extractAssets, setExtractAssets] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -44,7 +44,7 @@ export function CreateEpisodeDialog({
     if (open) {
       setTitle("")
       setRawText("")
-      setExtractAssets(false)
+      setExtractAssets(true)
       setError(null)
       setLoading(false)
     }
