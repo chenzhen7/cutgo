@@ -100,18 +100,15 @@ export function ScriptEditor({
     setRawText(episode.rawText ?? "")
     setSavedRawText(false)
     setActiveTab("script")
-  }, [episode.id, episode.script, episode.rawText])
-
-  useEffect(() => {
-    setTitleValue(episode.title)
-  }, [episode.id, episode.title])
-
-  useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       if (rawTextSaveTimerRef.current) clearTimeout(rawTextSaveTimerRef.current)
     }
-  }, [])
+  }, [episode.id])
+
+  useEffect(() => {
+    setTitleValue(episode.title)
+  }, [episode.id, episode.title])
 
   const triggerAutoSave = useCallback(
     (newContent: string) => {
@@ -124,7 +121,9 @@ export function ScriptEditor({
       saveTimerRef.current = setTimeout(async () => {
         setSaving(true)
         try {
-          await onUpdateScript({ content: newContent.trim() || undefined })
+          const trimmed = newContent.trim()
+          await onUpdateScript({ content: trimmed })
+          setContent(trimmed)
           setSaved(true)
           setTimeout(() => setSaved(false), 2000)
         } finally {
@@ -145,7 +144,9 @@ export function ScriptEditor({
     saveTimerRef.current = null
     setSaving(true)
     try {
-      await onUpdateScript({ content: content.trim() || undefined })
+      const trimmed = content.trim()
+      await onUpdateScript({ content: trimmed })
+      setContent(trimmed)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } finally {
@@ -170,10 +171,12 @@ export function ScriptEditor({
       rawTextSaveTimerRef.current = setTimeout(async () => {
         setSavingRawText(true)
         try {
+          const trimmed = newRawText.trim()
           await onUpdateEpisode?.({
-            rawText: newRawText.trim() || undefined,
+            rawText: trimmed,
             wordCount: countWords(newRawText),
           })
+          setRawText(trimmed)
           setSavedRawText(true)
           setTimeout(() => setSavedRawText(false), 2000)
         } finally {
@@ -194,10 +197,12 @@ export function ScriptEditor({
     rawTextSaveTimerRef.current = null
     setSavingRawText(true)
     try {
+      const trimmed = rawText.trim()
       await onUpdateEpisode?.({
-        rawText: rawText.trim() || undefined,
+        rawText: trimmed,
         wordCount: countWords(rawText),
       })
+      setRawText(trimmed)
       setSavedRawText(true)
       setTimeout(() => setSavedRawText(false), 2000)
     } finally {
