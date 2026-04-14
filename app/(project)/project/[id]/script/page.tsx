@@ -122,7 +122,7 @@ export default function ScriptPage() {
   const handleCreateEpisodeWithRawText = useCallback(
     async (params: { title: string; rawText: string; extractAssets: boolean }) => {
       const result = await createEpisodeWithRawText(projectId, params)
-      toast.success("分集已创建，大纲和剧本生成完成")
+      toast.success("分集已创建")
       if (result.extractAssets) toast.success("资产提取已完成")
     },
     [projectId, createEpisodeWithRawText]

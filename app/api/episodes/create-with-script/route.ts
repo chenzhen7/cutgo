@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { callLLM } from "@/lib/ai/llm"
 import {
-  buildEpisodeScriptSystemPrompt,
-  buildEpisodeScriptUserPrompt,
   buildExtractAssetsSystemPrompt,
   buildExtractAssetsUserPrompt,
 } from "@/lib/prompts"
-import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
-import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
+import { throwCutGoError, withError } from "@/lib/api-error"
 import { countWords } from "@/lib/novel-utils"
 
 interface AIAssetResult {
@@ -78,46 +75,6 @@ export const POST = withError(async (request: NextRequest) => {
     },
   })
 
-  const scriptTask = await createRunningAiTask({
-    projectId,
-    episodeId: episode.id,
-    targetInfo: `第${episodeIndex + 1}集 ${defaultTitle}`,
-    taskType: "llm_script",
-  })
-
-  let scriptContent = ""
-  try {
-    const systemPrompt = buildEpisodeScriptSystemPrompt()
-    const userPrompt = buildEpisodeScriptUserPrompt({
-      episodeTitle: defaultTitle,
-      chapterContent: rawText.trim(),
-      previousContent: null,
-      duration: "3min",
-    })
-
-    const result = await callLLM({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    })
-
-    if (!result.content?.trim()) {
-      throwCutGoError("LLM_INVALID_RESPONSE", "LLM 未返回有效剧本内容")
-    }
-    scriptContent = result.content.trim()
-    await markAiTaskSucceeded(scriptTask.id)
-  } catch (err) {
-    await markAiTaskFailed(scriptTask.id, err)
-    if (err instanceof CutGoError) throw err
-    throwCutGoError("LLM_INVALID_RESPONSE", (err as Error).message)
-  }
-
-  const finalEpisode = await prisma.episode.update({
-    where: { id: episode.id },
-    data: { script: scriptContent },
-  })
-
   if (extractAssets) {
     const extractSystemPrompt = buildExtractAssetsSystemPrompt()
     const extractUserPrompt = buildExtractAssetsUserPrompt(rawText.trim())
@@ -184,7 +141,7 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   return NextResponse.json({
-    episode: finalEpisode,
+    episode,
     extractAssets: extractAssets ?? false,
   }, { status: 201 })
 })

@@ -86,7 +86,7 @@ export function CreateEpisodeDialog({
             新建分集
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
-            填写分集标题与小说原文，AI 将自动生成该集剧本。
+            填写分集标题与小说原文，创建后可在左侧选择分集手动生成剧本。
           </p>
         </DialogHeader>
 
@@ -160,12 +160,12 @@ export function CreateEpisodeDialog({
             {loading ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                AI 生成中…
+                创建中…
               </>
             ) : (
               <>
                 <FilePlus className="size-4" />
-                创建并生成剧本
+                创建分集
               </>
             )}
           </Button>
