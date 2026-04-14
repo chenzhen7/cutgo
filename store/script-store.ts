@@ -24,6 +24,11 @@ interface ScriptState {
   }) => Promise<{ episodeId: string; extractAssets: boolean }>
   updateEpisode: (episodeId: string, data: {
     title?: string
+    rawText?: string
+    wordCount?: number
+    characters?: string
+    scenes?: string
+    props?: string
   }) => Promise<void>
   generateScripts: (
     projectId: string,

@@ -24,6 +24,7 @@ import {
 import { useAssetStore } from "@/store/asset-store"
 import { ScriptEditorLeftPanel } from "./script-editor-left-panel"
 import { ScriptEditorTextPanel } from "./script-editor-text-panel"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface ScriptEditorProps {
   episode: Episode
@@ -37,6 +38,8 @@ interface ScriptEditorProps {
   }) => Promise<void>
   onUpdateEpisode?: (data: {
     title?: string
+    rawText?: string
+    wordCount?: number
     characters?: string
     scenes?: string
     props?: string
@@ -60,18 +63,29 @@ export function ScriptEditor({
   const [editingCharacter, setEditingCharacter] = useState<AssetCharacter | null>(null)
   const [editingScene, setEditingScene] = useState<AssetScene | null>(null)
   const [editingProp, setEditingProp] = useState<AssetProp | null>(null)
+  const [activeTab, setActiveTab] = useState<"script" | "rawText">("script")
+
   const [content, setContent] = useState(episode.script ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const [rawText, setRawText] = useState(episode.rawText ?? "")
+  const [savingRawText, setSavingRawText] = useState(false)
+  const [savedRawText, setSavedRawText] = useState(false)
+
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(episode.title)
   const [savingTitle, setSavingTitle] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rawTextSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const rawTextareaRef = useRef<HTMLTextAreaElement>(null)
   const gutterRef = useRef<HTMLDivElement>(null)
+  const rawTextGutterRef = useRef<HTMLDivElement>(null)
   const isDirty = content !== (episode.script ?? "")
+  const isRawTextDirty = rawText !== (episode.rawText ?? "")
 
   const characterIds = parseJsonArray(episode.characters)
   const sceneIds = parseJsonArray(episode.scenes)
@@ -83,7 +97,10 @@ export function ScriptEditor({
   useEffect(() => {
     setContent(episode.script ?? "")
     setSaved(false)
-  }, [episode.id, episode.script])
+    setRawText(episode.rawText ?? "")
+    setSavedRawText(false)
+    setActiveTab("script")
+  }, [episode.id, episode.script, episode.rawText])
 
   useEffect(() => {
     setTitleValue(episode.title)
@@ -92,6 +109,7 @@ export function ScriptEditor({
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      if (rawTextSaveTimerRef.current) clearTimeout(rawTextSaveTimerRef.current)
     }
   }, [])
 
@@ -139,6 +157,58 @@ export function ScriptEditor({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     setContent(episode.script ?? "")
     setSaved(false)
+  }
+
+  const triggerRawTextAutoSave = useCallback(
+    (newRawText: string) => {
+      if (rawTextSaveTimerRef.current) {
+        clearTimeout(rawTextSaveTimerRef.current)
+        rawTextSaveTimerRef.current = null
+      }
+      const server = episode.rawText ?? ""
+      if (newRawText === server) return
+      rawTextSaveTimerRef.current = setTimeout(async () => {
+        setSavingRawText(true)
+        try {
+          await onUpdateEpisode?.({
+            rawText: newRawText.trim() || undefined,
+            wordCount: countWords(newRawText),
+          })
+          setSavedRawText(true)
+          setTimeout(() => setSavedRawText(false), 2000)
+        } finally {
+          setSavingRawText(false)
+        }
+      }, 800)
+    },
+    [episode.rawText, onUpdateEpisode]
+  )
+
+  const handleRawTextChange = (v: string) => {
+    setRawText(v)
+    triggerRawTextAutoSave(v)
+  }
+
+  const handleSaveRawTextNow = async () => {
+    if (rawTextSaveTimerRef.current) clearTimeout(rawTextSaveTimerRef.current)
+    rawTextSaveTimerRef.current = null
+    setSavingRawText(true)
+    try {
+      await onUpdateEpisode?.({
+        rawText: rawText.trim() || undefined,
+        wordCount: countWords(rawText),
+      })
+      setSavedRawText(true)
+      setTimeout(() => setSavedRawText(false), 2000)
+    } finally {
+      setSavingRawText(false)
+    }
+  }
+
+  const handleDiscardRawText = () => {
+    if (rawTextSaveTimerRef.current) clearTimeout(rawTextSaveTimerRef.current)
+    setRawText(episode.rawText ?? "")
+    setSavedRawText(false)
   }
 
   const handleToggleCharacter = async (characterId: string) => {
@@ -197,12 +267,21 @@ export function ScriptEditor({
 
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
-
   const lineNumbers = content.split("\n").map((_, i) => i + 1)
+
+  const rawTextWordCount = countWords(rawText)
+  const rawTextLineCount = rawText ? rawText.split("\n").length : 0
+  const rawTextLineNumbers = rawText.split("\n").map((_, i) => i + 1)
 
   const syncGutterScroll = () => {
     const ta = textareaRef.current
     const g = gutterRef.current
+    if (ta && g) g.scrollTop = ta.scrollTop
+  }
+
+  const syncRawTextGutterScroll = () => {
+    const ta = rawTextareaRef.current
+    const g = rawTextGutterRef.current
     if (ta && g) g.scrollTop = ta.scrollTop
   }
 
@@ -241,36 +320,90 @@ export function ScriptEditor({
               </button>
             )}
           </div>
+
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "script" | "rawText")}
+            className="shrink-0"
+          >
+            <TabsList className="h-8">
+              <TabsTrigger value="script" className="text-xs px-3">
+                剧本
+              </TabsTrigger>
+              <TabsTrigger value="rawText" className="text-xs px-3">
+                原文
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <div className="flex items-center gap-1.5 shrink-0">
-            {saving && (
-              <span className="text-xs text-muted-foreground">保存中...</span>
-            )}
-            {saved && !saving && (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <Check className="size-3" />
-                已保存
-              </span>
-            )}
-            {isDirty && !saving && !saved && (
+            {activeTab === "script" ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={handleSaveNow}
-                >
-                  <Check className="size-3 mr-1" />
-                  保存
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground"
-                  onClick={handleDiscard}
-                >
-                  <X className="size-3 mr-1" />
-                  放弃
-                </Button>
+                {saving && (
+                  <span className="text-xs text-muted-foreground">保存中...</span>
+                )}
+                {saved && !saving && (
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <Check className="size-3" />
+                    已保存
+                  </span>
+                )}
+                {isDirty && !saving && !saved && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={handleSaveNow}
+                    >
+                      <Check className="size-3 mr-1" />
+                      保存
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={handleDiscard}
+                    >
+                      <X className="size-3 mr-1" />
+                      放弃
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {savingRawText && (
+                  <span className="text-xs text-muted-foreground">保存中...</span>
+                )}
+                {savedRawText && !savingRawText && (
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <Check className="size-3" />
+                    已保存
+                  </span>
+                )}
+                {isRawTextDirty && !savingRawText && !savedRawText && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={handleSaveRawTextNow}
+                    >
+                      <Check className="size-3 mr-1" />
+                      保存
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={handleDiscardRawText}
+                    >
+                      <X className="size-3 mr-1" />
+                      放弃
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -309,18 +442,32 @@ export function ScriptEditor({
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel className="min-w-0">
-            <ScriptEditorTextPanel
-              content={content}
-              lineNumbers={lineNumbers}
-              lineCount={lineCount}
-              wordCount={wordCount}
-              isGeneratingScript={isGeneratingScript}
-              textareaRef={textareaRef}
-              gutterRef={gutterRef}
-              onChange={handleContentChange}
-              onScrollSync={syncGutterScroll}
-            />
+          <ResizablePanel className="min-w-0 flex flex-col">
+            {activeTab === "script" ? (
+              <ScriptEditorTextPanel
+                content={content}
+                lineNumbers={lineNumbers}
+                lineCount={lineCount}
+                wordCount={wordCount}
+                isGeneratingScript={isGeneratingScript}
+                textareaRef={textareaRef}
+                gutterRef={gutterRef}
+                onChange={handleContentChange}
+                onScrollSync={syncGutterScroll}
+              />
+            ) : (
+              <ScriptEditorTextPanel
+                content={rawText}
+                lineNumbers={rawTextLineNumbers}
+                lineCount={rawTextLineCount}
+                wordCount={rawTextWordCount}
+                isGeneratingScript={false}
+                textareaRef={rawTextareaRef}
+                gutterRef={rawTextGutterRef}
+                onChange={handleRawTextChange}
+                onScrollSync={syncRawTextGutterScroll}
+              />
+            )}
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
