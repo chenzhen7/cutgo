@@ -46,7 +46,6 @@ export default function ScriptPage() {
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
   const [showCreateEpisodeDialog, setShowCreateEpisodeDialog] = useState(false)
   const [showExtractAssets, setShowExtractAssets] = useState(false)
-  const [extractAssetsAutoStart, setExtractAssetsAutoStart] = useState(false)
   const [extractTargetEpisodeId, setExtractTargetEpisodeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
@@ -129,7 +128,6 @@ export default function ScriptPage() {
       toast.success("分集已创建")
       if (result.extractAssets) {
         setExtractTargetEpisodeId(result.episodeId)
-        setExtractAssetsAutoStart(true)
         setShowExtractAssets(true)
       }
     },
@@ -139,7 +137,6 @@ export default function ScriptPage() {
   const handleOpenExtractAssets = useCallback(() => {
     if (!activeEpisodeId) return
     setExtractTargetEpisodeId(activeEpisodeId)
-    setExtractAssetsAutoStart(false)
     setShowExtractAssets(true)
   }, [activeEpisodeId])
 
@@ -350,10 +347,7 @@ export default function ScriptPage() {
           }}
           projectId={projectId}
           episodeId={extractTargetEpisodeId}
-          episodes={episodesForProject}
           onSuccess={handleExtractAssetsSuccess}
-          autoStartExtract={extractAssetsAutoStart}
-          initialSelectedEpisodeIds={[extractTargetEpisodeId]}
         />
       )}
     </div>

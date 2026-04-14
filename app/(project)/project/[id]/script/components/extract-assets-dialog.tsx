@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useState, useMemo, useEffect, useRef, useCallback } from "react"
+import { memo, useState, useMemo, useEffect, useCallback } from "react"
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -20,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  BookMarked,
   Loader2,
   Sparkles,
   User,
@@ -33,8 +31,6 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react"
-import type { Episode } from "@/lib/types"
-import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
@@ -43,12 +39,7 @@ interface ExtractAssetsDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   episodeId: string
-  episodes: Episode[]
   onSuccess?: (stats: { characterCount: number; sceneCount: number; propCount: number }) => void
-  /** 打开对话框后自动开始 AI 提取（进入「提取中」步骤） */
-  autoStartExtract?: boolean
-  /** 预选分集；不传或为空则默认全选当前分集列表 */
-  initialSelectedEpisodeIds?: string[] | null
 }
 
 // ── 提取结果中每个资产的状态 ──
@@ -88,7 +79,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const ACTION_LABEL: Record<AssetAction, string> = {
   save: "覆盖保存",
-  keep: "保留已有",
+  keep: "使用已有资产",
   skip: "跳过",
   rename: "改名保存",
 }
@@ -220,7 +211,7 @@ const AssetRow = memo(function AssetRow<T extends { name: string; prompt?: strin
                     <DropdownMenuContent align="end" className="min-w-24">
                       <DropdownMenuItem onClick={() => onUpdate({ action: "keep" })}>
                         {action === "keep" && <Check className="size-3.5 mr-1" />}
-                        保留已有
+                        使用已有资产
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onUpdate({ action: "save" })}>
                         {action === "save" && <Check className="size-3.5 mr-1" />}
@@ -321,14 +312,10 @@ export function ExtractAssetsDialog({
   onOpenChange,
   projectId,
   episodeId,
-  episodes,
   onSuccess,
-  autoStartExtract = false,
-  initialSelectedEpisodeIds = null,
 }: ExtractAssetsDialogProps) {
-  // ── 步骤：select → extracting → review ──
-  const [step, setStep] = useState<"select" | "extracting" | "review">("select")
-  const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<string[]>([])
+  // ── 步骤：extracting → review ──
+  const [step, setStep] = useState<"extracting" | "review">("extracting")
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -347,98 +334,42 @@ export function ExtractAssetsDialog({
   const [sceneStates, updateScene] = useAssetItemStates(extractedScenes, existingNames.scenes)
   const [propStates, updateProp] = useAssetItemStates(extractedProps, existingNames.props)
 
-  const rows = useMemo(
-    () => [...episodes].sort((a, b) => a.index - b.index),
-    [episodes]
-  )
-
-  const episodeDisplayMap = useMemo(() => buildEpisodeDisplayNumberMap(rows), [rows])
-
-  const autoExtractStartedRef = useRef(false)
-
-  const resolveSelectedIds = useCallback(() => {
-    const allIds = rows.map((r) => r.id)
-    if (initialSelectedEpisodeIds != null && initialSelectedEpisodeIds.length > 0) {
-      const filtered = initialSelectedEpisodeIds.filter((id) => allIds.includes(id))
-      return filtered.length > 0 ? filtered : allIds
+  const runExtract = useCallback(async () => {
+    setStep("extracting")
+    setError(null)
+    try {
+      const data = await apiFetch<{
+        characters: ExtractedCharacter[]
+        scenes: ExtractedScene[]
+        props: ExtractedProp[]
+        existingNames: { characters: string[]; scenes: string[]; props: string[] }
+      }>("/api/episodes/extract-assets", {
+        method: "POST",
+        body: { episodeIds: [episodeId] },
+      })
+      setExtractedCharacters(data.characters ?? [])
+      setExtractedScenes(data.scenes ?? [])
+      setExtractedProps(data.props ?? [])
+      setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
+      setStep("review")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "请求失败")
+      setStep("review")
     }
-    return allIds
-  }, [rows, initialSelectedEpisodeIds])
+  }, [episodeId])
 
   useEffect(() => {
     if (!open) {
-      autoExtractStartedRef.current = false
-      return
-    }
-    setStep("select")
-    setSelectedEpisodeIds(resolveSelectedIds())
-    setError(null)
-    setExtractedCharacters([])
-    setExtractedScenes([])
-    setExtractedProps([])
-    setExistingNames({ characters: [], scenes: [], props: [] })
-  }, [open, rows, resolveSelectedIds])
-
-  const runExtract = useCallback(
-    async (orderedIds: string[]) => {
-      if (!orderedIds.length) return
       setStep("extracting")
       setError(null)
-      try {
-        const data = await apiFetch<{
-          characters: ExtractedCharacter[]
-          scenes: ExtractedScene[]
-          props: ExtractedProp[]
-          existingNames: { characters: string[]; scenes: string[]; props: string[] }
-        }>("/api/episodes/extract-assets", {
-          method: "POST",
-          body: { episodeIds: orderedIds },
-        })
-        setExtractedCharacters(data.characters ?? [])
-        setExtractedScenes(data.scenes ?? [])
-        setExtractedProps(data.props ?? [])
-        setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
-        setStep("review")
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "请求失败")
-        setStep("select")
-      }
-    },
-    []
-  )
-
-  useEffect(() => {
-    if (!open || !autoStartExtract || autoExtractStartedRef.current) return
-    const ids = resolveSelectedIds()
-    if (ids.length === 0) return
-    const idSet = new Set(ids)
-    const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
-    if (orderedIds.length === 0) return
-    autoExtractStartedRef.current = true
-    void runExtract(orderedIds)
-  }, [open, autoStartExtract, rows, resolveSelectedIds, runExtract])
-
-  const allSelected = useMemo(() => {
-    if (!rows.length) return false
-    return rows.every((r) => selectedEpisodeIds.includes(r.id))
-  }, [rows, selectedEpisodeIds])
-
-  const toggleEpisode = (episodeId: string) => {
-    setSelectedEpisodeIds((prev) =>
-      prev.includes(episodeId) ? prev.filter((id) => id !== episodeId) : [...prev, episodeId]
-    )
-  }
-
-  const toggleAll = () => {
-    setSelectedEpisodeIds(allSelected ? [] : rows.map((r) => r.id))
-  }
-
-  const handleExtract = async () => {
-    if (!selectedEpisodeIds.length) return
-    const idSet = new Set(selectedEpisodeIds)
-    const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
-    await runExtract(orderedIds)
-  }
+      setExtractedCharacters([])
+      setExtractedScenes([])
+      setExtractedProps([])
+      setExistingNames({ characters: [], scenes: [], props: [] })
+      return
+    }
+    void runExtract()
+  }, [open, runExtract])
 
   // 统计（单次遍历，减少渲染时重复 filter）
   const stats = useMemo(() => {
@@ -529,75 +460,13 @@ export function ExtractAssetsDialog({
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
             {step === "review"
-              ? "以下是 AI 提取的资产，请确认保存哪些。名称冲突的资产会单独标注，默认保留已有资产。"
-              : "选择分集后，AI 将自动从分集原文中提取角色、场景和道具资产"}
+              ? "以下是 AI 提取的资产，请确认保存哪些。名称冲突的资产会单独标注，默认使用已有资产。"
+              : "AI 正在自动从当前分集原文中提取角色、场景和道具资产，请稍候"}
           </p>
         </DialogHeader>
 
-        {/* ── 步骤 1：选择分集 ── */}
-        {step === "select" && (
-          <>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={toggleAll}>
-                {allSelected ? "取消全选" : "全选分集"}
-              </Button>
-            </div>
-
-            <ScrollArea className="max-h-[280px]">
-              <div className="flex flex-col gap-1">
-                {rows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">暂无可用分集</p>
-                ) : (
-                  rows.map((ep) => {
-                    const checked = selectedEpisodeIds.includes(ep.id)
-                    const displayNum = episodeDisplayMap.get(ep.id) ?? 1
-                    return (
-                      <label
-                        key={ep.id}
-                        className="flex items-start gap-3 rounded-md px-3 py-3 hover:bg-muted/50 cursor-pointer transition-colors border border-border/50"
-                      >
-                        <Checkbox
-                          className="mt-0.5"
-                          checked={checked}
-                          onCheckedChange={() => toggleEpisode(ep.id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
-                            <span className="text-sm font-medium truncate min-w-0 flex-1">
-                              第{displayNum}集 {ep.title?.trim() ? ep.title.trim() : ""}
-                            </span>
-                            {ep.wordCount != null && ep.wordCount > 0 && (
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] px-1.5 py-0 h-4 shrink-0 text-muted-foreground"
-                              >
-                                {ep.wordCount.toLocaleString()} 字
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    )
-                  })
-                )}
-              </div>
-            </ScrollArea>
-
-            <div className="text-sm text-muted-foreground">
-              已选 {selectedEpisodeIds.length} 个分集
-            </div>
-
-            {error && (
-              <p className="text-xs text-destructive bg-destructive/5 rounded-md px-3 py-2">
-                {error}
-              </p>
-            )}
-          </>
-        )}
-
-        {/* ── 步骤 2：提取中 ── */}
-        {step === "extracting" && (
+        {/* ── 步骤 1：提取中 ── */}
+        {isExtracting && (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
             <Loader2 className="size-8 animate-spin text-primary" />
             <div className="text-center">
@@ -607,14 +476,20 @@ export function ExtractAssetsDialog({
           </div>
         )}
 
-        {/* ── 步骤 3：确认资产 ── */}
+        {/* ── 步骤 2：确认资产 ── */}
         {step === "review" && (
           <>
-            {stats.conflictCount > 0 && (
+            {error && (
+              <p className="text-xs text-destructive bg-destructive/5 rounded-md px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            {!error && stats.conflictCount > 0 && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
                 <span>
-                  有 <strong>{stats.conflictCount}</strong> 个资产名称已存在。默认<strong>保留已有</strong>资产并绑定到本集；你也可以选择覆盖保存、改名保存，或点击 × 跳过。
+                  有 <strong>{stats.conflictCount}</strong> 个资产名称已存在。默认<strong>使用已有资产</strong>并绑定到本集；你也可以选择覆盖保存、改名保存，或点击 × 跳过。
                 </span>
               </div>
             )}
@@ -705,26 +580,11 @@ export function ExtractAssetsDialog({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => {
-              if (step === "review") {
-                setStep("select")
-              } else {
-                onOpenChange(false)
-              }
-            }}
+            onClick={() => onOpenChange(false)}
             disabled={isExtracting || saving}
           >
-            {step === "review" ? "重新选择" : "取消"}
+            取消
           </Button>
-
-          {step === "select" && (
-            <Button
-              onClick={() => void handleExtract()}
-              disabled={selectedEpisodeIds.length === 0}
-            >
-              提取资产
-            </Button>
-          )}
 
           {step === "review" && (
             <Button
@@ -737,7 +597,7 @@ export function ExtractAssetsDialog({
                   保存中...
                 </>
               ) : (
-                `保存 ${stats.saveCount} 个资产`
+                `保存关联 ${stats.saveCount} 个资产`
               )}
             </Button>
           )}
