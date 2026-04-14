@@ -39,7 +39,7 @@ interface ExtractAssetsDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   episodeId: string
-  onSuccess?: (stats: { characterCount: number; sceneCount: number; propCount: number }) => void
+  onSuccess?: (stats: { characterCount: number; sceneCount: number; propCount: number }) => void | Promise<void>
 }
 
 // ── 提取结果中每个资产的状态 ──
@@ -113,6 +113,16 @@ function useAssetItemStates<T extends { name: string }>(
   return [states, update]
 }
 
+function buildSavePayload<T extends { name: string }>(states: AssetItemState<T>[]) {
+  return states
+    .filter((s) => s.action !== "skip")
+    .map((s) => ({
+      ...s.data,
+      name: s.action === "rename" ? s.newName : s.data.name,
+      strategy: s.action,
+    }))
+}
+
 // ── 单个资产行组件 ──
 const AssetRow = memo(function AssetRow<T extends { name: string; prompt?: string }>({
   state,
@@ -170,7 +180,7 @@ const AssetRow = memo(function AssetRow<T extends { name: string; prompt?: strin
             />
             <button
               className="text-primary hover:opacity-70 p-0.5"
-              onClick={() => finishRename()}
+              onClick={finishRename}
             >
               <Check className="size-3.5" />
             </button>
@@ -426,31 +436,13 @@ export function ExtractAssetsDialog({
           body: {
             projectId,
             episodeId,
-            characters: charStates
-              .filter((s) => s.action !== "skip")
-              .map((s) => ({
-                ...s.data,
-                name: s.action === "rename" ? s.newName : s.data.name,
-                strategy: s.action,
-              })),
-            scenes: sceneStates
-              .filter((s) => s.action !== "skip")
-              .map((s) => ({
-                ...s.data,
-                name: s.action === "rename" ? s.newName : s.data.name,
-                strategy: s.action,
-              })),
-            props: propStates
-              .filter((s) => s.action !== "skip")
-              .map((s) => ({
-                ...s.data,
-                name: s.action === "rename" ? s.newName : s.data.name,
-                strategy: s.action,
-              })),
+            characters: buildSavePayload(charStates),
+            scenes: buildSavePayload(sceneStates),
+            props: buildSavePayload(propStates),
           },
         }
       )
-      onSuccess?.(result.stats)
+      await onSuccess?.(result.stats)
       onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "请求失败")

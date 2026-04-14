@@ -53,22 +53,24 @@ export default function ScriptPage() {
   const [assetProps, setAssetProps] = useState<AssetProp[]>([])
 
 
+  const handleAssetRefresh = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(`/api/assets?projectId=${projectId}`)
+      setAssetCharacters(data.characters ?? [])
+      setAssetScenes(data.scenes ?? [])
+      setAssetProps(data.props ?? [])
+    } catch {
+      setAssetCharacters([])
+      setAssetScenes([])
+      setAssetProps([])
+    }
+  }, [projectId])
+
   useEffect(() => {
     const init = async () => {
       setLoading(true)
       await fetchEpisodes(projectId)
-      try {
-        const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(
-          `/api/assets?projectId=${projectId}`
-        )
-        setAssetCharacters(data.characters ?? [])
-        setAssetScenes(data.scenes ?? [])
-        setAssetProps(data.props ?? [])
-      } catch {
-        setAssetCharacters([])
-        setAssetScenes([])
-        setAssetProps([])
-      }
+      await handleAssetRefresh()
 
       const eps = useScriptStore.getState().episodes
       const currentActiveEpisodeId = useScriptStore.getState().activeEpisodeId
@@ -84,18 +86,7 @@ export default function ScriptPage() {
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, setActiveEpisodeId])
-
-  const handleAssetRefresh = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(`/api/assets?projectId=${projectId}`)
-      setAssetCharacters(data.characters ?? [])
-      setAssetScenes(data.scenes ?? [])
-      setAssetProps(data.props ?? [])
-    } catch {
-      // 静默失败
-    }
-  }, [projectId])
+  }, [projectId, fetchEpisodes, setActiveEpisodeId, handleAssetRefresh])
 
   const activeEpisode = useMemo(
     () => episodes.find((ep) => ep.id === activeEpisodeId) ?? null,
@@ -143,9 +134,10 @@ export default function ScriptPage() {
   const handleExtractAssetsSuccess = useCallback(async () => {
     toast.success("资产已保存并绑定到本集")
     await handleAssetRefresh()
+    await fetchEpisodes(projectId)
     setShowExtractAssets(false)
     setExtractTargetEpisodeId(null)
-  }, [handleAssetRefresh])
+  }, [handleAssetRefresh, fetchEpisodes, projectId])
 
   const handleDeleteEpisode = useCallback(
     async (pid: string, eid: string) => {
