@@ -160,13 +160,8 @@ function SortableEpisodeItem({
           )}
         </div>
 
-        {hasScript || ep.outline?.trim() ? (
+        {hasScript ? (
           <div className="flex flex-col gap-1 pl-5">
-            {ep.outline?.trim() && (
-              <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
-                {ep.outline}
-              </p>
-            )}
             <ScriptAssetStrip
               episode={ep}
               assetCharacters={assetCharacters}

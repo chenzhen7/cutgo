@@ -24,7 +24,7 @@ export function ScriptEmptyState({
         <div className="text-center">
           <p className="text-sm font-medium">开始创作第一集</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            点击「新建分集」，粘贴小说原文，AI 将自动生成大纲和剧本
+            点击「新建分集」，粘贴小说原文，AI 将自动生成剧本
           </p>
         </div>
         {onCreateEpisode && (

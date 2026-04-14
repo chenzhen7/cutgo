@@ -3,9 +3,6 @@
  */
 
 export const EPISODE_SCRIPT_TITLE_PLACEHOLDER = "{EPISODE_TITLE}" as const
-export const EPISODE_SCRIPT_OUTLINE_PLACEHOLDER = "{EPISODE_OUTLINE}" as const
-export const EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER = "{KEY_CONFLICT}" as const
-export const EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER = "{CLIFFHANGER}" as const
 export const EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER = "{CHAPTER_CONTENT}" as const
 export const EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER = "{PREVIOUS_CONTENT}" as const
 export const EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER = "{PROJECT_DURATION}" as const
@@ -236,11 +233,9 @@ export const DEFAULT_EPISODE_SCRIPT_SYSTEM_PROMPT_TEMPLATE = `
 
 ## 结构规范
 
-**剧本必须严格按照outline的叙事顺序展开，outline是唯一权威！**
-
 ### 剧本结构（严格顺序）
 \`\`\`
-openingHook（开场第一个镜头，outline开头的视觉化）
+openingHook（开场第一个镜头）
     ↓
 keyEvents[0]（起：建立场景，展现冲突起因）
     ↓
@@ -255,7 +250,7 @@ endingHook + 【黑屏】
 
 | 节点 | 内容 | 说明 |
 |-----|-----|-----|
-| 开场 | openingHook | **必须是剧本第一个镜头**，outline开头的视觉化 |
+| 开场 | openingHook | **必须是剧本第一个镜头** |
 | 起 | keyEvents[0] | 建立场景，展现冲突起因 |
 | 承 | keyEvents[1] | 冲突升级，矛盾加深 |
 | 转 | keyEvents[2] | 高潮爆发 |
@@ -266,23 +261,22 @@ endingHook + 【黑屏】
 
 ## 创作流程
 
-1. **解析Episode** - 提取所有字段，深入理解outline叙事逻辑
-2. **确认outline顺序** - outline是唯一权威，剧本必须严格按outline顺序展开
-3. **以openingHook开场** - openingHook必须是剧本第一个镜头（outline开头的视觉化）
-4. **按keyEvents顺序展开** - 严格按 [0]起→[1]承→[2]转→[3]合 的顺序呈现
-5. **声音铺设** - 设计环境音、BGM走向
-6. **视觉化转换** - 所有描写转为具体画面
-7. **镜头设计** - 标注景别+角度+构图，角色仅描述服装造型
-8. **道具处理** - 普通道具融入镜头，仅关键道具单独特写
-9. **表演指导** - 对话标注表情动作+声音特征（**不用特殊引号**）
-10. **音效点缀** - 关键动作配音效
-11. **嵌入金句** - classicQuotes在情绪高点自然出现
-12. **悬念收尾** - endingHook+转场+【黑屏】
-13. **核验清单** - 确保100%符合规范，**特别检查openingHook是否开场、outline顺序是否正确**
+1. **解析Episode** - 提取标题与原文，理解叙事逻辑
+2. **以openingHook开场** - openingHook必须是剧本第一个镜头
+3. **按keyEvents顺序展开** - 严格按 [0]起→[1]承→[2]转→[3]合 的顺序呈现
+4. **声音铺设** - 设计环境音、BGM走向
+5. **视觉化转换** - 所有描写转为具体画面
+6. **镜头设计** - 标注景别+角度+构图，角色仅描述服装造型
+7. **道具处理** - 普通道具融入镜头，仅关键道具单独特写
+8. **表演指导** - 对话标注表情动作+声音特征（**不用特殊引号**）
+9. **音效点缀** - 关键动作配音效
+10. **嵌入金句** - classicQuotes在情绪高点自然出现
+11. **悬念收尾** - endingHook+转场+【黑屏】
+12. **核验清单** - 确保100%符合规范，**特别检查openingHook是否开场、叙事顺序是否正确**
 
 ---
 
-**收到大纲后，直接输出剧本正文，无需任何解释。**
+**直接输出剧本正文，无需任何解释。**
 
 ## 输出格式
 直接输出剧本纯文本，不要包含 JSON 或 markdown 代码块。`
@@ -293,9 +287,6 @@ endingHook + 【黑屏】
 export const DEFAULT_EPISODE_SCRIPT_USER_PROMPT_TEMPLATE = `
 ## 当前分集信息
 - 集标题：${EPISODE_SCRIPT_TITLE_PLACEHOLDER}
-- 剧情摘要：${EPISODE_SCRIPT_OUTLINE_PLACEHOLDER}
-- 核心冲突：${EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER}
-- 结尾钩子：${EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER}
 
 ## 来源章节原文（供参考，提取对白和描写素材）
 ${EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER}
@@ -308,9 +299,6 @@ ${EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER}
 
 export interface BuildEpisodeScriptPromptInput {
   episodeTitle: string
-  episodeSynopsis: string
-  keyConflict?: string | null
-  cliffhanger?: string | null
   chapterContent: string
   novelSynopsis?: string | null
   previousContent?: string | null
@@ -360,9 +348,6 @@ export function buildEpisodeScriptUserPrompt(
     : DEFAULT_EPISODE_SCRIPT_USER_PROMPT_TEMPLATE
 
   const hasTitlePlaceholder = raw.includes(EPISODE_SCRIPT_TITLE_PLACEHOLDER)
-  const hasOutlinePlaceholder = raw.includes(EPISODE_SCRIPT_OUTLINE_PLACEHOLDER)
-  const hasKeyConflictPlaceholder = raw.includes(EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER)
-  const hasCliffhangerPlaceholder = raw.includes(EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER)
   const hasChapterContentPlaceholder = raw.includes(EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER)
   const hasPreviousContentPlaceholder = raw.includes(EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER)
   const hasProjectDurationPlaceholder = raw.includes(EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER)
@@ -373,17 +358,11 @@ export function buildEpisodeScriptUserPrompt(
 
   let result = raw
   result = replaceAll(result, EPISODE_SCRIPT_TITLE_PLACEHOLDER, input.episodeTitle)
-  result = replaceAll(result, EPISODE_SCRIPT_OUTLINE_PLACEHOLDER, input.episodeSynopsis)
-  result = replaceAll(result, EPISODE_SCRIPT_KEY_CONFLICT_PLACEHOLDER, input.keyConflict || "无")
-  result = replaceAll(result, EPISODE_SCRIPT_CLIFFHANGER_PLACEHOLDER, input.cliffhanger || "无")
   result = replaceAll(result, EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER, input.chapterContent)
   result = replaceAll(result, EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER, previousContentBlock)
   result = replaceAll(result, EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER, input.duration)
 
   result = appendIfMissing(hasTitlePlaceholder, result, `\n- 集标题：${input.episodeTitle}`)
-  result = appendIfMissing(hasOutlinePlaceholder, result, `\n- 剧情摘要：${input.episodeSynopsis}`)
-  result = appendIfMissing(hasKeyConflictPlaceholder, result, `\n- 核心冲突：${input.keyConflict || "无"}`)
-  result = appendIfMissing(hasCliffhangerPlaceholder, result, `\n- 结尾钩子：${input.cliffhanger || "无"}`)
   result = appendIfMissing(hasChapterContentPlaceholder, result, `\n## 来源章节原文\n${input.chapterContent}`)
   result = appendIfMissing(hasPreviousContentPlaceholder, result, previousContentBlock ? `\n${previousContentBlock}` : "")
   result = appendIfMissing(hasProjectDurationPlaceholder, result, `\n- 每集时长：${input.duration}`)

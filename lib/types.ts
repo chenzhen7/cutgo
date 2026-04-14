@@ -27,10 +27,6 @@ export interface Episode {
   wordCount: number | null
   index: number
   title: string
-  outline: string | null
-  goldenHook: string | null
-  keyConflict: string | null
-  cliffhanger: string | null
   duration: string
   /** JSON 字符串数组：本集涉及的角色资产 id 列表 */
   characters: string | null
@@ -80,10 +76,6 @@ export interface EpisodeInput {
   chapterId: string
   index?: number
   title: string
-  outline?: string
-  goldenHook?: string
-  keyConflict?: string
-  cliffhanger?: string
   duration?: string
 }
 
@@ -578,7 +570,6 @@ export interface VideoComposition {
 }
 
 export type AiTaskType =
-  | "llm_outline"
   | "llm_extract_assets"
   | "llm_script"
   | "llm_shot"

@@ -37,10 +37,6 @@ interface ScriptEditorProps {
   }) => Promise<void>
   onUpdateEpisode?: (data: {
     title?: string
-    outline?: string | null
-    goldenHook?: string | null
-    keyConflict?: string | null
-    cliffhanger?: string | null
     characters?: string
     scenes?: string
     props?: string
@@ -70,14 +66,7 @@ export function ScriptEditor({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(episode.title)
   const [savingTitle, setSavingTitle] = useState(false)
-  const [editingOutline, setEditingOutline] = useState(false)
-  const [outlineValue, setOutlineValue] = useState(episode.outline ?? "")
-  const [goldenHookValue, setGoldenHookValue] = useState(episode.goldenHook ?? "")
-  const [keyConflictValue, setKeyConflictValue] = useState(episode.keyConflict ?? "")
-  const [cliffhangerValue, setCliffhangerValue] = useState(episode.cliffhanger ?? "")
-  const [savingOutline, setSavingOutline] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
-  const outlineRef = useRef<HTMLTextAreaElement>(null)
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -98,11 +87,7 @@ export function ScriptEditor({
 
   useEffect(() => {
     setTitleValue(episode.title)
-    setOutlineValue(episode.outline ?? "")
-    setGoldenHookValue(episode.goldenHook ?? "")
-    setKeyConflictValue(episode.keyConflict ?? "")
-    setCliffhangerValue(episode.cliffhanger ?? "")
-  }, [episode.id, episode.title, episode.outline, episode.goldenHook, episode.keyConflict, episode.cliffhanger])
+  }, [episode.id, episode.title])
 
   useEffect(() => {
     return () => {
@@ -210,60 +195,6 @@ export function ScriptEditor({
     }
   }
 
-  const handleOutlineEdit = () => {
-    if (!onUpdateEpisode) return
-    setEditingOutline(true)
-    setTimeout(() => {
-      const el = outlineRef.current
-      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length) }
-    }, 0)
-  }
-
-  const handleOutlineSave = async () => {
-    const trimmedOutline = outlineValue.trim()
-    const trimmedGoldenHook = goldenHookValue.trim()
-    const trimmedKeyConflict = keyConflictValue.trim()
-    const trimmedCliffhanger = cliffhangerValue.trim()
-
-    const hasChanged =
-      trimmedOutline !== (episode.outline ?? "").trim() ||
-      trimmedGoldenHook !== (episode.goldenHook ?? "").trim() ||
-      trimmedKeyConflict !== (episode.keyConflict ?? "").trim() ||
-      trimmedCliffhanger !== (episode.cliffhanger ?? "").trim()
-
-    if (!hasChanged) {
-      setEditingOutline(false)
-      return
-    }
-
-    setSavingOutline(true)
-    try {
-      await onUpdateEpisode?.({
-        outline: trimmedOutline || null,
-        goldenHook: trimmedGoldenHook || null,
-        keyConflict: trimmedKeyConflict || null,
-        cliffhanger: trimmedCliffhanger || null,
-      })
-    } finally {
-      setSavingOutline(false)
-      setEditingOutline(false)
-    }
-  }
-
-  const handleOutlineCancel = () => {
-    setEditingOutline(false)
-    setOutlineValue(episode.outline ?? "")
-    setGoldenHookValue(episode.goldenHook ?? "")
-    setKeyConflictValue(episode.keyConflict ?? "")
-    setCliffhangerValue(episode.cliffhanger ?? "")
-  }
-
-  const handleOutlineKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Escape") {
-      handleOutlineCancel()
-    }
-  }
-
   const wordCount = countWords(content)
   const lineCount = content ? content.split("\n").length : 0
 
@@ -345,7 +276,7 @@ export function ScriptEditor({
           </div>
         </div>
 
-        {/* 左右可拖拽布局：左侧大纲+资产区，右侧剧本编辑区 */}
+        {/* 左右可拖拽布局：左侧资产区，右侧剧本编辑区 */}
         <ResizablePanelGroup
           orientation="horizontal"
           className="flex-1 min-h-0"
@@ -367,28 +298,12 @@ export function ScriptEditor({
               boundCharacters={boundCharacters}
               boundScenes={boundScenes}
               boundProps={boundProps}
-              editingOutline={editingOutline}
-              outlineValue={outlineValue}
-              goldenHookValue={goldenHookValue}
-              keyConflictValue={keyConflictValue}
-              cliffhangerValue={cliffhangerValue}
-              savingOutline={savingOutline}
-              outlineRef={outlineRef}
               onToggleCharacter={handleToggleCharacter}
               onToggleScene={handleToggleScene}
               onToggleProp={handleToggleProp}
               onPickCharacter={setEditingCharacter}
               onPickScene={setEditingScene}
               onPickProp={setEditingProp}
-              onOutlineEdit={handleOutlineEdit}
-              onOutlineSave={handleOutlineSave}
-              onOutlineCancel={handleOutlineCancel}
-              onOutlineKeyDown={handleOutlineKeyDown}
-              onOutlineValueChange={setOutlineValue}
-              onGoldenHookChange={setGoldenHookValue}
-              onKeyConflictChange={setKeyConflictValue}
-              onCliffhangerChange={setCliffhangerValue}
-              canUpdateEpisode={!!onUpdateEpisode}
             />
           </ResizablePanel>
 

@@ -1,14 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Check, X, Pencil, MapPin, User, Package, ListOrdered, School } from "lucide-react"
+import { MapPin, User, Package, School } from "lucide-react"
 import type { AssetCharacter, AssetProp, AssetScene, Episode } from "@/lib/types"
-import type { KeyboardEvent, RefObject } from "react"
 
 interface ScriptEditorLeftPanelProps {
   episode: Episode
@@ -21,28 +19,12 @@ interface ScriptEditorLeftPanelProps {
   boundCharacters: AssetCharacter[]
   boundScenes: AssetScene[]
   boundProps: AssetProp[]
-  editingOutline: boolean
-  outlineValue: string
-  goldenHookValue: string
-  keyConflictValue: string
-  cliffhangerValue: string
-  savingOutline: boolean
-  outlineRef: RefObject<HTMLTextAreaElement | null>
   onToggleCharacter: (id: string) => Promise<void>
   onToggleScene: (id: string) => Promise<void>
   onToggleProp: (id: string) => Promise<void>
   onPickCharacter: (character: AssetCharacter) => void
   onPickScene: (scene: AssetScene) => void
   onPickProp: (prop: AssetProp) => void
-  onOutlineEdit: () => void
-  onOutlineSave: () => Promise<void>
-  onOutlineCancel: () => void
-  onOutlineKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void
-  onOutlineValueChange: (value: string) => void
-  onGoldenHookChange: (value: string) => void
-  onKeyConflictChange: (value: string) => void
-  onCliffhangerChange: (value: string) => void
-  canUpdateEpisode: boolean
 }
 
 export function ScriptEditorLeftPanel({
@@ -56,28 +38,12 @@ export function ScriptEditorLeftPanel({
   boundCharacters,
   boundScenes,
   boundProps,
-  editingOutline,
-  outlineValue,
-  goldenHookValue,
-  keyConflictValue,
-  cliffhangerValue,
-  savingOutline,
-  outlineRef,
   onToggleCharacter,
   onToggleScene,
   onToggleProp,
   onPickCharacter,
   onPickScene,
   onPickProp,
-  onOutlineEdit,
-  onOutlineSave,
-  onOutlineCancel,
-  onOutlineKeyDown,
-  onOutlineValueChange,
-  onGoldenHookChange,
-  onKeyConflictChange,
-  onCliffhangerChange,
-  canUpdateEpisode,
 }: ScriptEditorLeftPanelProps) {
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
@@ -118,7 +84,7 @@ export function ScriptEditorLeftPanel({
               </Popover>
             </div>
             {boundScenes.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 {boundScenes.map((s) => (
                   <div key={s.id} className="flex flex-col items-center gap-1">
                     <button onClick={() => onPickScene(s)} className="aspect-[16/10] w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all" title={s.name}>
@@ -215,86 +181,6 @@ export function ScriptEditorLeftPanel({
             ) : <div className="h-12 rounded-lg border border-dashed border-muted-foreground/15 flex items-center justify-center"><p className="text-[10px] text-muted-foreground/40 italic">未绑定</p></div>}
           </div>
         </div>
-      </div>
-
-      <div className="shrink-0 space-y-4 pb-6">
-        <div className="px-4 py-2 bg-muted/20 border-y flex items-center justify-between">
-          <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-            <ListOrdered className="size-3" />
-            分集大纲
-          </Label>
-          {!editingOutline && canUpdateEpisode && (
-            <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2 gap-1 text-primary hover:text-primary hover:bg-primary/5" onClick={onOutlineEdit}>
-              <Pencil className="size-3" />
-              编辑大纲
-            </Button>
-          )}
-        </div>
-
-        <div className="px-4 group/outline relative">
-          <div className="flex items-center justify-between mb-1.5">
-            <Label className="text-xs font-semibold text-muted-foreground">大纲详情</Label>
-          </div>
-          {editingOutline ? (
-            <Textarea
-              ref={outlineRef}
-              value={outlineValue}
-              onChange={(e) => onOutlineValueChange(e.target.value)}
-              onKeyDown={onOutlineKeyDown}
-              placeholder="详细的情节发展..."
-              className="min-h-[120px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40"
-            />
-          ) : (
-            <div className="min-h-[1.5rem]">
-              {episode.outline?.trim() ? (
-                <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{episode.outline}</p>
-              ) : (
-                <p className="text-[11px] text-muted-foreground/50 italic">未设置大纲</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="px-4 grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-xs font-semibold text-amber-600 dark:text-amber-400">黄金钩子</Label>
-            {editingOutline ? (
-              <Textarea value={goldenHookValue} onChange={(e) => onGoldenHookChange(e.target.value)} onKeyDown={onOutlineKeyDown} placeholder="开篇吸睛点..." className="min-h-[80px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40" />
-            ) : (
-              <div className="min-h-[1.25rem]">{episode.goldenHook?.trim() ? <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{episode.goldenHook}</p> : <p className="text-[11px] text-muted-foreground/50 italic">未设置</p>}</div>
-            )}
-          </div>
-          <div>
-            <Label className="text-xs font-semibold text-rose-600 dark:text-rose-400">核心冲突</Label>
-            {editingOutline ? (
-              <Textarea value={keyConflictValue} onChange={(e) => onKeyConflictChange(e.target.value)} onKeyDown={onOutlineKeyDown} placeholder="主要矛盾点..." className="min-h-[80px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40" />
-            ) : (
-              <div className="min-h-[1.25rem]">{episode.keyConflict?.trim() ? <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{episode.keyConflict}</p> : <p className="text-[11px] text-muted-foreground/50 italic">未设置</p>}</div>
-            )}
-          </div>
-        </div>
-
-        <div className="px-4">
-          <Label className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">结尾悬念</Label>
-          {editingOutline ? (
-            <Textarea value={cliffhangerValue} onChange={(e) => onCliffhangerChange(e.target.value)} onKeyDown={onOutlineKeyDown} placeholder="如何引导下一集？" className="min-h-[60px] resize-none text-xs leading-relaxed border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/40" />
-          ) : (
-            <div className="min-h-[1.25rem]">{episode.cliffhanger?.trim() ? <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{episode.cliffhanger}</p> : <p className="text-[11px] text-muted-foreground/50 italic">未设置悬念</p>}</div>
-          )}
-        </div>
-
-        {editingOutline && (
-          <div className="px-4 flex items-center gap-1.5 justify-end mt-2">
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" disabled={savingOutline} onClick={onOutlineCancel}>
-              <X className="size-3 mr-1" />
-              取消
-            </Button>
-            <Button size="sm" className="h-6 px-2 text-xs" disabled={savingOutline} onClick={() => void onOutlineSave()}>
-              <Check className="size-3 mr-1" />
-              {savingOutline ? "保存中..." : "保存"}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )

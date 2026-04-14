@@ -62,14 +62,6 @@ model Episode {
   index       Int
   /// 分集标题
   title       String
-  /// 分集大纲（纯文本）
-  outline     String?
-  /// 黄金钩子/开场吸引点
-  goldenHook  String?
-  /// 核心冲突
-  keyConflict String?
-  /// 悬念/钩子等收尾
-  cliffhanger String?
   /// 本集目标时长描述
   duration    String  @default("60s")
 

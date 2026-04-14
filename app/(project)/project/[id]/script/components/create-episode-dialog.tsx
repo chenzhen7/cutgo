@@ -86,7 +86,7 @@ export function CreateEpisodeDialog({
             新建分集
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
-            填写分集标题与小说原文，AI 将自动生成该集大纲和剧本。
+            填写分集标题与小说原文，AI 将自动生成该集剧本。
           </p>
         </DialogHeader>
 

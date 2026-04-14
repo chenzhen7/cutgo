@@ -15,9 +15,6 @@ import {
 
 async function callAIGenerateScript(
   episodeTitle: string,
-  episodeSynopsis: string,
-  keyConflict: string | null,
-  cliffhanger: string | null,
   chapterContent: string,
   previousContent: string | null,
   duration: string
@@ -25,9 +22,6 @@ async function callAIGenerateScript(
   const systemPrompt = buildEpisodeScriptSystemPrompt()
   const userPrompt = buildEpisodeScriptUserPrompt({
     episodeTitle,
-    episodeSynopsis,
-    keyConflict,
-    cliffhanger,
     chapterContent,
     previousContent: previousContent?.slice(-1000) ?? null,
     duration,
@@ -75,7 +69,6 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "没有可生成的分集")
   }
 
-  // 确保目标分集都有可用内容（rawText）
   const hasNoContent = targetEpisodes.some((ep) => {
     const hasRawText = !!ep.rawText?.trim()
     return !hasRawText
@@ -91,10 +84,9 @@ export const POST = withError(async (request: NextRequest) => {
     targetEpisodes = targetEpisodes.filter((ep) => !ep.script)
     skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
-    // overwrite 模式：直接覆盖写入，避免生成失败时丢失原有内容
+    // overwrite 模式：直接覆盖写入
   }
 
-  // 取上一集的剧本作为上下文
   const sortedAll = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
@@ -120,9 +112,6 @@ export const POST = withError(async (request: NextRequest) => {
       try {
         const scriptContent = await callAIGenerateScript(
           episode.title,
-          episode.outline ?? "",
-          episode.keyConflict,
-          episode.cliffhanger,
           chapterContent,
           previousContent,
           episode.duration

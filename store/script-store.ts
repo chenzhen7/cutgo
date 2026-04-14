@@ -24,10 +24,6 @@ interface ScriptState {
   }) => Promise<{ episodeId: string; extractAssets: boolean }>
   updateEpisode: (episodeId: string, data: {
     title?: string
-    outline?: string | null
-    goldenHook?: string | null
-    keyConflict?: string | null
-    cliffhanger?: string | null
   }) => Promise<void>
   generateScripts: (
     projectId: string,
@@ -141,7 +137,7 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
 
   createEpisodeWithRawText: async (projectId, { title, rawText, extractAssets }) => {
     const data = await apiFetch<{ episode: Episode; extractAssets: boolean }>(
-      "/api/episodes/create-with-outline-script",
+      "/api/episodes/create-with-script",
       {
         method: "POST",
         body: { projectId, title, rawText, extractAssets },

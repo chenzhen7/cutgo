@@ -14,10 +14,6 @@ export const PATCH = withError(async (
     data: {
       ...(body.index !== undefined && { index: body.index }),
       ...(body.title !== undefined && { title: body.title }),
-      ...(body.outline !== undefined && { outline: body.outline }),
-      ...(body.goldenHook !== undefined && { goldenHook: body.goldenHook }),
-      ...(body.keyConflict !== undefined && { keyConflict: body.keyConflict }),
-      ...(body.cliffhanger !== undefined && { cliffhanger: body.cliffhanger }),
       ...(body.duration !== undefined && { duration: body.duration }),
       ...(body.rawText !== undefined && {
         rawText: typeof body.rawText === "string" ? body.rawText.trim() : null,

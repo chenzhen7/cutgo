@@ -99,7 +99,7 @@ export function ChapterSelectDialog({
         <DialogHeader>
           <DialogTitle>选择要生成剧本的分集</DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
-            已选分集将依次生成剧本；每集会使用对应的大纲与原文内容
+            已选分集将依次生成剧本；每集会使用对应的原文内容
           </p>
         </DialogHeader>
 
@@ -149,11 +149,6 @@ export function ChapterSelectDialog({
                           </Badge>
                         )}
                       </div>
-                      {ep.outline?.trim() && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                          {ep.outline}
-                        </p>
-                      )}
                     </div>
                   </label>
                 )

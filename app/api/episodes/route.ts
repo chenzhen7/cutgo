@@ -25,10 +25,6 @@ export const POST = withError(async (request: NextRequest) => {
     index,
     title,
     rawText,
-    outline,
-    goldenHook,
-    keyConflict,
-    cliffhanger,
     duration,
   } = body
 
@@ -52,10 +48,6 @@ export const POST = withError(async (request: NextRequest) => {
       title: title || `第${episodeIndex + 1}集`,
       rawText: typeof rawText === "string" ? rawText.trim() : null,
       wordCount: typeof rawText === "string" ? rawText.trim().length : null,
-      outline: outline || null,
-      goldenHook: goldenHook || null,
-      keyConflict: keyConflict || null,
-      cliffhanger: cliffhanger || null,
       duration: duration || "60s",
     },
   })
