@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const PATCH = withError(async (
@@ -15,14 +14,11 @@ export const PATCH = withError(async (
     data: {
       ...(body.index !== undefined && { index: body.index }),
       ...(body.title !== undefined && { title: body.title }),
-      ...(body.outline !== undefined && { outline: body.outline }),
-      ...(body.goldenHook !== undefined && { goldenHook: body.goldenHook }),
-      ...(body.keyConflict !== undefined && { keyConflict: body.keyConflict }),
-      ...(body.cliffhanger !== undefined && { cliffhanger: body.cliffhanger }),
       ...(body.duration !== undefined && { duration: body.duration }),
-      ...(body.chapterIds !== undefined && {
-        chapterIds: normalizeChapterIdsFromBody(body.chapterIds),
+      ...(body.rawText !== undefined && {
+        rawText: typeof body.rawText === "string" ? body.rawText.trim() : null,
       }),
+      ...(body.wordCount !== undefined && { wordCount: body.wordCount }),
       ...(body.characters !== undefined && {
         characters: Array.isArray(body.characters)
           ? JSON.stringify(body.characters)

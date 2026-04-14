@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { normalizeChapterIdsFromBody } from "@/lib/episode-source-chapters"
 import { throwCutGoError, withError } from "@/lib/api-error"
 
 export const GET = withError(async (request: NextRequest) => {
@@ -23,21 +22,15 @@ export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
   const {
     projectId,
-    chapterIds,
     index,
     title,
-    outline,
-    goldenHook,
-    keyConflict,
-    cliffhanger,
+    rawText,
     duration,
   } = body
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
-
-  const chapterIdsJson = normalizeChapterIdsFromBody(chapterIds)
 
   let episodeIndex = index
   if (episodeIndex === undefined || episodeIndex === null) {
@@ -51,13 +44,10 @@ export const POST = withError(async (request: NextRequest) => {
   const episode = await prisma.episode.create({
     data: {
       projectId,
-      chapterIds: chapterIdsJson,
       index: episodeIndex,
       title: title || `第${episodeIndex + 1}集`,
-      outline: outline || null,
-      goldenHook: goldenHook || null,
-      keyConflict: keyConflict || null,
-      cliffhanger: cliffhanger || null,
+      rawText: typeof rawText === "string" ? rawText.trim() : null,
+      wordCount: typeof rawText === "string" ? rawText.trim().length : null,
       duration: duration || "60s",
     },
   })

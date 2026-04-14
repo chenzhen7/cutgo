@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { parseSourceChapterIds } from "@/lib/episode-source-chapters"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { callLLM } from "@/lib/ai/llm"
 import {
@@ -16,9 +15,6 @@ import {
 
 async function callAIGenerateScript(
   episodeTitle: string,
-  episodeSynopsis: string,
-  keyConflict: string | null,
-  cliffhanger: string | null,
   chapterContent: string,
   previousContent: string | null,
   duration: string
@@ -26,9 +22,6 @@ async function callAIGenerateScript(
   const systemPrompt = buildEpisodeScriptSystemPrompt()
   const userPrompt = buildEpisodeScriptUserPrompt({
     episodeTitle,
-    episodeSynopsis,
-    keyConflict,
-    cliffhanger,
     chapterContent,
     previousContent: previousContent?.slice(-1000) ?? null,
     duration,
@@ -63,19 +56,6 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("NOT_FOUND", "项目不存在")
   }
 
-  const novel = await prisma.novel.findUnique({
-    where: { projectId },
-    include: {
-      chapters: { orderBy: { index: "asc" } },
-    },
-  })
-
-  if (!novel) {
-    throwCutGoError("VALIDATION", "请先导入小说并解析出章节")
-  }
-
-  const novelData = novel!
-
   let targetEpisodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
@@ -89,6 +69,14 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("VALIDATION", "没有可生成的分集")
   }
 
+  const hasNoContent = targetEpisodes.some((ep) => {
+    const hasRawText = !!ep.rawText?.trim()
+    return !hasRawText
+  })
+  if (hasNoContent) {
+    throwCutGoError("VALIDATION", "部分分集缺少原文内容，请先填写原文")
+  }
+
   let skippedEpisodes = 0
 
   if (mode === "skip_existing") {
@@ -96,15 +84,9 @@ export const POST = withError(async (request: NextRequest) => {
     targetEpisodes = targetEpisodes.filter((ep) => !ep.script)
     skippedEpisodes = before - targetEpisodes.length
   } else if (mode === "overwrite") {
-    // overwrite 模式：直接覆盖写入，避免生成失败时丢失原有内容
+    // overwrite 模式：直接覆盖写入
   }
 
-  const chapterMap = new Map<string, string>()
-  for (const ch of novelData.chapters) {
-    chapterMap.set(ch.id, ch.content)
-  }
-
-  // 取上一集的剧本作为上下文
   const sortedAll = await prisma.episode.findMany({
     where: { projectId },
     orderBy: { index: "asc" },
@@ -125,18 +107,11 @@ export const POST = withError(async (request: NextRequest) => {
         taskType: "llm_script",
       })
 
-      const sourceIds = parseSourceChapterIds(episode)
-      const chapterContent = sourceIds
-        .map((id) => chapterMap.get(id) || "")
-        .filter(Boolean)
-        .join("\n\n---\n\n")
+      const chapterContent = episode.rawText?.trim() ?? ""
 
       try {
         const scriptContent = await callAIGenerateScript(
           episode.title,
-          episode.outline ?? "",
-          episode.keyConflict,
-          episode.cliffhanger,
           chapterContent,
           previousContent,
           episode.duration

@@ -1,5 +1,4 @@
 export const AI_TASK_TYPES = [
-  "llm_outline",
   "llm_extract_assets",
   "llm_script",
   "llm_shot",
@@ -21,7 +20,6 @@ export type AiTaskType = (typeof AI_TASK_TYPES)[number]
 export type AiTaskStatus = (typeof AI_TASK_STATUSES)[number]
 
 export const AI_TASK_TYPE_LABEL: Record<AiTaskType, string> = {
-  llm_outline: "LLM 大纲生成",
   llm_extract_assets: "LLM 资产提取",
   llm_script: "LLM 剧本生成",
   llm_shot: "LLM 分镜生成",

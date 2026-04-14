@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useState, useMemo, useEffect, useRef, useCallback } from "react"
+import { memo, useState, useMemo, useEffect, useCallback, useRef } from "react"
 import {
   Dialog,
   DialogContent,
@@ -9,12 +9,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
-  BookMarked,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Loader2,
   Sparkles,
   User,
@@ -27,8 +31,6 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react"
-import type { Chapter } from "@/lib/types"
-import { formatChapterOrdinalLabel } from "@/lib/novel-utils"
 import { apiFetch } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
@@ -36,17 +38,12 @@ interface ExtractAssetsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   projectId: string
-  novelId: string
-  chapters: Chapter[]
-  onSuccess?: (stats: { characterCount: number; sceneCount: number; propCount: number }) => void
-  /** 打开对话框后自动开始 AI 提取（进入「提取中」步骤） */
-  autoStartExtract?: boolean
-  /** 预选章节；不传或为空则默认全选当前章节列表 */
-  initialSelectedChapterIds?: string[] | null
+  episodeId: string
+  onSuccess?: (stats: { characterCount: number; sceneCount: number; propCount: number }) => void | Promise<void>
 }
 
 // ── 提取结果中每个资产的状态 ──
-type AssetAction = "save" | "skip" | "rename"
+type AssetAction = "save" | "skip" | "rename" | "keep"
 
 interface ExtractedCharacter {
   name: string
@@ -74,11 +71,17 @@ interface AssetItemState<T> {
   editingName: boolean
 }
 
-
 const ROLE_LABEL: Record<string, string> = {
   protagonist: "主角",
   supporting: "配角",
   extra: "路人",
+}
+
+const ACTION_LABEL: Record<AssetAction, string> = {
+  save: "覆盖保存",
+  keep: "使用已有资产",
+  skip: "跳过",
+  rename: "改名保存",
 }
 
 function useAssetItemStates<T extends { name: string }>(
@@ -87,23 +90,37 @@ function useAssetItemStates<T extends { name: string }>(
 ): [AssetItemState<T>[], (index: number, patch: Partial<AssetItemState<T>>) => void] {
   const [states, setStates] = useState<AssetItemState<T>[]>([])
 
+  // 使用内容签名替代引用比较，防止上游数组引用不稳定导致状态被反复重置
+  const itemsKey = useMemo(() => items.map((i) => i.name).join("\x00"), [items])
+  const namesKey = useMemo(() => existingNames.join("\x00"), [existingNames])
+
   useEffect(() => {
     setStates(
       items.map((item) => ({
         data: item,
         conflict: existingNames.includes(item.name),
-        action: existingNames.includes(item.name) ? "skip" : "save",
+        action: existingNames.includes(item.name) ? "keep" : "save",
         newName: item.name,
         editingName: false,
       }))
     )
-  }, [items, existingNames])
+  }, [itemsKey, namesKey, items, existingNames])
 
   const update = (index: number, patch: Partial<AssetItemState<T>>) => {
     setStates((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
   }
 
   return [states, update]
+}
+
+function buildSavePayload<T extends { name: string }>(states: AssetItemState<T>[]) {
+  return states
+    .filter((s) => s.action !== "skip")
+    .map((s) => ({
+      ...s.data,
+      name: s.action === "rename" ? s.newName : s.data.name,
+      strategy: s.action,
+    }))
 }
 
 // ── 单个资产行组件 ──
@@ -163,7 +180,7 @@ const AssetRow = memo(function AssetRow<T extends { name: string; prompt?: strin
             />
             <button
               className="text-primary hover:opacity-70 p-0.5"
-              onClick={() => finishRename()}
+              onClick={finishRename}
             >
               <Check className="size-3.5" />
             </button>
@@ -189,20 +206,38 @@ const AssetRow = memo(function AssetRow<T extends { name: string; prompt?: strin
         {/* 操作按钮组 */}
         {!editingName && (
           <div className="flex items-center gap-1 shrink-0 ml-auto">
-            {conflict && (
-              <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-                已存在
-              </span>
-            )}
             {action === "skip" ? (
               <button
                 className="text-xs text-primary hover:underline"
-                onClick={() => onUpdate({ action: conflict ? "save" : "save" })}
+                onClick={() => onUpdate({ action: conflict ? "keep" : "save" })}
               >
                 恢复
               </button>
             ) : (
               <>
+                {conflict && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-[10px] px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors">
+                        {ACTION_LABEL[action]}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-24">
+                      <DropdownMenuItem onClick={() => onUpdate({ action: "keep" })}>
+                        {action === "keep" && <Check className="size-3.5 mr-1" />}
+                        使用已有资产
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdate({ action: "save" })}>
+                        {action === "save" && <Check className="size-3.5 mr-1" />}
+                        覆盖保存
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdate({ action: "rename", editingName: true })}>
+                        {action === "rename" && <Check className="size-3.5 mr-1" />}
+                        改名保存
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
                 <button
                   className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   title="改名保存"
@@ -290,15 +325,11 @@ export function ExtractAssetsDialog({
   open,
   onOpenChange,
   projectId,
-  novelId,
-  chapters,
+  episodeId,
   onSuccess,
-  autoStartExtract = false,
-  initialSelectedChapterIds = null,
 }: ExtractAssetsDialogProps) {
-  // ── 步骤：select → extracting → review ──
-  const [step, setStep] = useState<"select" | "extracting" | "review">("select")
-  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([])
+  // ── 步骤：extracting → review ──
+  const [step, setStep] = useState<"extracting" | "review">("extracting")
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -317,96 +348,49 @@ export function ExtractAssetsDialog({
   const [sceneStates, updateScene] = useAssetItemStates(extractedScenes, existingNames.scenes)
   const [propStates, updateProp] = useAssetItemStates(extractedProps, existingNames.props)
 
-  const rows = useMemo(
-    () => [...chapters].sort((a, b) => a.index - b.index),
-    [chapters]
-  )
+  const extractLockRef = useRef(false)
 
-  const autoExtractStartedRef = useRef(false)
-
-  const resolveSelectedIds = useCallback(() => {
-    const allIds = rows.map((r) => r.id)
-    if (initialSelectedChapterIds != null && initialSelectedChapterIds.length > 0) {
-      const filtered = initialSelectedChapterIds.filter((id) => allIds.includes(id))
-      return filtered.length > 0 ? filtered : allIds
+  const runExtract = useCallback(async () => {
+    if (extractLockRef.current) return
+    extractLockRef.current = true
+    setStep("extracting")
+    setError(null)
+    try {
+      const data = await apiFetch<{
+        characters: ExtractedCharacter[]
+        scenes: ExtractedScene[]
+        props: ExtractedProp[]
+        existingNames: { characters: string[]; scenes: string[]; props: string[] }
+      }>("/api/episodes/extract-assets", {
+        method: "POST",
+        body: { episodeIds: [episodeId] },
+      })
+      setExtractedCharacters(data.characters ?? [])
+      setExtractedScenes(data.scenes ?? [])
+      setExtractedProps(data.props ?? [])
+      setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
+      setStep("review")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "请求失败")
+      setStep("review")
+    } finally {
+      extractLockRef.current = false
     }
-    return allIds
-  }, [rows, initialSelectedChapterIds])
+  }, [episodeId])
 
   useEffect(() => {
     if (!open) {
-      autoExtractStartedRef.current = false
-      return
-    }
-    setStep("select")
-    setSelectedChapterIds(resolveSelectedIds())
-    setError(null)
-    setExtractedCharacters([])
-    setExtractedScenes([])
-    setExtractedProps([])
-    setExistingNames({ characters: [], scenes: [], props: [] })
-  }, [open, rows, resolveSelectedIds])
-
-  const runExtract = useCallback(
-    async (orderedIds: string[]) => {
-      if (!orderedIds.length) return
+      extractLockRef.current = false
       setStep("extracting")
       setError(null)
-      try {
-        const data = await apiFetch<{
-          characters: ExtractedCharacter[]
-          scenes: ExtractedScene[]
-          props: ExtractedProp[]
-          existingNames: { characters: string[]; scenes: string[]; props: string[] }
-        }>(`/api/novels/${novelId}/extract-assets`, {
-          method: "POST",
-          body: { chapterIds: orderedIds },
-        })
-        setExtractedCharacters(data.characters ?? [])
-        setExtractedScenes(data.scenes ?? [])
-        setExtractedProps(data.props ?? [])
-        setExistingNames(data.existingNames ?? { characters: [], scenes: [], props: [] })
-        setStep("review")
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "请求失败")
-        setStep("select")
-      }
-    },
-    [novelId]
-  )
-
-  useEffect(() => {
-    if (!open || !autoStartExtract || autoExtractStartedRef.current) return
-    const ids = resolveSelectedIds()
-    if (ids.length === 0) return
-    const idSet = new Set(ids)
-    const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
-    if (orderedIds.length === 0) return
-    autoExtractStartedRef.current = true
-    void runExtract(orderedIds)
-  }, [open, autoStartExtract, rows, resolveSelectedIds, runExtract])
-
-  const allSelected = useMemo(() => {
-    if (!rows.length) return false
-    return rows.every((r) => selectedChapterIds.includes(r.id))
-  }, [rows, selectedChapterIds])
-
-  const toggleChapter = (chapterId: string) => {
-    setSelectedChapterIds((prev) =>
-      prev.includes(chapterId) ? prev.filter((id) => id !== chapterId) : [...prev, chapterId]
-    )
-  }
-
-  const toggleAll = () => {
-    setSelectedChapterIds(allSelected ? [] : rows.map((r) => r.id))
-  }
-
-  const handleExtract = async () => {
-    if (!selectedChapterIds.length) return
-    const idSet = new Set(selectedChapterIds)
-    const orderedIds = rows.filter((r) => idSet.has(r.id)).map((r) => r.id)
-    await runExtract(orderedIds)
-  }
+      setExtractedCharacters([])
+      setExtractedScenes([])
+      setExtractedProps([])
+      setExistingNames({ characters: [], scenes: [], props: [] })
+      return
+    }
+    void runExtract()
+  }, [open, runExtract])
 
   // 统计（单次遍历，减少渲染时重复 filter）
   const stats = useMemo(() => {
@@ -451,31 +435,14 @@ export function ExtractAssetsDialog({
           method: "POST",
           body: {
             projectId,
-            characters: charStates
-              .filter((s) => s.action !== "skip")
-              .map((s) => ({
-                ...s.data,
-                name: s.action === "rename" ? s.newName : s.data.name,
-                overwrite: s.conflict && s.action === "save",
-              })),
-            scenes: sceneStates
-              .filter((s) => s.action !== "skip")
-              .map((s) => ({
-                ...s.data,
-                name: s.action === "rename" ? s.newName : s.data.name,
-                overwrite: s.conflict && s.action === "save",
-              })),
-            props: propStates
-              .filter((s) => s.action !== "skip")
-              .map((s) => ({
-                ...s.data,
-                name: s.action === "rename" ? s.newName : s.data.name,
-                overwrite: s.conflict && s.action === "save",
-              })),
+            episodeId,
+            characters: buildSavePayload(charStates),
+            scenes: buildSavePayload(sceneStates),
+            props: buildSavePayload(propStates),
           },
         }
       )
-      onSuccess?.(result.stats)
+      await onSuccess?.(result.stats)
       onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "请求失败")
@@ -496,92 +463,36 @@ export function ExtractAssetsDialog({
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
             {step === "review"
-              ? "以下是 AI 提取的资产，请确认保存哪些。名称冲突的资产会单独标注。"
-              : "选择章节后，AI 将自动从章节内容中提取角色、场景和道具资产"}
+              ? "以下是 AI 提取的资产，请确认保存哪些。名称冲突的资产会单独标注，默认使用已有资产。"
+              : "AI 正在自动从当前分集原文中提取角色、场景和道具资产，请稍候"}
           </p>
         </DialogHeader>
 
-        {/* ── 步骤 1：选择章节 ── */}
-        {step === "select" && (
-          <>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={toggleAll}>
-                {allSelected ? "取消全选" : "全选章节"}
-              </Button>
-            </div>
-
-            <ScrollArea className="max-h-[280px]">
-              <div className="flex flex-col gap-1">
-                {rows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">暂无可用章节</p>
-                ) : (
-                  rows.map((chapter, idx) => {
-                    const checked = selectedChapterIds.includes(chapter.id)
-                    return (
-                      <label
-                        key={chapter.id}
-                        className="flex items-start gap-3 rounded-md px-3 py-3 hover:bg-muted/50 cursor-pointer transition-colors border border-border/50"
-                      >
-                        <Checkbox
-                          className="mt-0.5"
-                          checked={checked}
-                          onCheckedChange={() => toggleChapter(chapter.id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <BookMarked className="size-3.5 shrink-0 text-muted-foreground" />
-                            <span className="text-sm font-medium truncate min-w-0 flex-1">
-                              {formatChapterOrdinalLabel(idx)}
-                              {chapter.title?.trim() ? ` ${chapter.title.trim()}` : ""}
-                            </span>
-                            {chapter.wordCount != null && chapter.wordCount > 0 && (
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] px-1.5 py-0 h-4 shrink-0 text-muted-foreground"
-                              >
-                                {chapter.wordCount.toLocaleString()} 字
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    )
-                  })
-                )}
-              </div>
-            </ScrollArea>
-
-            <div className="text-sm text-muted-foreground">
-              已选 {selectedChapterIds.length} 个章节
-            </div>
-
-            {error && (
-              <p className="text-xs text-destructive bg-destructive/5 rounded-md px-3 py-2">
-                {error}
-              </p>
-            )}
-          </>
-        )}
-
-        {/* ── 步骤 2：提取中 ── */}
-        {step === "extracting" && (
+        {/* ── 步骤 1：提取中 ── */}
+        {isExtracting && (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
             <Loader2 className="size-8 animate-spin text-primary" />
             <div className="text-center">
-              <p className="text-sm font-medium">AI 正在分析章节内容...</p>
+              <p className="text-sm font-medium">AI 正在分析原文内容...</p>
               <p className="text-xs text-muted-foreground mt-1">正在提取角色、场景和道具，请稍候</p>
             </div>
           </div>
         )}
 
-        {/* ── 步骤 3：确认资产 ── */}
+        {/* ── 步骤 2：确认资产 ── */}
         {step === "review" && (
           <>
-            {stats.conflictCount > 0 && (
+            {error && (
+              <p className="text-xs text-destructive bg-destructive/5 rounded-md px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            {!error && stats.conflictCount > 0 && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
                 <span>
-                  有 <strong>{stats.conflictCount}</strong> 个资产名称已存在。可以选择覆盖保存、改名保存，或点击 × 跳过。
+                  有 <strong>{stats.conflictCount}</strong> 个资产名称已存在。默认<strong>使用已有资产</strong>并绑定到本集；你也可以选择覆盖保存、改名保存，或点击 × 跳过。
                 </span>
               </div>
             )}
@@ -664,7 +575,7 @@ export function ExtractAssetsDialog({
 
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
               <span>共 {stats.totalCount} 个资产</span>
-              <span>将保存 <strong className="text-foreground">{stats.saveCount}</strong> 个</span>
+              <span>将保存/绑定 <strong className="text-foreground">{stats.saveCount}</strong> 个</span>
             </div>
           </>
         )}
@@ -672,26 +583,11 @@ export function ExtractAssetsDialog({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => {
-              if (step === "review") {
-                setStep("select")
-              } else {
-                onOpenChange(false)
-              }
-            }}
+            onClick={() => onOpenChange(false)}
             disabled={isExtracting || saving}
           >
-            {step === "review" ? "重新选择" : "取消"}
+            取消
           </Button>
-
-          {step === "select" && (
-            <Button
-              onClick={() => void handleExtract()}
-              disabled={selectedChapterIds.length === 0}
-            >
-              提取资产
-            </Button>
-          )}
 
           {step === "review" && (
             <Button
@@ -704,7 +600,7 @@ export function ExtractAssetsDialog({
                   保存中...
                 </>
               ) : (
-                `保存 ${stats.saveCount} 个资产`
+                `保存关联 ${stats.saveCount} 个资产`
               )}
             </Button>
           )}

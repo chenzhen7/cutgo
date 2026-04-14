@@ -1,10 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { useScriptStore } from "@/store/script-store"
 import type { AssetCharacter, AssetProp, AssetScene, Episode } from "@/lib/types"
-import { Loader2, ListOrdered, X } from "lucide-react"
+import { Loader2, X, FilePlus } from "lucide-react"
 import { toast } from "sonner"
 import { apiFetch } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
@@ -12,9 +12,10 @@ import { ScriptEmptyState } from "./components/script-empty-state"
 import { ScriptStatsPanel } from "./components/script-stats-panel"
 import { GenerateScriptButton } from "./components/generate-script-button"
 import { ChapterSelectDialog } from "./components/chapter-select-dialog"
-import { EpisodeOutlineDialog } from "./components/episode-outline-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
+import { CreateEpisodeDialog } from "./components/create-episode-dialog"
+import { ExtractAssetsDialog } from "./components/extract-assets-dialog"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -24,7 +25,6 @@ import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
 
 export default function ScriptPage() {
   const params = useParams()
-  const router = useRouter()
   const projectId = params.id as string
 
   const {
@@ -32,54 +32,51 @@ export default function ScriptPage() {
     generateStatus,
     generateError,
     fetchEpisodes,
-    fetchChapters,
-    chapters,
     generateScripts,
     updateScript,
     deleteEpisode,
     reorderEpisodes,
-    createEpisodeWithScript,
+    createEpisodeWithRawText,
     updateEpisode,
-    generateEpisodeOutlines,
     clearGenerateError,
     activeEpisodeId,
     setActiveEpisodeId,
   } = useScriptStore()
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
-  const [showOutlineDialog, setShowOutlineDialog] = useState(false)
+  const [showCreateEpisodeDialog, setShowCreateEpisodeDialog] = useState(false)
+  const [showExtractAssets, setShowExtractAssets] = useState(false)
+  const [extractTargetEpisodeId, setExtractTargetEpisodeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
   const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
   const [assetProps, setAssetProps] = useState<AssetProp[]>([])
 
+
+  const handleAssetRefresh = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(`/api/assets?projectId=${projectId}`)
+      setAssetCharacters(data.characters ?? [])
+      setAssetScenes(data.scenes ?? [])
+      setAssetProps(data.props ?? [])
+    } catch {
+      setAssetCharacters([])
+      setAssetScenes([])
+      setAssetProps([])
+    }
+  }, [projectId])
+
   useEffect(() => {
     const init = async () => {
       setLoading(true)
       await fetchEpisodes(projectId)
-      await fetchChapters(projectId)
-      try {
-        const res = await fetch(`/api/assets?projectId=${projectId}`)
-        if (res.ok) {
-          const data = await res.json()
-          setAssetCharacters(data.characters ?? [])
-          setAssetScenes(data.scenes ?? [])
-          setAssetProps(data.props ?? [])
-        }
-      } catch {
-        setAssetCharacters([])
-        setAssetScenes([])
-        setAssetProps([])
-      }
+      await handleAssetRefresh()
 
       const eps = useScriptStore.getState().episodes
       const currentActiveEpisodeId = useScriptStore.getState().activeEpisodeId
       if (eps && eps.length > 0) {
         const isActiveValid = eps.some(e => e.id === currentActiveEpisodeId)
         if (!isActiveValid) {
-          // If invalid or not set, maybe default to the first one?
-          // The script page doesn't currently auto-select the first one by default if it's null,
-          // but if it's invalid we should probably set it to null.
           setActiveEpisodeId(null)
         }
       } else {
@@ -89,18 +86,7 @@ export default function ScriptPage() {
       setLoading(false)
     }
     init()
-  }, [projectId, fetchEpisodes, fetchChapters, setActiveEpisodeId])
-
-  const handleAssetRefresh = useCallback(async () => {
-    try {
-      const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(`/api/assets?projectId=${projectId}`)
-      setAssetCharacters(data.characters ?? [])
-      setAssetScenes(data.scenes ?? [])
-      setAssetProps(data.props ?? [])
-    } catch {
-      // 静默失败
-    }
-  }, [projectId])
+  }, [projectId, fetchEpisodes, setActiveEpisodeId, handleAssetRefresh])
 
   const activeEpisode = useMemo(
     () => episodes.find((ep) => ep.id === activeEpisodeId) ?? null,
@@ -126,40 +112,32 @@ export default function ScriptPage() {
     [projectId, generateScripts]
   )
 
-  const handleCreateEpisodeScript = useCallback(
-    async (chapterIds: string[]) => {
-      try {
-        await createEpisodeWithScript(projectId, chapterIds)
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "新增分集失败")
+  // 新建分集（直接输入原文）
+  const handleCreateEpisodeWithRawText = useCallback(
+    async (params: { title: string; rawText: string; extractAssets: boolean }) => {
+      const result = await createEpisodeWithRawText(projectId, params)
+      toast.success("分集已创建")
+      if (result.extractAssets) {
+        setExtractTargetEpisodeId(result.episodeId)
+        setShowExtractAssets(true)
       }
     },
-    [projectId, createEpisodeWithScript]
+    [projectId, createEpisodeWithRawText]
   )
 
-  const handleGenerateOutlinesFromChapters = useCallback(
-    async (chapterIdsOrdered: string[]) => {
-      try {
-        await generateEpisodeOutlines(projectId, chapterIdsOrdered)
-        toast.success("分集大纲生成完成")
-      } catch (err) {
-        const code = (err as Error & { code?: string }).code
-        if (code === "LLM_NOT_CONFIGURED") {
-          toast.error("尚未配置语言模型，无法生成分集大纲", {
-            action: {
-              label: "去配置",
-              onClick: () => router.push("/settings"),
-            },
-            duration: 8000,
-          })
-        } else {
-          toast.error(err instanceof Error ? err.message : "生成大纲失败")
-        }
-        throw err
-      }
-    },
-    [projectId, generateEpisodeOutlines, router]
-  )
+  const handleOpenExtractAssets = useCallback(() => {
+    if (!activeEpisodeId) return
+    setExtractTargetEpisodeId(activeEpisodeId)
+    setShowExtractAssets(true)
+  }, [activeEpisodeId])
+
+  const handleExtractAssetsSuccess = useCallback(async () => {
+    toast.success("资产已保存并绑定到本集")
+    await handleAssetRefresh()
+    await fetchEpisodes(projectId)
+    setShowExtractAssets(false)
+    setExtractTargetEpisodeId(null)
+  }, [handleAssetRefresh, fetchEpisodes, projectId])
 
   const handleDeleteEpisode = useCallback(
     async (pid: string, eid: string) => {
@@ -172,7 +150,7 @@ export default function ScriptPage() {
         toast.error(err instanceof Error ? err.message : "删除分集失败")
       }
     },
-    [deleteEpisode, activeEpisodeId]
+    [deleteEpisode, activeEpisodeId, setActiveEpisodeId]
   )
 
   const episodesForProject = useMemo(
@@ -206,25 +184,25 @@ export default function ScriptPage() {
             <ScriptStatsPanel episodes={episodesForProject} />
           )}
         </div>
-        {episodesForProject.length > 0 && (
-          <div className="flex items-center gap-2">
-            {chapters.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowOutlineDialog(true)}
-                disabled={isGenerating}
-              >
-                <ListOrdered className="size-4" />
-                生成分集大纲
-              </Button>
-            )}
-            <GenerateScriptButton
-              generateStatus={generateStatus}
-              onClick={() => setShowEpisodeSelect(true)}
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCreateEpisodeDialog(true)}
+            disabled={isGenerating}
+          >
+            <FilePlus className="size-4" />
+            新建分集
+          </Button>
+          {episodesForProject.length > 0 && (
+            <>
+              <GenerateScriptButton
+                generateStatus={generateStatus}
+                onClick={() => setShowEpisodeSelect(true)}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Generate error */}
@@ -258,10 +236,8 @@ export default function ScriptPage() {
         <div className="flex-1 overflow-hidden">
           <ScriptEmptyState
             episodes={episodesForProject}
-            chapters={chapters}
-            onGoToImport={() => router.push(`/project/${projectId}/import`)}
             onOpenGenerate={() => setShowEpisodeSelect(true)}
-            onOpenOutlineDialog={() => setShowOutlineDialog(true)}
+            onCreateEpisode={() => setShowCreateEpisodeDialog(true)}
           />
         </div>
       )}
@@ -293,7 +269,7 @@ export default function ScriptPage() {
                     onSelectEpisode={handleSelectEpisode}
                     onDeleteEpisode={handleDeleteEpisode}
                     onReorderEpisodes={reorderEpisodes}
-                    onCreateEpisodeScript={handleCreateEpisodeScript}
+                    onAddEpisode={() => setShowCreateEpisodeDialog(true)}
                   />
                 </div>
               </ResizablePanel>
@@ -306,7 +282,6 @@ export default function ScriptPage() {
                   {activeEpisode ? (
                     <ScriptEditor
                       episode={activeEpisode}
-                      chapters={chapters}
                       episodeDisplayNumber={
                         episodeDisplayMap.get(activeEpisode.id) ?? 1
                       }
@@ -321,6 +296,7 @@ export default function ScriptPage() {
                       }
                       isGeneratingScript={isGenerating}
                       onAssetRefresh={() => void handleAssetRefresh()}
+                      onExtractAssets={handleOpenExtractAssets}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center p-8 max-w-md mx-auto">
@@ -337,6 +313,14 @@ export default function ScriptPage() {
         </>
       )}
 
+      {/* 新建分集 dialog */}
+      <CreateEpisodeDialog
+        open={showCreateEpisodeDialog}
+        onOpenChange={setShowCreateEpisodeDialog}
+        onSubmit={handleCreateEpisodeWithRawText}
+        nextEpisodeNumber={episodesForProject.length + 1}
+      />
+
       {/* Episode select dialog */}
       <ChapterSelectDialog
         open={showEpisodeSelect}
@@ -345,14 +329,19 @@ export default function ScriptPage() {
         onGenerate={handleGenerateEpisodes}
       />
 
-      {/* Episode outline dialog */}
-      <EpisodeOutlineDialog
-        open={showOutlineDialog}
-        onOpenChange={setShowOutlineDialog}
-        chapters={chapters}
-        episodes={episodesForProject}
-        onGenerate={handleGenerateOutlinesFromChapters}
-      />
+      {/* Extract assets dialog */}
+      {extractTargetEpisodeId && (
+        <ExtractAssetsDialog
+          open={showExtractAssets}
+          onOpenChange={(v) => {
+            setShowExtractAssets(v)
+            if (!v) setExtractTargetEpisodeId(null)
+          }}
+          projectId={projectId}
+          episodeId={extractTargetEpisodeId}
+          onSuccess={handleExtractAssetsSuccess}
+        />
+      )}
     </div>
   )
 }
