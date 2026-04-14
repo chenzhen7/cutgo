@@ -62,7 +62,6 @@ interface EpisodeNavListProps {
 interface SortableEpisodeItemProps {
   ep: Episode
   displayEpisodeNumber: number
-  hasScript: boolean
   isActive: boolean
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
@@ -75,7 +74,6 @@ interface SortableEpisodeItemProps {
 function SortableEpisodeItem({
   ep,
   displayEpisodeNumber,
-  hasScript,
   isActive,
   assetCharacters,
   assetScenes,
@@ -160,17 +158,15 @@ function SortableEpisodeItem({
           )}
         </div>
 
-        {hasScript ? (
-          <div className="flex flex-col gap-1 pl-5">
-            <ScriptAssetStrip
-              episode={ep}
-              assetCharacters={assetCharacters}
-              assetScenes={assetScenes}
-              assetProps={assetProps}
-              mode="nav"
-            />
-          </div>
-        ) : null}
+        <div className="flex flex-col gap-1 pl-5">
+          <ScriptAssetStrip
+            episode={ep}
+            assetCharacters={assetCharacters}
+            assetScenes={assetScenes}
+            assetProps={assetProps}
+            mode="nav"
+          />
+        </div>
       </div>
     </div>
   )
@@ -289,7 +285,6 @@ export function EpisodeNavList({
                 strategy={verticalListSortingStrategy}
               >
                 {orderedEpisodes.map((ep) => {
-                  const hasScript = !!ep.script
                   const isActive = ep.id === activeEpisodeId
 
                   return (
@@ -297,7 +292,6 @@ export function EpisodeNavList({
                       key={ep.id}
                       ep={ep}
                       displayEpisodeNumber={episodeDisplayMap.get(ep.id) ?? 1}
-                      hasScript={hasScript}
                       isActive={isActive}
                       assetCharacters={assetCharacters}
                       assetScenes={assetScenes}
