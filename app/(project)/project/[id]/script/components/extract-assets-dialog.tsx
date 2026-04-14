@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useState, useMemo, useEffect, useCallback } from "react"
+import { memo, useState, useMemo, useEffect, useCallback, useRef } from "react"
 import {
   Dialog,
   DialogContent,
@@ -90,6 +90,10 @@ function useAssetItemStates<T extends { name: string }>(
 ): [AssetItemState<T>[], (index: number, patch: Partial<AssetItemState<T>>) => void] {
   const [states, setStates] = useState<AssetItemState<T>[]>([])
 
+  // 使用内容签名替代引用比较，防止上游数组引用不稳定导致状态被反复重置
+  const itemsKey = useMemo(() => items.map((i) => i.name).join("\x00"), [items])
+  const namesKey = useMemo(() => existingNames.join("\x00"), [existingNames])
+
   useEffect(() => {
     setStates(
       items.map((item) => ({
@@ -100,7 +104,7 @@ function useAssetItemStates<T extends { name: string }>(
         editingName: false,
       }))
     )
-  }, [items, existingNames])
+  }, [itemsKey, namesKey, items, existingNames])
 
   const update = (index: number, patch: Partial<AssetItemState<T>>) => {
     setStates((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
@@ -334,7 +338,11 @@ export function ExtractAssetsDialog({
   const [sceneStates, updateScene] = useAssetItemStates(extractedScenes, existingNames.scenes)
   const [propStates, updateProp] = useAssetItemStates(extractedProps, existingNames.props)
 
+  const extractLockRef = useRef(false)
+
   const runExtract = useCallback(async () => {
+    if (extractLockRef.current) return
+    extractLockRef.current = true
     setStep("extracting")
     setError(null)
     try {
@@ -355,11 +363,14 @@ export function ExtractAssetsDialog({
     } catch (err) {
       setError(err instanceof Error ? err.message : "请求失败")
       setStep("review")
+    } finally {
+      extractLockRef.current = false
     }
   }, [episodeId])
 
   useEffect(() => {
     if (!open) {
+      extractLockRef.current = false
       setStep("extracting")
       setError(null)
       setExtractedCharacters([])
