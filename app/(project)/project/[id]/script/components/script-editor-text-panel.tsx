@@ -28,7 +28,7 @@ export function ScriptEditorTextPanel({
   onScrollSync,
 }: ScriptEditorTextPanelProps) {
   return (
-    <div className="relative min-w-0 flex flex-col">
+    <div className="relative min-w-0 flex flex-col h-full">
       <div className="flex-1 flex min-h-0 overflow-hidden bg-background">
         <div
           ref={gutterRef}
