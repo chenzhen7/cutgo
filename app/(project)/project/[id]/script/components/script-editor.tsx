@@ -46,6 +46,7 @@ interface ScriptEditorProps {
   }) => Promise<void>
   isGeneratingScript?: boolean
   onAssetRefresh?: () => void
+  onExtractAssets?: () => void
 }
 
 export function ScriptEditor({
@@ -58,6 +59,7 @@ export function ScriptEditor({
   onUpdateEpisode,
   isGeneratingScript = false,
   onAssetRefresh,
+  onExtractAssets,
 }: ScriptEditorProps) {
   const { updateCharacter, updateScene, updateProp } = useAssetStore()
   const [editingCharacter, setEditingCharacter] = useState<AssetCharacter | null>(null)
@@ -442,6 +444,7 @@ export function ScriptEditor({
               onPickCharacter={setEditingCharacter}
               onPickScene={setEditingScene}
               onPickProp={setEditingProp}
+              onExtractAssets={onExtractAssets}
             />
           </ResizablePanel>
 

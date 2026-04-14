@@ -15,6 +15,7 @@ import { ChapterSelectDialog } from "./components/chapter-select-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
 import { CreateEpisodeDialog } from "./components/create-episode-dialog"
+import { ExtractAssetsDialog } from "./components/extract-assets-dialog"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -44,6 +45,9 @@ export default function ScriptPage() {
 
   const [showEpisodeSelect, setShowEpisodeSelect] = useState(false)
   const [showCreateEpisodeDialog, setShowCreateEpisodeDialog] = useState(false)
+  const [showExtractAssets, setShowExtractAssets] = useState(false)
+  const [extractAssetsAutoStart, setExtractAssetsAutoStart] = useState(false)
+  const [extractTargetEpisodeId, setExtractTargetEpisodeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
   const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
@@ -123,10 +127,28 @@ export default function ScriptPage() {
     async (params: { title: string; rawText: string; extractAssets: boolean }) => {
       const result = await createEpisodeWithRawText(projectId, params)
       toast.success("分集已创建")
-      if (result.extractAssets) toast.success("资产提取已完成")
+      if (result.extractAssets) {
+        setExtractTargetEpisodeId(result.episodeId)
+        setExtractAssetsAutoStart(true)
+        setShowExtractAssets(true)
+      }
     },
     [projectId, createEpisodeWithRawText]
   )
+
+  const handleOpenExtractAssets = useCallback(() => {
+    if (!activeEpisodeId) return
+    setExtractTargetEpisodeId(activeEpisodeId)
+    setExtractAssetsAutoStart(false)
+    setShowExtractAssets(true)
+  }, [activeEpisodeId])
+
+  const handleExtractAssetsSuccess = useCallback(async () => {
+    toast.success("资产已保存并绑定到本集")
+    await handleAssetRefresh()
+    setShowExtractAssets(false)
+    setExtractTargetEpisodeId(null)
+  }, [handleAssetRefresh])
 
   const handleDeleteEpisode = useCallback(
     async (pid: string, eid: string) => {
@@ -285,6 +307,7 @@ export default function ScriptPage() {
                       }
                       isGeneratingScript={isGenerating}
                       onAssetRefresh={() => void handleAssetRefresh()}
+                      onExtractAssets={handleOpenExtractAssets}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center p-8 max-w-md mx-auto">
@@ -317,6 +340,22 @@ export default function ScriptPage() {
         onGenerate={handleGenerateEpisodes}
       />
 
+      {/* Extract assets dialog */}
+      {extractTargetEpisodeId && (
+        <ExtractAssetsDialog
+          open={showExtractAssets}
+          onOpenChange={(v) => {
+            setShowExtractAssets(v)
+            if (!v) setExtractTargetEpisodeId(null)
+          }}
+          projectId={projectId}
+          episodeId={extractTargetEpisodeId}
+          episodes={episodesForProject}
+          onSuccess={handleExtractAssetsSuccess}
+          autoStartExtract={extractAssetsAutoStart}
+          initialSelectedEpisodeIds={[extractTargetEpisodeId]}
+        />
+      )}
     </div>
   )
 }

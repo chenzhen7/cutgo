@@ -25,6 +25,7 @@ interface ScriptEditorLeftPanelProps {
   onPickCharacter: (character: AssetCharacter) => void
   onPickScene: (scene: AssetScene) => void
   onPickProp: (prop: AssetProp) => void
+  onExtractAssets?: () => void
 }
 
 export function ScriptEditorLeftPanel({
@@ -44,6 +45,7 @@ export function ScriptEditorLeftPanel({
   onPickCharacter,
   onPickScene,
   onPickProp,
+  onExtractAssets,
 }: ScriptEditorLeftPanelProps) {
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-muted/5">
@@ -53,6 +55,11 @@ export function ScriptEditorLeftPanel({
             <School className="size-2.5" />
             关联资产
           </Label>
+          {onExtractAssets && (
+            <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5" onClick={onExtractAssets}>
+              提取资产
+            </Button>
+          )}
         </div>
         <div className="flex flex-col gap-4 px-4">
           <div className="space-y-1.5">
