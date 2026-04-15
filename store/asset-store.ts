@@ -21,14 +21,17 @@ interface AssetState {
   addCharacter: (projectId: string, data: AssetCharacterInput) => Promise<void>
   updateCharacter: (id: string, data: Partial<AssetCharacterInput>) => Promise<void>
   deleteCharacter: (id: string) => Promise<void>
+  deleteCharacters: (ids: string[]) => Promise<void>
 
   addScene: (projectId: string, data: AssetSceneInput) => Promise<void>
   updateScene: (id: string, data: Partial<AssetSceneInput>) => Promise<void>
   deleteScene: (id: string) => Promise<void>
+  deleteScenes: (ids: string[]) => Promise<void>
 
   addProp: (projectId: string, data: AssetPropInput) => Promise<void>
   updateProp: (id: string, data: Partial<AssetPropInput>) => Promise<void>
   deleteProp: (id: string) => Promise<void>
+  deleteProps: (ids: string[]) => Promise<void>
 
   assetStats: () => {
     characterCount: number
@@ -94,6 +97,11 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     set({ characters: get().characters.filter((c) => c.id !== id) })
   },
 
+  deleteCharacters: async (ids) => {
+    await Promise.all(ids.map((id) => apiFetch(`/api/assets/characters/${id}`, { method: "DELETE" })))
+    set({ characters: get().characters.filter((c) => !ids.includes(c.id)) })
+  },
+
   addScene: async (projectId, data) => {
     const scene = await apiFetch<AssetScene>("/api/assets/scenes", {
       method: "POST",
@@ -115,6 +123,11 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     set({ scenes: get().scenes.filter((s) => s.id !== id) })
   },
 
+  deleteScenes: async (ids) => {
+    await Promise.all(ids.map((id) => apiFetch(`/api/assets/scenes/${id}`, { method: "DELETE" })))
+    set({ scenes: get().scenes.filter((s) => !ids.includes(s.id)) })
+  },
+
   addProp: async (projectId, data) => {
     const prop = await apiFetch<AssetProp>("/api/assets/props", {
       method: "POST",
@@ -134,6 +147,11 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   deleteProp: async (id) => {
     await apiFetch(`/api/assets/props/${id}`, { method: "DELETE" })
     set({ props: get().props.filter((p) => p.id !== id) })
+  },
+
+  deleteProps: async (ids) => {
+    await Promise.all(ids.map((id) => apiFetch(`/api/assets/props/${id}`, { method: "DELETE" })))
+    set({ props: get().props.filter((p) => !ids.includes(p.id)) })
   },
 
   assetStats: () => {

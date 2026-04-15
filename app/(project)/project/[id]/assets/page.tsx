@@ -82,12 +82,15 @@ export default function AssetsPage() {
     addCharacter,
     updateCharacter,
     deleteCharacter,
+    deleteCharacters,
     addScene,
     updateScene,
     deleteScene,
+    deleteScenes,
     addProp,
     updateProp,
     deleteProp,
+    deleteProps,
   } = useAssetStore()
 
   const [activeTab, setActiveTab] = useState<AssetTab>("characters")
@@ -107,6 +110,16 @@ export default function AssetsPage() {
   const [deletingPropId, setDeletingPropId] = useState<string | null>(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false)
+  const [isBatchMode, setIsBatchMode] = useState(false)
+
+  // 切换 tab 时退出批量模式并清空选择
+  useEffect(() => {
+    setIsBatchMode(false)
+    setSelectedIds(new Set())
+  }, [activeTab])
+
   useEffect(() => {
     const init = async () => {
       setLoading(true)
@@ -123,6 +136,65 @@ export default function AssetsPage() {
   )
 
   const totalAssets = characters.length + scenes.length + props.length
+
+  const currentTabAssets = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (activeTab === "characters") {
+      return characters.filter((c) =>
+        !q || c.name.toLowerCase().includes(q) || c.prompt?.toLowerCase().includes(q) || c.role.toLowerCase().includes(q)
+      )
+    }
+    if (activeTab === "scenes") {
+      return scenes.filter((s) => !q || s.name.toLowerCase().includes(q) || s.prompt?.toLowerCase().includes(q))
+    }
+    return props.filter((p) => !q || p.name.toLowerCase().includes(q) || p.prompt?.toLowerCase().includes(q))
+  }, [activeTab, characters, scenes, props, searchQuery])
+
+  const currentTabSelectedIds = useMemo(
+    () => currentTabAssets.map((a) => a.id).filter((id) => selectedIds.has(id)),
+    [currentTabAssets, selectedIds]
+  )
+
+  const allCurrentSelected = currentTabAssets.length > 0 && currentTabAssets.every((a) => selectedIds.has(a.id))
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (allCurrentSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        currentTabAssets.forEach((a) => next.delete(a.id))
+        return next
+      })
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        currentTabAssets.forEach((a) => next.add(a.id))
+        return next
+      })
+    }
+  }
+
+  const handleBatchDelete = async () => {
+    if (currentTabSelectedIds.length === 0) return
+    setDeleteSubmitting(true)
+    try {
+      if (activeTab === "characters") await deleteCharacters(currentTabSelectedIds)
+      else if (activeTab === "scenes") await deleteScenes(currentTabSelectedIds)
+      else await deleteProps(currentTabSelectedIds)
+      setSelectedIds(new Set())
+      setShowBatchDeleteDialog(false)
+    } finally {
+      setDeleteSubmitting(false)
+    }
+  }
 
   const TABS = [
     { key: "characters" as const, label: "角色库", icon: Users, count: characters.length },
@@ -204,17 +276,46 @@ export default function AssetsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            if (activeTab === "characters") setShowCharacterForm(true)
-            else if (activeTab === "scenes") setShowSceneForm(true)
-            else setShowPropForm(true)
-          }}
-        >
-          <Plus className="mr-1 h-3.5 w-3.5" />
-          添加
-        </Button>
+        {isBatchMode ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              已选择 {currentTabSelectedIds.length} 项
+            </span>
+            <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+              {allCurrentSelected ? "取消全选" : "全选"}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={currentTabSelectedIds.length === 0}
+              onClick={() => setShowBatchDeleteDialog(true)}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              批量删除
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setIsBatchMode(false); setSelectedIds(new Set()) }}>
+              取消
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                if (activeTab === "characters") setShowCharacterForm(true)
+                else if (activeTab === "scenes") setShowSceneForm(true)
+                else setShowPropForm(true)
+              }}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              添加
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setIsBatchMode(true)}>
+              <CheckSquare className="mr-1 h-3.5 w-3.5" />
+              批量操作
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -235,9 +336,12 @@ export default function AssetsPage() {
           <CharacterList
             characters={characters}
             searchQuery={searchQuery}
+            selectedIds={selectedIds}
+            isBatchMode={isBatchMode}
             onEdit={setEditingCharacter}
             onDelete={setDeletingCharacterId}
             onToggleLock={handleToggleCharacterLock}
+            onToggleSelect={toggleSelect}
           />
         )}
         {activeTab === "characters" && characters.length === 0 && totalAssets > 0 && (
@@ -249,8 +353,11 @@ export default function AssetsPage() {
           <SceneList
             scenes={scenes}
             searchQuery={searchQuery}
+            selectedIds={selectedIds}
+            isBatchMode={isBatchMode}
             onEdit={setEditingScene}
             onDelete={setDeletingSceneId}
+            onToggleSelect={toggleSelect}
           />
         )}
         {activeTab === "scenes" && scenes.length === 0 && totalAssets > 0 && (
@@ -262,8 +369,11 @@ export default function AssetsPage() {
           <PropList
             props={props}
             searchQuery={searchQuery}
+            selectedIds={selectedIds}
+            isBatchMode={isBatchMode}
             onEdit={setEditingProp}
             onDelete={setDeletingPropId}
+            onToggleSelect={toggleSelect}
           />
         )}
         {activeTab === "props" && props.length === 0 && totalAssets > 0 && (
@@ -394,6 +504,19 @@ export default function AssetsPage() {
             setDeleteSubmitting(false)
           }
         }}
+      />
+
+      <DeleteConfirmDialog
+        title="批量删除"
+        itemName={`已选中的 ${currentTabSelectedIds.length} 个${
+          activeTab === "characters" ? "角色" : activeTab === "scenes" ? "场景" : "道具"
+        }`}
+        open={showBatchDeleteDialog}
+        submitting={deleteSubmitting}
+        onOpenChange={(open) => {
+          if (!open && !deleteSubmitting) setShowBatchDeleteDialog(false)
+        }}
+        onConfirm={handleBatchDelete}
       />
 
       <GenerateAssetImagesDialog
@@ -690,15 +813,21 @@ function DeleteConfirmDialog({
 const CharacterList = memo(function CharacterList({
   characters,
   searchQuery,
+  selectedIds,
+  isBatchMode,
   onEdit,
   onDelete,
   onToggleLock,
+  onToggleSelect,
 }: {
   characters: AssetCharacter[]
   searchQuery: string
+  selectedIds: Set<string>
+  isBatchMode: boolean
   onEdit: (c: AssetCharacter) => void
   onDelete: (id: string) => void
   onToggleLock: (id: string, locked: boolean) => void
+  onToggleSelect: (id: string) => void
 }) {
   const { generatingAssets } = useAssetStore()
   const normalizeGender = (gender: string | null | undefined): "male" | "female" | "other" | null => {
@@ -756,6 +885,15 @@ const CharacterList = memo(function CharacterList({
           onClick={() => onEdit(char)}
         >
           <CardContent className="pt-4">
+            {isBatchMode && (
+              <div className="absolute top-2 left-2 z-10">
+                <Checkbox
+                  checked={selectedIds.has(char.id)}
+                  onCheckedChange={() => onToggleSelect(char.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             <div className="flex items-start gap-3">
               <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                 {generatingAssets[char.id] ? (
@@ -824,13 +962,19 @@ const CharacterList = memo(function CharacterList({
 const SceneList = memo(function SceneList({
   scenes,
   searchQuery,
+  selectedIds,
+  isBatchMode,
   onEdit,
   onDelete,
+  onToggleSelect,
 }: {
   scenes: AssetScene[]
   searchQuery: string
+  selectedIds: Set<string>
+  isBatchMode: boolean
   onEdit: (s: AssetScene) => void
   onDelete: (id: string) => void
+  onToggleSelect: (id: string) => void
 }) {
   const { generatingAssets } = useAssetStore()
   const filtered = useMemo(
@@ -853,6 +997,15 @@ const SceneList = memo(function SceneList({
           onClick={() => onEdit(scene)}
         >
           <CardContent className="pt-4">
+            {isBatchMode && (
+              <div className="absolute top-2 left-2 z-10">
+                <Checkbox
+                  checked={selectedIds.has(scene.id)}
+                  onCheckedChange={() => onToggleSelect(scene.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             <div className="h-24 rounded-lg bg-muted flex items-center justify-center mb-3" onClick={(e) => e.stopPropagation()}>
               {generatingAssets[scene.id] ? (
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
@@ -903,13 +1056,19 @@ const SceneList = memo(function SceneList({
 const PropList = memo(function PropList({
   props,
   searchQuery,
+  selectedIds,
+  isBatchMode,
   onEdit,
   onDelete,
+  onToggleSelect,
 }: {
   props: AssetProp[]
   searchQuery: string
+  selectedIds: Set<string>
+  isBatchMode: boolean
   onEdit: (p: AssetProp) => void
   onDelete: (id: string) => void
+  onToggleSelect: (id: string) => void
 }) {
   const { generatingAssets } = useAssetStore()
   const filtered = useMemo(
@@ -932,6 +1091,15 @@ const PropList = memo(function PropList({
           onClick={() => onEdit(prop)}
         >
           <CardContent className="pt-4">
+            {isBatchMode && (
+              <div className="absolute top-2 left-2 z-10">
+                <Checkbox
+                  checked={selectedIds.has(prop.id)}
+                  onCheckedChange={() => onToggleSelect(prop.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0" onClick={(e) => e.stopPropagation()}>
                 {generatingAssets[prop.id] ? (
