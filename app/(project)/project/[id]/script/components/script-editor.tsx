@@ -86,6 +86,7 @@ export function ScriptEditor({
   const rawTextareaRef = useRef<HTMLTextAreaElement>(null)
   const gutterRef = useRef<HTMLDivElement>(null)
   const rawTextGutterRef = useRef<HTMLDivElement>(null)
+  const wasGeneratingRef = useRef(isGeneratingScript)
   const isDirty = content !== (episode.script ?? "")
   const isRawTextDirty = rawText !== (episode.rawText ?? "")
 
@@ -111,6 +112,15 @@ export function ScriptEditor({
   useEffect(() => {
     setTitleValue(episode.title)
   }, [episode.id, episode.title])
+
+  // 生成完成后同步服务器返回的最新剧本/原文
+  useEffect(() => {
+    if (wasGeneratingRef.current && !isGeneratingScript) {
+      setContent(episode.script ?? "")
+      setRawText(episode.rawText ?? "")
+    }
+    wasGeneratingRef.current = isGeneratingScript
+  }, [isGeneratingScript, episode.script, episode.rawText])
 
   const triggerAutoSave = useCallback(
     (newContent: string) => {

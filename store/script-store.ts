@@ -78,10 +78,19 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
         method: "POST",
         body: { projectId, episodeIds, mode },
       })
+      const returnedEpisodes = data.episodes || []
+      const { activeEpisodeId } = get()
+      const isActiveValid = returnedEpisodes.some((e) => e.id === activeEpisodeId)
+      let nextActiveId = activeEpisodeId
+      if (!isActiveValid && returnedEpisodes.length > 0) {
+        const firstWithScript = returnedEpisodes.find((ep) => ep.script)
+        nextActiveId = firstWithScript?.id || returnedEpisodes[0].id
+      }
       set({
-        episodes: data.episodes || [],
+        episodes: returnedEpisodes,
         generateStatus: "completed",
         generateProgress: null,
+        activeEpisodeId: nextActiveId,
       })
     } catch (err) {
       const errorMessage =
