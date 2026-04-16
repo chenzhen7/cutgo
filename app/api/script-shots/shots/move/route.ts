@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { extractShotAssetIds } from "@/lib/utils"
 
 export async function POST(request: NextRequest) {
   const { shotId, sourceEpisodeId, targetEpisodeId, targetIndex } = await request.json()
@@ -53,14 +54,22 @@ export async function POST(request: NextRequest) {
   const finalSource = await prisma.shot.findMany({
     where: { episodeId: sourceEpisodeId },
     orderBy: { index: "asc" },
+    include: { shotAssets: true },
   })
   const finalTarget = await prisma.shot.findMany({
     where: { episodeId: targetEpisodeId },
     orderBy: { index: "asc" },
+    include: { shotAssets: true },
   })
 
   return NextResponse.json({
-    source: { id: sourceEpisodeId, shots: finalSource },
-    target: { id: targetEpisodeId, shots: finalTarget },
+    source: {
+      id: sourceEpisodeId,
+      shots: finalSource.map((s) => ({ ...s, ...extractShotAssetIds(s.shotAssets), shotAssets: undefined })),
+    },
+    target: {
+      id: targetEpisodeId,
+      shots: finalTarget.map((s) => ({ ...s, ...extractShotAssetIds(s.shotAssets), shotAssets: undefined })),
+    },
   })
 }

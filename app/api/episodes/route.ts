@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
+import { extractEpisodeAssetIds } from "@/lib/utils"
 
 export const GET = withError(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
@@ -13,9 +14,16 @@ export const GET = withError(async (request: NextRequest) => {
   const episodes = await prisma.episode.findMany({
     where: { projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
+    include: { episodeAssets: true },
   })
 
-  return NextResponse.json(episodes)
+  return NextResponse.json(
+    episodes.map((ep) => ({
+      ...ep,
+      ...extractEpisodeAssetIds(ep.episodeAssets),
+      episodeAssets: undefined,
+    }))
+  )
 })
 
 export const POST = withError(async (request: NextRequest) => {
@@ -50,7 +58,15 @@ export const POST = withError(async (request: NextRequest) => {
       wordCount: typeof rawText === "string" ? rawText.trim().length : null,
       duration: duration || "60s",
     },
+    include: { episodeAssets: true },
   })
 
-  return NextResponse.json(episode, { status: 201 })
+  return NextResponse.json(
+    {
+      ...episode,
+      ...extractEpisodeAssetIds(episode.episodeAssets),
+      episodeAssets: undefined,
+    },
+    { status: 201 }
+  )
 })

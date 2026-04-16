@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FilePlus, Sparkles } from "lucide-react"
 import type { Episode } from "@/lib/types"
-import { parseJsonArray } from "@/lib/utils"
 
 interface ScriptEmptyStateProps {
   episodes: Episode[]
@@ -51,7 +50,7 @@ export function ScriptEmptyState({
         {episodes.slice(0, 10).map((ep) => (
           <Badge key={ep.id} variant="secondary" className="text-xs">
             {ep.title}
-            <span className="ml-1 opacity-60">({parseJsonArray(ep.scenes).length}场)</span>
+            <span className="ml-1 opacity-60">({ep.sceneIds?.length ?? 0}场)</span>
           </Badge>
         ))}
         {episodes.length > 10 && (

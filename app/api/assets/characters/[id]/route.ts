@@ -35,7 +35,11 @@ export const DELETE = withError(async (
 ) => {
   const { id } = await params
 
-  await prisma.assetCharacter.delete({ where: { id } })
+  await prisma.$transaction([
+    prisma.episodeAsset.deleteMany({ where: { assetId: id, assetType: "character" } }),
+    prisma.shotAsset.deleteMany({ where: { assetId: id, assetType: "character" } }),
+    prisma.assetCharacter.delete({ where: { id } }),
+  ])
 
   return NextResponse.json({ success: true })
 })

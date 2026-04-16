@@ -12,6 +12,7 @@ import {
   buildEpisodeScriptSystemPrompt,
   buildEpisodeScriptUserPrompt,
 } from "@/lib/prompts"
+import { extractEpisodeAssetIds } from "@/lib/utils"
 
 async function callAIGenerateScript(
   episodeTitle: string,
@@ -133,10 +134,15 @@ export const POST = withError(async (request: NextRequest) => {
     const allEpisodes = await prisma.episode.findMany({
       where: { projectId },
       orderBy: { index: "asc" },
+      include: { episodeAssets: true },
     })
 
     return NextResponse.json({
-      episodes: allEpisodes,
+      episodes: allEpisodes.map((ep) => ({
+        ...ep,
+        ...extractEpisodeAssetIds(ep.episodeAssets),
+        episodeAssets: undefined,
+      })),
       stats: {
         scriptCount: allEpisodes.filter((ep) => ep.script).length,
         generatedEpisodes: targetEpisodes.length,
@@ -148,11 +154,20 @@ export const POST = withError(async (request: NextRequest) => {
     const allEpisodes = await prisma.episode.findMany({
       where: { projectId },
       orderBy: { index: "asc" },
+      include: { episodeAssets: true },
     })
     const errorInfo = toErrorInfo(err)
     const errorStatus = (err as { status?: number }).status || API_ERRORS.INTERNAL.status
     return NextResponse.json(
-      { error: errorInfo.code, message: errorInfo.message, episodes: allEpisodes },
+      {
+        error: errorInfo.code,
+        message: errorInfo.message,
+        episodes: allEpisodes.map((ep) => ({
+          ...ep,
+          ...extractEpisodeAssetIds(ep.episodeAssets),
+          episodeAssets: undefined,
+        })),
+      },
       { status: errorStatus }
     )
   }

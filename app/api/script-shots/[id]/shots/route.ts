@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { buildShotAssetData, extractShotAssetIds } from "@/lib/utils"
 
 export async function POST(
   request: NextRequest,
@@ -50,7 +51,7 @@ export async function POST(
     })
   }
 
-  await prisma.shot.create({
+  const shot = await prisma.shot.create({
     data: {
       episodeId,
       index: newIndex,
@@ -61,16 +62,25 @@ export async function POST(
       scriptLineIds: scriptLineIds || null,
       dialogueText: dialogueText || null,
       actionNote: actionNote || null,
-      characterIds: characterIds || null,
-      sceneId: sceneId || null,
-      propIds: propIds || null,
     },
   })
+
+  const assets = buildShotAssetData(shot.id, characterIds, sceneId, propIds)
+  if (assets.length > 0) {
+    await prisma.shotAsset.createMany({ data: assets })
+  }
 
   const shots = await prisma.shot.findMany({
     where: { episodeId },
     orderBy: { index: "asc" },
+    include: { shotAssets: true },
   })
 
-  return NextResponse.json(shots)
+  return NextResponse.json(
+    shots.map((s) => ({
+      ...s,
+      ...extractShotAssetIds(s.shotAssets),
+      shotAssets: undefined,
+    }))
+  )
 }

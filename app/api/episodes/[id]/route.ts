@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
+import { buildEpisodeAssetData, extractEpisodeAssetIds } from "@/lib/utils"
 
 export const PATCH = withError(async (
   request: NextRequest,
@@ -19,25 +20,39 @@ export const PATCH = withError(async (
         rawText: typeof body.rawText === "string" ? body.rawText.trim() : null,
       }),
       ...(body.wordCount !== undefined && { wordCount: body.wordCount }),
-      ...(body.characters !== undefined && {
-        characters: Array.isArray(body.characters)
-          ? JSON.stringify(body.characters)
-          : body.characters,
-      }),
-      ...(body.scenes !== undefined && {
-        scenes: Array.isArray(body.scenes)
-          ? JSON.stringify(body.scenes)
-          : body.scenes,
-      }),
-      ...(body.props !== undefined && {
-        props: Array.isArray(body.props)
-          ? JSON.stringify(body.props)
-          : body.props,
-      }),
     },
+    include: { episodeAssets: true },
   })
 
-  return NextResponse.json(episode)
+  // Sync EpisodeAsset relations if asset arrays are provided
+  const hasAssetUpdate =
+    body.characterIds !== undefined ||
+    body.sceneIds !== undefined ||
+    body.propIds !== undefined
+
+  if (hasAssetUpdate) {
+    const current = extractEpisodeAssetIds(episode.episodeAssets)
+    const nextCharacterIds = body.characterIds !== undefined ? body.characterIds : current.characterIds
+    const nextSceneIds = body.sceneIds !== undefined ? body.sceneIds : current.sceneIds
+    const nextPropIds = body.propIds !== undefined ? body.propIds : current.propIds
+
+    await prisma.$transaction([
+      prisma.episodeAsset.deleteMany({ where: { episodeId: id } }),
+      ...(nextCharacterIds.length + nextSceneIds.length + nextPropIds.length > 0
+        ? [
+            prisma.episodeAsset.createMany({
+              data: buildEpisodeAssetData(id, nextCharacterIds, nextSceneIds, nextPropIds),
+            }),
+          ]
+        : []),
+    ])
+  }
+
+  return NextResponse.json({
+    ...episode,
+    ...extractEpisodeAssetIds(episode.episodeAssets),
+    episodeAssets: undefined,
+  })
 })
 
 export const DELETE = withError(async (

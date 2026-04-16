@@ -28,16 +28,16 @@ export interface Episode {
   index: number
   title: string
   duration: string
-  /** JSON 字符串数组：本集涉及的角色资产 id 列表 */
-  characters: string | null
-  /** JSON 字符串数组：本集涉及的场景资产 id 列表 */
-  scenes: string | null
-  /** JSON 字符串数组：本集涉及的道具资产 id 列表 */
-  props: string | null
   /** 剧本正文，不为空说明该分集存在剧本 */
   script: string
   /** 默认镜头类型 */
   shotType: string
+  /** 本集关联的角色资产 id 列表（由 EpisodeAsset 表派生） */
+  characterIds?: string[]
+  /** 本集关联的场景资产 id 列表（由 EpisodeAsset 表派生） */
+  sceneIds?: string[]
+  /** 本集关联的道具资产 id 列表（由 EpisodeAsset 表派生） */
+  propIds?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -418,9 +418,12 @@ export interface Shot {
   scriptLineIds: string | null
   dialogueText: string | null
   actionNote: string | null
-  characterIds: string | null
+  /** 关联角色资产 id 列表（由 ShotAsset 表派生） */
+  characterIds: string[]
+  /** 关联场景资产 id（由 ShotAsset 表派生，最多一个） */
   sceneId: string | null
-  propIds: string | null
+  /** 关联道具资产 id 列表（由 ShotAsset 表派生） */
+  propIds: string[]
   videoUrl: string | null
   videoStatus: VideoStatus | null
   videoPrompt: string | null
@@ -472,9 +475,9 @@ export interface ShotInput {
   scriptLineIds?: string | null
   dialogueText?: string | null
   actionNote?: string | null
-  characterIds?: string | null
+  characterIds?: string[]
   sceneId?: string | null
-  propIds?: string | null
+  propIds?: string[]
   videoUrl?: string | null
   videoStatus?: VideoStatus | null
   videoPrompt?: string | null

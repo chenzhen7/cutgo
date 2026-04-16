@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Check, X, Pencil } from "lucide-react"
-import { parseJsonArray } from "@/lib/utils"
 import type {
   AssetCharacter,
   AssetProp,
@@ -40,9 +39,9 @@ interface ScriptEditorProps {
     title?: string
     rawText?: string
     wordCount?: number
-    characters?: string
-    scenes?: string
-    props?: string
+    characterIds?: string[]
+    sceneIds?: string[]
+    propIds?: string[]
   }) => Promise<void>
   isGeneratingScript?: boolean
   onAssetRefresh?: () => void
@@ -90,9 +89,9 @@ export function ScriptEditor({
   const isDirty = content !== (episode.script ?? "")
   const isRawTextDirty = rawText !== (episode.rawText ?? "")
 
-  const characterIds = parseJsonArray(episode.characters)
-  const sceneIds = parseJsonArray(episode.scenes)
-  const propIds = parseJsonArray(episode.props)
+  const characterIds = episode.characterIds ?? []
+  const sceneIds = episode.sceneIds ?? []
+  const propIds = episode.propIds ?? []
   const boundScenes = assetScenes.filter((s) => sceneIds.includes(s.id))
   const boundCharacters = assetCharacters.filter((c) => characterIds.includes(c.id))
   const boundProps = assetProps.filter((p) => propIds.includes(p.id))
@@ -233,7 +232,7 @@ export function ScriptEditor({
     const next = characterIds.includes(characterId)
       ? characterIds.filter((id) => id !== characterId)
       : [...characterIds, characterId]
-    await onUpdateEpisode({ characters: JSON.stringify(next) })
+    await onUpdateEpisode({ characterIds: next })
   }
 
   const handleToggleScene = async (sceneId: string) => {
@@ -241,7 +240,7 @@ export function ScriptEditor({
     const next = sceneIds.includes(sceneId)
       ? sceneIds.filter((id) => id !== sceneId)
       : [...sceneIds, sceneId]
-    await onUpdateEpisode({ scenes: JSON.stringify(next) })
+    await onUpdateEpisode({ sceneIds: next })
   }
 
   const handleToggleProp = async (propId: string) => {
@@ -249,7 +248,7 @@ export function ScriptEditor({
     const next = propIds.includes(propId)
       ? propIds.filter((id) => id !== propId)
       : [...propIds, propId]
-    await onUpdateEpisode({ props: JSON.stringify(next) })
+    await onUpdateEpisode({ propIds: next })
   }
 
   const handleTitleEdit = () => {

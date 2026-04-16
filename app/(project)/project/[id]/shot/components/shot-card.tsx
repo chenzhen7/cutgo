@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useCallback, useMemo } from "react"
-import { cn, parseJsonArray } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
   Tooltip,
@@ -29,8 +29,8 @@ function imagePromptSummary(shot: Shot): string {
     return head || tail
   }
   if (imageType === "multi_grid") {
-    const cells = parseJsonArray(shot.gridPrompts)
-    const parts = cells.map((p, i) => {
+    const cells = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
+    const parts = cells.map((p: string, i: number) => {
       const t = String(p).trim()
       return t ? `格${i + 1} ${t}` : ""
     }).filter(Boolean)
@@ -105,7 +105,7 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
 function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo, aspectRatio }: { shot: Shot; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void; aspectRatio?: string }) {
   const imageType = shot.imageType || "keyframe"
   const hasImage = !!shot.imageUrl
-  const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
+  const imageUrls = useMemo(() => shot.imageUrls ? JSON.parse(shot.imageUrls) : [], [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
   // 列表模式缩略图宽度：横屏(16:9)用更宽容器，竖屏(9:16)用窄容器，并保持比例
@@ -215,8 +215,9 @@ export const ShotCard = memo(function ShotCard({
   const handleGenerateImage = useCallback(() => onGenerateImage(episodeId, shot.id), [onGenerateImage, episodeId, shot.id])
   const handleGenerateVideo = useCallback(() => onGenerateVideo(episodeId, shot.id), [onGenerateVideo, episodeId, shot.id])
   const handlePlayVideo = useCallback(() => onPlayVideo(shot.id), [onPlayVideo, shot.id])
-  const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
-  const boundPropIds = useMemo(() => parseJsonArray(shot.propIds), [shot.propIds])
+
+  const boundCharacterIds = shot.characterIds ?? []
+  const boundPropIds = shot.propIds ?? []
 
   const boundCharacters = useMemo(
     () => boundCharacterIds.map((id) => assetCharacterMap.get(id)).filter((v): v is AssetCharacter => !!v),

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { Prisma } from "@/lib/generated/prisma/client"
 import { prisma } from "@/lib/db"
 import { API_ERRORS, throwCutGoError, withError } from "@/lib/api-error"
 import { callLLM } from "@/lib/ai/llm"
@@ -16,7 +15,7 @@ import {
   buildShotImagePromptUserPrompt,
 } from "@/lib/prompts"
 import type { ShotListItem } from "@/lib/prompts"
-import { parseJsonArray } from "@/lib/utils"
+import { buildShotAssetData, extractEpisodeAssetIds } from "@/lib/utils"
 import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
 import type { ImageType, GridLayout } from "@/lib/types"
 
@@ -145,7 +144,7 @@ export const POST = withError(async (request: NextRequest) => {
 
   let targetEpisodes = await prisma.episode.findMany({
     where: { projectId, script: { not: "" } },
-    include: { shots: true },
+    include: { shots: true, episodeAssets: true },
     orderBy: { index: "asc" },
   })
 
@@ -173,15 +172,13 @@ export const POST = withError(async (request: NextRequest) => {
         taskType: "llm_shot",
       })
 
-      const episodeCharacterIds = parseJsonArray(episode.characters)
-      const episodeSceneIds = parseJsonArray(episode.scenes)
-      const episodePropIds = parseJsonArray(episode.props)
+      const episodeAssetIds = extractEpisodeAssetIds(episode.episodeAssets)
 
-      const matchedCharacters = assetCharacters.filter((c) => episodeCharacterIds.includes(c.id))
-      const matchedScene = episodeSceneIds.length > 0
-        ? assetScenes.find((s) => s.id === episodeSceneIds[0]) ?? null
+      const matchedCharacters = assetCharacters.filter((c) => episodeAssetIds.characterIds.includes(c.id))
+      const matchedScene = episodeAssetIds.sceneIds.length > 0
+        ? assetScenes.find((s) => s.id === episodeAssetIds.sceneIds[0]) ?? null
         : null
-      const matchedProps = assetProps.filter((p) => episodePropIds.includes(p.id))
+      const matchedProps = assetProps.filter((p) => episodeAssetIds.propIds.includes(p.id))
 
       const episodeCharactersStr = matchedCharacters.map((c) => c.name).join("; ")
       const episodePropsStr = matchedProps.map((p) => p.name).join("; ")
@@ -222,7 +219,7 @@ export const POST = withError(async (request: NextRequest) => {
         const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
         // 按 index 合并分镜列表与生图提示词
-        const shotData = shotList
+        const shotItems = shotList
           .map((shot, si) => {
             const imageItem = shotImagePromptItems[si] ?? {}
 
@@ -245,37 +242,42 @@ export const POST = withError(async (request: NextRequest) => {
               imageItem.gridPrompts?.length ? JSON.stringify(imageItem.gridPrompts) : null
 
             return {
-              episodeId: episode.id,
-              index: si,
-              content: shot.content ?? null,
-              prompt,
-              promptEnd: imageItem.promptEnd ?? null,
-              negativePrompt: null,
-              duration: shot.duration ?? 3,
-              imageType: imageType as string,
-              gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
-              gridPrompts,
-              videoPrompt: null,
-              dialogueText: null,
-              actionNote: null,
-              characterIds: characterIds.length > 0 ? JSON.stringify(characterIds) : null,
+              shotData: {
+                episodeId: episode.id,
+                index: si,
+                content: shot.content ?? null,
+                prompt,
+                promptEnd: imageItem.promptEnd ?? null,
+                negativePrompt: null,
+                duration: shot.duration ?? 3,
+                imageType: imageType as string,
+                gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
+                gridPrompts,
+                videoPrompt: null,
+                dialogueText: null,
+                actionNote: null,
+              },
+              characterIds,
               sceneId,
-              propIds: propIds.length > 0 ? JSON.stringify(propIds) : null,
+              propIds,
             }
           })
           .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-        const txOperations: Prisma.PrismaPromise<unknown>[] = [
-          prisma.shot.deleteMany({ where: { episodeId: episode.id } }),
-          prisma.episode.update({
+        await prisma.$transaction(async (tx) => {
+          await tx.shot.deleteMany({ where: { episodeId: episode.id } })
+          await tx.episode.update({
             where: { id: episode.id },
             data: { shotType: imageType as string },
-          }),
-        ]
-        if (shotData.length > 0) {
-          txOperations.push(prisma.shot.createMany({ data: shotData }))
-        }
-        await prisma.$transaction(txOperations)
+          })
+          for (const { shotData, characterIds, sceneId, propIds } of shotItems) {
+            const shot = await tx.shot.create({ data: shotData })
+            const assets = buildShotAssetData(shot.id, characterIds, sceneId, propIds)
+            if (assets.length > 0) {
+              await tx.shotAsset.createMany({ data: assets })
+            }
+          }
+        })
 
         // 更新 previousShotContent 供下一集 Call 1 使用
         const lastContent = shotList[shotList.length - 1]?.content?.trim() || ""

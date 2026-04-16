@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { extractShotAssetIds } from "@/lib/utils"
 
 export async function PUT(
   request: NextRequest,
@@ -22,7 +23,14 @@ export async function PUT(
   const shots = await prisma.shot.findMany({
     where: { episodeId },
     orderBy: { index: "asc" },
+    include: { shotAssets: true },
   })
 
-  return NextResponse.json(shots)
+  return NextResponse.json(
+    shots.map((s) => ({
+      ...s,
+      ...extractShotAssetIds(s.shotAssets),
+      shotAssets: undefined,
+    }))
+  )
 }

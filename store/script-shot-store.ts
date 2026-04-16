@@ -14,7 +14,6 @@ import type {
 } from "@/lib/types"
 import type { ShotCardLayout } from "@/app/(project)/project/[id]/shot/components/shot-card"
 import { apiFetch } from "@/lib/api-client"
-import { parseJsonArray } from "@/lib/utils"
 import { toast } from "sonner"
 
 let scriptShotPlansFetchToken = 0
@@ -306,9 +305,9 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       scriptLineIds: shot.scriptLineIds || undefined,
       dialogueText: shot.dialogueText || undefined,
       actionNote: shot.actionNote || undefined,
-      characterIds: shot.characterIds || undefined,
+      characterIds: shot.characterIds,
       sceneId: shot.sceneId || undefined,
-      propIds: shot.propIds || undefined,
+      propIds: shot.propIds,
       insertAfter: shotId,
     })
   },
@@ -358,8 +357,8 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     if (!shot) return
 
     const { assetCharacters, assetScenes, assetProps } = get()
-    const characterIds = parseJsonArray(shot.characterIds)
-    const propIds = parseJsonArray(shot.propIds)
+    const characterIds = shot.characterIds ?? []
+    const propIds = shot.propIds ?? []
     const boundCharacters = assetCharacters.filter((c) => characterIds.includes(c.id))
     const boundScene = shot.sceneId ? assetScenes.find((s) => s.id === shot.sceneId) : null
     const boundProps = assetProps.filter((p) => propIds.includes(p.id))

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { User, MapPin, Package } from "lucide-react"
-import { cn, parseJsonArray } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import {
   Tooltip,
   TooltipContent,
@@ -46,9 +46,9 @@ export function ScriptAssetStrip({
     [assetScenes]
   )
 
-  const characterIds = parseJsonArray(episode.characters)
-  const propIds = parseJsonArray(episode.props)
-  const sceneIds = parseJsonArray(episode.scenes)
+  const characterIds = episode.characterIds ?? []
+  const propIds = episode.propIds ?? []
+  const sceneIds = episode.sceneIds ?? []
   const sceneId = sceneIds[0] || ""
 
   const boundProps = propIds

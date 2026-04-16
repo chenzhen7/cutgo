@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { buildShotAssetData, extractShotAssetIds } from "@/lib/utils"
 
 export async function PATCH(
   request: NextRequest,
@@ -14,7 +15,6 @@ export async function PATCH(
     "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
     "scriptLineIds", "dialogueText", "actionNote",
     "videoUrl", "videoStatus", "videoPrompt", "videoDuration", "videoTaskId",
-    "characterIds", "sceneId", "propIds",
   ]
 
   for (const field of fields) {
@@ -26,9 +26,43 @@ export async function PATCH(
   const shot = await prisma.shot.update({
     where: { id: shotId },
     data: updateData,
+    include: { shotAssets: true },
   })
 
-  return NextResponse.json(shot)
+  // Sync ShotAsset relations if asset arrays are provided
+  const hasAssetUpdate =
+    body.characterIds !== undefined ||
+    body.sceneId !== undefined ||
+    body.propIds !== undefined
+
+  if (hasAssetUpdate) {
+    const current = extractShotAssetIds(shot.shotAssets)
+    const nextCharacterIds = body.characterIds !== undefined ? body.characterIds : current.characterIds
+    const nextSceneId = body.sceneId !== undefined ? body.sceneId : current.sceneId
+    const nextPropIds = body.propIds !== undefined ? body.propIds : current.propIds
+
+    await prisma.$transaction([
+      prisma.shotAsset.deleteMany({ where: { shotId } }),
+      ...(nextCharacterIds.length + (nextSceneId ? 1 : 0) + nextPropIds.length > 0
+        ? [
+            prisma.shotAsset.createMany({
+              data: buildShotAssetData(shotId, nextCharacterIds, nextSceneId, nextPropIds),
+            }),
+          ]
+        : []),
+    ])
+  }
+
+  const updatedShot = await prisma.shot.findUnique({
+    where: { id: shotId },
+    include: { shotAssets: true },
+  })
+
+  return NextResponse.json({
+    ...updatedShot,
+    ...extractShotAssetIds(updatedShot!.shotAssets),
+    shotAssets: undefined,
+  })
 }
 
 export async function DELETE(
@@ -56,7 +90,14 @@ export async function DELETE(
   const shots = await prisma.shot.findMany({
     where: { episodeId },
     orderBy: { index: "asc" },
+    include: { shotAssets: true },
   })
 
-  return NextResponse.json(shots)
+  return NextResponse.json(
+    shots.map((s) => ({
+      ...s,
+      ...extractShotAssetIds(s.shotAssets),
+      shotAssets: undefined,
+    }))
+  )
 }

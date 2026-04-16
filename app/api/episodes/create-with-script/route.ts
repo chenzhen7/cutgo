@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
 import { countWords } from "@/lib/novel-utils"
+import { extractEpisodeAssetIds } from "@/lib/utils"
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
@@ -39,10 +40,15 @@ export const POST = withError(async (request: NextRequest) => {
       wordCount,
       duration: "3min",
     },
+    include: { episodeAssets: true },
   })
 
   return NextResponse.json({
-    episode,
+    episode: {
+      ...episode,
+      ...extractEpisodeAssetIds(episode.episodeAssets),
+      episodeAssets: undefined,
+    },
     extractAssets: extractAssets ?? false,
   }, { status: 201 })
 })

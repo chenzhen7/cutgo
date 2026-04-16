@@ -4,6 +4,7 @@ import { throwCutGoError, withError, CutGoError } from "@/lib/api-error"
 import { queryVideoTask } from "@/lib/ai/video"
 import { markAiTaskSucceeded, markAiTaskFailed } from "@/lib/ai-task-service"
 import { persistGeneratedVideoLocally } from "@/lib/utils/local-video"
+import { extractShotAssetIds } from "@/lib/utils"
 
 /** 日志与 AiTask.errorMessage：优先保留 Error.stack（含 message + 完整栈） */
 function formatErrorWithStack(err: unknown): string {
@@ -30,12 +31,19 @@ export const GET = withError(async (
 
   const shot = await prisma.shot.findUnique({
     where: { id: shotId },
-    include: { episode: true }
+    include: { episode: true, shotAssets: true }
   })
   if (!shot || shot.episodeId !== episodeId) {
     console.warn("[视频状态] 镜头不存在或不属于该分集", { episodeId, shotId, actualEpisodeId: shot?.episodeId })
     throwCutGoError("NOT_FOUND", "镜头不存在")
   }
+
+  const serializeShot = (s: { shotAssets: { assetType: string; assetId: string }[] } & Omit<typeof shot, "episode" | "shotAssets">) => ({
+    ...s,
+    ...extractShotAssetIds(s.shotAssets),
+    shotAssets: undefined,
+    episode: undefined,
+  })
 
   // 无进行中任务，直接返回当前状态
   if (!shot.videoTaskId) {
@@ -48,7 +56,7 @@ export const GET = withError(async (
     return NextResponse.json({
       videoStatus: shot.videoStatus,
       videoUrl: shot.videoUrl,
-      shot,
+      shot: serializeShot(shot),
     })
   }
 
@@ -81,6 +89,7 @@ export const GET = withError(async (
             videoStatus: "completed",
             videoTaskId: null,
           },
+          include: { shotAssets: true },
         })
         console.info("[视频状态] 已入库并更新为 completed", { episodeId, shotId, localVideoUrl })
 
@@ -93,7 +102,11 @@ export const GET = withError(async (
           console.info("[视频状态] 已标记 AI 任务成功", { aiTaskId: aiTask.id, episodeId, shotId })
         }
 
-        return NextResponse.json({ videoStatus: "completed", videoUrl: localVideoUrl, shot: updated })
+        return NextResponse.json({
+          videoStatus: "completed",
+          videoUrl: localVideoUrl,
+          shot: serializeShot(updated),
+        })
       } catch (err) {
         const reason = formatErrorWithStack(err)
         console.error("[视频状态] 视频保存/入库失败", {
@@ -109,6 +122,7 @@ export const GET = withError(async (
             videoStatus: "error",
             videoTaskId: null,
           },
+          include: { shotAssets: true },
         })
         console.warn("[视频状态] 已更新为 error 并清理 videoTaskId", { episodeId, shotId, reason })
         const aiTask = await prisma.aiTask.findFirst({
@@ -122,7 +136,7 @@ export const GET = withError(async (
         return NextResponse.json({
           videoStatus: "error",
           videoUrl: null,
-          shot: updated,
+          shot: serializeShot(updated),
           reason,
         })
       }
@@ -135,6 +149,7 @@ export const GET = withError(async (
           videoStatus: "error",
           videoTaskId: null,
         },
+        include: { shotAssets: true },
       })
       console.warn("[视频状态] 视频任务失败，已更新为 error", {
         episodeId,
@@ -155,7 +170,7 @@ export const GET = withError(async (
       return NextResponse.json({
         videoStatus: "error",
         videoUrl: null,
-        shot: updated,
+        shot: serializeShot(updated),
         reason: status.reason,
       })
     }
@@ -165,7 +180,7 @@ export const GET = withError(async (
     return NextResponse.json({
       videoStatus: "generating",
       videoUrl: null,
-      shot,
+      shot: serializeShot(shot),
     })
   } catch (err) {
     if (err instanceof CutGoError) throw err
@@ -179,7 +194,7 @@ export const GET = withError(async (
     return NextResponse.json({
       videoStatus: shot.videoStatus,
       videoUrl: shot.videoUrl,
-      shot,
+      shot: serializeShot(shot),
     })
   }
 })

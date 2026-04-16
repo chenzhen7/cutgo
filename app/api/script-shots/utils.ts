@@ -1,5 +1,10 @@
+import { extractShotAssetIds } from "@/lib/utils"
+
 export const episodeWithShotsInclude = {
-  shots: { orderBy: { index: "asc" as const } },
+  shots: {
+    orderBy: { index: "asc" as const },
+    include: { shotAssets: true },
+  },
 }
 
 export function toScriptShotPlan(episode: {
@@ -11,7 +16,7 @@ export function toScriptShotPlan(episode: {
   shotType: string
   createdAt: Date
   updatedAt: Date
-  shots: unknown[]
+  shots: { shotAssets: { assetType: string; assetId: string }[] }[]
 }) {
   return {
     id: episode.id,
@@ -25,7 +30,11 @@ export function toScriptShotPlan(episode: {
       shotType: episode.shotType,
     },
     status: episode.script ? "generated" : "draft",
-    shots: episode.shots,
+    shots: episode.shots.map((shot) => ({
+      ...shot,
+      ...extractShotAssetIds(shot.shotAssets),
+      shotAssets: undefined,
+    })),
     createdAt: episode.createdAt,
     updatedAt: episode.updatedAt,
   }

@@ -65,13 +65,6 @@ model Episode {
   /// 本集目标时长描述
   duration    String  @default("60s")
 
-  /// JSON 字符串数组：本集涉及的角色资产id列表
-  characters String?
-  /// JSON 字符串数组：本集涉及的场景资产id列表
-  scenes     String?
-  /// JSON 字符串数组：本集涉及的道具资产id列表
-  props      String?
-
   /// 剧本正文（不为空说明该分集存在剧本）
   script String @default("")
 
@@ -80,6 +73,7 @@ model Episode {
 
   shots             Shot[]
   videoCompositions VideoComposition[]
+  episodeAssets     EpisodeAsset[]
   // aiTasks           AiTask[]
 
   createdAt DateTime @default(now())
@@ -220,12 +214,7 @@ model Shot {
   dialogueText  String?
   actionNote    String?
 
-  /// JSON：AssetCharacter id 数组
-  characterIds String?
-  /// AssetScene id
-  sceneId      String?
-  /// JSON：AssetProp id 数组
-  propIds      String?
+  shotAssets ShotAsset[]
 
   videoUrl      String?
   /// idle | generating | completed | error
@@ -239,6 +228,38 @@ model Shot {
   updatedAt DateTime @updatedAt
 
   // aiTasks   AiTask[]
+}
+
+/// 分集资产关联表（替代 Episode.characters/scenes/props JSON 字段）
+model EpisodeAsset {
+  id        String  @id @default(cuid())
+  episodeId String
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  /// character | scene | prop
+  assetType String
+  assetId   String
+
+  createdAt DateTime @default(now())
+
+  @@unique([episodeId, assetType, assetId])
+  @@index([episodeId])
+}
+
+/// 分镜资产关联表（替代 Shot.characterIds/sceneId/propIds JSON 字段）
+model ShotAsset {
+  id     String @id @default(cuid())
+  shotId String
+  shot   Shot   @relation(fields: [shotId], references: [id], onDelete: Cascade)
+
+  /// character | scene | prop
+  assetType String
+  assetId   String
+
+  createdAt DateTime @default(now())
+
+  @@unique([shotId, assetType, assetId])
+  @@index([shotId])
 }
 
 /// 统一 AI 任务中心（跨 LLM / Image / Video / TTS）

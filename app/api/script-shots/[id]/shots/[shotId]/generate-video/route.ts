@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
 import { callVideo } from "@/lib/ai/video"
 import { createRunningAiTask, markAiTaskFailed } from "@/lib/ai-task-service"
+import { extractShotAssetIds } from "@/lib/utils"
 
 import { getStylePresetDescription } from "@/lib/types"
 
@@ -123,10 +124,17 @@ export const POST = withError(async (
         videoTaskId: result.taskId,
         videoUrl: null,
       },
+      include: { shotAssets: true },
     })
     console.info("[图生视频] 已更新镜头视频状态为 generating", { episodeId, shotId, videoTaskId: result.taskId })
 
-    return NextResponse.json({ shot: updated })
+    return NextResponse.json({
+      shot: {
+        ...updated,
+        ...extractShotAssetIds(updated.shotAssets),
+        shotAssets: undefined,
+      },
+    })
   } catch (err) {
     console.error("[图生视频] 生成失败", { episodeId, shotId, aiTaskId: task.id, error: (err as Error)?.message || err })
     await markAiTaskFailed(task.id, err)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
+import { buildEpisodeAssetData, extractEpisodeAssetIds } from "@/lib/utils"
 
 type AssetStrategy = "save" | "keep" | "rename"
 
@@ -58,7 +59,7 @@ export const POST = withError(async (request: NextRequest) => {
 
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
-    select: { id: true, characters: true, scenes: true, props: true },
+    include: { episodeAssets: true },
   })
   if (!episode) {
     throwCutGoError("NOT_FOUND", "分集不存在")
@@ -195,22 +196,26 @@ export const POST = withError(async (request: NextRequest) => {
   ])
 
   // ── 绑定到 episode（去重追加） ──
-  const existingCharacterIds = new Set<string>(JSON.parse(episode.characters ?? "[]") as string[])
-  const existingSceneIds = new Set<string>(JSON.parse(episode.scenes ?? "[]") as string[])
-  const existingPropIds = new Set<string>(JSON.parse(episode.props ?? "[]") as string[])
+  const existing = extractEpisodeAssetIds(episode.episodeAssets)
+  const existingCharacterIds = new Set<string>(existing.characterIds)
+  const existingSceneIds = new Set<string>(existing.sceneIds)
+  const existingPropIds = new Set<string>(existing.propIds)
 
   savedCharacters.forEach((c) => existingCharacterIds.add(c.id))
   savedScenes.forEach((s) => existingSceneIds.add(s.id))
   savedProps.forEach((p) => existingPropIds.add(p.id))
 
-  await prisma.episode.update({
-    where: { id: episodeId },
-    data: {
-      characters: JSON.stringify(Array.from(existingCharacterIds)),
-      scenes: JSON.stringify(Array.from(existingSceneIds)),
-      props: JSON.stringify(Array.from(existingPropIds)),
-    },
-  })
+  await prisma.$transaction([
+    prisma.episodeAsset.deleteMany({ where: { episodeId } }),
+    prisma.episodeAsset.createMany({
+      data: buildEpisodeAssetData(
+        episodeId,
+        Array.from(existingCharacterIds),
+        Array.from(existingSceneIds),
+        Array.from(existingPropIds)
+      ),
+    }),
+  ])
 
   return NextResponse.json({
     stats: {

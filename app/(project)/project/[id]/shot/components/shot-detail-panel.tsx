@@ -38,7 +38,7 @@ import {
   Video,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { cn, parseJsonArray } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { PreviewableImage } from "@/components/ui/previewable-image"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
@@ -148,8 +148,8 @@ export function ShotDetailPanel({
     [onUpdate, scriptShotPlan.episodeId, shot.id]
   )
 
-  const boundCharacterIds = useMemo(() => parseJsonArray(shot.characterIds), [shot.characterIds])
-  const boundPropIds = useMemo(() => parseJsonArray(shot.propIds), [shot.propIds])
+  const boundCharacterIds = shot.characterIds ?? []
+  const boundPropIds = shot.propIds ?? []
 
   const boundCharacters = useMemo(
     () => assetCharacters.filter((c) => boundCharacterIds.includes(c.id)),
@@ -170,20 +170,20 @@ export function ShotDetailPanel({
 
   const handleToggleCharacter = (charId: string) => {
     const next = toggleItem(boundCharacterIds, charId)
-    updateShotData({ characterIds: next.length > 0 ? JSON.stringify(next) : undefined })
+    updateShotData({ characterIds: next.length > 0 ? next : [] })
   }
 
   const handleChangeScene = (sceneId: string) => {
     setScenePopoverOpen(false)
     // 延迟更新数据，让弹窗先关闭，减少卡顿感
     setTimeout(() => {
-      updateShotData({ sceneId: sceneId === "__none__" ? undefined : sceneId })
+      updateShotData({ sceneId: sceneId === "__none__" ? null : sceneId })
     }, 100)
   }
 
   const handleToggleProp = (propId: string) => {
     const next = toggleItem(boundPropIds, propId)
-    updateShotData({ propIds: next.length > 0 ? JSON.stringify(next) : undefined })
+    updateShotData({ propIds: next.length > 0 ? next : [] })
   }
 
   const handleImageTypeChange = (type: string) => {

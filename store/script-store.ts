@@ -26,9 +26,9 @@ interface ScriptState {
     title?: string
     rawText?: string
     wordCount?: number
-    characters?: string
-    scenes?: string
-    props?: string
+    characterIds?: string[]
+    sceneIds?: string[]
+    propIds?: string[]
   }) => Promise<void>
   generateScripts: (
     projectId: string,
