@@ -132,6 +132,8 @@ function GenerateImageButton({
   projectId,
   onSuccess,
   beforeGenerate,
+  isGenerating,
+  onAfterSubmit,
 }: {
   assetType: "character" | "scene" | "prop"
   assetId: string
@@ -139,12 +141,14 @@ function GenerateImageButton({
   onSuccess?: (imageUrl: string) => void
   /** 生成前先把当前表单写入服务端（用户可能已改提示词等） */
   beforeGenerate: () => Promise<void>
+  isGenerating?: boolean
+  onAfterSubmit?: () => Promise<void>
 }) {
   const { fetchAssets, generatingAssets } = useAssetStore()
-  const isGenerating = generatingAssets[assetId]
+  const effectiveGenerating = isGenerating ?? generatingAssets[assetId]
 
   const handleGenerate = async () => {
-    if (isGenerating) return
+    if (effectiveGenerating) return
     try {
       await beforeGenerate()
     } catch (err) {
@@ -157,7 +161,11 @@ function GenerateImageButton({
         body: { type: assetType, id: assetId },
       })
       if (res.success) {
-        await fetchAssets(projectId)
+        if (onAfterSubmit) {
+          await onAfterSubmit()
+        } else {
+          await fetchAssets(projectId)
+        }
         onSuccess?.(res.asset.imageUrl || "")
         toast.success("已提交图片生成任务")
       } else {
@@ -173,9 +181,9 @@ function GenerateImageButton({
       type="button"
       size="sm"
       onClick={() => void handleGenerate()}
-      disabled={isGenerating}
+      disabled={effectiveGenerating}
     >
-      {isGenerating ? (
+      {effectiveGenerating ? (
         <Loader2 className="mr-1.5 size-3.5 animate-spin" />
       ) : (
         <Sparkles className="mr-1.5 size-3.5" />
@@ -192,11 +200,15 @@ export function CharacterFormDialog({
   onOpenChange,
   character,
   onSave,
+  preferExternalState = false,
+  onAfterGenerate,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   character: AssetCharacter | null
   onSave: (data: AssetCharacterInput) => Promise<void>
+  preferExternalState?: boolean
+  onAfterGenerate?: () => Promise<void>
 }) {
   const normalizeGender = (
     gender: string | null | undefined
@@ -216,9 +228,10 @@ export function CharacterFormDialog({
   const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
-  const latestCharacter = useAssetStore((state) =>
+  const storeCharacter = useAssetStore((state) =>
     character ? state.characters.find((item) => item.id === character.id) || character : null
   )
+  const latestCharacter = preferExternalState ? character : storeCharacter
 
   useEffect(() => {
     if (character) {
@@ -307,6 +320,8 @@ export function CharacterFormDialog({
                   projectId={character.projectId}
                   onSuccess={setImageUrl}
                   beforeGenerate={saveBeforeGenerate}
+                  isGenerating={isGenerating}
+                  onAfterSubmit={onAfterGenerate}
                 />
               ) : undefined
             }
@@ -383,11 +398,15 @@ export function SceneFormDialog({
   onOpenChange,
   scene,
   onSave,
+  preferExternalState = false,
+  onAfterGenerate,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   scene: AssetScene | null
   onSave: (data: AssetSceneInput) => Promise<void>
+  preferExternalState?: boolean
+  onAfterGenerate?: () => Promise<void>
 }) {
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
@@ -395,9 +414,10 @@ export function SceneFormDialog({
   const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
-  const latestScene = useAssetStore((state) =>
+  const storeScene = useAssetStore((state) =>
     scene ? state.scenes.find((item) => item.id === scene.id) || scene : null
   )
+  const latestScene = preferExternalState ? scene : storeScene
 
   useEffect(() => {
     if (scene) {
@@ -482,6 +502,8 @@ export function SceneFormDialog({
                   projectId={scene.projectId}
                   onSuccess={setImageUrl}
                   beforeGenerate={saveBeforeGenerate}
+                  isGenerating={isGenerating}
+                  onAfterSubmit={onAfterGenerate}
                 />
               ) : undefined
             }
@@ -538,20 +560,25 @@ export function PropFormDialog({
   onOpenChange,
   prop,
   onSave,
+  preferExternalState = false,
+  onAfterGenerate,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   prop: AssetProp | null
   onSave: (data: AssetPropInput) => Promise<void>
+  preferExternalState?: boolean
+  onAfterGenerate?: () => Promise<void>
 }) {
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
-  const latestProp = useAssetStore((state) =>
+  const storeProp = useAssetStore((state) =>
     prop ? state.props.find((item) => item.id === prop.id) || prop : null
   )
+  const latestProp = preferExternalState ? prop : storeProp
 
   useEffect(() => {
     if (prop) {
@@ -632,6 +659,8 @@ export function PropFormDialog({
                   projectId={prop.projectId}
                   onSuccess={setImageUrl}
                   beforeGenerate={saveBeforeGenerate}
+                  isGenerating={isGenerating}
+                  onAfterSubmit={onAfterGenerate}
                 />
               ) : undefined
             }

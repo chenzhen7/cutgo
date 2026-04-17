@@ -113,6 +113,35 @@ export default function ScriptShotPage() {
     return null
   }, [scriptShotPlans, activeShotId])
 
+  const currentShotPollingAssetFilters = useMemo(() => {
+    if (!currentActiveShot) return null
+
+    const shot = currentActiveShot.shot
+    const generatingCharacterIds = (shot.characterIds ?? []).filter(
+      (id) => assetCharacters.find((asset) => asset.id === id)?.imageStatus === "generating"
+    )
+    const generatingSceneIds = shot.sceneId && assetScenes.find((asset) => asset.id === shot.sceneId)?.imageStatus === "generating"
+      ? [shot.sceneId]
+      : []
+    const generatingPropIds = (shot.propIds ?? []).filter(
+      (id) => assetProps.find((asset) => asset.id === id)?.imageStatus === "generating"
+    )
+
+    if (
+      generatingCharacterIds.length === 0 &&
+      generatingSceneIds.length === 0 &&
+      generatingPropIds.length === 0
+    ) {
+      return null
+    }
+
+    return {
+      characterIds: generatingCharacterIds,
+      sceneIds: generatingSceneIds,
+      propIds: generatingPropIds,
+    }
+  }, [currentActiveShot, assetCharacters, assetScenes, assetProps])
+
   const allFlatShots = useMemo(() => {
     const episodeSbs = activeEpisodeId
       ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
@@ -196,14 +225,14 @@ export default function ScriptShotPage() {
   }, [projectId, activeEpisodeId, fetchScriptShotPlans, setActiveShotId])
 
   useEffect(() => {
-    if (!projectId || !activeEpisodeId || !currentEpisodeHasGeneratingAssets) return
+    if (!projectId || !activeEpisodeId || !currentEpisodeHasGeneratingAssets || !currentShotPollingAssetFilters) return
 
     const timer = setTimeout(() => {
-      void fetchAssets(projectId)
+      void fetchAssets(projectId, currentShotPollingAssetFilters)
     }, 10000)
 
     return () => clearTimeout(timer)
-  }, [projectId, activeEpisodeId, currentEpisodeHasGeneratingAssets, fetchAssets])
+  }, [projectId, activeEpisodeId, currentEpisodeHasGeneratingAssets, currentShotPollingAssetFilters, fetchAssets])
 
   const hasExistingShots = useMemo(
     () => currentScriptShotPlans.length > 0 && currentScriptShotPlans.some(p => p.shots.length > 0),

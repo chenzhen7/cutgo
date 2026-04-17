@@ -144,6 +144,13 @@ function findProjectIdByEpisode(episodes: Episode[], episodeId: string): string 
   return episodes.find((episode) => episode.id === episodeId)?.projectId || ""
 }
 
+function mergeAssetsById<T extends { id: string }>(existing: T[], incoming: T[]): T[] {
+  if (incoming.length === 0) return existing
+
+  const incomingMap = new Map(incoming.map((item) => [item.id, item]))
+  return existing.map((item) => incomingMap.get(item.id) ?? item)
+}
+
 interface ScriptShotState {
   scriptShotPlans: ScriptShotPlan[]
   episodes: Episode[]
@@ -170,7 +177,10 @@ interface ScriptShotState {
 
   fetchScriptShotPlans: (projectId: string, episodeId?: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<Episode[]>
-  fetchAssets: (projectId: string) => Promise<void>
+  fetchAssets: (
+    projectId: string,
+    filters?: { characterIds?: string[]; sceneIds?: string[]; propIds?: string[] }
+  ) => Promise<void>
 
   generateScriptShots: (
     projectId: string,
@@ -286,16 +296,30 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  fetchAssets: async (projectId) => {
+  fetchAssets: async (projectId, filters) => {
     try {
+      const query = new URLSearchParams({ projectId })
+      for (const id of filters?.characterIds ?? []) query.append("characterIds", id)
+      for (const id of filters?.sceneIds ?? []) query.append("sceneIds", id)
+      for (const id of filters?.propIds ?? []) query.append("propIds", id)
+
       const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(
-        `/api/assets?projectId=${projectId}`
+        `/api/assets?${query.toString()}`
       )
-      set({
-        assetCharacters: data.characters || [],
-        assetScenes: data.scenes || [],
-        assetProps: data.props || [],
-      })
+      const characters = data.characters || []
+      const scenes = data.scenes || []
+      const props = data.props || []
+      const hasFilters =
+        !!filters &&
+        ((filters.characterIds?.length ?? 0) > 0 ||
+          (filters.sceneIds?.length ?? 0) > 0 ||
+          (filters.propIds?.length ?? 0) > 0)
+
+      set((state) => ({
+        assetCharacters: hasFilters ? mergeAssetsById(state.assetCharacters, characters) : characters,
+        assetScenes: hasFilters ? mergeAssetsById(state.assetScenes, scenes) : scenes,
+        assetProps: hasFilters ? mergeAssetsById(state.assetProps, props) : props,
+      }))
     } catch {
       // 非关键数据加载，静默失败
     }

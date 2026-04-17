@@ -772,7 +772,12 @@ export function ShotDetailPanel({
       <CharacterFormDialog
         open={!!editingCharacter}
         onOpenChange={(open) => { if (!open) setEditingCharacter(null) }}
-        character={editingCharacter}
+        character={editingCharacter ? assetCharacters.find((item) => item.id === editingCharacter.id) || editingCharacter : null}
+        preferExternalState
+        onAfterGenerate={async () => {
+          if (!editingCharacter) return
+          await fetchAssets(projectId, { characterIds: [editingCharacter.id] })
+        }}
         onSave={async (data) => {
           if (!editingCharacter) return
           await updateCharacter(editingCharacter.id, data)
@@ -782,7 +787,12 @@ export function ShotDetailPanel({
       <SceneFormDialog
         open={!!editingScene}
         onOpenChange={(open) => { if (!open) setEditingScene(null) }}
-        scene={editingScene}
+        scene={editingScene ? assetScenes.find((item) => item.id === editingScene.id) || editingScene : null}
+        preferExternalState
+        onAfterGenerate={async () => {
+          if (!editingScene) return
+          await fetchAssets(projectId, { sceneIds: [editingScene.id] })
+        }}
         onSave={async (data) => {
           if (!editingScene) return
           await updateScene(editingScene.id, data)
@@ -792,7 +802,12 @@ export function ShotDetailPanel({
       <PropFormDialog
         open={!!editingProp}
         onOpenChange={(open) => { if (!open) setEditingProp(null) }}
-        prop={editingProp}
+        prop={editingProp ? assetProps.find((item) => item.id === editingProp.id) || editingProp : null}
+        preferExternalState
+        onAfterGenerate={async () => {
+          if (!editingProp) return
+          await fetchAssets(projectId, { propIds: [editingProp.id] })
+        }}
         onSave={async (data) => {
           if (!editingProp) return
           await updateProp(editingProp.id, data)
