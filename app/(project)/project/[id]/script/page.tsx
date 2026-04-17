@@ -116,10 +116,16 @@ export default function ScriptPage() {
   const handleCreateEpisodeWithRawText = useCallback(
     async (params: { title: string; rawText: string; extractAssets: boolean }) => {
       const result = await createEpisodeWithRawText(projectId, params)
-      toast.success("分集已创建")
       if (result.extractAssets) {
-        setExtractTargetEpisodeId(result.episodeId)
-        setShowExtractAssets(true)
+        if (result.assetsExtracted && result.scriptGenerated) {
+          toast.success("分集已创建，资产和剧本已自动生成")
+        } else if (result.warning) {
+          toast.warning(`分集已创建，但自动处理未完成：${result.warning}`)
+        } else {
+          toast.warning("分集已创建，但自动提取资产和生成剧本未完成")
+        }
+      } else {
+        toast.success("分集已创建")
       }
     },
     [projectId, createEpisodeWithRawText]

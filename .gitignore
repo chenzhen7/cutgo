@@ -42,3 +42,6 @@ next-env.d.ts
 /.idea/*
 /lib/generated/prisma
 /dev.db
+
+/public/
+/public/generated-images/

@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react"
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,7 @@ import { Loader2, FilePlus } from "lucide-react"
 interface CreateEpisodeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** 提交：返回是否需要提取资产 */
+  /** 提交：返回是否需要自动提取资产并生成剧本 */
   onSubmit: (params: {
     title: string
     rawText: string
@@ -59,8 +59,10 @@ export function CreateEpisodeDialog({
       setError("请填写小说原文")
       return
     }
+
     setError(null)
     setLoading(true)
+
     try {
       await onSubmit({
         title: title.trim(),
@@ -86,14 +88,15 @@ export function CreateEpisodeDialog({
             新建分集
           </DialogTitle>
           <p className="text-sm text-muted-foreground font-normal pt-1">
-            填写分集标题与小说原文，创建后可在左侧选择分集手动生成剧本。
+            填写分集标题与小说原文，勾选后会在创建完成后自动提取资产并生成剧本。
           </p>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto p-1">
-          {/* 标题 */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ep-title">分集标题 <span className="text-destructive">*</span></Label>
+            <Label htmlFor="ep-title">
+              分集标题 <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="ep-title"
               placeholder={`例如：第${nextEpisodeNumber}集 天崩开局`}
@@ -103,12 +106,15 @@ export function CreateEpisodeDialog({
             />
           </div>
 
-          {/* 小说原文 */}
           <div className="flex flex-col gap-1.5 flex-1 min-h-0">
             <div className="flex items-center justify-between">
-              <Label htmlFor="ep-rawtext">小说原文 <span className="text-destructive">*</span></Label>
+              <Label htmlFor="ep-rawtext">
+                小说原文 <span className="text-destructive">*</span>
+              </Label>
               {wordCount > 0 && (
-                <span className="text-[11px] text-muted-foreground">{wordCount.toLocaleString()} 字</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {wordCount.toLocaleString()} 字
+                </span>
               )}
             </div>
             <Textarea
@@ -121,19 +127,20 @@ export function CreateEpisodeDialog({
             />
           </div>
 
-          {/* 提取资产 checkbox */}
-          <label className="flex items-start gap-3 rounded-lg cursor-pointer ">
+          <label className="flex items-start gap-3 rounded-lg cursor-pointer">
             <Checkbox
               id="ep-extract-assets"
               checked={extractAssets}
-              onCheckedChange={(v) => setExtractAssets(v === true)}
+              onCheckedChange={(value) => setExtractAssets(value === true)}
               disabled={loading}
               className="mt-0.5"
             />
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium leading-snug">完成后提取资产</span>
+              <span className="text-sm font-medium leading-snug">
+                完成后提取资产并生成剧本
+              </span>
               <span className="text-xs text-muted-foreground">
-                AI 将从原文中识别角色、场景和道具，添加到项目资产库
+                AI 将自动从原文中提取角色、场景和道具资产，并继续生成当前分集剧本。
               </span>
             </div>
           </label>

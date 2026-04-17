@@ -21,7 +21,13 @@ interface ScriptState {
     title: string
     rawText: string
     extractAssets: boolean
-  }) => Promise<{ episodeId: string; extractAssets: boolean }>
+  }) => Promise<{
+    episodeId: string
+    extractAssets: boolean
+    assetsExtracted: boolean
+    scriptGenerated: boolean
+    warning: string | null
+  }>
   updateEpisode: (episodeId: string, data: {
     title?: string
     rawText?: string
@@ -150,7 +156,13 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   },
 
   createEpisodeWithRawText: async (projectId, { title, rawText, extractAssets }) => {
-    const data = await apiFetch<{ episode: Episode; extractAssets: boolean }>(
+    const data = await apiFetch<{
+      episode: Episode
+      extractAssets: boolean
+      assetsExtracted: boolean
+      scriptGenerated: boolean
+      warning: string | null
+    }>(
       "/api/episodes/create-with-script",
       {
         method: "POST",
@@ -159,7 +171,13 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     )
     await get().fetchEpisodes(projectId)
     set({ activeEpisodeId: data.episode.id })
-    return { episodeId: data.episode.id, extractAssets: data.extractAssets }
+    return {
+      episodeId: data.episode.id,
+      extractAssets: data.extractAssets,
+      assetsExtracted: data.assetsExtracted,
+      scriptGenerated: data.scriptGenerated,
+      warning: data.warning,
+    }
   },
 
   reorderEpisodes: async (projectId, orderedIds) => {
