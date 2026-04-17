@@ -15,6 +15,10 @@ import { ChapterSelectDialog } from "./components/chapter-select-dialog"
 import { EpisodeNavList } from "./components/episode-nav-list"
 import { ScriptEditor } from "./components/script-editor"
 import { CreateEpisodeDialog } from "./components/create-episode-dialog"
+import {
+  CreateEpisodeProgressDialog,
+  type CreateEpisodeProgressStep,
+} from "./components/create-episode-progress-dialog"
 import { ExtractAssetsDialog } from "./components/extract-assets-dialog"
 import {
   ResizableHandle,
@@ -22,6 +26,45 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { buildEpisodeDisplayNumberMap } from "@/lib/episode-display"
+
+interface ExtractedCharacter {
+  name: string
+  role: "protagonist" | "supporting" | "extra"
+  gender?: string
+  prompt?: string
+}
+
+interface ExtractedScene {
+  name: string
+  prompt?: string
+  tags?: string
+}
+
+interface ExtractedProp {
+  name: string
+  prompt?: string
+}
+
+const INITIAL_CREATE_EPISODE_STEPS: CreateEpisodeProgressStep[] = [
+  {
+    key: "extract",
+    label: "提取资产",
+    description: "从原文中分析角色、场景和道具。",
+    status: "pending",
+  },
+  {
+    key: "save",
+    label: "保存资产",
+    description: "把识别出的资产写入项目并关联到当前分集。",
+    status: "pending",
+  },
+  {
+    key: "script",
+    label: "生成剧本",
+    description: "基于原文和已提取资产生成当前分集剧本。",
+    status: "pending",
+  },
+]
 
 export default function ScriptPage() {
   const params = useParams()
@@ -51,7 +94,14 @@ export default function ScriptPage() {
   const [assetCharacters, setAssetCharacters] = useState<AssetCharacter[]>([])
   const [assetScenes, setAssetScenes] = useState<AssetScene[]>([])
   const [assetProps, setAssetProps] = useState<AssetProp[]>([])
-
+  const [showCreateEpisodeProgress, setShowCreateEpisodeProgress] = useState(false)
+  const [createEpisodeProgressTitle, setCreateEpisodeProgressTitle] = useState("")
+  const [createEpisodeProgressSteps, setCreateEpisodeProgressSteps] = useState<CreateEpisodeProgressStep[]>(
+    INITIAL_CREATE_EPISODE_STEPS
+  )
+  const [createEpisodeStatusMessage, setCreateEpisodeStatusMessage] = useState("准备开始…")
+  const [createEpisodeProgressError, setCreateEpisodeProgressError] = useState<string | null>(null)
+  const [createEpisodeProgressFinished, setCreateEpisodeProgressFinished] = useState(false)
 
   const handleAssetRefresh = useCallback(async () => {
     try {
@@ -65,6 +115,15 @@ export default function ScriptPage() {
       setAssetProps([])
     }
   }, [projectId])
+
+  const updateCreateEpisodeStep = useCallback((
+    key: string,
+    status: CreateEpisodeProgressStep["status"]
+  ) => {
+    setCreateEpisodeProgressSteps((prev) =>
+      prev.map((step) => (step.key === key ? { ...step, status } : step))
+    )
+  }, [])
 
   useEffect(() => {
     const init = async () => {
@@ -112,23 +171,103 @@ export default function ScriptPage() {
     [projectId, generateScripts]
   )
 
-  // 新建分集（直接输入原文）
+  const runCreateEpisodeFollowUp = useCallback(
+    async (episodeId: string) => {
+      try {
+        setCreateEpisodeProgressError(null)
+        setCreateEpisodeProgressFinished(false)
+
+        setCreateEpisodeStatusMessage("正在提取资产…")
+        updateCreateEpisodeStep("extract", "running")
+
+        const extracted = await apiFetch<{
+          characters: ExtractedCharacter[]
+          scenes: ExtractedScene[]
+          props: ExtractedProp[]
+        }>("/api/episodes/extract-assets", {
+          method: "POST",
+          body: { episodeIds: [episodeId] },
+        })
+
+        updateCreateEpisodeStep("extract", "completed")
+        setCreateEpisodeStatusMessage("正在保存资产…")
+        updateCreateEpisodeStep("save", "running")
+
+        await apiFetch("/api/assets/batch-save", {
+          method: "POST",
+          body: {
+            projectId,
+            episodeId,
+            characters: (extracted.characters ?? []).map((item) => ({
+              ...item,
+              strategy: "save",
+            })),
+            scenes: (extracted.scenes ?? []).map((item) => ({
+              ...item,
+              strategy: "save",
+            })),
+            props: (extracted.props ?? []).map((item) => ({
+              ...item,
+              strategy: "save",
+            })),
+          },
+        })
+
+        updateCreateEpisodeStep("save", "completed")
+        await handleAssetRefresh()
+
+        setCreateEpisodeStatusMessage("正在生成剧本…")
+        updateCreateEpisodeStep("script", "running")
+
+        await generateScripts(projectId, [episodeId], "overwrite")
+        const { generateStatus: latestGenerateStatus, generateError: latestGenerateError } =
+          useScriptStore.getState()
+        if (latestGenerateStatus === "error") {
+          throw new Error(latestGenerateError || "剧本生成失败")
+        }
+
+        updateCreateEpisodeStep("script", "completed")
+        setCreateEpisodeStatusMessage("已完成，资产和剧本都准备好了。")
+        setCreateEpisodeProgressFinished(true)
+        await fetchEpisodes(projectId)
+        toast.success("资产提取和剧本生成已完成")
+      } catch (err) {
+        setCreateEpisodeProgressError(
+          err instanceof Error ? err.message : "自动处理失败，请稍后重试"
+        )
+        setCreateEpisodeStatusMessage("处理已中断，请查看错误提示。")
+        setCreateEpisodeProgressFinished(true)
+        setCreateEpisodeProgressSteps((prev) =>
+          prev.map((step) =>
+            step.status === "running" ? { ...step, status: "error" } : step
+          )
+        )
+        toast.error(err instanceof Error ? err.message : "自动处理失败")
+      }
+    },
+    [fetchEpisodes, generateScripts, handleAssetRefresh, projectId, updateCreateEpisodeStep]
+  )
+
   const handleCreateEpisodeWithRawText = useCallback(
     async (params: { title: string; rawText: string; extractAssets: boolean }) => {
       const result = await createEpisodeWithRawText(projectId, params)
-      if (result.extractAssets) {
-        if (result.assetsExtracted && result.scriptGenerated) {
-          toast.success("分集已创建，资产和剧本已自动生成")
-        } else if (result.warning) {
-          toast.warning(`分集已创建，但自动处理未完成：${result.warning}`)
-        } else {
-          toast.warning("分集已创建，但自动提取资产和生成剧本未完成")
-        }
-      } else {
+
+      if (!result.extractAssets) {
         toast.success("分集已创建")
+        return
       }
+
+      setCreateEpisodeProgressTitle(params.title)
+      setCreateEpisodeProgressSteps(INITIAL_CREATE_EPISODE_STEPS)
+      setCreateEpisodeStatusMessage("已创建分集，马上开始处理…")
+      setCreateEpisodeProgressError(null)
+      setCreateEpisodeProgressFinished(false)
+      setShowCreateEpisodeProgress(true)
+      toast.success("分集已创建，正在继续提取资产并生成剧本")
+
+      void runCreateEpisodeFollowUp(result.episodeId)
     },
-    [projectId, createEpisodeWithRawText]
+    [projectId, createEpisodeWithRawText, runCreateEpisodeFollowUp]
   )
 
   const handleOpenExtractAssets = useCallback(() => {
@@ -325,6 +464,16 @@ export default function ScriptPage() {
         onOpenChange={setShowCreateEpisodeDialog}
         onSubmit={handleCreateEpisodeWithRawText}
         nextEpisodeNumber={episodesForProject.length + 1}
+      />
+
+      <CreateEpisodeProgressDialog
+        open={showCreateEpisodeProgress}
+        onOpenChange={setShowCreateEpisodeProgress}
+        episodeTitle={createEpisodeProgressTitle}
+        steps={createEpisodeProgressSteps}
+        statusMessage={createEpisodeStatusMessage}
+        errorMessage={createEpisodeProgressError}
+        finished={createEpisodeProgressFinished}
       />
 
       {/* Episode select dialog */}
