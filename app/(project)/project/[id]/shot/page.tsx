@@ -82,6 +82,28 @@ export default function ScriptShotPage() {
     return scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
   }, [scriptShotPlans, activeEpisodeId])
 
+  const currentEpisodeHasGeneratingAssets = useMemo(() => {
+    if (!activeEpisodeId || currentScriptShotPlans.length === 0) return false
+
+    const characterStatusMap = new Map(assetCharacters.map((asset) => [asset.id, asset.imageStatus]))
+    const sceneStatusMap = new Map(assetScenes.map((asset) => [asset.id, asset.imageStatus]))
+    const propStatusMap = new Map(assetProps.map((asset) => [asset.id, asset.imageStatus]))
+
+    return currentScriptShotPlans.some((plan) =>
+      plan.shots.some((shot) => {
+        const hasGeneratingCharacter = (shot.characterIds ?? []).some(
+          (id) => characterStatusMap.get(id) === "generating"
+        )
+        const hasGeneratingScene = !!shot.sceneId && sceneStatusMap.get(shot.sceneId) === "generating"
+        const hasGeneratingProp = (shot.propIds ?? []).some(
+          (id) => propStatusMap.get(id) === "generating"
+        )
+
+        return hasGeneratingCharacter || hasGeneratingScene || hasGeneratingProp
+      })
+    )
+  }, [activeEpisodeId, currentScriptShotPlans, assetCharacters, assetScenes, assetProps])
+
   const currentActiveShot = useMemo(() => {
     if (!activeShotId) return null
     for (const sb of scriptShotPlans) {
@@ -172,6 +194,16 @@ export default function ScriptShotPage() {
       cancelled = true
     }
   }, [projectId, activeEpisodeId, fetchScriptShotPlans, setActiveShotId])
+
+  useEffect(() => {
+    if (!projectId || !activeEpisodeId || !currentEpisodeHasGeneratingAssets) return
+
+    const timer = setTimeout(() => {
+      void fetchAssets(projectId)
+    }, 10000)
+
+    return () => clearTimeout(timer)
+  }, [projectId, activeEpisodeId, currentEpisodeHasGeneratingAssets, fetchAssets])
 
   const hasExistingShots = useMemo(
     () => currentScriptShotPlans.length > 0 && currentScriptShotPlans.some(p => p.shots.length > 0),
@@ -569,6 +601,7 @@ export default function ScriptShotPage() {
                 <ResizablePanel defaultSize={25} minSize="400px">
                   <div className="h-full shrink-0 overflow-hidden bg-card">
                     <ShotDetailPanel
+                      key={currentActiveShot.shot.id}
                       shot={currentActiveShot.shot}
                       scriptShotPlan={currentActiveShot.scriptShotPlan}
                       episodeDisplayNumber={

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -39,7 +39,6 @@ import {
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import { PreviewableImage } from "@/components/ui/previewable-image"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
 import {
@@ -55,6 +54,57 @@ const EmptyBinding = () => (
     <p className="text-[10px] text-muted-foreground/40 italic">未绑定</p>
   </div>
 )
+
+function AssetImagePlaceholder({ icon }: { icon: ReactNode }) {
+  return (
+    <div className="size-full flex items-center justify-center bg-muted/50">
+      {icon}
+    </div>
+  )
+}
+
+function GeneratingAssetOverlay({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 backdrop-blur-[1px]">
+      <Loader2 className={cn("animate-spin text-primary", compact ? "size-3.5" : "size-4")} />
+    </div>
+  )
+}
+
+function AssetThumbnail({
+  imageUrl,
+  imageStatus,
+  alt,
+  empty,
+  className,
+  compactGenerating = false,
+}: {
+  imageUrl: string | null
+  imageStatus?: string | null
+  alt: string
+  empty: ReactNode
+  className?: string
+  compactGenerating?: boolean
+}) {
+  return (
+    <div className={cn("relative overflow-hidden", className)}>
+      {imageUrl ? (
+        <img src={imageUrl} alt={alt} className="size-full object-cover" />
+      ) : (
+        empty
+      )}
+      {imageStatus === "generating" ? <GeneratingAssetOverlay compact={compactGenerating} /> : null}
+    </div>
+  )
+}
+
+function parseGridPrompts(value: string | null): string[] {
+  try {
+    return value ? JSON.parse(value) : []
+  } catch {
+    return []
+  }
+}
 
 interface ShotDetailPanelProps {
   shot: Shot
@@ -108,25 +158,13 @@ export function ShotDetailPanel({
     void fetchAssets(projectId)
   }, [fetchAssets, projectId])
 
-  const [content, setContent] = useState(shot.content || "")
-  const [prompt, setPrompt] = useState(shot.prompt || "")
-  const [promptEnd, setPromptEnd] = useState(shot.promptEnd || "")
-  const [gridPrompts, setGridPrompts] = useState<string[]>([])
-  const [videoPrompt, setVideoPrompt] = useState(shot.videoPrompt || "")
-  const [duration, setDuration] = useState<string>(shot.duration?.toString() || "5")
-
-  useEffect(() => {
-    setContent(shot.content || "")
-    setPrompt(shot.prompt || "")
-    setPromptEnd(shot.promptEnd || "")
-    setVideoPrompt(shot.videoPrompt || "")
-    setDuration(shot.duration?.toString() || "5")
-    try {
-      setGridPrompts(shot.gridPrompts ? JSON.parse(shot.gridPrompts) : [])
-    } catch {
-      setGridPrompts([])
-    }
-  }, [shot.id, shot.content, shot.prompt, shot.promptEnd, shot.gridPrompts, shot.duration, shot.videoPrompt])
+  const [content, setContent] = useState(() => shot.content || "")
+  const [prompt, setPrompt] = useState(() => shot.prompt || "")
+  const [promptEnd, setPromptEnd] = useState(() => shot.promptEnd || "")
+  const [gridPrompts, setGridPrompts] = useState<string[]>(() => parseGridPrompts(shot.gridPrompts))
+  const [videoPrompt, setVideoPrompt] = useState(() => shot.videoPrompt || "")
+  const [duration, setDuration] = useState<string>(() => shot.duration?.toString() || "5")
+  const debouncedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const updateShotData = useCallback(
     (data: Partial<ShotInput>) => {
@@ -135,21 +173,28 @@ export function ShotDetailPanel({
     [onUpdate, scriptShotPlan.episodeId, shot.id]
   )
 
-  const debouncedUpdate = useMemo(
-    () => {
-      let timer: NodeJS.Timeout
-      return (data: Partial<ShotInput>) => {
-        clearTimeout(timer)
-        timer = setTimeout(() => {
-          onUpdate(scriptShotPlan.episodeId, shot.id, data)
-        }, 500)
+  const debouncedUpdate = useCallback(
+    (data: Partial<ShotInput>) => {
+      if (debouncedUpdateTimerRef.current) {
+        clearTimeout(debouncedUpdateTimerRef.current)
       }
+      debouncedUpdateTimerRef.current = setTimeout(() => {
+        onUpdate(scriptShotPlan.episodeId, shot.id, data)
+      }, 500)
     },
     [onUpdate, scriptShotPlan.episodeId, shot.id]
   )
 
-  const boundCharacterIds = shot.characterIds ?? []
-  const boundPropIds = shot.propIds ?? []
+  useEffect(() => {
+    return () => {
+      if (debouncedUpdateTimerRef.current) {
+        clearTimeout(debouncedUpdateTimerRef.current)
+      }
+    }
+  }, [])
+
+  const boundCharacterIds = useMemo(() => shot.characterIds ?? [], [shot.characterIds])
+  const boundPropIds = useMemo(() => shot.propIds ?? [], [shot.propIds])
 
   const boundCharacters = useMemo(
     () => assetCharacters.filter((c) => boundCharacterIds.includes(c.id)),
@@ -296,13 +341,18 @@ export function ShotDetailPanel({
                                   )}
                                 >
                                   <div className="flex items-center gap-2 min-w-0">
-                                    {s.imageUrl ? (
-                                      <PreviewableImage src={s.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
-                                    ) : (
-                                      <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                        <MapPin className="size-3.5 text-muted-foreground" />
-                                      </div>
-                                    )}
+                                    <AssetThumbnail
+                                      imageUrl={s.imageUrl}
+                                      imageStatus={s.imageStatus}
+                                      alt={s.name}
+                                      className="size-5 rounded shrink-0"
+                                      compactGenerating
+                                      empty={
+                                        <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                          <MapPin className="size-3.5 text-muted-foreground" />
+                                        </div>
+                                      }
+                                    />
                                     <span className="truncate">{s.name}</span>
                                   </div>
                                 </button>
@@ -318,17 +368,15 @@ export function ShotDetailPanel({
                         className="w-full rounded-lg overflow-hidden border bg-muted/30 hover:ring-2 hover:ring-primary/40 transition-all text-left"
                         title={`编辑 ${boundScene.name}`}
                       >
-                        {boundScene.imageUrl ? (
-                          <img
-                            src={boundScene.imageUrl}
-                            alt={boundScene.name}
-                            className="w-full h-16 object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-12 flex items-center justify-center bg-muted/50">
-                            <MapPin className="size-4 text-muted-foreground/20" />
-                          </div>
-                        )}
+                        <AssetThumbnail
+                          imageUrl={boundScene.imageUrl}
+                          imageStatus={boundScene.imageStatus}
+                          alt={boundScene.name}
+                          className="w-full h-16"
+                          empty={
+                            <AssetImagePlaceholder icon={<MapPin className="size-4 text-muted-foreground/20" />} />
+                          }
+                        />
                         <div className="px-1.5 py-1 border-t bg-card">
                           <p className="text-[10px] font-medium truncate">{boundScene.name}</p>
                         </div>
@@ -364,13 +412,18 @@ export function ShotDetailPanel({
                                     onCheckedChange={() => handleToggleCharacter(c.id)}
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
-                                    {c.imageUrl ? (
-                                      <img src={c.imageUrl} alt="" className="size-5 rounded-full object-cover shrink-0" />
-                                    ) : (
-                                      <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                        <User className="size-3.5 text-muted-foreground" />
-                                      </div>
-                                    )}
+                                    <AssetThumbnail
+                                      imageUrl={c.imageUrl}
+                                      imageStatus={c.imageStatus}
+                                      alt={c.name}
+                                      className="size-5 rounded-full shrink-0"
+                                      compactGenerating
+                                      empty={
+                                        <div className="size-5 rounded-full bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                          <User className="size-3.5 text-muted-foreground" />
+                                        </div>
+                                      }
+                                    />
                                     <span className="text-xs truncate">{c.name}</span>
                                   </div>
                                 </label>
@@ -389,13 +442,15 @@ export function ShotDetailPanel({
                               className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
                               title={`编辑 ${c.name}`}
                             >
-                              {c.imageUrl ? (
-                                <img src={c.imageUrl} alt={c.name} className="size-full object-cover" />
-                              ) : (
-                                <div className="size-full flex items-center justify-center">
-                                  <User className="size-4 text-muted-foreground/40" />
-                                </div>
-                              )}
+                              <AssetThumbnail
+                                imageUrl={c.imageUrl}
+                                imageStatus={c.imageStatus}
+                                alt={c.name}
+                                className="size-full"
+                                empty={
+                                  <AssetImagePlaceholder icon={<User className="size-4 text-muted-foreground/40" />} />
+                                }
+                              />
                             </button>
                             <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{c.name}</span>
                           </div>
@@ -432,13 +487,18 @@ export function ShotDetailPanel({
                                     onCheckedChange={() => handleToggleProp(p.id)}
                                   />
                                   <div className="flex items-center gap-2 min-w-0">
-                                    {p.imageUrl ? (
-                                      <img src={p.imageUrl} alt="" className="size-5 rounded object-cover shrink-0" />
-                                    ) : (
-                                      <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
-                                        <Package className="size-3.5 text-muted-foreground" />
-                                      </div>
-                                    )}
+                                    <AssetThumbnail
+                                      imageUrl={p.imageUrl}
+                                      imageStatus={p.imageStatus}
+                                      alt={p.name}
+                                      className="size-5 rounded shrink-0"
+                                      compactGenerating
+                                      empty={
+                                        <div className="size-5 rounded bg-muted-foreground/10 flex items-center justify-center shrink-0">
+                                          <Package className="size-3.5 text-muted-foreground" />
+                                        </div>
+                                      }
+                                    />
                                     <span className="text-xs truncate">{p.name}</span>
                                   </div>
                                 </label>
@@ -457,13 +517,15 @@ export function ShotDetailPanel({
                               className="aspect-square w-full rounded-md overflow-hidden bg-muted border hover:ring-2 hover:ring-primary/40 transition-all"
                               title={`编辑 ${p.name}`}
                             >
-                              {p.imageUrl ? (
-                                <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
-                              ) : (
-                                <div className="size-full flex items-center justify-center">
-                                  <Package className="size-4 text-muted-foreground/40" />
-                                </div>
-                              )}
+                              <AssetThumbnail
+                                imageUrl={p.imageUrl}
+                                imageStatus={p.imageStatus}
+                                alt={p.name}
+                                className="size-full"
+                                empty={
+                                  <AssetImagePlaceholder icon={<Package className="size-4 text-muted-foreground/40" />} />
+                                }
+                              />
                             </button>
                             <span className="text-[9px] text-muted-foreground truncate w-full text-center px-0.5">{p.name}</span>
                           </div>
@@ -714,7 +776,6 @@ export function ShotDetailPanel({
         onSave={async (data) => {
           if (!editingCharacter) return
           await updateCharacter(editingCharacter.id, data)
-          setEditingCharacter(null)
           handleAssetSaved()
         }}
       />
@@ -725,7 +786,6 @@ export function ShotDetailPanel({
         onSave={async (data) => {
           if (!editingScene) return
           await updateScene(editingScene.id, data)
-          setEditingScene(null)
           handleAssetSaved()
         }}
       />
@@ -736,7 +796,6 @@ export function ShotDetailPanel({
         onSave={async (data) => {
           if (!editingProp) return
           await updateProp(editingProp.id, data)
-          setEditingProp(null)
           handleAssetSaved()
         }}
       />

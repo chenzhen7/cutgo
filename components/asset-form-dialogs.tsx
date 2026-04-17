@@ -255,6 +255,7 @@ export function CharacterFormDialog({
         prompt: prompt || undefined,
         imageUrl: imageUrl || undefined,
       })
+      onOpenChange(false)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -430,6 +431,7 @@ export function SceneFormDialog({
         tags: tags || undefined,
         imageUrl: imageUrl || undefined,
       })
+      onOpenChange(false)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -580,6 +582,7 @@ export function PropFormDialog({
         prompt: prompt || undefined,
         imageUrl: imageUrl || undefined,
       })
+      onOpenChange(false)
     } catch (err) {
       setError((err as Error).message)
     } finally {
