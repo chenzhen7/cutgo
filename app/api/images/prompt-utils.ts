@@ -9,7 +9,7 @@ export function buildImagePrompt(
   let basePrompt: string;
 
   if (content) {
-    basePrompt = `分镜描述：${content}\n画面提示词：${prompt ?? ""}`;
+    basePrompt = `画面提示词：${prompt ?? ""}`;
   } else {
     basePrompt = prompt ?? "";
   }
