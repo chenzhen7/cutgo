@@ -3,6 +3,16 @@ import { prisma } from "@/lib/db"
 import { throwCutGoError, withError } from "@/lib/api-error"
 import { buildEpisodeAssetData, extractEpisodeAssetIds } from "@/lib/utils"
 
+function serializeEpisodeWithAssets(episode: {
+  episodeAssets: { assetType: string; assetId: string }[]
+} & Record<string, unknown>) {
+  return {
+    ...episode,
+    ...extractEpisodeAssetIds(episode.episodeAssets),
+    episodeAssets: undefined,
+  }
+}
+
 export const PATCH = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -48,11 +58,16 @@ export const PATCH = withError(async (
     ])
   }
 
-  return NextResponse.json({
-    ...episode,
-    ...extractEpisodeAssetIds(episode.episodeAssets),
-    episodeAssets: undefined,
+  const refreshedEpisode = await prisma.episode.findUnique({
+    where: { id },
+    include: { episodeAssets: true },
   })
+
+  if (!refreshedEpisode) {
+    throwCutGoError("NOT_FOUND", "分集不存在")
+  }
+
+  return NextResponse.json(serializeEpisodeWithAssets(refreshedEpisode))
 })
 
 export const DELETE = withError(async (
@@ -71,6 +86,7 @@ export const DELETE = withError(async (
   const remaining = await prisma.episode.findMany({
     where: { projectId: episode.projectId },
     orderBy: [{ index: "asc" }, { createdAt: "asc" }],
+    include: { episodeAssets: true },
   })
 
   // 维护 index 连续性
@@ -84,5 +100,5 @@ export const DELETE = withError(async (
     }
   }
 
-  return NextResponse.json(remaining)
+  return NextResponse.json(remaining.map(serializeEpisodeWithAssets))
 })
