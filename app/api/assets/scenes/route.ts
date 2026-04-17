@@ -20,7 +20,13 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   const scene = await prisma.assetScene.create({
-    data: { projectId, ...data },
+    data: {
+      projectId,
+      ...data,
+      imageStatus: data.imageUrl ? "completed" : "idle",
+      imageTaskId: null,
+      imageErrorMessage: null,
+    },
   })
 
   return NextResponse.json(scene, { status: 201 })

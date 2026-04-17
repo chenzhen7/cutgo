@@ -1,97 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-import { createRunningAiTask, markAiTaskFailed, markAiTaskSucceeded } from "@/lib/ai-task-service"
-import { callImage } from "@/lib/ai/image"
-import { buildMultiGridPrompt, buildImagePrompt } from "@/app/api/images/prompt-utils"
-import { CutGoError, throwCutGoError, withError } from "@/lib/api-error"
-
-async function generateForShot(
-  projectId: string,
-  shot: {
-    id: string
-    content: string | null
-    prompt: string
-    promptEnd: string | null
-    imageType: string
-    gridPrompts: string | null
-    gridLayout: string | null
-    negativePrompt: string | null
-  },
-  aspectRatio: string,
-  resolution: string,
-  stylePreset: string | null
-) {
-  const neg = shot.negativePrompt ?? undefined
-
-  if (shot.imageType === "first_last" && shot.promptEnd) {
-    const promptStart = buildImagePrompt(shot.content, shot.prompt, undefined, stylePreset)
-    const promptEndGen = buildImagePrompt(shot.content, shot.promptEnd, undefined, stylePreset)
-    const [r1, r2] = await Promise.all([
-      callImage({
-        prompt: promptStart,
-        projectId,
-        scope: "shot",
-        negativePrompt: neg,
-        aspectRatio,
-        resolution,
-      }),
-      callImage({
-        prompt: promptEndGen,
-        projectId,
-        scope: "shot",
-        negativePrompt: neg,
-        aspectRatio,
-        resolution,
-      }),
-    ])
-    const firstUrl = Array.isArray(r1) ? r1[0].url : r1.url
-    const lastUrl = Array.isArray(r2) ? r2[0].url : r2.url
-    await prisma.shot.update({
-      where: { id: shot.id },
-      data: { imageUrl: firstUrl, imageUrls: JSON.stringify([firstUrl, lastUrl]) },
-    })
-    return { shotId: shot.id, imageUrl: firstUrl, imageUrls: [firstUrl, lastUrl], status: "success" as const }
-  }
-
-  if (shot.imageType === "multi_grid" && shot.gridPrompts) {
-    let gridPrompts: string[] = []
-    try { gridPrompts = JSON.parse(shot.gridPrompts) } catch { /* empty */ }
-    if (gridPrompts.length > 0) {
-      const combinedPrompt = buildMultiGridPrompt(shot.content, gridPrompts, shot.gridLayout, undefined, stylePreset)
-
-      const result = await callImage({
-        prompt: combinedPrompt,
-        projectId,
-        scope: "shot",
-        negativePrompt: neg,
-        aspectRatio,
-        resolution,
-      })
-      const imageUrl = Array.isArray(result) ? result[0].url : result.url
-      await prisma.shot.update({
-        where: { id: shot.id },
-        data: { imageUrl, imageUrls: null },
-      })
-      return { shotId: shot.id, imageUrl, imageUrls: [imageUrl], status: "success" as const }
-    }
-  }
-
-  const finalPrompt = buildImagePrompt(shot.content, shot.prompt, undefined, stylePreset)
-  const result = await callImage({
-    prompt: finalPrompt,
-    projectId,
-    scope: "shot",
-    negativePrompt: neg,
-    aspectRatio,
-    resolution,
-  })
-  const imageUrl = Array.isArray(result) ? result[0].url : result.url
-  await prisma.shot.update({
-    where: { id: shot.id },
-    data: { imageUrl },
-  })
-  return { shotId: shot.id, imageUrl, status: "success" as const }
-}
+import { throwCutGoError, withError } from "@/lib/api-error"
+import { submitBatchShotImageTasks } from "@/lib/image-task-service"
 
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
@@ -101,82 +10,15 @@ export const POST = withError(async (request: NextRequest) => {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
   }
 
-  const project = await prisma.project.findUnique({ where: { id: projectId } })
-  if (!project) {
-    throwCutGoError("NOT_FOUND", "Project not found")
-  }
-
-  const where: Record<string, unknown> = { episode: { projectId } }
-  if (episodeId) where.episodeId = episodeId
-  
-  if (shotIds && Array.isArray(shotIds) && shotIds.length > 0) {
-    where.id = { in: shotIds }
-  } else if (mode === "missing_only") {
-    where.imageUrl = null
-  }
-
-  const shots = await prisma.shot.findMany({
-    where,
-    orderBy: [{ episodeId: "asc" }, { index: "asc" }],
-    select: {
-      id: true,
-      content: true,
-      prompt: true,
-      promptEnd: true,
-      imageType: true,
-      gridPrompts: true,
-      gridLayout: true,
-      negativePrompt: true,
-    },
-  })
-
-  let episodeInfo = ""
-  if (episodeId) {
-    const ep = await prisma.episode.findUnique({ where: { id: episodeId } })
-    if (ep) episodeInfo = ` 第${ep.index + 1}集 ${ep.title}`
-  }
-
-  const task = await createRunningAiTask({
+  const result = await submitBatchShotImageTasks({
     projectId,
-    episodeId: episodeId || null,
-    targetInfo: episodeInfo,
-    taskType: "image_generate",
+    episodeId,
+    mode,
+    shotIds,
   })
 
-  try {
-    const results: { shotId: string; imageUrl?: string; imageUrls?: string[]; status: "success" | "failed" }[] = []
-    let success = 0
-    let failed = 0
-
-    for (const shot of shots) {
-      try {
-        const result = await generateForShot(projectId, shot, project.aspectRatio, project.resolution, project.stylePreset)
-        results.push(result)
-        success++
-      } catch {
-        results.push({ shotId: shot.id, status: "failed" })
-        failed++
-      }
-    }
-
-    if (failed > 0) {
-      await markAiTaskFailed(task.id, {
-        code: "PARTIAL_FAILED",
-        message: `批量生图完成，但有 ${failed}/${shots.length} 个镜头失败`,
-      })
-    } else {
-      await markAiTaskSucceeded(task.id)
-    }
-
-    return NextResponse.json({
-      results,
-      stats: { total: shots.length, success, failed },
-    })
-  } catch (err) {
-    await markAiTaskFailed(task.id, err)
-    if (err instanceof CutGoError) {
-      throw err
-    }
-    throwCutGoError("INTERNAL", err instanceof Error ? err.message : "Batch image generation failed")
-  }
+  return NextResponse.json({
+    success: true,
+    ...result,
+  })
 })

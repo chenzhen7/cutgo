@@ -109,6 +109,9 @@ export interface AssetCharacter {
   gender: string | null
   prompt: string | null
   imageUrl: string | null
+  imageStatus: ImageStatus
+  imageTaskId: string | null
+  imageErrorMessage: string | null
   seed: number | null
   locked: boolean
   createdAt: string
@@ -121,6 +124,9 @@ export interface AssetScene {
   name: string
   prompt: string | null
   imageUrl: string | null
+  imageStatus: ImageStatus
+  imageTaskId: string | null
+  imageErrorMessage: string | null
   tags: string | null
   createdAt: string
   updatedAt: string
@@ -132,6 +138,9 @@ export interface AssetProp {
   name: string
   prompt: string | null
   imageUrl: string | null
+  imageStatus: ImageStatus
+  imageTaskId: string | null
+  imageErrorMessage: string | null
   createdAt: string
   updatedAt: string
 }
@@ -387,6 +396,7 @@ export const DEFAULT_NEGATIVE_PROMPTS =
 export type ScriptShotPlanStatus = "draft" | "generated" | "edited"
 
 export type ImageType = "keyframe" | "first_last" | "multi_grid"
+export type ImageStatus = "idle" | "generating" | "completed" | "error"
 export type GridLayout = "2x2" | "1x3" | "2x3"
 
 export const IMAGE_TYPE_OPTIONS: { value: ImageType; label: string; description: string }[] = [
@@ -410,6 +420,9 @@ export interface Shot {
   negativePrompt: string | null
   duration: number
   imageUrl: string | null
+  imageStatus: ImageStatus
+  imageTaskId: string | null
+  imageErrorMessage: string | null
   imageType: ImageType
   imageUrls: string | null
   promptEnd: string | null
@@ -468,6 +481,9 @@ export interface ShotInput {
   duration?: number
   imageType?: ImageType | null
   imageUrl?: string | null
+  imageStatus?: ImageStatus | null
+  imageTaskId?: string | null
+  imageErrorMessage?: string | null
   imageUrls?: string | null
   promptEnd?: string | null
   gridLayout?: GridLayout | null

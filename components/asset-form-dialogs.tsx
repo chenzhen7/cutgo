@@ -140,35 +140,31 @@ function GenerateImageButton({
   /** 生成前先把当前表单写入服务端（用户可能已改提示词等） */
   beforeGenerate: () => Promise<void>
 }) {
-  const { setGeneratingAsset, fetchAssets, generatingAssets } = useAssetStore()
+  const { fetchAssets, generatingAssets } = useAssetStore()
   const isGenerating = generatingAssets[assetId]
 
   const handleGenerate = async () => {
     if (isGenerating) return
-    setGeneratingAsset(assetId, true)
     try {
       await beforeGenerate()
     } catch (err) {
-      setGeneratingAsset(assetId, false)
       toast.error(err instanceof ApiError ? err.message : (err as Error).message || "保存失败，无法开始生成")
       return
     }
-    toast.success("已开始生成图片")
     try {
-      const res = await apiFetch<{ success: boolean; imageUrl: string }>("/api/assets/generate-images", {
+      const res = await apiFetch<{ success: boolean; asset: { imageUrl: string | null } }>("/api/assets/generate-images", {
         method: "POST",
         body: { type: assetType, id: assetId },
       })
       if (res.success) {
         await fetchAssets(projectId)
-        onSuccess?.(res.imageUrl)
+        onSuccess?.(res.asset.imageUrl || "")
+        toast.success("已提交图片生成任务")
       } else {
         toast.error("图片生成失败")
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "提交失败，请稍后重试")
-    } finally {
-      setGeneratingAsset(assetId, false)
     }
   }
 
@@ -220,6 +216,9 @@ export function CharacterFormDialog({
   const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const latestCharacter = useAssetStore((state) =>
+    character ? state.characters.find((item) => item.id === character.id) || character : null
+  )
 
   useEffect(() => {
     if (character) {
@@ -237,6 +236,12 @@ export function CharacterFormDialog({
     }
     setError("")
   }, [character, open])
+
+  useEffect(() => {
+    if (latestCharacter && open) {
+      setImageUrl(latestCharacter.imageUrl || "")
+    }
+  }, [latestCharacter, open])
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -279,8 +284,7 @@ export function CharacterFormDialog({
     }
   }
 
-  const { generatingAssets } = useAssetStore()
-  const isGenerating = character ? generatingAssets[character.id] : false
+  const isGenerating = latestCharacter?.imageStatus === "generating"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -390,6 +394,9 @@ export function SceneFormDialog({
   const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const latestScene = useAssetStore((state) =>
+    scene ? state.scenes.find((item) => item.id === scene.id) || scene : null
+  )
 
   useEffect(() => {
     if (scene) {
@@ -405,6 +412,12 @@ export function SceneFormDialog({
     }
     setError("")
   }, [scene, open])
+
+  useEffect(() => {
+    if (latestScene && open) {
+      setImageUrl(latestScene.imageUrl || "")
+    }
+  }, [latestScene, open])
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -445,8 +458,7 @@ export function SceneFormDialog({
     }
   }
 
-  const { generatingAssets } = useAssetStore()
-  const isGenerating = scene ? generatingAssets[scene.id] : false
+  const isGenerating = latestScene?.imageStatus === "generating"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -535,6 +547,9 @@ export function PropFormDialog({
   const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const latestProp = useAssetStore((state) =>
+    prop ? state.props.find((item) => item.id === prop.id) || prop : null
+  )
 
   useEffect(() => {
     if (prop) {
@@ -548,6 +563,12 @@ export function PropFormDialog({
     }
     setError("")
   }, [prop, open])
+
+  useEffect(() => {
+    if (latestProp && open) {
+      setImageUrl(latestProp.imageUrl || "")
+    }
+  }, [latestProp, open])
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -586,8 +607,7 @@ export function PropFormDialog({
     }
   }
 
-  const { generatingAssets } = useAssetStore()
-  const isGenerating = prop ? generatingAssets[prop.id] : false
+  const isGenerating = latestProp?.imageStatus === "generating"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

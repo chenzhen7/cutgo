@@ -12,6 +12,7 @@ export async function PATCH(
   const updateData: Record<string, unknown> = {}
   const fields = [
     "content", "prompt", "negativePrompt", "duration", "imageUrl",
+    "imageStatus", "imageTaskId", "imageErrorMessage",
     "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
     "scriptLineIds", "dialogueText", "actionNote",
     "videoUrl", "videoStatus", "videoPrompt", "videoDuration", "videoTaskId",
@@ -21,6 +22,16 @@ export async function PATCH(
     if (body[field] !== undefined) {
       updateData[field] = body[field]
     }
+  }
+
+  if (body.imageUrl !== undefined && body.imageStatus === undefined) {
+    updateData.imageStatus = body.imageUrl ? "completed" : "idle"
+  }
+  if (body.imageUrl !== undefined && body.imageTaskId === undefined) {
+    updateData.imageTaskId = null
+  }
+  if (body.imageUrl !== undefined && body.imageErrorMessage === undefined) {
+    updateData.imageErrorMessage = null
   }
 
   const shot = await prisma.shot.update({

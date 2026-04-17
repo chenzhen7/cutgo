@@ -98,6 +98,11 @@ model AssetCharacter {
   prompt      String?
   /// 立绘/参考图 URL
   imageUrl    String?
+  /// idle | generating | completed | error
+  imageStatus String  @default("idle")
+  /// 图片生成异步任务 ID（用于轮询进度）
+  imageTaskId String?
+  imageErrorMessage String?
   /// 图像生成随机种子（可空）
   seed        Int?
   /// 是否锁定不再自动改写
@@ -120,6 +125,11 @@ model AssetScene {
   /// 场景提示词
   prompt      String?
   imageUrl    String?
+  /// idle | generating | completed | error
+  imageStatus String  @default("idle")
+  /// 图片生成异步任务 ID（用于轮询进度）
+  imageTaskId String?
+  imageErrorMessage String?
   /// 标签
   tags        String?
 
@@ -140,6 +150,11 @@ model AssetProp {
   /// 道具提示词
   prompt      String?
   imageUrl    String?
+  /// idle | generating | completed | error
+  imageStatus String  @default("idle")
+  /// 图片生成异步任务 ID（用于轮询进度）
+  imageTaskId String?
+  imageErrorMessage String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -199,6 +214,11 @@ model Shot {
   /// 镜头时长
   duration       Float  @default(3)
   imageUrl       String?
+  /// idle | generating | completed | error
+  imageStatus    String @default("idle")
+  /// 图片生成异步任务 ID（用于轮询进度）
+  imageTaskId    String?
+  imageErrorMessage String?
   /// keyframe | first_last | multi_grid
   imageType      String  @default("keyframe")
   /// first_last：首尾帧 URL 的 JSON 数组

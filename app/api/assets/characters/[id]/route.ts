@@ -21,9 +21,20 @@ export const PATCH = withError(async (
     }
   }
 
+  const updateData = { ...body } as Record<string, unknown>
+  if (body.imageUrl !== undefined && body.imageStatus === undefined) {
+    updateData.imageStatus = body.imageUrl ? "completed" : "idle"
+  }
+  if (body.imageUrl !== undefined && body.imageTaskId === undefined) {
+    updateData.imageTaskId = null
+  }
+  if (body.imageUrl !== undefined && body.imageErrorMessage === undefined) {
+    updateData.imageErrorMessage = null
+  }
+
   const character = await prisma.assetCharacter.update({
     where: { id },
-    data: body,
+    data: updateData,
   })
 
   return NextResponse.json(character)

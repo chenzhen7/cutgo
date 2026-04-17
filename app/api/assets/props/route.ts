@@ -20,7 +20,13 @@ export const POST = withError(async (request: NextRequest) => {
   }
 
   const prop = await prisma.assetProp.create({
-    data: { projectId, ...data },
+    data: {
+      projectId,
+      ...data,
+      imageStatus: data.imageUrl ? "completed" : "idle",
+      imageTaskId: null,
+      imageErrorMessage: null,
+    },
   })
 
   return NextResponse.json(prop, { status: 201 })

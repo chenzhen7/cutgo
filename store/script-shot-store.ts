@@ -20,6 +20,8 @@ let scriptShotPlansFetchToken = 0
 
 const POLL_INTERVAL_MS = 10000
 const MAX_POLL_ATTEMPTS = 60 // 最长 10 分钟
+let imagePollTimer: ReturnType<typeof setTimeout> | null = null
+let imagePollProjectId: string | null = null
 
 function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void {
   const updatePollingState = (shotData: Shot | null, statusOverride?: "error") => {
@@ -76,6 +78,52 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
 
 type ShotWithPlan = { shot: Shot; scriptShotPlan: ScriptShotPlan }
 
+function collectGeneratingShotIds(plans: ScriptShotPlan[]): Set<string> {
+  return new Set(
+    plans.flatMap((plan) =>
+      plan.shots.filter((shot) => shot.imageStatus === "generating").map((shot) => shot.id)
+    )
+  )
+}
+
+function stopImagePolling() {
+  if (imagePollTimer) {
+    clearTimeout(imagePollTimer)
+    imagePollTimer = null
+  }
+  imagePollProjectId = null
+}
+
+function scheduleImagePolling(projectId: string) {
+  if (!projectId) return
+
+  if (imagePollTimer && imagePollProjectId === projectId) {
+    return
+  }
+
+  if (imagePollProjectId && imagePollProjectId !== projectId) {
+    stopImagePolling()
+  }
+
+  imagePollProjectId = projectId
+  imagePollTimer = setTimeout(async () => {
+    imagePollTimer = null
+
+    try {
+      await useScriptShotsStore.getState().fetchScriptShotPlans(projectId)
+    } catch {
+      // 忽略轮询错误
+    }
+
+    const store = useScriptShotsStore.getState()
+    if (store.imageGeneratingIds.size > 0) {
+      scheduleImagePolling(projectId)
+    } else {
+      stopImagePolling()
+    }
+  }, POLL_INTERVAL_MS)
+}
+
 function updateShotInPlans(plans: ScriptShotPlan[], episodeId: string, shotId: string, updatedShot: Shot): ScriptShotPlan[] {
   return plans.map((sb) =>
     sb.id === episodeId
@@ -90,6 +138,10 @@ function flattenShotsByActiveEpisode(scriptShotPlans: ScriptShotPlan[], activeEp
     : scriptShotPlans
 
   return episodeSbs.flatMap((sb) => sb.shots.map((shot) => ({ shot, scriptShotPlan: sb })))
+}
+
+function findProjectIdByEpisode(episodes: Episode[], episodeId: string): string {
+  return episodes.find((episode) => episode.id === episodeId)?.projectId || ""
 }
 
 interface ScriptShotState {
@@ -210,7 +262,15 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       if (currentFetchToken !== scriptShotPlansFetchToken) {
         return
       }
-      set({ scriptShotPlans: data || [] })
+      const plans = data || []
+      const imageGeneratingIds = collectGeneratingShotIds(plans)
+      set({ scriptShotPlans: plans, imageGeneratingIds })
+
+      if (imageGeneratingIds.size > 0) {
+        scheduleImagePolling(projectId)
+      } else if (imagePollProjectId === projectId) {
+        stopImagePolling()
+      }
     } catch {
       // 非关键数据加载，静默失败
     }
@@ -248,8 +308,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         method: "POST",
         body: { projectId, episodeIds, imageType, gridLayout },
       })
+      const scriptShotPlans = data.scriptShotPlans || []
       set({
-        scriptShotPlans: data.scriptShotPlans || [],
+        scriptShotPlans,
+        imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
         generateStatus: "completed",
         generateProgress: null,
       })
@@ -279,8 +341,10 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       method: "PATCH",
       body: data,
     })
+    const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated)
     set({
-      scriptShotPlans: updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated),
+      scriptShotPlans,
+      imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
 
@@ -288,10 +352,12 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const shots = await apiFetch<Shot[]>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
       method: "DELETE",
     })
+    const scriptShotPlans = get().scriptShotPlans.map((sb) =>
+      sb.id === episodeId ? { ...sb, shots } : sb
+    )
     set({
-      scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === episodeId ? { ...sb, shots } : sb
-      ),
+      scriptShotPlans,
+      imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
 
@@ -317,10 +383,12 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       method: "PUT",
       body: { orderedIds },
     })
+    const scriptShotPlans = get().scriptShotPlans.map((sb) =>
+      sb.id === episodeId ? { ...sb, shots } : sb
+    )
     set({
-      scriptShotPlans: get().scriptShotPlans.map((sb) =>
-        sb.id === episodeId ? { ...sb, shots } : sb
-      ),
+      scriptShotPlans,
+      imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
 
@@ -332,12 +400,14 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         body: { shotId, sourceEpisodeId, targetEpisodeId, targetIndex },
       }
     )
-    set({
-      scriptShotPlans: get().scriptShotPlans.map((sb) => {
+    const scriptShotPlans = get().scriptShotPlans.map((sb) => {
         if (sb.id === sourceEpisodeId) return { ...sb, shots: source.shots }
         if (sb.id === targetEpisodeId) return { ...sb, shots: target.shots }
         return sb
-      }),
+      })
+    set({
+      scriptShotPlans,
+      imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
 
@@ -402,40 +472,36 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       }
     }
 
-    const generating = new Set(get().imageGeneratingIds)
-    generating.add(shotId)
-    set({ imageGeneratingIds: generating })
+    const body: Record<string, unknown> = {
+      shotId,
+      imageType: shot.imageType || "keyframe",
+      content: shot.content,
+      prompt: shot.prompt,
+      promptEnd: shot.promptEnd,
+      negativePrompt: shot.negativePrompt,
+      referenceImages,
+      refLabels,
+    }
 
-    try {
-      const body: Record<string, unknown> = {
-        shotId,
-        imageType: shot.imageType || "keyframe",
-        content: shot.content,
-        prompt: shot.prompt,
-        promptEnd: shot.promptEnd,
-        negativePrompt: shot.negativePrompt,
-        referenceImages,
-        refLabels,
-      }
+    if (shot.imageType === "multi_grid") {
+      body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
+      body.gridLayout = shot.gridLayout || "2x2"
+    }
 
-      if (shot.imageType === "multi_grid") {
-        body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
-        body.gridLayout = shot.gridLayout || "2x2"
-      }
+    const data = await apiFetch<{ shot: Shot }>("/api/images/generate", {
+      method: "POST",
+      body,
+    })
+    const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, data.shot)
+    const imageGeneratingIds = collectGeneratingShotIds(scriptShotPlans)
 
-      const data = await apiFetch<{ shot: Shot }>("/api/images/generate", {
-        method: "POST",
-        body,
-      })
-      const updatedShot = data.shot
+    set({
+      scriptShotPlans,
+      imageGeneratingIds,
+    })
 
-      set({
-        scriptShotPlans: updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updatedShot),
-      })
-    } finally {
-      const after = new Set(get().imageGeneratingIds)
-      after.delete(shotId)
-      set({ imageGeneratingIds: after })
+    if (imageGeneratingIds.size > 0) {
+      scheduleImagePolling(findProjectIdByEpisode(get().episodes, episodeId))
     }
   },
 
@@ -452,7 +518,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const targets = plans.flatMap((plan) =>
       plan.shots.filter((s) => {
         if (shotIds) return shotIds.includes(s.id)
-        if (mode === "missing_only") return !s.imageUrl
+        if (mode === "missing_only") return !s.imageUrl && s.imageStatus !== "generating"
         return true
       }).map((s) => ({ episodeId: plan.id, shot: s }))
     )
@@ -464,20 +530,17 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
 
     set({ batchImageStatus: "generating", batchImageProgress: { current: 0, total: targets.length } })
 
-    let completed = 0
-    const total = targets.length
+    await apiFetch("/api/images/generate-batch", {
+      method: "POST",
+      body: {
+        projectId,
+        episodeId,
+        mode,
+        shotIds,
+      },
+    })
 
-    await Promise.all(
-      targets.map(async (target) => {
-        try {
-          await get().generateImage(target.episodeId, target.shot.id)
-        } catch {
-          // 单镜失败不中断批量
-        }
-        completed++
-        set({ batchImageProgress: { current: completed, total } })
-      })
-    )
+    await get().fetchScriptShotPlans(projectId)
 
     set({ batchImageStatus: "completed" })
     setTimeout(() => {
@@ -486,7 +549,13 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   clearImage: async (episodeId, shotId) => {
-    await get().updateShot(episodeId, shotId, { imageUrl: null, imageUrls: null })
+    await get().updateShot(episodeId, shotId, {
+      imageUrl: null,
+      imageUrls: null,
+      imageStatus: "idle",
+      imageTaskId: null,
+      imageErrorMessage: null,
+    })
   },
 
   generateVideo: async (episodeId, shotId) => {
@@ -529,7 +598,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       ? scriptShotPlans.filter((sb) => sb.episodeId === episodeId)
       : scriptShotPlans
 
-    let targets = plans.flatMap((plan) =>
+    const targets = plans.flatMap((plan) =>
       plan.shots.filter((s) => {
         if (!s.imageUrl) return false
         if (shotIds) return shotIds.includes(s.id)
@@ -647,6 +716,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   },
 
   reset: () => {
+    stopImagePolling()
     set({
       scriptShotPlans: [],
       episodes: [],

@@ -9,6 +9,64 @@ import type {
 } from "@/lib/types"
 import { apiFetch } from "@/lib/api-client"
 
+const ASSET_POLL_INTERVAL_MS = 10000
+
+let assetPollTimer: ReturnType<typeof setTimeout> | null = null
+let assetPollProjectId: string | null = null
+
+function collectGeneratingAssets(
+  characters: AssetCharacter[],
+  scenes: AssetScene[],
+  props: AssetProp[]
+): Record<string, boolean> {
+  const generating: Record<string, boolean> = {}
+
+  for (const asset of [...characters, ...scenes, ...props]) {
+    if (asset.imageStatus === "generating") {
+      generating[asset.id] = true
+    }
+  }
+
+  return generating
+}
+
+function stopAssetPolling() {
+  if (assetPollTimer) {
+    clearTimeout(assetPollTimer)
+    assetPollTimer = null
+  }
+  assetPollProjectId = null
+}
+
+function scheduleAssetPolling(projectId: string) {
+  if (assetPollTimer && assetPollProjectId === projectId) {
+    return
+  }
+
+  if (assetPollProjectId && assetPollProjectId !== projectId) {
+    stopAssetPolling()
+  }
+
+  assetPollProjectId = projectId
+  assetPollTimer = setTimeout(async () => {
+    assetPollTimer = null
+
+    const store = useAssetStore.getState()
+    try {
+      await store.fetchAssets(projectId)
+    } catch {
+      // ignore polling errors
+    }
+
+    const nextStore = useAssetStore.getState()
+    if (Object.keys(nextStore.generatingAssets).length > 0) {
+      scheduleAssetPolling(projectId)
+    } else {
+      stopAssetPolling()
+    }
+  }, ASSET_POLL_INTERVAL_MS)
+}
+
 interface AssetState {
   characters: AssetCharacter[]
   scenes: AssetScene[]
@@ -16,7 +74,6 @@ interface AssetState {
   generatingAssets: Record<string, boolean>
 
   fetchAssets: (projectId: string) => Promise<void>
-  setGeneratingAsset: (id: string, isGenerating: boolean) => void
 
   addCharacter: (projectId: string, data: AssetCharacterInput) => Promise<void>
   updateCharacter: (id: string, data: Partial<AssetCharacterInput>) => Promise<void>
@@ -49,28 +106,28 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   props: [],
   generatingAssets: {},
 
-  setGeneratingAsset: (id, isGenerating) => {
-    set((state) => {
-      const newGenerating = { ...state.generatingAssets }
-      if (isGenerating) {
-        newGenerating[id] = true
-      } else {
-        delete newGenerating[id]
-      }
-      return { generatingAssets: newGenerating }
-    })
-  },
-
   fetchAssets: async (projectId) => {
     try {
       const data = await apiFetch<{ characters?: AssetCharacter[]; scenes?: AssetScene[]; props?: AssetProp[] }>(
         `/api/assets?projectId=${projectId}`
       )
+      const characters = data.characters || []
+      const scenes = data.scenes || []
+      const props = data.props || []
+      const generatingAssets = collectGeneratingAssets(characters, scenes, props)
+
       set({
-        characters: data.characters || [],
-        scenes: data.scenes || [],
-        props: data.props || [],
+        characters,
+        scenes,
+        props,
+        generatingAssets,
       })
+
+      if (Object.keys(generatingAssets).length > 0) {
+        scheduleAssetPolling(projectId)
+      } else if (assetPollProjectId === projectId) {
+        stopAssetPolling()
+      }
     } catch {
       // 非关键数据加载，静默失败
     }
@@ -89,17 +146,35 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       method: "PATCH",
       body: data,
     })
-    set({ characters: get().characters.map((c) => (c.id === id ? updated : c)) })
+    set((state) => {
+      const characters = state.characters.map((c) => (c.id === id ? updated : c))
+      return {
+        characters,
+        generatingAssets: collectGeneratingAssets(characters, state.scenes, state.props),
+      }
+    })
   },
 
   deleteCharacter: async (id) => {
     await apiFetch(`/api/assets/characters/${id}`, { method: "DELETE" })
-    set({ characters: get().characters.filter((c) => c.id !== id) })
+    set((state) => {
+      const characters = state.characters.filter((c) => c.id !== id)
+      return {
+        characters,
+        generatingAssets: collectGeneratingAssets(characters, state.scenes, state.props),
+      }
+    })
   },
 
   deleteCharacters: async (ids) => {
     await Promise.all(ids.map((id) => apiFetch(`/api/assets/characters/${id}`, { method: "DELETE" })))
-    set({ characters: get().characters.filter((c) => !ids.includes(c.id)) })
+    set((state) => {
+      const characters = state.characters.filter((c) => !ids.includes(c.id))
+      return {
+        characters,
+        generatingAssets: collectGeneratingAssets(characters, state.scenes, state.props),
+      }
+    })
   },
 
   addScene: async (projectId, data) => {
@@ -115,17 +190,35 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       method: "PATCH",
       body: data,
     })
-    set({ scenes: get().scenes.map((s) => (s.id === id ? updated : s)) })
+    set((state) => {
+      const scenes = state.scenes.map((s) => (s.id === id ? updated : s))
+      return {
+        scenes,
+        generatingAssets: collectGeneratingAssets(state.characters, scenes, state.props),
+      }
+    })
   },
 
   deleteScene: async (id) => {
     await apiFetch(`/api/assets/scenes/${id}`, { method: "DELETE" })
-    set({ scenes: get().scenes.filter((s) => s.id !== id) })
+    set((state) => {
+      const scenes = state.scenes.filter((s) => s.id !== id)
+      return {
+        scenes,
+        generatingAssets: collectGeneratingAssets(state.characters, scenes, state.props),
+      }
+    })
   },
 
   deleteScenes: async (ids) => {
     await Promise.all(ids.map((id) => apiFetch(`/api/assets/scenes/${id}`, { method: "DELETE" })))
-    set({ scenes: get().scenes.filter((s) => !ids.includes(s.id)) })
+    set((state) => {
+      const scenes = state.scenes.filter((s) => !ids.includes(s.id))
+      return {
+        scenes,
+        generatingAssets: collectGeneratingAssets(state.characters, scenes, state.props),
+      }
+    })
   },
 
   addProp: async (projectId, data) => {
@@ -141,17 +234,35 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       method: "PATCH",
       body: data,
     })
-    set({ props: get().props.map((p) => (p.id === id ? updated : p)) })
+    set((state) => {
+      const props = state.props.map((p) => (p.id === id ? updated : p))
+      return {
+        props,
+        generatingAssets: collectGeneratingAssets(state.characters, state.scenes, props),
+      }
+    })
   },
 
   deleteProp: async (id) => {
     await apiFetch(`/api/assets/props/${id}`, { method: "DELETE" })
-    set({ props: get().props.filter((p) => p.id !== id) })
+    set((state) => {
+      const props = state.props.filter((p) => p.id !== id)
+      return {
+        props,
+        generatingAssets: collectGeneratingAssets(state.characters, state.scenes, props),
+      }
+    })
   },
 
   deleteProps: async (ids) => {
     await Promise.all(ids.map((id) => apiFetch(`/api/assets/props/${id}`, { method: "DELETE" })))
-    set({ props: get().props.filter((p) => !ids.includes(p.id)) })
+    set((state) => {
+      const props = state.props.filter((p) => !ids.includes(p.id))
+      return {
+        props,
+        generatingAssets: collectGeneratingAssets(state.characters, state.scenes, props),
+      }
+    })
   },
 
   assetStats: () => {
@@ -165,6 +276,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   },
 
   reset: () => {
+    stopAssetPolling()
     set({
       characters: [],
       scenes: [],

@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   Loader2,
-  Sparkles,
   Trash2,
   Lock,
   Unlock,
@@ -548,7 +547,7 @@ function GenerateAssetImagesDialog({
   props: AssetProp[]
   projectId: string
 }) {
-  const { setGeneratingAsset, fetchAssets, generatingAssets } = useAssetStore()
+  const { fetchAssets, generatingAssets } = useAssetStore()
   const buildItems = useCallback((): GenerateItem[] => {
     const charItems: GenerateItem[] = characters.map((c) => ({
       type: "character" as const,
@@ -577,15 +576,9 @@ function GenerateAssetImagesDialog({
     return [...charItems, ...sceneItems, ...propItems]
   }, [characters, scenes, props, generatingAssets])
 
-  const [items, setItems] = useState<GenerateItem[]>([])
+  const [draftItems, setDraftItems] = useState<GenerateItem[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setItems(buildItems())
-      setSubmitting(false)
-    }
-  }, [open, buildItems])
+  const items = draftItems ?? buildItems()
 
   const selectedItems = items.filter((i) => i.selected)
 
@@ -594,12 +587,12 @@ function GenerateAssetImagesDialog({
 
   const toggleAll = () => {
     const newVal = !allSelected
-    setItems((prev) => prev.map((i) => (i.isGenerating ? i : { ...i, selected: newVal })))
+    setDraftItems(items.map((i) => (i.isGenerating ? i : { ...i, selected: newVal })))
   }
 
   const toggleItem = (id: string) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id && !i.isGenerating ? { ...i, selected: !i.selected } : i))
+    setDraftItems(
+      items.map((i) => (i.id === id && !i.isGenerating ? { ...i, selected: !i.selected } : i))
     )
   }
 
@@ -608,20 +601,22 @@ function GenerateAssetImagesDialog({
     if (toGenerate.length === 0) return
     
     // 立即关闭弹窗
+    setSubmitting(true)
+    setDraftItems(null)
     onOpenChange(false)
     setSubmitting(false)
-
-    toGenerate.forEach((item) => {
-      setGeneratingAsset(item.id, true)
-    })
+    /*
 
     toast.success(`已开始生成 ${toGenerate.length} 个资产图片`)
 
     // 在后台并行执行生成请求
+    */
+    toast.success(`已提交 ${toGenerate.length} 个资产图片生成任务`)
+
     void Promise.allSettled(
       toGenerate.map(async (item) => {
         try {
-          const res = await apiFetch<{ success: boolean; imageUrl: string }>(`/api/assets/generate-images`, {
+          const res = await apiFetch<{ success: boolean }>(`/api/assets/generate-images`, {
             method: "POST",
             body: { type: item.type, id: item.id },
           })
@@ -635,8 +630,6 @@ function GenerateAssetImagesDialog({
         } catch (e) {
           toast.error(`资产 [${item.name}] 图片生成失败`)
           throw e
-        } finally {
-          setGeneratingAsset(item.id, false)
         }
       })
     )
@@ -658,7 +651,15 @@ function GenerateAssetImagesDialog({
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        if (!submitting) onOpenChange(v)
+        if (!submitting) {
+          if (v) {
+            setDraftItems(buildItems())
+            setSubmitting(false)
+          } else {
+            setDraftItems(null)
+          }
+          onOpenChange(v)
+        }
       }}
     >
       <DialogContent className="sm:max-w-lg">
