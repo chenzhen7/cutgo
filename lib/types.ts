@@ -187,6 +187,7 @@ export interface CreateProjectInput {
   tags?: string
   aspectRatio: string
   resolution: string
+  stylePreset?: string
 }
 
 export interface UpdateProjectInput {

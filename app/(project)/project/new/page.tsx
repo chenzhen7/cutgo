@@ -3,20 +3,17 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Monitor, Smartphone } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  ProjectStyleManagerFields,
+  type ProjectStyleManagerValue,
+} from "@/app/(project)/project/components/project-style-manager-fields"
 import { useProjectStore } from "@/store/project-store"
-import { PLATFORM_PRESETS } from "@/lib/types"
-
-const PLATFORM_ICONS: Record<string, React.ElementType> = {
-  douyin: Smartphone,
-  youtube: Monitor,
-}
 
 export default function NewProjectPage() {
   const router = useRouter()
@@ -25,24 +22,28 @@ export default function NewProjectPage() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [tags, setTags] = useState("")
-  const [presetValue, setPresetValue] = useState("douyin")
+  const [styleValue, setStyleValue] = useState<ProjectStyleManagerValue>({
+    aspectRatio: "9:16",
+    resolution: "1080x1920",
+    stylePreset: null,
+  })
   const [submitting, setSubmitting] = useState(false)
-
-  const selectedPreset = PLATFORM_PRESETS.find(
-    (p) => p.value === presetValue
-  )!
 
   async function handleCreate() {
     if (!name.trim() || submitting) return
+
     setSubmitting(true)
+
     try {
       const project = await createProject({
         name: name.trim(),
         description: description.trim() || undefined,
         tags: tags.trim() || undefined,
-        aspectRatio: selectedPreset.aspectRatio,
-        resolution: selectedPreset.resolution,
+        aspectRatio: styleValue.aspectRatio,
+        resolution: styleValue.resolution,
+        stylePreset: styleValue.stylePreset || undefined,
       })
+
       router.push(`/project/${project.id}`)
     } catch {
       setSubmitting(false)
@@ -52,7 +53,7 @@ export default function NewProjectPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-6 py-4">
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-6 py-4">
           <Link href="/">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
@@ -62,8 +63,7 @@ export default function NewProjectPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-6 py-8 space-y-6">
-        {/* 基本信息 */}
+      <main className="mx-auto max-w-4xl space-y-6 px-6 py-8">
         <Card>
           <CardHeader>
             <CardTitle>基本信息</CardTitle>
@@ -75,9 +75,9 @@ export default function NewProjectPage() {
               </Label>
               <Input
                 id="name"
-                placeholder="例如：龙王回归 第1-10集"
+                placeholder="例如：龙王回归 第 1-10 集"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 maxLength={50}
               />
             </div>
@@ -86,9 +86,9 @@ export default function NewProjectPage() {
               <Label htmlFor="description">项目描述</Label>
               <Textarea
                 id="description"
-                placeholder="简要描述你的短剧内容..."
+                placeholder="简要描述这个项目的内容和定位..."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(event) => setDescription(event.target.value)}
                 rows={3}
                 maxLength={200}
               />
@@ -98,53 +98,27 @@ export default function NewProjectPage() {
               <Label htmlFor="tags">标签</Label>
               <Input
                 id="tags"
-                placeholder="用逗号分隔，如：霸总,甜宠,逆袭"
+                placeholder="用逗号分隔，例如：霸总, 甜宠, 逆袭"
                 value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                onChange={(event) => setTags(event.target.value)}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* 画面规格（画幅与分辨率） */}
         <Card>
           <CardHeader>
-            <CardTitle>画面规格</CardTitle>
+            <CardTitle>视觉风格</CardTitle>
           </CardHeader>
           <CardContent>
-            <RadioGroup
-              value={presetValue}
-              onValueChange={setPresetValue}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-            >
-              {PLATFORM_PRESETS.map((p) => {
-                const Icon = PLATFORM_ICONS[p.value] || Smartphone
-                const isSelected = presetValue === p.value
-                return (
-                  <label
-                    key={p.value}
-                    className={`relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-foreground/20"
-                      }`}
-                  >
-                    <RadioGroupItem
-                      value={p.value}
-                      className="sr-only"
-                    />
-                    <Icon className="h-8 w-8 text-muted-foreground" />
-                    <span className="text-sm font-medium">{p.label}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {p.aspectRatio} · {p.resolution}
-                    </span>
-                  </label>
-                )
-              })}
-            </RadioGroup>
+            <ProjectStyleManagerFields
+              value={styleValue}
+              onChange={setStyleValue}
+              showReferenceUpload={false}
+            />
           </CardContent>
         </Card>
 
-        {/* Submit */}
         <div className="flex items-center gap-3 pb-8">
           <Button
             onClick={handleCreate}

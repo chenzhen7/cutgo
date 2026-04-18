@@ -34,7 +34,7 @@ export const GET = withError(async (request: NextRequest) => {
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
 
-  const { name, description, tags, aspectRatio, resolution } = body
+  const { name, description, tags, aspectRatio, resolution, stylePreset } = body
 
   if (!name || !name.trim()) {
     throwCutGoError("VALIDATION", "项目名称不能为空")
@@ -47,6 +47,10 @@ export const POST = withError(async (request: NextRequest) => {
       tags: tags || null,
       aspectRatio: aspectRatio || "9:16",
       resolution: resolution || "1080x1920",
+      stylePreset:
+        typeof stylePreset === "string" && stylePreset.trim()
+          ? stylePreset.trim()
+          : null,
     },
   })
 

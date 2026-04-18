@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import type { Project } from "@/lib/types"
+import type { CreateProjectInput, Project, UpdateProjectInput } from "@/lib/types"
 import { apiFetch } from "@/lib/api-client"
 
 interface ProjectState {
@@ -8,8 +8,8 @@ interface ProjectState {
   error: string | null
 
   fetchProjects: () => Promise<void>
-  createProject: (data: Record<string, unknown>) => Promise<Project>
-  updateProject: (id: string, data: Record<string, unknown>) => Promise<Project>
+  createProject: (data: CreateProjectInput) => Promise<Project>
+  updateProject: (id: string, data: UpdateProjectInput) => Promise<Project>
   deleteProject: (id: string) => Promise<void>
   getProject: (id: string) => Promise<Project>
 }
