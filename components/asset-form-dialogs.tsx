@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Loader2, Upload, Sparkles } from "lucide-react"
+import { PreviewableImage } from "@/components/ui/previewable-image"
 import { apiFetch, ApiError } from "@/lib/api-client"
 import { useAssetStore } from "@/store/asset-store"
 import type {
@@ -66,49 +67,55 @@ export function ImagePreviewUploader({
     }
   }
 
+  const uploadInputId = `${title}-upload`
+
   return (
     <div className="space-y-2">
-      <Label htmlFor={`${title}-upload`} className="block cursor-pointer">
-        <div className="group relative aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
-          {isGenerating ? (
-            <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
-              <Loader2 className="size-6 animate-spin" />
-              <span className="text-xs">生成中...</span>
-            </div>
-          ) : imageUrl ? (
-            <>
-              <img
-                src={imageUrl}
-                alt={title}
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                {readingFile ? (
-                  <Loader2 className="size-5 text-white animate-spin" />
-                ) : (
-                  <>
-                    <Upload className="size-5 text-white" />
-                    <span className="text-xs text-white">点击更换</span>
-                  </>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors">
+      <div className="group relative aspect-square rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
+        {isGenerating ? (
+          <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+            <Loader2 className="size-6 animate-spin" />
+            <span className="text-xs">生成中...</span>
+          </div>
+        ) : imageUrl ? (
+          <>
+            <PreviewableImage
+              src={imageUrl}
+              alt={title}
+              className="h-full w-full object-cover"
+              title={title}
+            />
+            <label
+              htmlFor={uploadInputId}
+              className="absolute top-2 right-2 z-10 flex items-center justify-center size-8 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-black/70"
+              title="更换图片"
+            >
               {readingFile ? (
-                <Loader2 className="size-6 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               ) : (
-                <>
-                  <Upload className="size-6" />
-                  <span className="text-xs">点击上传</span>
-                </>
+                <Upload className="size-4" />
               )}
-            </div>
-          )}
-        </div>
-      </Label>
+            </label>
+          </>
+        ) : (
+          <label
+            htmlFor={uploadInputId}
+            className="flex flex-col items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full h-full justify-center"
+          >
+            {readingFile ? (
+              <Loader2 className="size-6 animate-spin" />
+            ) : (
+              <>
+                <Upload className="size-6" />
+                <span className="text-xs">点击上传</span>
+              </>
+            )}
+          </label>
+        )}
+      </div>
+
       <Input
-        id={`${title}-upload`}
+        id={uploadInputId}
         type="file"
         accept="image/*"
         className="hidden"
@@ -117,6 +124,7 @@ export function ImagePreviewUploader({
           e.currentTarget.value = ""
         }}
       />
+
       {secondAction && (
         <div className="w-full [&>button]:w-full">{secondAction}</div>
       )}
