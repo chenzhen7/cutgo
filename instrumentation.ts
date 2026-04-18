@@ -1,5 +1,3 @@
-import { failRunningAiTasksOnStartup } from "@/lib/ai-task-service"
-
 let recovered = false
 
 export async function register() {
@@ -9,6 +7,7 @@ export async function register() {
   recovered = true
 
   try {
+    const { failRunningAiTasksOnStartup } = await import("@/lib/ai-task-service")
     const count = await failRunningAiTasksOnStartup()
     if (count > 0) {
       console.warn(`[AiTask Recovery] Marked ${count} running task(s) as failed after restart.`)
