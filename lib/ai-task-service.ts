@@ -7,6 +7,15 @@ export const AI_TASK_STARTUP_RECOVERY_ERROR_CODE = "PROCESS_RESTARTED"
 export const AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE =
   "Task interrupted because the service restarted. Please retry."
 
+export type StartupRecoveryResult = {
+  failedAiTaskCount: number
+  recoveredShotImageCount: number
+  recoveredAssetCharacterImageCount: number
+  recoveredAssetSceneImageCount: number
+  recoveredAssetPropImageCount: number
+  recoveredImageRecordCount: number
+}
+
 type CreateAiTaskInput = {
   projectId: string
   taskType: AiTaskType
@@ -98,17 +107,57 @@ export async function markAiTaskFailed(taskId: string, error: unknown) {
   })
 }
 
-export async function failRunningAiTasksOnStartup() {
+export async function failRunningAiTasksOnStartup(): Promise<StartupRecoveryResult> {
   const now = new Date()
-  const result = await prisma.aiTask.updateMany({
-    where: { status: "running" },
-    data: {
-      status: "failed",
-      errorCode: AI_TASK_STARTUP_RECOVERY_ERROR_CODE,
-      errorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
-      finishedAt: now,
-    },
-  })
+  const [aiTasks, shots, assetCharacters, assetScenes, assetProps] = await prisma.$transaction([
+    prisma.aiTask.updateMany({
+      where: { status: "running" },
+      data: {
+        status: "failed",
+        errorCode: AI_TASK_STARTUP_RECOVERY_ERROR_CODE,
+        errorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
+        finishedAt: now,
+      },
+    }),
+    prisma.shot.updateMany({
+      where: { imageStatus: "generating" },
+      data: {
+        imageStatus: "error",
+        imageErrorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
+      },
+    }),
+    prisma.assetCharacter.updateMany({
+      where: { imageStatus: "generating" },
+      data: {
+        imageStatus: "error",
+        imageErrorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
+      },
+    }),
+    prisma.assetScene.updateMany({
+      where: { imageStatus: "generating" },
+      data: {
+        imageStatus: "error",
+        imageErrorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
+      },
+    }),
+    prisma.assetProp.updateMany({
+      where: { imageStatus: "generating" },
+      data: {
+        imageStatus: "error",
+        imageErrorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
+      },
+    }),
+  ])
 
-  return result.count
+  const recoveredImageRecordCount =
+    shots.count + assetCharacters.count + assetScenes.count + assetProps.count
+
+  return {
+    failedAiTaskCount: aiTasks.count,
+    recoveredShotImageCount: shots.count,
+    recoveredAssetCharacterImageCount: assetCharacters.count,
+    recoveredAssetSceneImageCount: assetScenes.count,
+    recoveredAssetPropImageCount: assetProps.count,
+    recoveredImageRecordCount,
+  }
 }

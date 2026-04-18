@@ -8,9 +8,14 @@ export async function register() {
 
   try {
     const { failRunningAiTasksOnStartup } = await import("@/lib/ai-task-service")
-    const count = await failRunningAiTasksOnStartup()
-    if (count > 0) {
-      console.warn(`[AiTask Recovery] Marked ${count} running task(s) as failed after restart.`)
+    const recovery = await failRunningAiTasksOnStartup()
+    if (recovery.failedAiTaskCount > 0 || recovery.recoveredImageRecordCount > 0) {
+      console.warn(
+        `[AiTask Recovery] Marked ${recovery.failedAiTaskCount} running task(s) as failed after restart. ` +
+          `Recovered image records: shots=${recovery.recoveredShotImageCount}, ` +
+          `characters=${recovery.recoveredAssetCharacterImageCount}, ` +
+          `scenes=${recovery.recoveredAssetSceneImageCount}, props=${recovery.recoveredAssetPropImageCount}.`
+      )
     }
   } catch (error) {
     console.error("[AiTask Recovery] Failed to recover running tasks on startup.", error)
