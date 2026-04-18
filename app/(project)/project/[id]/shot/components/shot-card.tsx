@@ -107,7 +107,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
 
   // 列表模式缩略图宽度：横屏(16:9)用更宽容器，竖屏(9:16)用窄容器，并保持比例
   const containerClassName = aspectRatio === "16:9"
-    ? "relative w-[150px] shrink-0 self-start @[480px]:w-[180px] @[640px]:w-[230px] @[900px]:w-[280px] @[1200px]:w-[340px] aspect-[16/9] transition-all duration-300"
+    ? "relative w-[150px] min-h-[110px] shrink-0 self-start @[480px]:w-[180px] @[640px]:w-[230px] @[640px]:min-h-[130px] @[900px]:w-[280px] @[900px]:min-h-[150px] @[1200px]:w-[340px] aspect-[16/9] transition-all duration-300"
     : "relative w-[80px] shrink-0 self-start @[480px]:w-[105px] @[640px]:w-[130px] @[900px]:w-[160px] @[1200px]:w-[200px] aspect-[9/16] transition-all duration-300"
   const contentClassName = "absolute inset-0 rounded-lg overflow-hidden border bg-muted/20"
 
