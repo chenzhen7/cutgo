@@ -130,7 +130,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
     <TooltipProvider delayDuration={300}>
       <div className="@container bg-card transition-all border-0 border-b last:border-b-0 rounded-none shadow-none">
         {/* Header */}
-        <div className="sticky top-0 z-999 flex items-center gap-2 border-b bg-card px-2.5 py-2 @[640px]:px-3">
+        <div className="sticky top-0 z-50 flex items-center gap-2 border-b bg-card px-2.5 py-2 @[640px]:px-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-medium truncate @[900px]:text-sm">
