@@ -145,17 +145,19 @@ function GenerateImageButton({
   onAfterSubmit?: () => Promise<void>
 }) {
   const { fetchAssets, generatingAssets } = useAssetStore()
+  const [submitting, setSubmitting] = useState(false)
   const effectiveGenerating = isGenerating ?? generatingAssets[assetId]
 
   const handleGenerate = async () => {
-    if (effectiveGenerating) return
+    if (effectiveGenerating || submitting) return
+    setSubmitting(true)
     try {
-      await beforeGenerate()
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : (err as Error).message || "保存失败，无法开始生成")
-      return
-    }
-    try {
+      try {
+        await beforeGenerate()
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : (err as Error).message || "保存失败，无法开始生成")
+        return
+      }
       const res = await apiFetch<{ success: boolean; asset: { imageUrl: string | null } }>("/api/assets/generate-images", {
         method: "POST",
         body: { type: assetType, id: assetId },
@@ -173,6 +175,8 @@ function GenerateImageButton({
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "提交失败，请稍后重试")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -181,9 +185,9 @@ function GenerateImageButton({
       type="button"
       size="sm"
       onClick={() => void handleGenerate()}
-      disabled={effectiveGenerating}
+      disabled={effectiveGenerating || submitting}
     >
-      {effectiveGenerating ? (
+      {effectiveGenerating || submitting ? (
         <Loader2 className="mr-1.5 size-3.5 animate-spin" />
       ) : (
         <Sparkles className="mr-1.5 size-3.5" />

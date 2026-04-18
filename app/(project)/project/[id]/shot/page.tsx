@@ -361,8 +361,8 @@ export default function ScriptShotPage() {
   )
 
   const handleBatchGenerateImages = useCallback(
-    (shotIds: string[]) => {
-      generateBatchImages(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
+    async (shotIds: string[]) => {
+      await generateBatchImages(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
       setShowBatchImageDialog(false)
     },
     [projectId, activeEpisodeId, generateBatchImages]

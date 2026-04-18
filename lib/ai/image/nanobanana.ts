@@ -114,12 +114,14 @@ export class NanobananaImageProvider implements ImageProvider {
       throwCutGoError("INTERNAL", `status=${res.status}，error=${errorText}`)
     }
 
-    logAIEvent("image", "response", {
-      provider: this.id,
-      res: res,
-    })
+    
 
     const json = (await res.json()) as GeminiGenerateContentResponse
+
+    logAIEvent("image", "response", {
+      provider: this.id,
+      json
+    })
 
     if (json.error) {
       throwCutGoError("INTERNAL", `Gemini 生图服务返回错误：${json.error.message}`)

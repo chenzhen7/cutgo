@@ -233,6 +233,7 @@ export function BatchGenerateImagesDialog({
   const [promptValues, setPromptValues] = useState<Record<string, string>>({})
   const [promptEndValues, setPromptEndValues] = useState<Record<string, string>>({})
   const [gridPromptsValues, setGridPromptsValues] = useState<Record<string, string>>({})
+  const [confirming, setConfirming] = useState(false)
   const promptDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const promptEndDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const gridPromptsDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -381,10 +382,16 @@ export function BatchGenerateImagesDialog({
     [onUpdateShot, shotMetaMap]
   )
 
-  const handleConfirm = useCallback(() => {
-    flushPromptUpdates()
-    onConfirm(Array.from(selectedIds))
-  }, [flushPromptUpdates, onConfirm, selectedIds])
+  const handleConfirm = useCallback(async () => {
+    if (confirming) return
+    setConfirming(true)
+    try {
+      flushPromptUpdates()
+      await onConfirm(Array.from(selectedIds))
+    } finally {
+      setConfirming(false)
+    }
+  }, [flushPromptUpdates, onConfirm, selectedIds, confirming])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -440,9 +447,14 @@ export function BatchGenerateImagesDialog({
             取消
           </Button>
           <Button
-            onClick={handleConfirm}
-            disabled={selectedIds.size === 0}
+            onClick={() => void handleConfirm()}
+            disabled={selectedIds.size === 0 || confirming}
           >
+            {confirming ? (
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            ) : (
+              <ImageIcon className="mr-1.5 size-3.5" />
+            )}
             生成选中项 ({selectedIds.size})
           </Button>
         </DialogFooter>

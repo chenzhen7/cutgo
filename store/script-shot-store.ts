@@ -553,21 +553,35 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       body.gridLayout = shot.gridLayout || "2x2"
     }
 
-    const data = await apiFetch<{ shot: Shot }>("/api/images/generate", {
-      method: "POST",
-      body,
-    })
-    const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, data.shot)
-    const imageGeneratingIds = collectGeneratingShotIds(scriptShotPlans)
+    // 提前标记为 generating，防止请求期间重复点击
+    set((state) => ({
+      imageGeneratingIds: new Set(state.imageGeneratingIds).add(shotId),
+    }))
 
-    set({
-      scriptShotPlans,
-      episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
-      imageGeneratingIds,
-    })
+    try {
+      const data = await apiFetch<{ shot: Shot }>("/api/images/generate", {
+        method: "POST",
+        body,
+      })
+      const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, data.shot)
+      const imageGeneratingIds = collectGeneratingShotIds(scriptShotPlans)
 
-    if (imageGeneratingIds.size > 0) {
-      scheduleImagePolling(projectId, episodeId)
+      set({
+        scriptShotPlans,
+        episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
+        imageGeneratingIds,
+      })
+
+      if (imageGeneratingIds.size > 0) {
+        scheduleImagePolling(sb.projectId, episodeId)
+      }
+    } catch (err) {
+      set((state) => {
+        const next = new Set(state.imageGeneratingIds)
+        next.delete(shotId)
+        return { imageGeneratingIds: next }
+      })
+      throw err
     }
   },
 
