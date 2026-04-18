@@ -114,10 +114,10 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   if (isGeneratingImage) {
     return (
       <div className={containerClassName}>
-        <div className={cn(contentClassName, "relative bg-muted/50 flex flex-col items-center justify-center gap-2 pb-6 @[480px]:pb-7")}>
-          <Loader2 className="size-7 animate-spin text-primary @[480px]:size-8 @[900px]:size-9" />
-          <span className="text-xs font-medium text-muted-foreground">生成中</span>
-          <span className="absolute bottom-1.5 left-0 right-0 text-center text-[10px] text-muted-foreground/80 @[640px]:text-xs px-1">{typeLabel}</span>
+        <div className={cn(contentClassName, "bg-muted/50 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center gap-1.5")}>
+          <Loader2 className="size-6 animate-spin text-primary @[900px]:size-8" />
+          <span className="text-[9px] font-medium text-muted-foreground @[900px]:text-[10px]">生成中</span>
+          <span className="text-[9px] text-muted-foreground/60 @[900px]:text-[10px]">{typeLabel}</span>
         </div>
       </div>
     )
