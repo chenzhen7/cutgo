@@ -19,6 +19,7 @@ import {
 export function EpisodeSelector() {
   const episodes = useScriptShotsStore((s) => s.episodes)
   const scriptShotPlans = useScriptShotsStore((s) => s.scriptShotPlans)
+  const episodeShotCounts = useScriptShotsStore((s) => s.episodeShotCounts)
   const activeEpisodeId = useScriptShotsStore((s) => s.activeEpisodeId)
   const setActiveEpisodeId = useScriptShotsStore((s) => s.setActiveEpisodeId)
   const setActiveShotId = useScriptShotsStore((s) => s.setActiveShotId)
@@ -38,6 +39,10 @@ export function EpisodeSelector() {
     : undefined
 
   const getEpisodeShotCount = (episodeId: string) => {
+    if (Object.prototype.hasOwnProperty.call(episodeShotCounts, episodeId)) {
+      return episodeShotCounts[episodeId]
+    }
+
     const plans = scriptShotPlans.filter((plan) => plan.episodeId === episodeId)
     if (plans.length === 0) return null
     return plans.flatMap((plan) => plan.shots).length

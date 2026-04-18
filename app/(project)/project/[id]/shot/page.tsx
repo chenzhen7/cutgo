@@ -79,6 +79,7 @@ export default function ScriptShotPage() {
   const batchVideoStatus = useScriptShotsStore((s) => s.batchVideoStatus)
   const batchVideoProgress = useScriptShotsStore((s) => s.batchVideoProgress)
   const fetchScriptShotPlans = useScriptShotsStore((s) => s.fetchScriptShotPlans)
+  const fetchEpisodeShotCounts = useScriptShotsStore((s) => s.fetchEpisodeShotCounts)
   const fetchEpisodes = useScriptShotsStore((s) => s.fetchEpisodes)
   const fetchAssets = useScriptShotsStore((s) => s.fetchAssets)
   const generateScriptShots = useScriptShotsStore((s) => s.generateScriptShots)
@@ -192,6 +193,7 @@ export default function ScriptShotPage() {
       setInitialLoading(true)
       const [eps] = await Promise.all([
         fetchEpisodes(projectId),
+        fetchEpisodeShotCounts(projectId),
         fetchAssets(projectId),
         apiFetch<Project>(`/api/projects/${projectId}`).then((proj) => {
           setAspectRatio(proj.aspectRatio || "9:16")
@@ -212,7 +214,7 @@ export default function ScriptShotPage() {
     }
     init()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId])
+  }, [projectId, fetchEpisodeShotCounts])
 
   const prevEpisodeIdRef = useRef(activeEpisodeId)
 

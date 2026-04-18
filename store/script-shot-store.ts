@@ -77,6 +77,7 @@ function startVideoPolling(episodeId: string, shotId: string, attempt = 0): void
 }
 
 type ShotWithPlan = { shot: Shot; scriptShotPlan: ScriptShotPlan }
+type EpisodeShotCountItem = { episodeId: string; shotCount: number }
 
 function collectGeneratingShotIds(plans: ScriptShotPlan[]): Set<string> {
   return new Set(
@@ -141,6 +142,20 @@ function replacePlanShots(plans: ScriptShotPlan[], episodeId: string, shots: Sho
   return plans.map((plan) => (plan.id === episodeId ? { ...plan, shots } : plan))
 }
 
+function mergeEpisodeShotCounts(
+  current: Record<string, number>,
+  plans: ScriptShotPlan[]
+): Record<string, number> {
+  if (plans.length === 0) return current
+
+  const next = { ...current }
+  for (const plan of plans) {
+    next[plan.episodeId] = plan.shots.length
+  }
+
+  return next
+}
+
 function flattenShotsByActiveEpisode(scriptShotPlans: ScriptShotPlan[], activeEpisodeId: string | null): ShotWithPlan[] {
   const episodeSbs = activeEpisodeId
     ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
@@ -158,6 +173,7 @@ function mergeAssetsById<T extends { id: string }>(existing: T[], incoming: T[])
 
 interface ScriptShotState {
   scriptShotPlans: ScriptShotPlan[]
+  episodeShotCounts: Record<string, number>
   episodes: Episode[]
   assetCharacters: AssetCharacter[]
   assetScenes: AssetScene[]
@@ -181,6 +197,7 @@ interface ScriptShotState {
   batchVideoProgress: { current: number; total: number } | null
 
   fetchScriptShotPlans: (projectId: string, episodeId?: string) => Promise<void>
+  fetchEpisodeShotCounts: (projectId: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<Episode[]>
   fetchAssets: (
     projectId: string,
@@ -244,6 +261,7 @@ interface ScriptShotState {
 
 export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   scriptShotPlans: [],
+  episodeShotCounts: {},
   episodes: [],
   assetCharacters: [],
   assetScenes: [],
@@ -279,7 +297,11 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       }
       const plans = data || []
       const imageGeneratingIds = collectGeneratingShotIds(plans)
-      set({ scriptShotPlans: plans, imageGeneratingIds })
+      set((state) => ({
+        scriptShotPlans: plans,
+        imageGeneratingIds,
+        episodeShotCounts: mergeEpisodeShotCounts(state.episodeShotCounts, plans),
+      }))
 
       if (imageGeneratingIds.size > 0) {
         scheduleImagePolling(projectId, episodeId)
@@ -288,6 +310,19 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       }
     } catch {
       // 非关键数据加载，静默失败
+    }
+  },
+
+  fetchEpisodeShotCounts: async (projectId) => {
+    try {
+      const data = await apiFetch<EpisodeShotCountItem[]>(
+        `/api/script-shots?projectId=${projectId}&countsOnly=1`
+      )
+      set({
+        episodeShotCounts: Object.fromEntries((data || []).map((item) => [item.episodeId, item.shotCount])),
+      })
+    } catch {
+      // 闈炲叧閿暟鎹姞杞斤紝闈欓粯澶辫触
     }
   },
 
@@ -340,6 +375,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       const scriptShotPlans = data.scriptShotPlans || []
       set({
         scriptShotPlans,
+        episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
         imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
         generateStatus: "completed",
         generateProgress: null,
@@ -361,6 +397,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const scriptShotPlans = replacePlanShots(get().scriptShotPlans, episodeId, shots)
     set({
       scriptShotPlans,
+      episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
       imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
@@ -384,6 +421,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const scriptShotPlans = replacePlanShots(get().scriptShotPlans, episodeId, shots)
     set({
       scriptShotPlans,
+      episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
       imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
@@ -413,6 +451,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const scriptShotPlans = replacePlanShots(get().scriptShotPlans, episodeId, shots)
     set({
       scriptShotPlans,
+      episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
       imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
@@ -432,6 +471,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     )
     set({
       scriptShotPlans,
+      episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
       imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
   },
@@ -522,6 +562,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
 
     set({
       scriptShotPlans,
+      episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
       imageGeneratingIds,
     })
 
@@ -744,6 +785,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     stopImagePolling()
     set({
       scriptShotPlans: [],
+      episodeShotCounts: {},
       episodes: [],
       assetCharacters: [],
       assetScenes: [],
