@@ -35,10 +35,6 @@ interface SceneSwimlaneProps {
   scriptShotPlan: ScriptShotPlan
   /** 全项目分集排序后的展示集序号 */
   episodeDisplayNumber: number
-  activeShotId: string | null
-  selectedShotIds: Set<string>
-  imageGeneratingIds: Set<string>
-  videoGeneratingIds: Set<string>
   /** 与右侧详情「画面 / 视频」页签同步，控制列表提示词展示 */
   detailTab?: ShotDetailTab
   layout?: ShotCardLayout
@@ -63,10 +59,6 @@ interface SceneSwimlaneProps {
 export const SceneSwimlane = memo(function SceneSwimlane({
   scriptShotPlan,
   episodeDisplayNumber,
-  activeShotId,
-  selectedShotIds,
-  imageGeneratingIds,
-  videoGeneratingIds,
   detailTab = "image",
   layout = "list",
   aspectRatio = "9:16",
@@ -93,6 +85,7 @@ export const SceneSwimlane = memo(function SceneSwimlane({
   // 当 store 里的 shots 变化时（非拖拽引起），同步到本地
   useEffect(() => {
     if (!isDraggingRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalShots(scriptShotPlan.shots)
     }
   }, [scriptShotPlan.shots])
@@ -235,10 +228,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
                   key={shot.id}
                   shot={shot}
                   episodeId={scriptShotPlan.episodeId}
-                  isActive={activeShotId === shot.id}
-                  isSelected={selectedShotIds.has(shot.id)}
-                  isGeneratingImage={imageGeneratingIds.has(shot.id)}
-                  isGeneratingVideo={videoGeneratingIds.has(shot.id)}
                   detailTab={detailTab}
                   layout={layout}
                   aspectRatio={aspectRatio}
@@ -276,10 +265,6 @@ export const SceneSwimlane = memo(function SceneSwimlane({
               <ShotCard
                 shot={activeDragShot}
                 episodeId={scriptShotPlan.episodeId}
-                isActive={false}
-                isSelected={false}
-                isGeneratingImage={false}
-                isGeneratingVideo={false}
                 detailTab={detailTab}
                 layout={layout}
                 aspectRatio={aspectRatio}

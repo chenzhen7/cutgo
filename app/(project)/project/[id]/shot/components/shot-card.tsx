@@ -8,12 +8,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Video, Play, Type, Film, GripVertical } from "lucide-react"
+import { Copy, Trash2, User, MapPin, Package, ImageIcon, Loader2, Video, Play, Film, GripVertical } from "lucide-react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { IMAGE_TYPE_OPTIONS } from "@/lib/types"
 import type { Shot, AssetCharacter, AssetScene, AssetProp } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
+import { useScriptShotsStore } from "@/store/script-shot-store"
 
 export type ShotCardLayout = "list" | "grid"
 
@@ -43,10 +44,6 @@ function imagePromptSummary(shot: Shot): string {
 interface ShotCardProps {
   shot: Shot
   episodeId: string
-  isActive: boolean
-  isSelected: boolean
-  isGeneratingImage: boolean
-  isGeneratingVideo: boolean
   /** 与右侧详情页签同步：画面 → 图片侧提示词，视频 → 视频提示词 */
   detailTab?: ShotDetailTab
   layout?: ShotCardLayout
@@ -183,10 +180,6 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
 export const ShotCard = memo(function ShotCard({
   shot,
   episodeId,
-  isActive,
-  isSelected,
-  isGeneratingImage,
-  isGeneratingVideo,
   detailTab = "image",
   layout = "list",
   aspectRatio = "9:16",
@@ -209,6 +202,10 @@ export const ShotCard = memo(function ShotCard({
     transition,
     isDragging: isSortableDragging,
   } = useSortable({ id: shot.id })
+  const isActive = useScriptShotsStore((state) => state.activeShotId === shot.id)
+  const isSelected = useScriptShotsStore((state) => state.selectedShotIds.has(shot.id))
+  const isGeneratingImage = useScriptShotsStore((state) => state.imageGeneratingIds.has(shot.id))
+  const isGeneratingVideo = useScriptShotsStore((state) => state.videoGeneratingIds.has(shot.id))
   const handleSelect = useCallback(() => onSelect(shot.id), [onSelect, shot.id])
   const handleDuplicate = useCallback(() => onDuplicate(episodeId, shot.id), [onDuplicate, episodeId, shot.id])
   const handleDelete = useCallback(() => onDelete(episodeId, shot.id), [onDelete, episodeId, shot.id])
@@ -216,20 +213,17 @@ export const ShotCard = memo(function ShotCard({
   const handleGenerateVideo = useCallback(() => onGenerateVideo(episodeId, shot.id), [onGenerateVideo, episodeId, shot.id])
   const handlePlayVideo = useCallback(() => onPlayVideo(shot.id), [onPlayVideo, shot.id])
 
-  const boundCharacterIds = shot.characterIds ?? []
-  const boundPropIds = shot.propIds ?? []
-
   const boundCharacters = useMemo(
-    () => boundCharacterIds.map((id) => assetCharacterMap.get(id)).filter((v): v is AssetCharacter => !!v),
-    [boundCharacterIds, assetCharacterMap]
+    () => (shot.characterIds ?? []).map((id) => assetCharacterMap.get(id)).filter((v): v is AssetCharacter => !!v),
+    [shot.characterIds, assetCharacterMap]
   )
   const boundScene = useMemo(
     () => (shot.sceneId ? assetSceneMap.get(shot.sceneId) || null : null),
     [assetSceneMap, shot.sceneId]
   )
   const boundProps = useMemo(
-    () => boundPropIds.map((id) => assetPropMap.get(id)).filter((v): v is AssetProp => !!v),
-    [boundPropIds, assetPropMap]
+    () => (shot.propIds ?? []).map((id) => assetPropMap.get(id)).filter((v): v is AssetProp => !!v),
+    [shot.propIds, assetPropMap]
   )
 
   const style = {

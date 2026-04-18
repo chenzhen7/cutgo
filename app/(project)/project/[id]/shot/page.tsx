@@ -35,6 +35,29 @@ import type { ScriptShotPlan, ShotInput, Shot, Project } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
 
+type ShotWithPlan = { shot: Shot; scriptShotPlan: ScriptShotPlan }
+
+function flattenShotsByEpisode(scriptShotPlans: ScriptShotPlan[], activeEpisodeId: string | null): ShotWithPlan[] {
+  const visiblePlans = activeEpisodeId
+    ? scriptShotPlans.filter((plan) => plan.episodeId === activeEpisodeId)
+    : scriptShotPlans
+
+  return visiblePlans.flatMap((plan) => plan.shots.map((shot) => ({ shot, scriptShotPlan: plan })))
+}
+
+function findShotWithPlan(scriptShotPlans: ScriptShotPlan[], shotId: string | null): ShotWithPlan | null {
+  if (!shotId) return null
+
+  for (const plan of scriptShotPlans) {
+    const shot = plan.shots.find((item) => item.id === shotId)
+    if (shot) {
+      return { shot, scriptShotPlan: plan }
+    }
+  }
+
+  return null
+}
+
 export default function ScriptShotPage() {
   const params = useParams()
   const projectId = params.id as string
@@ -48,7 +71,6 @@ export default function ScriptShotPage() {
   const generateError = useScriptShotsStore((s) => s.generateError)
   const activeEpisodeId = useScriptShotsStore((s) => s.activeEpisodeId)
   const activeShotId = useScriptShotsStore((s) => s.activeShotId)
-  const selectedShotIds = useScriptShotsStore((s) => s.selectedShotIds)
   const detailPanelOpen = useScriptShotsStore((s) => s.detailPanelOpen)
   const imageGeneratingIds = useScriptShotsStore((s) => s.imageGeneratingIds)
   const batchImageStatus = useScriptShotsStore((s) => s.batchImageStatus)
@@ -105,26 +127,25 @@ export default function ScriptShotPage() {
   }, [activeEpisodeId, currentScriptShotPlans, assetCharacters, assetScenes, assetProps])
 
   const currentActiveShot = useMemo(() => {
-    if (!activeShotId) return null
-    for (const sb of scriptShotPlans) {
-      const shot = sb.shots.find((s) => s.id === activeShotId)
-      if (shot) return { shot, scriptShotPlan: sb }
-    }
-    return null
+    return findShotWithPlan(scriptShotPlans, activeShotId)
   }, [scriptShotPlans, activeShotId])
 
   const currentShotPollingAssetFilters = useMemo(() => {
     if (!currentActiveShot) return null
 
     const shot = currentActiveShot.shot
+    const characterStatusMap = new Map(assetCharacters.map((asset) => [asset.id, asset.imageStatus]))
+    const sceneStatusMap = new Map(assetScenes.map((asset) => [asset.id, asset.imageStatus]))
+    const propStatusMap = new Map(assetProps.map((asset) => [asset.id, asset.imageStatus]))
+
     const generatingCharacterIds = (shot.characterIds ?? []).filter(
-      (id) => assetCharacters.find((asset) => asset.id === id)?.imageStatus === "generating"
+      (id) => characterStatusMap.get(id) === "generating"
     )
-    const generatingSceneIds = shot.sceneId && assetScenes.find((asset) => asset.id === shot.sceneId)?.imageStatus === "generating"
+    const generatingSceneIds = shot.sceneId && sceneStatusMap.get(shot.sceneId) === "generating"
       ? [shot.sceneId]
       : []
     const generatingPropIds = (shot.propIds ?? []).filter(
-      (id) => assetProps.find((asset) => asset.id === id)?.imageStatus === "generating"
+      (id) => propStatusMap.get(id) === "generating"
     )
 
     if (
@@ -143,10 +164,7 @@ export default function ScriptShotPage() {
   }, [currentActiveShot, assetCharacters, assetScenes, assetProps])
 
   const allFlatShots = useMemo(() => {
-    const episodeSbs = activeEpisodeId
-      ? scriptShotPlans.filter((sb) => sb.episodeId === activeEpisodeId)
-      : scriptShotPlans
-    return episodeSbs.flatMap((sb) => sb.shots.map((shot) => ({ shot, scriptShotPlan: sb })))
+    return flattenShotsByEpisode(scriptShotPlans, activeEpisodeId)
   }, [scriptShotPlans, activeEpisodeId])
 
   const activeShotIndex = useMemo(() => {
@@ -210,7 +228,7 @@ export default function ScriptShotPage() {
       prevEpisodeIdRef.current = activeEpisodeId
       try {
         // 拉取项目下全部分集的分镜计划，供选集下拉展示各集镜头数，并避免切换分集时丢失其他集缓存
-        await fetchScriptShotPlans(projectId)
+        await fetchScriptShotPlans(projectId, activeEpisodeId)
       } finally {
         if (!cancelled) {
           setEpisodeLoading(false)
@@ -245,7 +263,7 @@ export default function ScriptShotPage() {
     setDetailPanelOpen(false)
     await generateScriptShots(projectId, [activeEpisodeId], "keyframe", null)
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
-    await fetchScriptShotPlans(projectId)
+    await fetchScriptShotPlans(projectId, activeEpisodeId)
   }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
 
   const handleGenerateCurrentEpisode = useCallback(() => {
@@ -342,10 +360,10 @@ export default function ScriptShotPage() {
 
   const handleBatchGenerateImages = useCallback(
     (shotIds: string[]) => {
-      generateBatchImages(projectId, { shotIds })
+      generateBatchImages(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
       setShowBatchImageDialog(false)
     },
-    [projectId, generateBatchImages]
+    [projectId, activeEpisodeId, generateBatchImages]
   )
 
   const handleOpenBatchImageDialog = useCallback(() => {
@@ -373,10 +391,10 @@ export default function ScriptShotPage() {
 
   const handleBatchGenerateVideos = useCallback(
     (shotIds: string[]) => {
-      generateBatchVideos(projectId, { shotIds })
+      generateBatchVideos(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
       setShowBatchVideoDialog(false)
     },
-    [generateBatchVideos, projectId]
+    [generateBatchVideos, projectId, activeEpisodeId]
   )
 
   const handleOpenBatchVideoDialog = useCallback(() => {
@@ -553,10 +571,6 @@ export default function ScriptShotPage() {
                           episodeDisplayNumber={
                             episodeDisplayMap.get(plan.episodeId) ?? 1
                           }
-                          activeShotId={activeShotId}
-                          selectedShotIds={selectedShotIds}
-                          imageGeneratingIds={imageGeneratingIds}
-                          videoGeneratingIds={videoGeneratingIds}
                           detailTab={activeDetailTab}
                           layout={shotLayout}
                           aspectRatio={aspectRatio}
