@@ -325,7 +325,10 @@ export function CharacterFormDialog({
                   onSuccess={setImageUrl}
                   beforeGenerate={saveBeforeGenerate}
                   isGenerating={isGenerating}
-                  onAfterSubmit={onAfterGenerate}
+                  onAfterSubmit={async () => {
+                    await onAfterGenerate?.()
+                    onOpenChange(false)
+                  }}
                 />
               ) : undefined
             }
@@ -507,7 +510,10 @@ export function SceneFormDialog({
                   onSuccess={setImageUrl}
                   beforeGenerate={saveBeforeGenerate}
                   isGenerating={isGenerating}
-                  onAfterSubmit={onAfterGenerate}
+                  onAfterSubmit={async () => {
+                    await onAfterGenerate?.()
+                    onOpenChange(false)
+                  }}
                 />
               ) : undefined
             }
@@ -664,7 +670,10 @@ export function PropFormDialog({
                   onSuccess={setImageUrl}
                   beforeGenerate={saveBeforeGenerate}
                   isGenerating={isGenerating}
-                  onAfterSubmit={onAfterGenerate}
+                  onAfterSubmit={async () => {
+                    await onAfterGenerate?.()
+                    onOpenChange(false)
+                  }}
                 />
               ) : undefined
             }
