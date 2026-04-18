@@ -3,6 +3,10 @@ import { getImageConfig, getLLMConfig, getTTSConfig, getVideoConfig } from "@/li
 import { prisma } from "@/lib/db"
 import type { AiTaskType } from "@/lib/ai-task"
 
+export const AI_TASK_STARTUP_RECOVERY_ERROR_CODE = "PROCESS_RESTARTED"
+export const AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE =
+  "Task interrupted because the service restarted. Please retry."
+
 type CreateAiTaskInput = {
   projectId: string
   taskType: AiTaskType
@@ -92,4 +96,19 @@ export async function markAiTaskFailed(taskId: string, error: unknown) {
       finishedAt: new Date(),
     },
   })
+}
+
+export async function failRunningAiTasksOnStartup() {
+  const now = new Date()
+  const result = await prisma.aiTask.updateMany({
+    where: { status: "running" },
+    data: {
+      status: "failed",
+      errorCode: AI_TASK_STARTUP_RECOVERY_ERROR_CODE,
+      errorMessage: AI_TASK_STARTUP_RECOVERY_ERROR_MESSAGE,
+      finishedAt: now,
+    },
+  })
+
+  return result.count
 }
