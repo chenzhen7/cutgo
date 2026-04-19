@@ -24,7 +24,7 @@ async function callAIGenerateScript(
   const userPrompt = buildEpisodeScriptUserPrompt({
     episodeTitle,
     chapterContent,
-    previousContent: previousContent?.slice(-1000) ?? null,
+    previousContent: previousContent?.slice(-500) ?? null,
     duration,
   })
 

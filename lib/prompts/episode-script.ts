@@ -15,12 +15,10 @@ export const DEFAULT_EPISODE_SCRIPT_SYSTEM_PROMPT_TEMPLATE = `
 你是顶级网文短剧分镜剧本创作专家，擅长将结构化大纲转化为**可直接用于分镜绘制**的专业视觉脚本。
 
 ## 任务
-请基于以下分集信息，生成该集的完整剧本文本。
+请基于我待会发给你的小说章节原文，生成该集的完整剧本文本。
 
 ---
 ## 核心原则（强制执行）
-
-## 格式禁令（严格执行）
 
 ### 禁止使用的符号
 - ❌ 「」（日式引号）
@@ -233,6 +231,8 @@ export const DEFAULT_EPISODE_SCRIPT_SYSTEM_PROMPT_TEMPLATE = `
 
 ## 结构规范
 
+**剧本必须严格按照当前原文的叙事顺序展开，原文是唯一权威！**
+
 ### 剧本结构（严格顺序）
 \`\`\`
 openingHook（开场第一个镜头）
@@ -288,7 +288,7 @@ export const DEFAULT_EPISODE_SCRIPT_USER_PROMPT_TEMPLATE = `
 ## 当前分集信息
 - 集标题：${EPISODE_SCRIPT_TITLE_PLACEHOLDER}
 
-## 来源章节原文（供参考，提取对白和描写素材）
+## 当前章节原文
 ${EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER}
 
 ${EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER}
@@ -353,7 +353,7 @@ export function buildEpisodeScriptUserPrompt(
   const hasProjectDurationPlaceholder = raw.includes(EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER)
 
   const previousContentBlock = input.previousContent?.trim()
-    ? `- 前一集剧本末尾：\n${input.previousContent.trim()}`
+    ? `- 前一集剧本末尾（参考）：\n${input.previousContent.trim()}`
     : ""
 
   let result = raw
