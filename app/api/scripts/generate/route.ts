@@ -14,6 +14,20 @@ import {
 } from "@/lib/prompts"
 import { extractEpisodeAssetIds } from "@/lib/utils"
 
+async function getSerializedEpisodes(projectId: string) {
+  const episodes = await prisma.episode.findMany({
+    where: { projectId },
+    orderBy: { index: "asc" },
+    include: { episodeAssets: true },
+  })
+
+  return episodes.map((episode) => ({
+    ...episode,
+    ...extractEpisodeAssetIds(episode.episodeAssets),
+    episodeAssets: undefined,
+  }))
+}
+
 async function callAIGenerateScript(
   episodeTitle: string,
   chapterContent: string,
@@ -131,42 +145,26 @@ export const POST = withError(async (request: NextRequest) => {
       }
     }
 
-    const allEpisodes = await prisma.episode.findMany({
-      where: { projectId },
-      orderBy: { index: "asc" },
-      include: { episodeAssets: true },
-    })
+    const episodes = await getSerializedEpisodes(projectId)
 
     return NextResponse.json({
-      episodes: allEpisodes.map((ep) => ({
-        ...ep,
-        ...extractEpisodeAssetIds(ep.episodeAssets),
-        episodeAssets: undefined,
-      })),
+      episodes,
       stats: {
-        scriptCount: allEpisodes.filter((ep) => ep.script).length,
+        scriptCount: episodes.filter((episode) => episode.script).length,
         generatedEpisodes: targetEpisodes.length,
         skippedEpisodes,
       },
     })
   } catch (err) {
     console.error("Script generation failed:", err)
-    const allEpisodes = await prisma.episode.findMany({
-      where: { projectId },
-      orderBy: { index: "asc" },
-      include: { episodeAssets: true },
-    })
+    const episodes = await getSerializedEpisodes(projectId)
     const errorInfo = toErrorInfo(err)
     const errorStatus = (err as { status?: number }).status || API_ERRORS.INTERNAL.status
     return NextResponse.json(
       {
         error: errorInfo.code,
         message: errorInfo.message,
-        episodes: allEpisodes.map((ep) => ({
-          ...ep,
-          ...extractEpisodeAssetIds(ep.episodeAssets),
-          episodeAssets: undefined,
-        })),
+        episodes,
       },
       { status: errorStatus }
     )
