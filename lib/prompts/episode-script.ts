@@ -293,8 +293,6 @@ ${EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER}
 
 ${EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER}
 
-## 目标参数
-- 每集时长：${EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER}
 `
 
 export interface BuildEpisodeScriptPromptInput {
@@ -350,7 +348,6 @@ export function buildEpisodeScriptUserPrompt(
   const hasTitlePlaceholder = raw.includes(EPISODE_SCRIPT_TITLE_PLACEHOLDER)
   const hasChapterContentPlaceholder = raw.includes(EPISODE_SCRIPT_CHAPTER_CONTENT_PLACEHOLDER)
   const hasPreviousContentPlaceholder = raw.includes(EPISODE_SCRIPT_PREVIOUS_CONTENT_PLACEHOLDER)
-  const hasProjectDurationPlaceholder = raw.includes(EPISODE_SCRIPT_PROJECT_DURATION_PLACEHOLDER)
 
   const previousContentBlock = input.previousContent?.trim()
     ? `- 前一集剧本末尾（参考）：\n${input.previousContent.trim()}`
@@ -365,7 +362,7 @@ export function buildEpisodeScriptUserPrompt(
   result = appendIfMissing(hasTitlePlaceholder, result, `\n- 集标题：${input.episodeTitle}`)
   result = appendIfMissing(hasChapterContentPlaceholder, result, `\n## 来源章节原文\n${input.chapterContent}`)
   result = appendIfMissing(hasPreviousContentPlaceholder, result, previousContentBlock ? `\n${previousContentBlock}` : "")
-  result = appendIfMissing(hasProjectDurationPlaceholder, result, `\n- 每集时长：${input.duration}`)
+
 
   return result.trim()
 }
