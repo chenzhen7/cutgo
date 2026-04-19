@@ -473,8 +473,39 @@ export async function submitBatchShotImageTasks(input: {
   const shots = await prisma.shot.findMany({
     where,
     orderBy: [{ episodeId: "asc" }, { index: "asc" }],
-    select: { id: true, imageStatus: true },
+    include: { shotAssets: true },
   })
+
+  const characterIds = new Set<string>()
+  const sceneIds = new Set<string>()
+  const propIds = new Set<string>()
+
+  for (const shot of shots) {
+    for (const sa of shot.shotAssets) {
+      if (sa.assetType === "character") characterIds.add(sa.assetId)
+      else if (sa.assetType === "scene") sceneIds.add(sa.assetId)
+      else if (sa.assetType === "prop") propIds.add(sa.assetId)
+    }
+  }
+
+  const [characters, scenes, props] = await Promise.all([
+    prisma.assetCharacter.findMany({
+      where: { id: { in: Array.from(characterIds) } },
+      select: { id: true, name: true, imageUrl: true },
+    }),
+    prisma.assetScene.findMany({
+      where: { id: { in: Array.from(sceneIds) } },
+      select: { id: true, name: true, imageUrl: true },
+    }),
+    prisma.assetProp.findMany({
+      where: { id: { in: Array.from(propIds) } },
+      select: { id: true, name: true, imageUrl: true },
+    }),
+  ])
+
+  const characterMap = new Map(characters.map((c) => [c.id, c]))
+  const sceneMap = new Map(scenes.map((s) => [s.id, s]))
+  const propMap = new Map(props.map((p) => [p.id, p]))
 
   const submitted: { shotId: string; taskId: string }[] = []
   const skipped: { shotId: string; reason: string }[] = []
@@ -485,7 +516,64 @@ export async function submitBatchShotImageTasks(input: {
       continue
     }
 
-    const result = await submitShotImageTask({ shotId: shot.id })
+    const assetIds = extractShotAssetIds(shot.shotAssets)
+
+    // 校验关联资产图片是否齐全（与单张生成保持一致）
+    const missingAssetNames: string[] = []
+    for (const cid of assetIds.characterIds) {
+      const c = characterMap.get(cid)
+      if (!c?.imageUrl) missingAssetNames.push(`角色「${c?.name ?? "未知"}」`)
+    }
+    if (assetIds.sceneId) {
+      const s = sceneMap.get(assetIds.sceneId)
+      if (!s?.imageUrl) missingAssetNames.push(`场景「${s?.name ?? "未知"}」`)
+    }
+    for (const pid of assetIds.propIds) {
+      const p = propMap.get(pid)
+      if (!p?.imageUrl) missingAssetNames.push(`道具「${p?.name ?? "未知"}」`)
+    }
+
+    if (missingAssetNames.length > 0) {
+      skipped.push({ shotId: shot.id, reason: `缺少关联资产图片：${missingAssetNames.join("、")}` })
+      continue
+    }
+
+    const referenceImages: string[] = []
+    const refLabels: string[] = []
+    let imgIndex = 1
+
+    for (const cid of assetIds.characterIds) {
+      const c = characterMap.get(cid)
+      if (c?.imageUrl) {
+        referenceImages.push(c.imageUrl)
+        refLabels.push(`图${imgIndex}为角色「${c.name}」`)
+        imgIndex++
+      }
+    }
+
+    if (assetIds.sceneId) {
+      const s = sceneMap.get(assetIds.sceneId)
+      if (s?.imageUrl) {
+        referenceImages.push(s.imageUrl)
+        refLabels.push(`图${imgIndex}为场景「${s.name}」`)
+        imgIndex++
+      }
+    }
+
+    for (const pid of assetIds.propIds) {
+      const p = propMap.get(pid)
+      if (p?.imageUrl) {
+        referenceImages.push(p.imageUrl)
+        refLabels.push(`图${imgIndex}为道具「${p.name}」`)
+        imgIndex++
+      }
+    }
+
+    const result = await submitShotImageTask({
+      shotId: shot.id,
+      referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+      refLabels: refLabels.length > 0 ? refLabels : undefined,
+    })
     submitted.push({ shotId: shot.id, taskId: result.taskId })
   }
 

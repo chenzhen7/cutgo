@@ -610,7 +610,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
 
     set({ batchImageStatus: "generating", batchImageProgress: { current: 0, total: targets.length } })
 
-    await apiFetch("/api/images/generate-batch", {
+    const result = await apiFetch<{ skipped?: { shotId: string; reason: string }[] }>("/api/images/generate-batch", {
       method: "POST",
       body: {
         projectId,
@@ -626,6 +626,14 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     setTimeout(() => {
       set({ batchImageStatus: "idle", batchImageProgress: null })
     }, 2000)
+
+    // 展示被跳过的镜头原因（与单张生成保持一致，循环 toast）
+    const skipped = result?.skipped ?? []
+    for (const s of skipped) {
+      if (s.reason.startsWith("缺少关联资产图片")) {
+        toast.error(`请先补充关联资产图片：${s.reason.replace("缺少关联资产图片：", "")}`)
+      }
+    }
   },
 
   clearImage: async (episodeId, shotId) => {
