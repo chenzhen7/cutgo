@@ -19,7 +19,10 @@ interface AssetItem {
 }
 
 export function AssetLibrary() {
-  const { scriptShotPlans, activeEpisodeId, videoClips, addVideoClip, duration } = useVideoEditorStore()
+  const scriptShotPlans = useVideoEditorStore((s) => s.scriptShotPlans)
+  const activeEpisodeId = useVideoEditorStore((s) => s.activeEpisodeId)
+  const videoClips = useVideoEditorStore((s) => s.videoClips)
+  const addVideoClip = useVideoEditorStore((s) => s.addVideoClip)
 
   const assets = useMemo<AssetItem[]>(() => {
     const filteredSbs = activeEpisodeId
@@ -39,10 +42,11 @@ export function AssetLibrary() {
   const handleAddToTimeline = (shot: Shot) => {
     if (!shot.videoUrl) return
     const dur = typeof shot.videoDuration === 'number' ? shot.videoDuration : (typeof shot.duration === 'number' ? shot.duration : 5)
+    const startTime = useVideoEditorStore.getState().duration
     addVideoClip({
       shotId: shot.id,
       trackId: "video-main",
-      startTime: duration,
+      startTime,
       duration: dur,
       trimStart: 0,
       trimEnd: 0,
