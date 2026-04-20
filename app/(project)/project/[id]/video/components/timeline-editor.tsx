@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useCallback, useEffect, useState, useMemo } from "react"
+import React, { useRef, useCallback, useEffect, useState } from "react"
 import { useVideoEditorStore, type TimelineClip, type AudioClip, type SubtitleClip } from "@/store/video-editor-store"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -61,9 +61,11 @@ const TimelineClipItem = React.memo(({
         isDragging && "opacity-70"
       )}
       style={{
-        left: `${left}px`,
+        left: 0,
+        transform: `translate3d(${left}px, 0, 0)`,
         width: `${Math.max(width, 24)}px`,
         height: type === "video" ? "56px" : type === "audio" ? "40px" : "32px",
+        willChange: isDragging ? "transform" : "auto",
       }}
       onClick={(e) => {
         e.stopPropagation()
@@ -106,34 +108,77 @@ const TimelineClipItem = React.memo(({
 
 TimelineClipItem.displayName = "TimelineClipItem"
 
-// 2. 优化：将刻度尺抽离为 memo 组件
-const TimeRuler = React.memo(({
-  timeMarkers,
-  timeToX,
-  scrollLeft
+// 2. 优化：刻度尺改用 Canvas 绘制，减少 DOM 节点
+const TimeRulerCanvas = React.memo(({
+  duration,
+  pps,
+  totalWidth,
 }: {
-  timeMarkers: any[],
-  timeToX: (t: number) => number,
-  scrollLeft: number
+  duration: number
+  pps: number
+  totalWidth: number
 }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const dpr = window.devicePixelRatio || 1
+    let step = 1
+    if (pps < 20) step = 10
+    else if (pps < 40) step = 5
+    else if (pps < 80) step = 2
+    else if (pps > 200) step = 0.5
+
+    const maxTime = Math.max(duration + 20, 60)
+
+    canvas.width = Math.floor(totalWidth * dpr)
+    canvas.height = Math.floor(24 * dpr)
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, totalWidth, 24)
+
+    ctx.font = '9px ui-sans-serif, system-ui, -apple-system, sans-serif'
+    ctx.textBaseline = 'top'
+    ctx.lineWidth = 1
+
+    const majorInterval = step * 5 === 0 ? step * 5 : step * 2
+
+    for (let t = 0; t <= maxTime; t += step) {
+      const x = t * pps
+      if (x > totalWidth + 10) break
+
+      const isMajor = Math.abs(t - Math.round(t / majorInterval) * majorInterval) < 0.001
+
+      ctx.beginPath()
+      ctx.moveTo(x, isMajor ? 0 : 12)
+      ctx.lineTo(x, 24)
+      ctx.strokeStyle = isMajor ? '#e2e8f0' : 'rgba(226, 232, 240, 0.4)'
+      ctx.stroke()
+
+      if (isMajor) {
+        const m = Math.floor(t / 60)
+        const s = Math.floor(t % 60)
+        const label = `${m}:${s.toString().padStart(2, "0")}`
+        ctx.fillStyle = 'rgba(100, 116, 139, 0.7)'
+        ctx.fillText(label, x + 2, 2)
+      }
+    }
+  }, [duration, pps, totalWidth])
+
   return (
-    <div className="h-6 border-b bg-muted/30 relative overflow-hidden">
-      {timeMarkers.map((marker) => (
-        <div
-          key={marker.time}
-          className="absolute top-0 bottom-0 flex flex-col items-center"
-          style={{ left: `${timeToX(marker.time) - scrollLeft}px` }}
-        >
-          <span className="text-[9px] text-muted-foreground/70 mt-0.5">
-            {marker.major ? marker.label : ""}
-          </span>
-          <div className={cn("w-px flex-1", marker.major ? "bg-border" : "bg-border/40")} />
-        </div>
-      ))}
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="block"
+      style={{ width: totalWidth, height: 24 }}
+    />
   )
 })
-TimeRuler.displayName = "TimeRuler"
+TimeRulerCanvas.displayName = "TimeRulerCanvas"
 
 export function TimelineEditor() {
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -217,27 +262,6 @@ export function TimelineEditor() {
 
     return unsubscribe
   }, [pps])
-
-  const timeMarkers = useMemo(() => {
-    const markers: { time: number; label: string; major: boolean }[] = []
-    let step = 1
-    if (pps < 20) step = 10
-    else if (pps < 40) step = 5
-    else if (pps < 80) step = 2
-    else if (pps > 200) step = 0.5
-
-    const maxTime = Math.max(duration + 20, 60)
-    for (let t = 0; t <= maxTime; t += step) {
-      const m = Math.floor(t / 60)
-      const s = Math.floor(t % 60)
-      markers.push({
-        time: t,
-        label: `${m}:${s.toString().padStart(2, "0")}`,
-        major: t % (step * 5 === 0 ? step * 5 : step * 2) === 0,
-      })
-    }
-    return markers
-  }, [duration, pps])
 
   const timeToX = useCallback((time: number) => time * pps, [pps])
   const xToTime = useCallback((x: number) => Math.max(0, x / pps), [pps])
@@ -847,7 +871,7 @@ export function TimelineEditor() {
             style={{ width: `${totalWidth}px` }}
           >
             {/* Time ruler */}
-            <TimeRuler timeMarkers={timeMarkers} timeToX={timeToX} scrollLeft={0} />
+            <TimeRulerCanvas duration={duration} pps={pps} totalWidth={totalWidth} />
 
             {/* Tracks & Clips */}
             {tracks.map((track) => (
