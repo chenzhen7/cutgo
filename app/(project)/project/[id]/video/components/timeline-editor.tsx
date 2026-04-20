@@ -150,8 +150,9 @@ export function TimelineEditor() {
   // 修剪中的“预览几何信息”（仅用于渲染，不立即写入 store）
   const [resizePreview, setResizePreview] = useState<{ startTime: number; duration: number; trimStart: number; trimEnd: number; originalDuration: number } | null>(null)
 
-  // 本地播放头位置，用于拖动时的超平滑反馈
-  const [localPlayheadX, setLocalPlayheadX] = useState<number | null>(null)
+  // 播放头 DOM ref，直接操作 transform 避免 React 重渲染
+  const playheadRef = useRef<HTMLDivElement>(null)
+  const isDraggingPlayheadRef = useRef(false)
   // 用 ref 保存最新值，避免事件回调拿到旧状态
   const dragPreviewStartRef = useRef<number | null>(null)
   // 用 requestAnimationFrame 节流 mousemove，最多每帧计算一次
@@ -171,7 +172,6 @@ export function TimelineEditor() {
   const bgmTrack = useVideoEditorStore(s => s.bgmTrack)
   const selectedClipId = useVideoEditorStore(s => s.selectedClipId)
   const selectedClipType = useVideoEditorStore(s => s.selectedClipType)
-  const currentTime = useVideoEditorStore(s => s.currentTime)
   const duration = useVideoEditorStore(s => s.duration)
   const zoom = useVideoEditorStore(s => s.zoom)
   const scrollLeft = useVideoEditorStore(s => s.scrollLeft)
@@ -195,6 +195,28 @@ export function TimelineEditor() {
 
   const pps = pixelsPerSecond * zoom
   const totalWidth = Math.max(duration * pps + 400, 1200)
+
+  // 订阅 currentTime 变化，直接操作 DOM 更新播放头位置，避免 React 重渲染
+  useEffect(() => {
+    const updatePlayhead = (time: number) => {
+      if (!playheadRef.current) return
+      playheadRef.current.style.transform = `translateX(${time * pps}px)`
+    }
+
+    // 初始化位置
+    updatePlayhead(useVideoEditorStore.getState().currentTime)
+
+    let prevTime = useVideoEditorStore.getState().currentTime
+    const unsubscribe = useVideoEditorStore.subscribe((state) => {
+      const newTime = state.currentTime
+      if (newTime === prevTime) return
+      prevTime = newTime
+      if (isDraggingPlayheadRef.current) return
+      updatePlayhead(newTime)
+    })
+
+    return unsubscribe
+  }, [pps])
 
   const timeMarkers = useMemo(() => {
     const markers: { time: number; label: string; major: boolean }[] = []
@@ -235,15 +257,12 @@ export function TimelineEditor() {
   const handlePlayheadMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     setIsDraggingPlayhead(true)
-    const rect = timelineRef.current?.getBoundingClientRect()
-    if (rect) {
-      setLocalPlayheadX(e.clientX - rect.left + scrollLeft)
-    }
-  }, [scrollLeft])
+    isDraggingPlayheadRef.current = true
+  }, [])
 
   useEffect(() => {
     if (!isDraggingPlayhead) {
-      setLocalPlayheadX(null)
+      isDraggingPlayheadRef.current = false
       return
     }
 
@@ -253,10 +272,12 @@ export function TimelineEditor() {
       const rect = timeline.getBoundingClientRect()
       const x = clientX - rect.left + scrollLeft
 
-      // 1. 立即更新本地状态，实现 0 延迟反馈
-      setLocalPlayheadX(x)
+      // 直接操作 DOM，零延迟反馈，不触发 React 重渲染
+      if (playheadRef.current) {
+        playheadRef.current.style.transform = `translateX(${x}px)`
+      }
 
-      // 2. 异步更新 store，避免阻塞 UI
+      // 异步更新 store
       const newTime = xToTime(x)
       setCurrentTime(newTime)
     }
@@ -318,7 +339,7 @@ export function TimelineEditor() {
       if (!clip) return
       // 开始拖拽时预先计算同轨道吸附点，减少 move 阶段开销
       const sameTrackClips = clips.filter((c) => c.trackId === clip.trackId && c.id !== clip.id)
-      const snapPoints = [0, currentTime]
+      const snapPoints = [0, useVideoEditorStore.getState().currentTime]
       sameTrackClips.forEach((c) => {
         snapPoints.push(c.startTime, c.startTime + c.duration)
       })
@@ -335,7 +356,7 @@ export function TimelineEditor() {
       }
       selectClip(clipId, clipType)
     },
-    [videoClips, audioClips, subtitleClips, currentTime, selectClip]
+    [videoClips, audioClips, subtitleClips, selectClip]
   )
 
   useEffect(() => {
@@ -509,7 +530,7 @@ export function TimelineEditor() {
         .sort((a, b) => a.startTime - b.startTime)
       const prevClip = [...sameTrackClips].reverse().find((c) => c.startTime < clip.startTime)
       const nextClip = sameTrackClips.find((c) => c.startTime >= clip.startTime)
-      const snapPoints = [0, currentTime]
+      const snapPoints = [0, useVideoEditorStore.getState().currentTime]
       sameTrackClips.forEach((c) => {
         snapPoints.push(c.startTime, c.startTime + c.duration)
       })
@@ -542,7 +563,7 @@ export function TimelineEditor() {
       }
       selectClip(clipId, clipType)
     },
-    [videoClips, audioClips, subtitleClips, currentTime, selectClip]
+    [videoClips, audioClips, subtitleClips, selectClip]
   )
 
   useEffect(() => {
@@ -683,9 +704,9 @@ export function TimelineEditor() {
 
   const handleSplit = useCallback(() => {
     if (selectedClipId && selectedClipType === "video") {
-      splitVideoClip(selectedClipId, currentTime)
+      splitVideoClip(selectedClipId, useVideoEditorStore.getState().currentTime)
     }
-  }, [selectedClipId, selectedClipType, currentTime, splitVideoClip])
+  }, [selectedClipId, selectedClipType, splitVideoClip])
 
   const handleDelete = useCallback(() => {
     if (!selectedClipId || !selectedClipType) return
@@ -718,8 +739,6 @@ export function TimelineEditor() {
     }
   }, [scrollLeft])
 
-  // 播放头 X 位置：优先使用本地拖拽位置，否则使用 store 时间转换的位置
-  const playheadX = localPlayheadX !== null ? localPlayheadX : timeToX(currentTime)
   const getRenderStartTime = useCallback(
     (clipId: string, clipStartTime: number) => {
       if (resizingClip?.id === clipId && resizePreview !== null) return resizePreview.startTime
@@ -902,8 +921,9 @@ export function TimelineEditor() {
 
             {/* Playhead */}
             <div
+              ref={playheadRef}
               className="absolute top-0 bottom-0 w-px bg-red-500 z-30 pointer-events-none"
-              style={{ left: `${playheadX}px` }}
+              style={{ willChange: "transform" }}
             >
               <div
                 className={cn(
