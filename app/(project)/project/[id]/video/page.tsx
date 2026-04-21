@@ -191,17 +191,17 @@ export default function VideoPage() {
               <ResizablePanel id="properties" defaultSize={30} minSize="18%">
                 <div className="h-full ">
                   <Tabs value={rightTab} onValueChange={setRightTab} className="h-full flex flex-col">
-                    <TabsList className="shrink-0 w-full justify-start rounded-none border-b bg-transparent h-9 px-2">
-                      <TabsTrigger value="properties" className="text-xs h-7 gap-1 data-[state=active]:bg-muted">
-                        <Settings2 className="size-3" />
+                    <TabsList variant="line" className="shrink-0 w-full justify-start h-10 px-3">
+                      <TabsTrigger value="properties" className="text-sm h-full gap-1.5 px-3">
+                        <Settings2 className="size-3.5" />
                         属性
                       </TabsTrigger>
-                      <TabsTrigger value="bgm" className="text-xs h-7 gap-1 data-[state=active]:bg-muted">
-                        <Music className="size-3" />
+                      <TabsTrigger value="bgm" className="text-sm h-full gap-1.5 px-3">
+                        <Music className="size-3.5" />
                         BGM
                       </TabsTrigger>
-                      <TabsTrigger value="subtitle" className="text-xs h-7 gap-1 data-[state=active]:bg-muted">
-                        <Type className="size-3" />
+                      <TabsTrigger value="subtitle" className="text-sm h-full gap-1.5 px-3">
+                        <Type className="size-3.5" />
                         字幕
                       </TabsTrigger>
                     </TabsList>
