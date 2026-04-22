@@ -31,7 +31,7 @@ import { VideoPreviewDialog } from "./components/video-preview-dialog"
 import { GenerateShotTypeDialog } from "./components/generate-shot-type-dialog"
 import { BatchGenerateImagesDialog } from "./components/batch-generate-images-dialog"
 import { BatchGenerateVideosDialog } from "./components/batch-generate-videos-dialog"
-import type { ScriptShotPlan, ShotInput, Shot, Project } from "@/lib/types"
+import type { ScriptShotPlan, ShotInput, Shot, Project, ShotImageHistoryItem, ShotVideoHistoryItem } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
 
@@ -391,6 +391,56 @@ export default function ScriptShotPage() {
     }
   }, [currentActiveShot, clearVideo])
 
+  const handleRestoreImageHistory = useCallback((item: ShotImageHistoryItem) => {
+    if (!currentActiveShot) return
+    const { shot, scriptShotPlan } = currentActiveShot
+
+    const currentHistory = shot.imageHistory ? JSON.parse(shot.imageHistory) as ShotImageHistoryItem[] : []
+    const newHistory: ShotImageHistoryItem[] = shot.imageUrl
+      ? [
+          {
+            url: shot.imageUrl,
+            imageUrls: shot.imageUrls,
+            imageType: shot.imageType,
+            createdAt: new Date().toISOString(),
+          },
+          ...currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt),
+        ]
+      : currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt)
+
+    updateShot(scriptShotPlan.episodeId, shot.id, {
+      imageUrl: item.url,
+      imageUrls: item.imageUrls,
+      imageType: item.imageType,
+      imageStatus: "completed",
+      imageHistory: JSON.stringify(newHistory),
+    })
+  }, [currentActiveShot, updateShot])
+
+  const handleRestoreVideoHistory = useCallback((item: ShotVideoHistoryItem) => {
+    if (!currentActiveShot) return
+    const { shot, scriptShotPlan } = currentActiveShot
+
+    const currentHistory = shot.videoHistory ? JSON.parse(shot.videoHistory) as ShotVideoHistoryItem[] : []
+    const newHistory: ShotVideoHistoryItem[] = shot.videoUrl
+      ? [
+          {
+            url: shot.videoUrl,
+            videoDuration: shot.videoDuration,
+            createdAt: new Date().toISOString(),
+          },
+          ...currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt),
+        ]
+      : currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt)
+
+    updateShot(scriptShotPlan.episodeId, shot.id, {
+      videoUrl: item.url,
+      videoDuration: item.videoDuration,
+      videoStatus: "completed",
+      videoHistory: JSON.stringify(newHistory),
+    })
+  }, [currentActiveShot, updateShot])
+
   const handleBatchGenerateVideos = useCallback(
     (shotIds: string[]) => {
       generateBatchVideos(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
@@ -633,6 +683,8 @@ export default function ScriptShotPage() {
                       onClearImage={handleClearImage}
                       onClearVideo={handleClearVideo}
                       onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
+                      onRestoreImageHistory={handleRestoreImageHistory}
+                      onRestoreVideoHistory={handleRestoreVideoHistory}
                     />
                   </div>
                 </ResizablePanel>

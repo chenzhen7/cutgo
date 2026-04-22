@@ -406,6 +406,19 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
     taskType: "image_generate",
   })
 
+  // 如果有旧图片，保存到历史记录
+  const newImageHistory = shot.imageUrl
+    ? JSON.stringify([
+        {
+          url: shot.imageUrl,
+          imageUrls: shot.imageUrls,
+          imageType: shot.imageType,
+          createdAt: new Date().toISOString(),
+        },
+        ...(shot.imageHistory ? JSON.parse(shot.imageHistory) : []),
+      ])
+    : shot.imageHistory
+
   await prisma.shot.update({
     where: { id: shot.id },
     data: {
@@ -421,6 +434,7 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
       imageStatus: "generating",
       imageTaskId: task.id,
       imageErrorMessage: null,
+      imageHistory: newImageHistory,
     },
   })
 

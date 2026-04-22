@@ -248,6 +248,11 @@ model Shot {
   /// 播放速度（0.25x-4x）
   speed         Float   @default(1)
 
+  /// 历史图片记录 JSON [{url, imageUrls, imageType, createdAt}]
+  imageHistory String?
+  /// 历史视频记录 JSON [{url, videoDuration, createdAt}]
+  videoHistory String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -16,7 +16,7 @@ export async function PATCH(
     "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
     "scriptLineIds", "dialogueText", "actionNote",
     "videoUrl", "videoStatus", "videoPrompt", "videoDuration", "videoTaskId",
-    "volume", "speed",
+    "volume", "speed", "imageHistory", "videoHistory",
   ]
 
   for (const field of fields) {

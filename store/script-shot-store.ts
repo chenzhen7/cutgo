@@ -489,7 +489,8 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   generateImage: async (episodeId, shotId) => {
     const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
     const shot = sb?.shots.find((s) => s.id === shotId)
-    if (!shot) return
+    if (!shot || !sb) return
+    const projectId = sb.projectId
 
     const { assetCharacters, assetScenes, assetProps } = get()
     const characterIds = shot.characterIds ?? []
@@ -573,7 +574,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       })
 
       if (imageGeneratingIds.size > 0) {
-        scheduleImagePolling(sb.projectId, episodeId)
+        scheduleImagePolling(projectId, episodeId)
       }
     } catch (err) {
       set((state) => {

@@ -74,6 +74,18 @@ export const POST = withError(async (
     imageCount: imageUrls.length,
   })
 
+  // 如果有旧视频，保存到历史记录
+  const newVideoHistory = shot.videoUrl
+    ? JSON.stringify([
+        {
+          url: shot.videoUrl,
+          videoDuration: shot.videoDuration,
+          createdAt: new Date().toISOString(),
+        },
+        ...(shot.videoHistory ? JSON.parse(shot.videoHistory) : []),
+      ])
+    : shot.videoHistory
+
   try {
     const promptParts = []
     // if (shot.content) {
@@ -123,6 +135,7 @@ export const POST = withError(async (
         videoStatus: "generating",
         videoTaskId: result.taskId,
         videoUrl: null,
+        videoHistory: newVideoHistory,
       },
       include: { shotAssets: true },
     })

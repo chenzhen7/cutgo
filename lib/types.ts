@@ -445,11 +445,42 @@ export interface Shot {
   videoTaskId: string | null
   volume: number
   speed: number
+  imageHistory: string | null
+  videoHistory: string | null
   createdAt: string
   updatedAt: string
 }
 
 export type VideoStatus = "idle" | "generating" | "completed" | "error"
+
+export interface ShotImageHistoryItem {
+  url: string
+  imageUrls: string | null
+  imageType: ImageType
+  createdAt: string
+}
+
+export interface ShotVideoHistoryItem {
+  url: string
+  videoDuration: number | null
+  createdAt: string
+}
+
+export function parseShotImageHistory(value: string | null): ShotImageHistoryItem[] {
+  try {
+    return value ? JSON.parse(value) : []
+  } catch {
+    return []
+  }
+}
+
+export function parseShotVideoHistory(value: string | null): ShotVideoHistoryItem[] {
+  try {
+    return value ? JSON.parse(value) : []
+  } catch {
+    return []
+  }
+}
 
 export interface ScriptShotPlan {
   id: string
@@ -504,6 +535,8 @@ export interface ShotInput {
   videoTaskId?: string | null
   volume?: number
   speed?: number
+  imageHistory?: string | null
+  videoHistory?: string | null
   insertAfter?: string
 }
 

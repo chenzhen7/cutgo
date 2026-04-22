@@ -11,8 +11,9 @@ import {
   Maximize2,
 } from "lucide-react"
 import { cn, parseJsonArray } from "@/lib/utils"
-import type { Shot } from "@/lib/types"
+import type { Shot, ShotImageHistoryItem, ShotVideoHistoryItem } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
+import { ShotHistoryStrip } from "./shot-history-strip"
 
 interface ShotPreviewPanelProps {
   shot: Shot
@@ -23,6 +24,8 @@ interface ShotPreviewPanelProps {
   onClearImage: () => void
   onClearVideo: () => void
   onPlayVideo?: () => void
+  onRestoreImageHistory?: (item: ShotImageHistoryItem) => void
+  onRestoreVideoHistory?: (item: ShotVideoHistoryItem) => void
 }
 
 export function ShotPreviewPanel({
@@ -34,6 +37,8 @@ export function ShotPreviewPanel({
   onClearImage,
   onClearVideo,
   onPlayVideo,
+  onRestoreImageHistory,
+  onRestoreVideoHistory,
 }: ShotPreviewPanelProps) {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoRef = useCallback((node: HTMLVideoElement | null) => {
@@ -182,6 +187,14 @@ export function ShotPreviewPanel({
           </div>
         )}
       </div>
+
+      {/* History strip */}
+      <ShotHistoryStrip
+        shot={shot}
+        activeTab={activeTab}
+        onRestoreImage={onRestoreImageHistory}
+        onRestoreVideo={onRestoreVideoHistory}
+      />
     </div>
   )
 }
