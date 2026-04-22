@@ -243,6 +243,10 @@ model Shot {
   videoDuration Float?
   /// 视频生成异步任务 ID（用于轮询进度）
   videoTaskId   String?
+  /// 片段音量（0-200%）
+  volume        Float   @default(100)
+  /// 播放速度（0.25x-4x）
+  speed         Float   @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

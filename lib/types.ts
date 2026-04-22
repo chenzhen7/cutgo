@@ -443,6 +443,8 @@ export interface Shot {
   videoPrompt: string | null
   videoDuration: number | null
   videoTaskId: string | null
+  volume: number
+  speed: number
   createdAt: string
   updatedAt: string
 }
@@ -500,6 +502,8 @@ export interface ShotInput {
   videoPrompt?: string | null
   videoDuration?: number | null
   videoTaskId?: string | null
+  volume?: number
+  speed?: number
   insertAfter?: string
 }
 

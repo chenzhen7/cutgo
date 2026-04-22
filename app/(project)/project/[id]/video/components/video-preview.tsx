@@ -58,7 +58,12 @@ export function VideoPreview() {
       video.load()
     }
 
-    const clipLocalTime = currentTime - currentClip.startTime + currentClip.trimStart
+    // 应用播放速度
+    if (video.playbackRate !== currentClip.speed) {
+      video.playbackRate = currentClip.speed
+    }
+
+    const clipLocalTime = (currentTime - currentClip.startTime) * currentClip.speed + currentClip.trimStart
 
     // 判断是否为用户操作（点击跳转）：当前时间与上次循环更新的时间差异较大
     // 如果是循环更新，currentTime 应该非常接近 lastLoopTimeRef.current
@@ -98,7 +103,7 @@ export function VideoPreview() {
     let animFrame: number
     const tick = () => {
       if (video && !video.paused && currentClip) {
-        const newGlobalTime = video.currentTime - currentClip.trimStart + currentClip.startTime
+        const newGlobalTime = (video.currentTime - currentClip.trimStart) / currentClip.speed + currentClip.startTime
         // 只有当时间真的有显著变化时才更新 store，减少重绘压力
         if (Math.abs(newGlobalTime - useVideoEditorStore.getState().currentTime) > 0.01) {
           lastLoopTimeRef.current = newGlobalTime
@@ -111,11 +116,16 @@ export function VideoPreview() {
     return () => cancelAnimationFrame(animFrame)
   }, [isPlaying, currentClip, setCurrentTime])
 
+  // 同步片段音量与全局音量到 video 元素
   useEffect(() => {
     const video = videoRef.current
-    if (!video) return
-    video.volume = volume / 100
-  }, [volume])
+    if (!video || !currentClip) return
+    const clipVolume = currentClip.volume / 100
+    const globalVolume = volume / 100
+    const finalVolume = Math.min(1, globalVolume * clipVolume)
+    video.volume = finalVolume
+    video.muted = finalVolume === 0
+  }, [volume, currentClip])
 
   const togglePlay = useCallback(() => {
     if (currentTime >= duration && !isPlaying) {
@@ -209,7 +219,6 @@ export function VideoPreview() {
             ref={videoRef}
             className="max-w-full max-h-full object-contain"
             playsInline
-            muted={volume === 0}
           />
         ) : (
           <div className="flex flex-col items-center gap-3 text-white/40">

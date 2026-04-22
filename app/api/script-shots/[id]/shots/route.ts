@@ -21,6 +21,8 @@ export async function POST(
     sceneId,
     propIds,
     insertAfter,
+    volume = 100,
+    speed = 1,
   } = body
 
   if (!prompt) {
@@ -62,6 +64,8 @@ export async function POST(
       scriptLineIds: scriptLineIds || null,
       dialogueText: dialogueText || null,
       actionNote: actionNote || null,
+      volume,
+      speed,
     },
   })
 

@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import type { ScriptShotPlan, Episode } from "@/lib/types"
+import { apiFetch } from "@/lib/api-client"
 
 export interface TimelineClip {
   id: string
@@ -7,6 +8,7 @@ export interface TimelineClip {
   trackId: string
   startTime: number
   duration: number
+  sourceDuration: number
   trimStart: number
   trimEnd: number
   videoUrl: string
@@ -60,6 +62,7 @@ export interface SubtitleClip {
   trackId: string
   startTime: number
   duration: number
+  shotId?: string
   text: string
   style: {
     fontSize: number
@@ -193,20 +196,23 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
 
     let currentTime = 0
     const videoClips: TimelineClip[] = shotsWithVideo.map((shot) => {
-      const dur = typeof shot.videoDuration === 'number' ? shot.videoDuration : (typeof shot.duration === 'number' ? shot.duration : 5)
+      const sourceDur = typeof shot.videoDuration === 'number' ? shot.videoDuration : (typeof shot.duration === 'number' ? shot.duration : 5)
+      const speed = shot.speed || 1
+      const dur = sourceDur / speed
       const clip: TimelineClip = {
         id: genId(),
         shotId: shot.id,
         trackId: "video-main",
         startTime: currentTime,
         duration: dur,
+        sourceDuration: sourceDur,
         trimStart: 0,
         trimEnd: 0,
         videoUrl: shot.videoUrl!,
         thumbnailUrl: shot.imageUrl,
         label: shot.prompt?.slice(0, 20) || `镜头 ${shot.index + 1}`,
-        volume: 100,
-        speed: 1,
+        volume: shot.volume ?? 100,
+        speed,
         transition: "none",
         transitionDuration: 0.5,
       }
@@ -223,6 +229,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
           trackId: "subtitle-main",
           startTime: matchingClip?.startTime || 0,
           duration: matchingClip?.duration || 3,
+          shotId: shot.id,
           text: shot.dialogueText || "",
           style: {
             fontSize: 36,
@@ -258,7 +265,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
   },
 
   addVideoClip: (clip) => {
-    const newClip = { ...clip, id: genId() }
+    const newClip = { ...clip, id: genId(), sourceDuration: clip.sourceDuration ?? clip.duration }
     set((state) => {
       const clips = [...state.videoClips, newClip]
       return { videoClips: clips, duration: get().getTotalDuration() }
@@ -266,9 +273,63 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
   },
 
   updateVideoClip: (id, data) => {
-    set((state) => ({
-      videoClips: state.videoClips.map((c) => (c.id === id ? { ...c, ...data } : c)),
-    }))
+    const state = get()
+    const clipIndex = state.videoClips.findIndex((c) => c.id === id)
+    if (clipIndex === -1) return
+
+    const clip = state.videoClips[clipIndex]
+    let deltaDuration = 0
+    let finalData = { ...data }
+
+    // 如果 speed 变化，联动调整 duration 和后续片段位置
+    if (data.speed !== undefined && data.speed !== clip.speed) {
+      const newSpeed = data.speed
+      const newDuration = (clip.sourceDuration - clip.trimStart - clip.trimEnd) / newSpeed
+      deltaDuration = newDuration - clip.duration
+      finalData = { ...finalData, duration: newDuration }
+    }
+
+    set((s) => {
+      const updatedVideoClips = s.videoClips.map((c, i) => {
+        if (c.id === id) return { ...c, ...finalData }
+        // 后续 video clips 位移
+        if (i > clipIndex && deltaDuration !== 0) {
+          return { ...c, startTime: c.startTime + deltaDuration }
+        }
+        return c
+      })
+
+      // 位移与该 video clip 关联的 subtitle clip，并更新 duration
+      const updatedSubtitleClips = s.subtitleClips.map((c) => {
+        if (c.shotId === clip.shotId && deltaDuration !== 0) {
+          return { ...c, duration: clip.duration + deltaDuration }
+        }
+        // 后续 subtitle clips 位移
+        if (c.startTime > clip.startTime + clip.duration - 0.001 && deltaDuration !== 0) {
+          return { ...c, startTime: c.startTime + deltaDuration }
+        }
+        return c
+      })
+
+      return {
+        videoClips: updatedVideoClips,
+        subtitleClips: updatedSubtitleClips,
+      }
+    })
+
+    // 持久化 volume/speed 到 Shot
+    if ((finalData.volume !== undefined || finalData.speed !== undefined) && state.activeEpisodeId) {
+      apiFetch(`/api/script-shots/${state.activeEpisodeId}/shots/${clip.shotId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          volume: finalData.volume ?? clip.volume,
+          speed: finalData.speed ?? clip.speed,
+        }),
+      }).catch(() => {
+        // 静默失败，前端状态已更新
+      })
+    }
+
     set({ duration: get().getTotalDuration() })
   },
 
@@ -305,9 +366,12 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
     const relativeTime = time - clip.startTime
     if (relativeTime <= 0.1 || relativeTime >= clip.duration - 0.1) return
 
+    const materialSplitTime = relativeTime * clip.speed
+
     const firstHalf: TimelineClip = {
       ...clip,
       duration: relativeTime,
+      trimEnd: clip.sourceDuration - clip.trimStart - materialSplitTime,
     }
 
     const secondHalf: TimelineClip = {
@@ -315,7 +379,7 @@ export const useVideoEditorStore = create<VideoEditorState>((set, get) => ({
       id: genId(),
       startTime: clip.startTime + relativeTime,
       duration: clip.duration - relativeTime,
-      trimStart: clip.trimStart + relativeTime,
+      trimStart: clip.trimStart + materialSplitTime,
     }
 
     set((state) => ({

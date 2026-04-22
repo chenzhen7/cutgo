@@ -564,7 +564,7 @@ export function TimelineEditor() {
 
       const trimStart = "trimStart" in clip ? (clip as TimelineClip).trimStart : 0
       const trimEnd = "trimEnd" in clip ? (clip as TimelineClip).trimEnd : 0
-      const originalDuration = clip.duration + trimStart + trimEnd
+      const originalDuration = "sourceDuration" in clip ? (clip as TimelineClip).sourceDuration : clip.duration + trimStart + trimEnd
 
       setResizeOriginal({
         startTime: clip.startTime,

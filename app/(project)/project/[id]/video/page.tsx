@@ -22,10 +22,7 @@ import { EpisodeSelector } from "./components/episode-selector"
 import { sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { AssetLibrary } from "./components/asset-library"
 
-export default function VideoPage() {
-  const params = useParams()
-  const projectId = params.id as string
-
+function VideoEditor({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true)
   const [exportOpen, setExportOpen] = useState(false)
   const [rightTab, setRightTab] = useState<string>("properties")
@@ -235,6 +232,23 @@ export default function VideoPage() {
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
     </div>
   )
+}
+
+export default function VideoPage() {
+  const params = useParams()
+  const projectId = params.id as string
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  return <VideoEditor projectId={projectId} />
 }
 
 function SubtitleOverview() {
