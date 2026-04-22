@@ -101,7 +101,6 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
 
 function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo, aspectRatio }: { shot: Shot; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void; aspectRatio?: string }) {
   const imageType = shot.imageType || "keyframe"
-  const hasImage = !!shot.imageUrl
   const imageUrls = useMemo(() => shot.imageUrls ? JSON.parse(shot.imageUrls) : [], [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
@@ -123,23 +122,26 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
     )
   }
 
-  if (!hasImage) {
-    return (
-      <div className={containerClassName}>
-        <div className={cn(contentClassName, "bg-muted/30 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center gap-1.5")}>
-          <ImageIcon className="size-6 text-muted-foreground/25 @[900px]:size-8" />
-          <span className="text-[9px] text-muted-foreground/40 @[900px]:text-[10px]">{typeLabel}</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (imageType === "first_last" && imageUrls.length >= 2) {
+  if (imageType === "first_last") {
     return (
       <div className={containerClassName}>
         <div className={cn(contentClassName, "flex flex-row gap-0.5")}>
-          <PreviewableImage src={imageUrls[0]} alt="首帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
-          <PreviewableImage src={imageUrls[1]} alt="尾帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
+          {shot.imageUrl ? (
+            <PreviewableImage src={shot.imageUrl} alt="首帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
+          ) : (
+            <div className="w-1/2 min-w-0 h-full flex flex-col items-center justify-center bg-muted/30 border-r border-dashed border-muted-foreground/10">
+              <ImageIcon className="size-4 text-muted-foreground/25 @[900px]:size-5" />
+              <span className="text-[8px] text-muted-foreground/40 @[900px]:text-[9px] mt-0.5">首帧</span>
+            </div>
+          )}
+          {imageUrls[1] ? (
+            <PreviewableImage src={imageUrls[1]} alt="尾帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
+          ) : (
+            <div className="w-1/2 min-w-0 h-full flex flex-col items-center justify-center bg-muted/30">
+              <ImageIcon className="size-4 text-muted-foreground/25 @[900px]:size-5" />
+              <span className="text-[8px] text-muted-foreground/40 @[900px]:text-[9px] mt-0.5">尾帧</span>
+            </div>
+          )}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
           </div>
@@ -153,7 +155,14 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
     return (
       <div className={containerClassName}>
         <div className={contentClassName}>
-          <PreviewableImage src={shot.imageUrl!} alt="多宫格" className="size-full object-contain bg-black" />
+          {shot.imageUrl ? (
+            <PreviewableImage src={shot.imageUrl} alt="多宫格" className="size-full object-contain bg-black" />
+          ) : (
+            <div className="size-full flex flex-col items-center justify-center bg-muted/30">
+              <ImageIcon className="size-6 text-muted-foreground/25 @[900px]:size-8" />
+              <span className="text-[9px] text-muted-foreground/40 @[900px]:text-[10px] mt-1">{shot.gridLayout || "2x2"}</span>
+            </div>
+          )}
           <div className="absolute inset-0 pointer-events-none" style={{
             backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
             backgroundSize: "50% 50%",
@@ -170,7 +179,14 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
   return (
     <div className={containerClassName}>
       <div className={contentClassName}>
-        <PreviewableImage src={shot.imageUrl!} alt="关键帧" className="size-full object-contain bg-black" />
+        {shot.imageUrl ? (
+          <PreviewableImage src={shot.imageUrl} alt="关键帧" className="size-full object-contain bg-black" />
+        ) : (
+          <div className="size-full flex flex-col items-center justify-center bg-muted/30">
+            <ImageIcon className="size-6 text-muted-foreground/25 @[900px]:size-8" />
+            <span className="text-[9px] text-muted-foreground/40 @[900px]:text-[10px] mt-1">{typeLabel}</span>
+          </div>
+        )}
         <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     </div>
@@ -212,6 +228,9 @@ export const ShotCard = memo(function ShotCard({
   const handleGenerateImage = useCallback(() => onGenerateImage(episodeId, shot.id), [onGenerateImage, episodeId, shot.id])
   const handleGenerateVideo = useCallback(() => onGenerateVideo(episodeId, shot.id), [onGenerateVideo, episodeId, shot.id])
   const handlePlayVideo = useCallback(() => onPlayVideo(shot.id), [onPlayVideo, shot.id])
+
+  const imageType = shot.imageType || "keyframe"
+  const imageUrls = shot.imageUrls ? JSON.parse(shot.imageUrls) : []
 
   const boundCharacters = useMemo(
     () => (shot.characterIds ?? []).map((id) => assetCharacterMap.get(id)).filter((v): v is AssetCharacter => !!v),
@@ -256,6 +275,40 @@ export const ShotCard = memo(function ShotCard({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
               <Loader2 className="size-8 animate-spin text-primary" />
               <span className="text-xs font-medium text-muted-foreground">生成中</span>
+            </div>
+          ) : imageType === "first_last" ? (
+            <div className="absolute inset-0 flex flex-row gap-px bg-black">
+              {shot.imageUrl ? (
+                <PreviewableImage src={shot.imageUrl} alt="首帧" previewable={false} className="flex-1 object-contain bg-black" />
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center bg-muted/30">
+                  <ImageIcon className="size-4 text-muted-foreground/25" />
+                </div>
+              )}
+              {imageUrls[1] ? (
+                <PreviewableImage src={imageUrls[1]} alt="尾帧" previewable={false} className="flex-1 object-contain bg-black" />
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center bg-muted/30">
+                  <ImageIcon className="size-4 text-muted-foreground/25" />
+                </div>
+              )}
+            </div>
+          ) : imageType === "multi_grid" ? (
+            <div className="absolute inset-0">
+              {shot.imageUrl ? (
+                <PreviewableImage src={shot.imageUrl} alt="多宫格" previewable={false} className="size-full object-contain bg-black" />
+              ) : (
+                <div className="size-full flex flex-col items-center justify-center bg-muted/30">
+                  <ImageIcon className="size-6 text-muted-foreground/25" />
+                </div>
+              )}
+              <div className="absolute inset-0 pointer-events-none" style={{
+                backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
+                backgroundSize: "50% 50%",
+              }} />
+              <div className="absolute bottom-1 right-1 bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">
+                {shot.gridLayout || "2x2"}
+              </div>
             </div>
           ) : shot.imageUrl ? (
             <PreviewableImage src={shot.imageUrl} alt="分镜" previewable={false} className="size-full object-contain bg-black" />

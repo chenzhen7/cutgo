@@ -66,18 +66,25 @@ export function ShotPreviewPanel({
                 <Loader2 className="size-6 animate-spin text-primary" />
                 <span className="text-xs text-muted-foreground">生成中...</span>
               </div>
-            ) : imageType === "first_last" && imageUrls.length >= 2 ? (
+            ) : imageType === "first_last" ? (
               <div className="h-full min-h-0 flex gap-2">
                 <div className="flex-1 min-h-0 flex flex-col gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
                   <div className={cn(
                     "flex-1 min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
                   )}>
-                    <PreviewableImage
-                      src={imageUrls[0]}
-                      alt="首帧"
-                      className="max-h-full max-w-full rounded-md object-contain"
-                    />
+                    {shot.imageUrl ? (
+                      <PreviewableImage
+                        src={shot.imageUrl}
+                        alt="首帧"
+                        className="max-h-full max-w-full rounded-md object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <ImageIcon className="size-6 text-muted-foreground/25" />
+                        <span className="text-[10px] text-muted-foreground/40">暂无首帧</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col gap-1">
@@ -85,12 +92,51 @@ export function ShotPreviewPanel({
                   <div className={cn(
                     "flex-1 min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
                   )}>
-                    <PreviewableImage
-                      src={imageUrls[1]}
-                      alt="尾帧"
-                      className="max-h-full max-w-full rounded-md object-contain"
-                    />
+                    {imageUrls[1] ? (
+                      <PreviewableImage
+                        src={imageUrls[1]}
+                        alt="尾帧"
+                        className="max-h-full max-w-full rounded-md object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <ImageIcon className="size-6 text-muted-foreground/25" />
+                        <span className="text-[10px] text-muted-foreground/40">暂无尾帧</span>
+                      </div>
+                    )}
                   </div>
+                </div>
+              </div>
+            ) : imageType === "multi_grid" ? (
+              <div className={cn(
+                "relative h-full min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
+              )}>
+                {shot.imageUrl && (
+                  <button
+                    onClick={onClearImage}
+                    className="absolute right-2 top-2 z-10 text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-0.5 bg-background/70 rounded px-1.5 py-0.5"
+                  >
+                    <Trash2 className="size-3" />清除
+                  </button>
+                )}
+                {shot.imageUrl ? (
+                  <PreviewableImage
+                    src={shot.imageUrl}
+                    alt="多宫格预览"
+                    className="max-h-full max-w-full rounded-md object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <ImageIcon className="size-8 text-muted-foreground/25" />
+                    <span className="text-xs text-muted-foreground/40">暂无宫格画面</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 pointer-events-none rounded-lg" style={{
+                  backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
+                  backgroundSize: "50% 50%",
+                }} />
+                <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[9px] px-1.5 py-0.5 rounded">
+                  {shot.gridLayout || "2x2"}
                 </div>
               </div>
             ) : hasImage ? (
