@@ -438,6 +438,10 @@ export interface Shot {
   sceneId: string | null
   /** 关联道具资产 id 列表（由 ShotAsset 表派生） */
   propIds: string[]
+  /** 用户自定义参考图 URL 列表（JSON 字符串） */
+  refImageUrls: string | null
+  /** 用户自定义参考图说明 */
+  refImageNote: string | null
   videoUrl: string | null
   videoStatus: VideoStatus | null
   videoPrompt: string | null
@@ -528,6 +532,8 @@ export interface ShotInput {
   characterIds?: string[]
   sceneId?: string | null
   propIds?: string[]
+  refImageUrls?: string | null
+  refImageNote?: string | null
   videoUrl?: string | null
   videoStatus?: VideoStatus | null
   videoPrompt?: string | null

@@ -32,6 +32,7 @@ type SubmitShotImageInput = {
   negativePrompt?: string
   referenceImages?: string[]
   refLabels?: string[]
+  refImageNote?: string
 }
 
 type SerializableShot = Awaited<ReturnType<typeof getSerializedShot>>
@@ -255,6 +256,7 @@ async function executeShotImageTask(input: {
   negativePrompt: string | null
   referenceImages?: string[]
   refLabels?: string[]
+  referenceImageNote?: string
 }) {
   try {
     if (input.imageType === "keyframe") {
@@ -267,6 +269,7 @@ async function executeShotImageTask(input: {
         aspectRatio: input.aspectRatio,
         resolution: input.resolution,
         referenceImages: input.referenceImages,
+        referenceImageNote: input.referenceImageNote,
       })
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
       await markShotCompleted(input.shotId, input.taskId, {
@@ -290,6 +293,7 @@ async function executeShotImageTask(input: {
           aspectRatio: input.aspectRatio,
           resolution: input.resolution,
           referenceImages: input.referenceImages,
+          referenceImageNote: input.referenceImageNote,
         }),
         callImage({
           prompt: promptEnd,
@@ -299,6 +303,7 @@ async function executeShotImageTask(input: {
           aspectRatio: input.aspectRatio,
           resolution: input.resolution,
           referenceImages: input.referenceImages,
+          referenceImageNote: input.referenceImageNote,
         }),
       ])
 
@@ -329,6 +334,7 @@ async function executeShotImageTask(input: {
       aspectRatio: input.aspectRatio,
       resolution: input.resolution,
       referenceImages: input.referenceImages,
+      referenceImageNote: input.referenceImageNote,
     })
     const imageUrl = Array.isArray(result) ? result[0].url : result.url
 
@@ -388,6 +394,16 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
     }
   })()
 
+  // 用户自定义参考图
+  const refImageUrls: string[] = input.referenceImages ?? (() => {
+    try {
+      return shot.refImageUrls ? (JSON.parse(shot.refImageUrls) as string[]) : []
+    } catch {
+      return []
+    }
+  })()
+  const refImageNote = input.refImageNote ?? shot.refImageNote
+
   if (imageType !== "multi_grid" && !prompt) {
     throwCutGoError("MISSING_PARAMS", "prompt is required")
   }
@@ -435,6 +451,7 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
       imageTaskId: task.id,
       imageErrorMessage: null,
       imageHistory: newImageHistory,
+      ...(input.refImageNote !== undefined ? { refImageNote: input.refImageNote } : {}),
     },
   })
 
@@ -453,8 +470,9 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
       gridLayout,
       gridPrompts,
       negativePrompt,
-      referenceImages: input.referenceImages,
+      referenceImages: refImageUrls.length > 0 ? refImageUrls : input.referenceImages,
       refLabels: input.refLabels,
+      referenceImageNote: refImageNote ?? undefined,
     })
   )
 
@@ -583,10 +601,27 @@ export async function submitBatchShotImageTasks(input: {
       }
     }
 
+    // 合并用户自定义参考图
+    const customRefUrls: string[] = (() => {
+      try {
+        return shot.refImageUrls ? (JSON.parse(shot.refImageUrls) as string[]) : []
+      } catch {
+        return []
+      }
+    })()
+    for (const url of customRefUrls) {
+      if (url) {
+        referenceImages.push(url)
+        refLabels.push(`图${imgIndex}为用户参考图`)
+        imgIndex++
+      }
+    }
+
     const result = await submitShotImageTask({
       shotId: shot.id,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
       refLabels: refLabels.length > 0 ? refLabels : undefined,
+      refImageNote: shot.refImageNote ?? undefined,
     })
     submitted.push({ shotId: shot.id, taskId: result.taskId })
   }

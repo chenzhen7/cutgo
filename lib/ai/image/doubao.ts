@@ -52,8 +52,8 @@ export class DoubaoImageProvider implements ImageProvider {
   }
 
   private async generateSingle(options: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const { prompt: rawPrompt, negativePrompt, aspectRatio, referenceImages, projectId, scope } = options
-    const prompt = this.buildPrompt(rawPrompt, negativePrompt)
+    const { prompt: rawPrompt, negativePrompt, aspectRatio, referenceImages, referenceImageNote, projectId, scope } = options
+    const prompt = this.buildPrompt(rawPrompt, negativePrompt, referenceImageNote)
     const url = `${this.baseUrl}/images/generations`
     const imageInput = await this.resolveImageInput(referenceImages)
     
@@ -124,9 +124,15 @@ export class DoubaoImageProvider implements ImageProvider {
     throwCutGoError("INTERNAL", "豆包生图服务返回格式异常：缺少图片地址")
   }
 
-  private buildPrompt(prompt: string, negativePrompt?: string): string {
-    if (!negativePrompt?.trim()) return prompt
-    return `${prompt}\n\nNegative prompt: ${negativePrompt}`
+  private buildPrompt(prompt: string, negativePrompt?: string, referenceImageNote?: string): string {
+    let result = prompt
+    if (referenceImageNote?.trim()) {
+      result = `${result}\n\n参考图说明：${referenceImageNote.trim()}`
+    }
+    if (negativePrompt?.trim()) {
+      result = `${result}\n\nNegative prompt: ${negativePrompt}`
+    }
+    return result
   }
 
   /** 参考图：URL 或 data:image/...;base64,...；单张 string，多张 string[] */

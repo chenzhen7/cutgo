@@ -538,6 +538,22 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       }
     }
 
+    // 用户自定义参考图
+    const customRefUrls: string[] = (() => {
+      try {
+        return shot.refImageUrls ? (JSON.parse(shot.refImageUrls) as string[]) : []
+      } catch {
+        return []
+      }
+    })()
+    for (const url of customRefUrls) {
+      if (url) {
+        referenceImages.push(url)
+        refLabels.push(`图${imgIndex}为用户参考图`)
+        imgIndex++
+      }
+    }
+
     const body: Record<string, unknown> = {
       shotId,
       imageType: shot.imageType || "keyframe",
@@ -547,6 +563,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       negativePrompt: shot.negativePrompt,
       referenceImages,
       refLabels,
+      refImageNote: shot.refImageNote,
     }
 
     if (shot.imageType === "multi_grid") {

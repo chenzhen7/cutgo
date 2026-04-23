@@ -36,6 +36,7 @@ import {
   Loader2,
   ImageIcon,
   Video,
+  Plus,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
@@ -106,6 +107,14 @@ function parseGridPrompts(value: string | null): string[] {
   }
 }
 
+function parseRefImageUrls(value: string | null): string[] {
+  try {
+    return value ? JSON.parse(value) : []
+  } catch {
+    return []
+  }
+}
+
 interface ShotDetailPanelProps {
   shot: Shot
   scriptShotPlan: ScriptShotPlan
@@ -164,6 +173,9 @@ export function ShotDetailPanel({
   const [gridPrompts, setGridPrompts] = useState<string[]>(() => parseGridPrompts(shot.gridPrompts))
   const [videoPrompt, setVideoPrompt] = useState(() => shot.videoPrompt || "")
   const [duration, setDuration] = useState<string>(() => shot.duration?.toString() || "5")
+  const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseRefImageUrls(shot.refImageUrls))
+  const [refImageNote, setRefImageNote] = useState(() => shot.refImageNote || "")
+  const [readingRefFile, setReadingRefFile] = useState(false)
   const debouncedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const updateShotData = useCallback(
@@ -252,6 +264,32 @@ export function ShotDetailPanel({
     newPrompts[index] = value
     setGridPrompts(newPrompts)
     debouncedUpdate({ gridPrompts: JSON.stringify(newPrompts) })
+  }
+
+  const handleAddRefImage = async (file: File) => {
+    setReadingRefFile(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "")
+        reader.onerror = () => reject(new Error("读取图片失败"))
+        reader.readAsDataURL(file)
+      })
+      if (!dataUrl) throw new Error("读取图片失败")
+      const next = [...refImageUrls, dataUrl]
+      setRefImageUrls(next)
+      updateShotData({ refImageUrls: JSON.stringify(next) })
+    } catch {
+      // ignore
+    } finally {
+      setReadingRefFile(false)
+    }
+  }
+
+  const handleRemoveRefImage = (index: number) => {
+    const next = refImageUrls.filter((_, i) => i !== index)
+    setRefImageUrls(next)
+    updateShotData({ refImageUrls: next.length > 0 ? JSON.stringify(next) : null })
   }
 
   const imageType = shot.imageType || "keyframe"
@@ -535,6 +573,59 @@ export function ShotDetailPanel({
                       <EmptyBinding />
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Custom reference images */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">自定义参考</Label>
+
+                <div className="grid grid-cols-4 gap-1.5">
+                  {refImageUrls.map((url, i) => (
+                    <div key={i} className="relative aspect-square rounded-md overflow-hidden border bg-muted group">
+                      <img src={url} alt={`参考图${i + 1}`} className="size-full object-cover" />
+                      <button
+                        onClick={() => handleRemoveRefImage(i)}
+                        className="absolute top-0.5 right-0.5 z-10 flex items-center justify-center size-4 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className={cn(
+                    "aspect-square rounded-md border border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors",
+                    readingRefFile && "opacity-50 pointer-events-none"
+                  )}>
+                    {readingRefFile ? (
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Plus className="size-4 text-muted-foreground" />
+                    )}
+                    <span className="text-[9px] text-muted-foreground mt-0.5">添加</span>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.currentTarget.files?.[0]
+                        if (file) void handleAddRefImage(file)
+                        e.currentTarget.value = ""
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">参考图说明（可选）</Label>
+                  <Textarea
+                    value={refImageNote}
+                    onChange={(e) => {
+                      setRefImageNote(e.target.value)
+                      debouncedUpdate({ refImageNote: e.target.value || null })
+                    }}
+                    className="text-xs min-h-[40px] max-h-[80px]"
+                    placeholder="说明各参考图的用途，如：图1为女主服装参考..."
+                  />
                 </div>
               </div>
 

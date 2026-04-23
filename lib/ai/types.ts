@@ -76,6 +76,8 @@ export interface ImageGenerateOptions {
   negativePrompt?: string
   /** 参考图 URL / Base64（data:image/...;base64,...） */
   referenceImages?: string[]
+  /** 参考图额外说明 */
+  referenceImageNote?: string
   /** 宽高比例，如 "9:16"、"16:9"、"1:1" */
   aspectRatio?: string
   /** 分辨率，如 "1080x1920"、"1920x1080"、"512x512" */

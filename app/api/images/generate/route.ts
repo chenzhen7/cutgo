@@ -15,6 +15,7 @@ interface GenerateImageRequest {
   resolution?: string
   referenceImages?: string[]
   refLabels?: string[]
+  refImageNote?: string
 }
 
 export const POST = withError(async (request: NextRequest) => {
