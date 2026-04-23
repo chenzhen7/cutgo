@@ -176,6 +176,7 @@ export function ShotDetailPanel({
   const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseRefImageUrls(shot.refImageUrls))
   const [refImageNote, setRefImageNote] = useState(() => shot.refImageNote || "")
   const [readingRefFile, setReadingRefFile] = useState(false)
+  const [dragOverRef, setDragOverRef] = useState(false)
   const debouncedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const updateShotData = useCallback(
@@ -578,9 +579,36 @@ export function ShotDetailPanel({
 
               {/* Custom reference images */}
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">自定义参考</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">自定义参考</Label>
+                  <span className="text-[10px] text-muted-foreground">支持点击上传或拖入图片</span>
+                </div>
 
-                <div className="grid grid-cols-4 gap-1.5">
+                <div
+                  className={cn(
+                    "grid grid-cols-4 gap-1.5 rounded-md p-1 transition-colors border border-transparent",
+                    dragOverRef && "bg-primary/10 border-dashed border-primary"
+                  )}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setDragOverRef(true)
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setDragOverRef(false)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setDragOverRef(false)
+                    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"))
+                    for (const file of files) {
+                      void handleAddRefImage(file)
+                    }
+                  }}
+                >
                   {refImageUrls.map((url, i) => (
                     <div key={i} className="relative aspect-square rounded-md overflow-hidden border bg-muted group">
                       <img src={url} alt={`参考图${i + 1}`} className="size-full object-cover" />
