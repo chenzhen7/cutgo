@@ -61,7 +61,7 @@ interface ShotCardProps {
   onPlayVideo: (shotId: string) => void
 }
 
-function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; isGeneratingVideo: boolean; onPlayVideo?: () => void }) {
+function VideoOverlay({ shot, detailTab = "image", isGeneratingVideo, onPlayVideo }: { shot: Shot; detailTab?: ShotDetailTab; isGeneratingVideo: boolean; onPlayVideo?: () => void }) {
   const hasVideo = !!shot.videoUrl
 
   if (isGeneratingVideo) {
@@ -82,16 +82,18 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
           <Video className="size-2.5" />
           {shot.videoDuration ? `${shot.videoDuration}s` : "5s"}
         </div>
-        <div
-          className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30 rounded-lg"
-        >
-          <button
-            onClick={(e) => { e.stopPropagation(); onPlayVideo?.() }}
-            className="size-8 rounded-full bg-white/90 flex items-center justify-center hover:scale-110 transition-transform"
+        {detailTab === "video" && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30 rounded-lg"
           >
-            <Play className="size-4 text-violet-600 ml-0.5" />
-          </button>
-        </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); onPlayVideo?.() }}
+              className="size-8 rounded-full bg-white/90 flex items-center justify-center hover:scale-110 transition-transform"
+            >
+              <Play className="size-4 text-violet-600 ml-0.5" />
+            </button>
+          </div>
+        )}
       </>
     )
   }
@@ -99,7 +101,7 @@ function VideoOverlay({ shot, isGeneratingVideo, onPlayVideo }: { shot: Shot; is
   return null
 }
 
-function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo, aspectRatio }: { shot: Shot; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void; aspectRatio?: string }) {
+function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGeneratingVideo, onPlayVideo, aspectRatio }: { shot: Shot; detailTab?: ShotDetailTab; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void; aspectRatio?: string }) {
   const imageType = shot.imageType || "keyframe"
   const imageUrls = useMemo(() => shot.imageUrls ? JSON.parse(shot.imageUrls) : [], [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
@@ -109,6 +111,24 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
     ? "relative w-[150px] shrink-0 self-start @[480px]:w-[180px] @[640px]:w-[230px] @[900px]:w-[280px] @[1200px]:w-[340px] aspect-[16/9] transition-all duration-300"
     : "relative w-[80px] shrink-0 self-start @[480px]:w-[105px] @[640px]:w-[130px] @[900px]:w-[160px] @[1200px]:w-[200px] aspect-[9/16] transition-all duration-300"
   const contentClassName = "absolute inset-0 rounded-lg overflow-hidden border bg-muted/20"
+
+  if (detailTab === "video") {
+    return (
+      <div className={containerClassName}>
+        <div className={contentClassName}>
+          {shot.videoUrl ? (
+            <video src={shot.videoUrl} preload="metadata" muted className="size-full object-contain bg-black" />
+          ) : (
+            <div className="size-full flex flex-col items-center justify-center bg-muted/30">
+              <Video className="size-6 text-muted-foreground/25 @[900px]:size-8" />
+              <span className="text-[9px] text-muted-foreground/40 @[900px]:text-[10px] mt-1">暂无视频</span>
+            </div>
+          )}
+          <VideoOverlay shot={shot} detailTab={detailTab} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+        </div>
+      </div>
+    )
+  }
 
   if (isGeneratingImage) {
     return (
@@ -145,7 +165,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">首尾帧</div>
           </div>
-          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+          <VideoOverlay shot={shot} detailTab={detailTab} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
         </div>
       </div>
     )
@@ -170,7 +190,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
           <div className="absolute bottom-1 right-1 bg-black/40 text-white text-[8px] px-1.5 py-0.5 rounded">
             {shot.gridLayout || "2x2"}
           </div>
-          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+          <VideoOverlay shot={shot} detailTab={detailTab} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
         </div>
       </div>
     )
@@ -187,7 +207,7 @@ function ShotThumbnail({ shot, isGeneratingImage, isGeneratingVideo, onPlayVideo
             <span className="text-[9px] text-muted-foreground/40 @[900px]:text-[10px] mt-1">{typeLabel}</span>
           </div>
         )}
-        <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
+        <VideoOverlay shot={shot} detailTab={detailTab} isGeneratingVideo={isGeneratingVideo} onPlayVideo={onPlayVideo} />
       </div>
     </div>
   )
@@ -271,7 +291,16 @@ export const ShotCard = memo(function ShotCard({
           "relative w-full bg-muted/30 overflow-hidden",
           aspectRatio === "16:9" ? "aspect-[16/9]" : "aspect-[9/16]"
         )}>
-          {isGeneratingImage ? (
+          {detailTab === "video" ? (
+            shot.videoUrl ? (
+              <video src={shot.videoUrl} preload="metadata" muted className="size-full object-contain bg-black" />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                <Video className="size-6 text-muted-foreground/25" />
+                <span className="text-xs text-muted-foreground/40">暂无视频</span>
+              </div>
+            )
+          ) : isGeneratingImage ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
               <Loader2 className="size-8 animate-spin text-primary" />
               <span className="text-xs font-medium text-muted-foreground">生成中</span>
@@ -319,7 +348,7 @@ export const ShotCard = memo(function ShotCard({
           )}
 
           {/* Video overlay */}
-          <VideoOverlay shot={shot} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} />
+          <VideoOverlay shot={shot} detailTab={detailTab} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} />
 
           {/* Index badge */}
           <div className={cn(
@@ -441,7 +470,7 @@ export const ShotCard = memo(function ShotCard({
 
       <div className="flex items-stretch gap-2.5 @[640px]:gap-3 @[900px]:gap-3.5">
         {/* Left: Thumbnail */}
-        <ShotThumbnail shot={shot} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} aspectRatio={aspectRatio} />
+        <ShotThumbnail shot={shot} detailTab={detailTab} isGeneratingImage={isGeneratingImage} isGeneratingVideo={isGeneratingVideo} onPlayVideo={handlePlayVideo} aspectRatio={aspectRatio} />
 
         {/* Center: Index + Content */}
         <div className="flex-1 min-w-0  flex gap-2 @[640px]:gap-2.5">
