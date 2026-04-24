@@ -111,10 +111,13 @@ function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGenerat
     ? "relative w-[150px] shrink-0 self-start @[480px]:w-[180px] @[640px]:w-[230px] @[900px]:w-[280px] @[1200px]:w-[340px] aspect-[16/9] transition-all duration-300"
     : "relative w-[80px] shrink-0 self-start @[480px]:w-[105px] @[640px]:w-[130px] @[900px]:w-[160px] @[1200px]:w-[200px] aspect-[9/16] transition-all duration-300"
   const contentClassName = "absolute inset-0 rounded-lg overflow-hidden border bg-muted/20"
+  const handleThumbnailClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
 
   if (detailTab === "video") {
     return (
-      <div className={containerClassName}>
+      <div className={containerClassName} onClick={handleThumbnailClick}>
         <div className={contentClassName}>
           {shot.videoUrl ? (
             <video src={shot.videoUrl} preload="metadata" muted className="size-full object-contain bg-black" />
@@ -132,7 +135,7 @@ function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGenerat
 
   if (isGeneratingImage) {
     return (
-      <div className={containerClassName}>
+      <div className={containerClassName} onClick={handleThumbnailClick}>
         <div className={cn(contentClassName, "bg-muted/50 border border-dashed border-muted-foreground/15 flex flex-col items-center justify-center gap-1.5")}>
           <Loader2 className="size-6 animate-spin text-primary @[900px]:size-8" />
           <span className="text-[9px] font-medium text-muted-foreground @[900px]:text-[10px]">生成中</span>
@@ -144,7 +147,7 @@ function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGenerat
 
   if (imageType === "first_last") {
     return (
-      <div className={containerClassName}>
+      <div className={containerClassName} onClick={handleThumbnailClick}>
         <div className={cn(contentClassName, "flex flex-row gap-0.5")}>
           {shot.imageUrl ? (
             <PreviewableImage src={shot.imageUrl} alt="首帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
@@ -173,7 +176,7 @@ function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGenerat
 
   if (imageType === "multi_grid") {
     return (
-      <div className={containerClassName}>
+      <div className={containerClassName} onClick={handleThumbnailClick}>
         <div className={contentClassName}>
           {shot.imageUrl ? (
             <PreviewableImage src={shot.imageUrl} alt="多宫格" className="size-full object-contain bg-black" />
@@ -197,7 +200,7 @@ function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGenerat
   }
 
   return (
-    <div className={containerClassName}>
+    <div className={containerClassName} onClick={handleThumbnailClick}>
       <div className={contentClassName}>
         {shot.imageUrl ? (
           <PreviewableImage src={shot.imageUrl} alt="关键帧" className="size-full object-contain bg-black" />
