@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Shot, ScriptShotPlan, ShotInput } from "@/lib/types"
 import { Loader2, Image as ImageIcon } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 
 // ─── 行级 memo 组件：仅在自身相关 props 变化时重渲染 ───────────────────────
 
@@ -16,8 +17,10 @@ interface ShotRowProps {
   index: number
   isSelected: boolean
   isGeneratingVideo: boolean
+  contentValue: string
   durationValue: string
   onToggle: (id: string) => void
+  onContentChange: (shotId: string, content: string) => void
   onDurationChange: (shotId: string, duration: string) => void
   onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
 }
@@ -27,8 +30,10 @@ const ShotRow = memo(function ShotRow({
   index,
   isSelected,
   isGeneratingVideo,
+  contentValue,
   durationValue,
   onToggle,
+  onContentChange,
   onDurationChange,
 }: ShotRowProps) {
   const hasImage = !!shot.imageUrl
@@ -100,9 +105,14 @@ const ShotRow = memo(function ShotRow({
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-        <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
-          {shot.content?.trim() || "暂无分镜描述"}
-        </p>
+        <Textarea
+          value={contentValue}
+          onChange={(e) => onContentChange(shot.id, e.target.value)}
+          placeholder="分镜内容"
+          className="min-h-[60px] text-sm resize-y"
+          onPointerDown={(e) => e.stopPropagation()}
+          disabled={!hasImage}
+        />
         <div className="flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground whitespace-nowrap">时长(秒)</span>
@@ -145,6 +155,7 @@ export function BatchGenerateVideosDialog({
   videoGeneratingIds,
 }: BatchGenerateVideosDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [contentValues, setContentValues] = useState<Record<string, string>>({})
   const [durationValues, setDurationValues] = useState<Record<string, string>>({})
   const debounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
@@ -153,6 +164,7 @@ export function BatchGenerateVideosDialog({
       shot.id,
       {
         episodeId: scriptShotPlan.episodeId,
+        originalContent: shot.content || "",
         originalDuration: shot.duration?.toString() || "5",
       }
     ])),
@@ -165,6 +177,7 @@ export function BatchGenerateVideosDialog({
         shots.filter((s) => s.shot.imageUrl && !s.shot.videoUrl && !videoGeneratingIds.has(s.shot.id)).map((s) => s.shot.id)
       )
       setSelectedIds(missingIds)
+      setContentValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.content || ""])))
       setDurationValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.duration?.toString() || "5"])))
     }
   }, [open, shots, videoGeneratingIds])
@@ -202,6 +215,11 @@ export function BatchGenerateVideosDialog({
     debounceTimersRef.current.forEach((timer) => clearTimeout(timer))
     debounceTimersRef.current.clear()
 
+    Object.entries(contentValues).forEach(([shotId, content]) => {
+      const meta = shotMetaMap.get(shotId)
+      if (!meta || content === meta.originalContent) return
+      onUpdateShot(meta.episodeId, shotId, { content })
+    })
     Object.entries(durationValues).forEach(([shotId, durStr]) => {
       const meta = shotMetaMap.get(shotId)
       if (!meta || durStr === meta.originalDuration) return
@@ -210,7 +228,28 @@ export function BatchGenerateVideosDialog({
         onUpdateShot(meta.episodeId, shotId, { duration })
       }
     })
-  }, [onUpdateShot, durationValues, shotMetaMap])
+  }, [onUpdateShot, contentValues, durationValues, shotMetaMap])
+
+  const handleContentChange = useCallback(
+    (shotId: string, content: string) => {
+      setContentValues((prev) => ({ ...prev, [shotId]: content }))
+
+      const key = `content_${shotId}`
+      const timer = debounceTimersRef.current.get(key)
+      if (timer) clearTimeout(timer)
+
+      const meta = shotMetaMap.get(shotId)
+      if (!meta) return
+
+      const nextTimer = setTimeout(() => {
+        onUpdateShot(meta.episodeId, shotId, { content })
+        debounceTimersRef.current.delete(key)
+      }, 600)
+
+      debounceTimersRef.current.set(key, nextTimer)
+    },
+    [onUpdateShot, shotMetaMap]
+  )
 
   const handleDurationChange = useCallback(
     (shotId: string, durStr: string) => {
@@ -273,8 +312,10 @@ export function BatchGenerateVideosDialog({
               index={index}
               isSelected={selectedIds.has(shot.id)}
               isGeneratingVideo={videoGeneratingIds.has(shot.id)}
+              contentValue={contentValues[shot.id] ?? shot.content ?? ""}
               durationValue={durationValues[shot.id] ?? shot.duration?.toString() ?? "5"}
               onToggle={handleToggleShot}
+              onContentChange={handleContentChange}
               onDurationChange={handleDurationChange}
               onUpdateShot={onUpdateShot}
             />
