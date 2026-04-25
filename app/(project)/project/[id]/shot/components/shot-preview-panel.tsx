@@ -94,68 +94,107 @@ export function ShotPreviewPanel({
     }
   }
 
+  // 尝试从历史图片拖拽中恢复
+  const tryRestoreImageFromDrop = (e: React.DragEvent, target?: "first" | "last") => {
+    const historyData = e.dataTransfer.getData("application/cutgo-history-image")
+    if (historyData && onRestoreImageHistory) {
+      try {
+        const item = JSON.parse(historyData) as ShotImageHistoryItem
+        onRestoreImageHistory(item, target)
+        return true
+      } catch {
+        return false
+      }
+    }
+    return false
+  }
+
+  // 尝试从历史视频拖拽中恢复
+  const tryRestoreVideoFromDrop = (e: React.DragEvent) => {
+    const historyData = e.dataTransfer.getData("application/cutgo-history-video")
+    if (historyData && onRestoreVideoHistory) {
+      try {
+        const item = JSON.parse(historyData) as ShotVideoHistoryItem
+        onRestoreVideoHistory(item)
+        return true
+      } catch {
+        return false
+      }
+    }
+    return false
+  }
+
   // 图片整体拖放（仅 keyframe / multi_grid 使用）
   const onImageDragOver = (e: React.DragEvent) => {
-    if (!onUploadImage) return
+    if (!onUploadImage && !onRestoreImageHistory) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverImage(true)
   }
   const onImageDragLeave = (e: React.DragEvent) => {
-    if (!onUploadImage) return
+    if (!onUploadImage && !onRestoreImageHistory) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverImage(false)
   }
   const onImageDrop = (e: React.DragEvent) => {
-    if (!onUploadImage) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverImage(false)
+
+    if (tryRestoreImageFromDrop(e)) return
+
+    if (!onUploadImage) return
     const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"))
     if (file) void handleImageUpload(file)
   }
 
   // 视频拖放
   const onVideoDragOver = (e: React.DragEvent) => {
-    if (!onUploadVideo) return
+    if (!onUploadVideo && !onRestoreVideoHistory) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverVideo(true)
   }
   const onVideoDragLeave = (e: React.DragEvent) => {
-    if (!onUploadVideo) return
+    if (!onUploadVideo && !onRestoreVideoHistory) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverVideo(false)
   }
   const onVideoDrop = (e: React.DragEvent) => {
-    if (!onUploadVideo) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverVideo(false)
+
+    if (tryRestoreVideoFromDrop(e)) return
+
+    if (!onUploadVideo) return
     const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("video/"))
     if (file) void handleVideoUpload(file)
   }
 
   // 单帧拖放（首/尾帧）
   const onFrameDragOver = (target: FrameTarget) => (e: React.DragEvent) => {
-    if (!onUploadImage) return
+    if (!onUploadImage && !onRestoreImageHistory) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverFrame(target)
   }
   const onFrameDragLeave = (target: FrameTarget) => (e: React.DragEvent) => {
-    if (!onUploadImage) return
+    if (!onUploadImage && !onRestoreImageHistory) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverFrame((cur) => (cur === target ? null : cur))
   }
   const onFrameDrop = (target: FrameTarget) => (e: React.DragEvent) => {
-    if (!onUploadImage) return
     e.preventDefault()
     e.stopPropagation()
     setDragOverFrame(null)
+
+    if (tryRestoreImageFromDrop(e, target)) return
+
+    if (!onUploadImage) return
     const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"))
     if (file) void handleImageUpload(file, target)
   }
@@ -591,8 +630,6 @@ export function ShotPreviewPanel({
       <ShotHistoryStrip
         shot={shot}
         activeTab={activeTab}
-        onRestoreImage={onRestoreImageHistory}
-        onRestoreVideo={onRestoreVideoHistory}
       />
     </div>
   )

@@ -777,44 +777,35 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       body: formData,
     })
 
-    if (target === "first" || target === "last") {
-      // 首尾帧分别替换：仅更新对应字段，不写入历史
-      const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
-        method: "PATCH",
-        body: target === "first"
-          ? { imageUrl: url, imageStatus: "completed" }
-          : { lastFrameUrl: url, imageStatus: "completed" },
-      })
-
-      const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated)
-      set({
-        scriptShotPlans,
-        imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
-      })
-
-      toast.success(target === "first" ? "首帧上传成功" : "尾帧上传成功")
-      return
-    }
-
-    // 将旧版本保存到历史记录
-    const currentHistory: import("@/lib/types").ShotImageHistoryItem[] = shot.imageUrl
+    // 将旧版本保存到历史记录（去重）
+    const oldUrl = target === "last" ? shot.lastFrameUrl : shot.imageUrl
+    const existingHistory: import("@/lib/types").ShotImageHistoryItem[] = shot.imageHistory
+      ? JSON.parse(shot.imageHistory)
+      : []
+    const currentHistory: import("@/lib/types").ShotImageHistoryItem[] = oldUrl && !existingHistory.some((h) => h.url === oldUrl)
       ? [
           {
-            url: shot.imageUrl,
-            lastFrameUrl: shot.lastFrameUrl,
+            url: oldUrl,
             createdAt: new Date().toISOString(),
           },
-          ...(shot.imageHistory ? JSON.parse(shot.imageHistory) as import("@/lib/types").ShotImageHistoryItem[] : []),
+          ...existingHistory,
         ]
-      : (shot.imageHistory ? JSON.parse(shot.imageHistory) as import("@/lib/types").ShotImageHistoryItem[] : [])
+      : existingHistory
+
+    const body: Record<string, unknown> = {
+      imageStatus: "completed",
+      imageHistory: currentHistory.length > 0 ? JSON.stringify(currentHistory) : null,
+    }
+    if (target === "first" || !target) {
+      body.imageUrl = url
+    }
+    if (target === "last") {
+      body.lastFrameUrl = url
+    }
 
     const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
       method: "PATCH",
-      body: {
-        imageUrl: url,
-        imageStatus: "completed",
-        imageHistory: currentHistory.length > 0 ? JSON.stringify(currentHistory) : null,
-      },
+      body,
     })
 
     const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated)
@@ -823,7 +814,13 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
 
-    toast.success("图片上传成功")
+    if (target === "first") {
+      toast.success("首帧上传成功")
+    } else if (target === "last") {
+      toast.success("尾帧上传成功")
+    } else {
+      toast.success("图片上传成功")
+    }
   },
 
   uploadVideo: async (episodeId, shotId, file) => {
@@ -841,17 +838,20 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       body: formData,
     })
 
-    // 将旧版本保存到历史记录
-    const currentHistory: import("@/lib/types").ShotVideoHistoryItem[] = shot.videoUrl
+    // 将旧版本保存到历史记录（去重）
+    const existingVideoHistory: import("@/lib/types").ShotVideoHistoryItem[] = shot.videoHistory
+      ? JSON.parse(shot.videoHistory)
+      : []
+    const currentHistory: import("@/lib/types").ShotVideoHistoryItem[] = shot.videoUrl && !existingVideoHistory.some((h) => h.url === shot.videoUrl)
       ? [
           {
             url: shot.videoUrl,
             videoDuration: shot.videoDuration,
             createdAt: new Date().toISOString(),
           },
-          ...(shot.videoHistory ? JSON.parse(shot.videoHistory) as import("@/lib/types").ShotVideoHistoryItem[] : []),
+          ...existingVideoHistory,
         ]
-      : (shot.videoHistory ? JSON.parse(shot.videoHistory) as import("@/lib/types").ShotVideoHistoryItem[] : [])
+      : existingVideoHistory
 
     const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
       method: "PATCH",

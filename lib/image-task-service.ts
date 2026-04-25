@@ -422,15 +422,17 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
     taskType: "image_generate",
   })
 
-  // 如果有旧图片，保存到历史记录
-  const newImageHistory = shot.imageUrl
+  // 如果有旧图片，保存到历史记录（去重）
+  const historyItems: { url: string; createdAt: string }[] = shot.imageHistory
+    ? JSON.parse(shot.imageHistory)
+    : []
+  const newImageHistory = shot.imageUrl && !historyItems.some((h) => h.url === shot.imageUrl)
     ? JSON.stringify([
         {
           url: shot.imageUrl,
-          lastFrameUrl: shot.lastFrameUrl,
           createdAt: new Date().toISOString(),
         },
-        ...(shot.imageHistory ? JSON.parse(shot.imageHistory) : []),
+        ...historyItems,
       ])
     : shot.imageHistory
 

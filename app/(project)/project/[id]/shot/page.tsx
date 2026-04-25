@@ -414,32 +414,31 @@ export default function ScriptShotPage() {
     const { shot, scriptShotPlan } = currentActiveShot
 
     const currentHistory = shot.imageHistory ? JSON.parse(shot.imageHistory) as ShotImageHistoryItem[] : []
-    const newHistory: ShotImageHistoryItem[] = shot.imageUrl
+    const urlToArchive = target === "last" ? shot.lastFrameUrl : shot.imageUrl
+
+    // 避免重复：被恢复的 url 不要加入历史；已存在的 url 也不要重复加入
+    const newHistory: ShotImageHistoryItem[] = urlToArchive && urlToArchive !== item.url && !currentHistory.some((h) => h.url === urlToArchive)
       ? [
           {
-            url: shot.imageUrl,
-            lastFrameUrl: shot.lastFrameUrl,
+            url: urlToArchive,
             createdAt: new Date().toISOString(),
           },
-          ...currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt),
+          ...currentHistory.filter((h) => h.url !== item.url),
         ]
-      : currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt)
+      : currentHistory.filter((h) => h.url !== item.url)
 
-    const updateData: Partial<ShotInput> = {
+    const update: Partial<ShotInput> = {
       imageStatus: "completed",
       imageHistory: JSON.stringify(newHistory),
     }
 
-    if (target === "first") {
-      updateData.imageUrl = item.url
-    } else if (target === "last") {
-      updateData.lastFrameUrl = item.lastFrameUrl || item.url
+    if (target === "last") {
+      update.lastFrameUrl = item.url
     } else {
-      updateData.imageUrl = item.url
-      updateData.lastFrameUrl = item.lastFrameUrl
+      update.imageUrl = item.url
     }
 
-    updateShot(scriptShotPlan.episodeId, shot.id, updateData)
+    updateShot(scriptShotPlan.episodeId, shot.id, update)
   }, [currentActiveShot, updateShot])
 
   const handleRestoreVideoHistory = useCallback((item: ShotVideoHistoryItem) => {
