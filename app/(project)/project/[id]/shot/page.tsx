@@ -10,6 +10,7 @@ import {
 import { ShotTimelineContent } from "./components/shot-timeline-content"
 import { ShotRightPanels } from "./components/shot-right-panels"
 import { VideoPreviewDialog } from "./components/video-preview-dialog"
+import { ScriptShotPageHeader } from "./components/script-shot-page-header"
 import type { Shot } from "@/lib/types"
 import { apiFetch } from "@/lib/api-client"
 import type { Project } from "@/lib/types"
@@ -78,6 +79,9 @@ export default function ScriptShotPage() {
           </div>
         </div>
       )}
+
+      {/* Page header toolbar */}
+      <ScriptShotPageHeader projectId={projectId} />
 
       {/* Main layout */}
       <div className="min-h-0 flex-1">

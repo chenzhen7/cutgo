@@ -15,13 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ScriptShotToolbar } from "./script-shot-toolbar"
-import { EpisodeSelector } from "./episode-selector"
 import { SceneSwimlane } from "./scene-swimlane"
 import { ScriptLinesDialog } from "./script-lines-dialog"
 import { GenerateShotTypeDialog } from "./generate-shot-type-dialog"
-import { BatchGenerateImagesDialog } from "./batch-generate-images-dialog"
-import { BatchGenerateVideosDialog } from "./batch-generate-videos-dialog"
 import type { ScriptShotPlan, ShotInput } from "@/lib/types"
 import { buildEpisodeDisplayNumberMap, sortEpisodesByChapterAndIndex } from "@/lib/episode-display"
 import { apiFetch } from "@/lib/api-client"
@@ -47,12 +43,6 @@ export function ShotTimelineContent({
   const activeEpisodeId = useScriptShotsStore((s) => s.activeEpisodeId)
   const shotLayout = useScriptShotsStore((s) => s.shotLayout)
   const activeDetailTab = useScriptShotsStore((s) => s.activeDetailTab)
-  const imageGeneratingIds = useScriptShotsStore((s) => s.imageGeneratingIds)
-  const batchImageStatus = useScriptShotsStore((s) => s.batchImageStatus)
-  const batchImageProgress = useScriptShotsStore((s) => s.batchImageProgress)
-  const videoGeneratingIds = useScriptShotsStore((s) => s.videoGeneratingIds)
-  const batchVideoStatus = useScriptShotsStore((s) => s.batchVideoStatus)
-  const batchVideoProgress = useScriptShotsStore((s) => s.batchVideoProgress)
 
   const fetchScriptShotPlans = useScriptShotsStore((s) => s.fetchScriptShotPlans)
   const fetchEpisodeShotCounts = useScriptShotsStore((s) => s.fetchEpisodeShotCounts)
@@ -65,8 +55,6 @@ export function ShotTimelineContent({
   const duplicateShot = useScriptShotsStore((s) => s.duplicateShot)
   const generateImage = useScriptShotsStore((s) => s.generateImage)
   const generateVideo = useScriptShotsStore((s) => s.generateVideo)
-  const generateBatchImages = useScriptShotsStore((s) => s.generateBatchImages)
-  const generateBatchVideos = useScriptShotsStore((s) => s.generateBatchVideos)
   const reorderShots = useScriptShotsStore((s) => s.reorderShots)
   const setActiveEpisodeId = useScriptShotsStore((s) => s.setActiveEpisodeId)
   const setActiveShotId = useScriptShotsStore((s) => s.setActiveShotId)
@@ -77,8 +65,6 @@ export function ShotTimelineContent({
   const [episodeLoading, setEpisodeLoading] = useState(false)
   const [deletingShotInfo, setDeletingShotInfo] = useState<{ episodeId: string; shotId: string } | null>(null)
   const [showShotTypeDialog, setShowShotTypeDialog] = useState(false)
-  const [showBatchImageDialog, setShowBatchImageDialog] = useState(false)
-  const [showBatchVideoDialog, setShowBatchVideoDialog] = useState(false)
   const [viewingScriptShotPlan, setViewingScriptShotPlan] = useState<ScriptShotPlan | null>(null)
 
   const prevEpisodeIdRef = useRef(activeEpisodeId)
@@ -157,13 +143,6 @@ export function ShotTimelineContent({
     [currentScriptShotPlans]
   )
 
-  const allFlatShots = useMemo(() => {
-    const visiblePlans = activeEpisodeId
-      ? scriptShotPlans.filter((plan) => plan.episodeId === activeEpisodeId)
-      : scriptShotPlans
-    return visiblePlans.flatMap((plan) => plan.shots.map((shot) => ({ shot, scriptShotPlan: plan })))
-  }, [scriptShotPlans, activeEpisodeId])
-
   const handleConfirmGenerate = useCallback(async () => {
     if (!activeEpisodeId) return
     setShowShotTypeDialog(false)
@@ -231,22 +210,6 @@ export function ShotTimelineContent({
     [generateVideo]
   )
 
-  const handleBatchGenerateImages = useCallback(
-    async (shotIds: string[]) => {
-      await generateBatchImages(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
-      setShowBatchImageDialog(false)
-    },
-    [projectId, activeEpisodeId, generateBatchImages]
-  )
-
-  const handleBatchGenerateVideos = useCallback(
-    (shotIds: string[]) => {
-      generateBatchVideos(projectId, { episodeId: activeEpisodeId ?? undefined, shotIds })
-      setShowBatchVideoDialog(false)
-    },
-    [generateBatchVideos, projectId, activeEpisodeId]
-  )
-
   const handleUpdateShot = useCallback(
     (episodeId: string, shotId: string, data: Partial<ShotInput>) => {
       updateShot(episodeId, shotId, data)
@@ -299,31 +262,6 @@ export function ShotTimelineContent({
 
   return (
     <div className="flex h-full max-h-[100dvh] min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Toolbar — 顶栏全宽贴边 */}
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2.5 py-2.5 sm:px-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="truncate text-xl font-semibold text-foreground">
-            分镜生成
-          </h2>
-          <div className="h-4 w-px shrink-0 bg-border" />
-          <EpisodeSelector />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ScriptShotToolbar
-            generateStatus={generateStatus}
-            batchImageStatus={batchImageStatus}
-            batchImageProgress={batchImageProgress}
-            canGenerateCurrentEpisode={!!activeEpisodeId}
-            onGenerateCurrentEpisode={handleGenerateCurrentEpisode}
-            onOpenBatchImageDialog={() => setShowBatchImageDialog(true)}
-            batchVideoStatus={batchVideoStatus}
-            batchVideoProgress={batchVideoProgress}
-            onOpenBatchVideoDialog={() => setShowBatchVideoDialog(true)}
-          />
-        </div>
-      </div>
-
       {/* Timeline content */}
       <div className="min-h-0 flex-1">
         <div className="relative h-full min-w-0">
@@ -442,26 +380,6 @@ export function ShotTimelineContent({
         open={showShotTypeDialog}
         onCancel={() => setShowShotTypeDialog(false)}
         onConfirm={handleConfirmGenerate}
-      />
-
-      {/* Batch generate images dialog */}
-      <BatchGenerateImagesDialog
-        open={showBatchImageDialog}
-        onOpenChange={setShowBatchImageDialog}
-        shots={allFlatShots}
-        onConfirm={handleBatchGenerateImages}
-        onUpdateShot={handleUpdateShot}
-        imageGeneratingIds={imageGeneratingIds}
-      />
-
-      {/* Batch generate videos dialog */}
-      <BatchGenerateVideosDialog
-        open={showBatchVideoDialog}
-        onOpenChange={setShowBatchVideoDialog}
-        shots={allFlatShots}
-        onConfirm={handleBatchGenerateVideos}
-        onUpdateShot={handleUpdateShot}
-        videoGeneratingIds={videoGeneratingIds}
       />
 
     </div>
