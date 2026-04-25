@@ -154,6 +154,7 @@ export function ShotDetailPanel({
   const [content, setContent] = useState(() => shot.content || "")
   const [lastContent, setLastContent] = useState(() => shot.lastContent || "")
   const [duration, setDuration] = useState<string>(() => shot.duration?.toString() || "5")
+  const [dialogueText, setDialogueText] = useState(() => shot.dialogueText || "")
   const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseJsonArray<string>(shot.refImageUrls))
   const [refImageNote, setRefImageNote] = useState(() => shot.refImageNote || "")
   const [readingRefFile, setReadingRefFile] = useState(false)
@@ -773,6 +774,20 @@ export function ShotDetailPanel({
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Dialogue */}
+        <div>
+          <Label className="text-xs">台词</Label>
+          <Textarea
+            value={dialogueText}
+            onChange={(e) => {
+              setDialogueText(e.target.value)
+              debouncedUpdate({ dialogueText: e.target.value || null })
+            }}
+            className="mt-1 text-[13px] min-h-[60px] max-h-[140px] leading-relaxed"
+            placeholder="角色台词或旁白，每行一条，格式：角色名：台词内容"
+          />
+        </div>
 
         {/* Related script */}
         {episode && (

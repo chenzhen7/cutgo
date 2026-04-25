@@ -58,6 +58,7 @@ async function callAIExtractShotList(
     .map((item) => {
       if (!item || typeof item !== "object") return {}
       const content = typeof item.content === "string" && item.content.trim() ? item.content.trim() : undefined
+      const dialogue = typeof item.dialogue === "string" ? item.dialogue.trim() : ""
       const characters = Array.isArray(item.characters)
         ? (item.characters as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
         : undefined
@@ -71,7 +72,7 @@ async function callAIExtractShotList(
           : typeof item.duration === "string"
             ? parseInt(item.duration, 10)
             : undefined
-      return { content, characters, scene, props, duration }
+      return { content, dialogue, characters, scene, props, duration }
     })
     .filter((item): item is ShotListItem => Boolean(item.content))
 }
@@ -177,7 +178,7 @@ export const POST = withError(async (request: NextRequest) => {
                 imageType: "keyframe",
                 gridLayout: null,
                 videoPrompt: null,
-                dialogueText: null,
+                dialogueText: shot.dialogue?.trim() ? shot.dialogue.trim() : null,
                 actionNote: null,
               },
               characterIds,
