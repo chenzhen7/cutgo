@@ -234,6 +234,9 @@ interface ScriptShotState {
   generateBatchVideos: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only"; shotIds?: string[] }) => Promise<void>
   clearVideo: (episodeId: string, shotId: string) => Promise<void>
 
+  uploadImage: (episodeId: string, shotId: string, file: File) => Promise<void>
+  uploadVideo: (episodeId: string, shotId: string, file: File) => Promise<void>
+
   setActiveEpisodeId: (episodeId: string | null) => void
   setActiveShotId: (shotId: string | null) => void
   setDetailPanelOpen: (open: boolean) => void
@@ -741,6 +744,94 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
 
   clearVideo: async (episodeId, shotId) => {
     await get().updateShot(episodeId, shotId, { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null })
+  },
+
+  uploadImage: async (episodeId, shotId, file) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
+    const shot = sb?.shots.find((s) => s.id === shotId)
+    if (!shot || !sb) return
+
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("projectId", sb.projectId)
+    formData.append("type", "image")
+
+    const { url } = await apiFetch<{ url: string }>("/api/upload", {
+      method: "POST",
+      body: formData,
+    })
+
+    // 将旧版本保存到历史记录
+    const currentHistory: import("@/lib/types").ShotImageHistoryItem[] = shot.imageUrl
+      ? [
+          {
+            url: shot.imageUrl,
+            imageUrls: shot.imageUrls,
+            imageType: shot.imageType,
+            createdAt: new Date().toISOString(),
+          },
+          ...(shot.imageHistory ? JSON.parse(shot.imageHistory) as import("@/lib/types").ShotImageHistoryItem[] : []),
+        ]
+      : (shot.imageHistory ? JSON.parse(shot.imageHistory) as import("@/lib/types").ShotImageHistoryItem[] : [])
+
+    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
+      method: "PATCH",
+      body: {
+        imageUrl: url,
+        imageStatus: "completed",
+        imageHistory: currentHistory.length > 0 ? JSON.stringify(currentHistory) : null,
+      },
+    })
+
+    const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated)
+    set({
+      scriptShotPlans,
+      imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
+    })
+
+    toast.success("图片上传成功")
+  },
+
+  uploadVideo: async (episodeId, shotId, file) => {
+    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
+    const shot = sb?.shots.find((s) => s.id === shotId)
+    if (!shot || !sb) return
+
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("projectId", sb.projectId)
+    formData.append("type", "video")
+
+    const { url } = await apiFetch<{ url: string }>("/api/upload", {
+      method: "POST",
+      body: formData,
+    })
+
+    // 将旧版本保存到历史记录
+    const currentHistory: import("@/lib/types").ShotVideoHistoryItem[] = shot.videoUrl
+      ? [
+          {
+            url: shot.videoUrl,
+            videoDuration: shot.videoDuration,
+            createdAt: new Date().toISOString(),
+          },
+          ...(shot.videoHistory ? JSON.parse(shot.videoHistory) as import("@/lib/types").ShotVideoHistoryItem[] : []),
+        ]
+      : (shot.videoHistory ? JSON.parse(shot.videoHistory) as import("@/lib/types").ShotVideoHistoryItem[] : [])
+
+    const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
+      method: "PATCH",
+      body: {
+        videoUrl: url,
+        videoStatus: "completed",
+        videoHistory: currentHistory.length > 0 ? JSON.stringify(currentHistory) : null,
+      },
+    })
+
+    const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated)
+    set({ scriptShotPlans })
+
+    toast.success("视频上传成功")
   },
 
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),

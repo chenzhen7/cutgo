@@ -93,6 +93,8 @@ export default function ScriptShotPage() {
   const generateVideo = useScriptShotsStore((s) => s.generateVideo)
   const generateBatchVideos = useScriptShotsStore((s) => s.generateBatchVideos)
   const clearVideo = useScriptShotsStore((s) => s.clearVideo)
+  const uploadImage = useScriptShotsStore((s) => s.uploadImage)
+  const uploadVideo = useScriptShotsStore((s) => s.uploadVideo)
   const reorderShots = useScriptShotsStore((s) => s.reorderShots)
   const setActiveEpisodeId = useScriptShotsStore((s) => s.setActiveEpisodeId)
   const setActiveShotId = useScriptShotsStore((s) => s.setActiveShotId)
@@ -391,6 +393,22 @@ export default function ScriptShotPage() {
     }
   }, [currentActiveShot, clearVideo])
 
+  const handleUploadImage = useCallback(
+    async (file: File) => {
+      if (!currentActiveShot) return
+      await uploadImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id, file)
+    },
+    [currentActiveShot, uploadImage]
+  )
+
+  const handleUploadVideo = useCallback(
+    async (file: File) => {
+      if (!currentActiveShot) return
+      await uploadVideo(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id, file)
+    },
+    [currentActiveShot, uploadVideo]
+  )
+
   const handleRestoreImageHistory = useCallback((item: ShotImageHistoryItem) => {
     if (!currentActiveShot) return
     const { shot, scriptShotPlan } = currentActiveShot
@@ -685,6 +703,8 @@ export default function ScriptShotPage() {
                       onPlayVideo={currentActiveShot.shot.videoUrl ? () => handlePlayVideo(currentActiveShot.shot.id) : undefined}
                       onRestoreImageHistory={handleRestoreImageHistory}
                       onRestoreVideoHistory={handleRestoreVideoHistory}
+                      onUploadImage={activeDetailTab === "image" ? handleUploadImage : undefined}
+                      onUploadVideo={activeDetailTab === "video" ? handleUploadVideo : undefined}
                     />
                   </div>
                 </ResizablePanel>

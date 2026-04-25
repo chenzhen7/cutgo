@@ -62,17 +62,19 @@ export async function apiFetch<T = unknown>(
 ): Promise<T> {
   const { method = "GET", body, headers = {}, signal } = options
 
+  const isFormData = body instanceof FormData
+
   const init: RequestInit = {
     method,
     signal,
     headers: {
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(body !== undefined && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...headers,
     },
   }
 
   if (body !== undefined) {
-    init.body = JSON.stringify(body)
+    init.body = isFormData ? body : JSON.stringify(body)
   }
 
   const res = await fetch(url, init)
