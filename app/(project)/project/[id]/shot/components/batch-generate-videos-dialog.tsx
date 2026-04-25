@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Shot, ScriptShotPlan, ShotInput } from "@/lib/types"
 import { Loader2, Image as ImageIcon } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { parseJsonArray } from "@/lib/utils"
 
 // ─── 行级 memo 组件：仅在自身相关 props 变化时重渲染 ───────────────────────
 
@@ -40,8 +39,7 @@ const ShotRow = memo(function ShotRow({
 }: ShotRowProps) {
   const hasImage = !!shot.imageUrl
   const imageType = shot.imageType || "keyframe"
-  const imageUrls = parseJsonArray(shot.imageUrls)
-  const tailFrameUrl = imageType === "first_last" && imageUrls.length >= 2 ? imageUrls[1] : null
+  const tailFrameUrl = imageType === "first_last" ? shot.lastFrameUrl : null
 
   return (
     <div

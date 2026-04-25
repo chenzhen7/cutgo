@@ -103,7 +103,6 @@ function VideoOverlay({ shot, detailTab = "image", isGeneratingVideo, onPlayVide
 
 function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGeneratingVideo, onPlayVideo, aspectRatio }: { shot: Shot; detailTab?: ShotDetailTab; isGeneratingImage: boolean; isGeneratingVideo: boolean; onPlayVideo?: () => void; aspectRatio?: string }) {
   const imageType = shot.imageType || "keyframe"
-  const imageUrls = useMemo(() => shot.imageUrls ? JSON.parse(shot.imageUrls) : [], [shot.imageUrls])
   const typeLabel = IMAGE_TYPE_OPTIONS.find((o) => o.value === imageType)?.label || "关键帧"
 
   // 列表模式缩略图宽度：横屏(16:9)用更宽容器，竖屏(9:16)用窄容器，并保持比例
@@ -157,8 +156,8 @@ function ShotThumbnail({ shot, detailTab = "image", isGeneratingImage, isGenerat
               <span className="text-[8px] text-muted-foreground/40 @[900px]:text-[9px] mt-0.5">首帧</span>
             </div>
           )}
-          {imageUrls[1] ? (
-            <PreviewableImage src={imageUrls[1]} alt="尾帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
+          {shot.lastFrameUrl ? (
+            <PreviewableImage src={shot.lastFrameUrl} alt="尾帧" className="w-1/2 min-w-0 h-full object-contain bg-black" />
           ) : (
             <div className="w-1/2 min-w-0 h-full flex flex-col items-center justify-center bg-muted/30">
               <ImageIcon className="size-4 text-muted-foreground/25 @[900px]:size-5" />
@@ -253,7 +252,6 @@ export const ShotCard = memo(function ShotCard({
   const handlePlayVideo = useCallback(() => onPlayVideo(shot.id), [onPlayVideo, shot.id])
 
   const imageType = shot.imageType || "keyframe"
-  const imageUrls = shot.imageUrls ? JSON.parse(shot.imageUrls) : []
 
   const boundCharacters = useMemo(
     () => (shot.characterIds ?? []).map((id) => assetCharacterMap.get(id)).filter((v): v is AssetCharacter => !!v),
@@ -317,8 +315,8 @@ export const ShotCard = memo(function ShotCard({
                   <ImageIcon className="size-4 text-muted-foreground/25" />
                 </div>
               )}
-              {imageUrls[1] ? (
-                <PreviewableImage src={imageUrls[1]} alt="尾帧" previewable={false} className="flex-1 object-contain bg-black" />
+              {shot.lastFrameUrl ? (
+                <PreviewableImage src={shot.lastFrameUrl} alt="尾帧" previewable={false} className="flex-1 object-contain bg-black" />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center bg-muted/30">
                   <ImageIcon className="size-4 text-muted-foreground/25" />

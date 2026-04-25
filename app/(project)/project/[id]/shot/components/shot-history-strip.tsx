@@ -26,8 +26,6 @@ export function ShotHistoryStrip({
   const imageHistory = useMemo(() => parseShotImageHistory(shot.imageHistory), [shot.imageHistory])
   const videoHistory = useMemo(() => parseShotVideoHistory(shot.videoHistory), [shot.videoHistory])
 
-  const currentImageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
-
   if (activeTab === "image") {
     if (imageHistory.length === 0) return null
 
@@ -49,16 +47,18 @@ export function ShotHistoryStrip({
           <div className="mb-2 rounded-lg border bg-muted/20 p-1.5">
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0 h-16 flex items-center justify-center bg-black/5 rounded overflow-hidden">
-                {previewItem.imageType === "first_last" && previewItem.imageUrls ? (
+                {previewItem.imageType === "first_last" && (previewItem.lastFrameUrl || previewItem.imageUrls) ? (
                   <div className="flex gap-1 h-full">
-                    {parseJsonArray(previewItem.imageUrls).slice(0, 2).map((url, i) => (
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`历史帧${i + 1}`}
-                        className="h-full object-contain rounded"
-                      />
-                    ))}
+                    <img
+                      src={previewItem.url}
+                      alt="历史首帧"
+                      className="h-full object-contain rounded"
+                    />
+                    <img
+                      src={previewItem.lastFrameUrl || parseJsonArray(previewItem.imageUrls)[1] || ""}
+                      alt="历史尾帧"
+                      className="h-full object-contain rounded"
+                    />
                   </div>
                 ) : (
                   <PreviewableImage

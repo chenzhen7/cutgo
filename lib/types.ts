@@ -426,6 +426,7 @@ export interface Shot {
   imageErrorMessage: string | null
   imageType: ImageType
   imageUrls: string | null
+  lastFrameUrl: string | null
   promptEnd: string | null
   gridLayout: GridLayout | null
   gridPrompts: string | null
@@ -460,6 +461,7 @@ export type VideoStatus = "idle" | "generating" | "completed" | "error"
 export interface ShotImageHistoryItem {
   url: string
   imageUrls: string | null
+  lastFrameUrl: string | null
   imageType: ImageType
   createdAt: string
 }
@@ -523,6 +525,7 @@ export interface ShotInput {
   imageTaskId?: string | null
   imageErrorMessage?: string | null
   imageUrls?: string | null
+  lastFrameUrl?: string | null
   promptEnd?: string | null
   gridLayout?: GridLayout | null
   gridPrompts?: string | null

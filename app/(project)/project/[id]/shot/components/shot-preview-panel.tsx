@@ -11,7 +11,7 @@ import {
   Maximize2,
   Upload,
 } from "lucide-react"
-import { cn, parseJsonArray } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import type { Shot, ShotImageHistoryItem, ShotVideoHistoryItem } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
 import {
@@ -66,7 +66,6 @@ export function ShotPreviewPanel({
   }, [])
 
   const imageType = shot.imageType || "keyframe"
-  const imageUrls = useMemo(() => parseJsonArray(shot.imageUrls), [shot.imageUrls])
   const hasImage = !!shot.imageUrl
 
   const handleImageUpload = async (file: File) => {
@@ -370,9 +369,9 @@ export function ShotPreviewPanel({
                   <div className={cn(
                     "flex-1 min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
                   )}>
-                    {imageUrls[1] ? (
+                    {shot.lastFrameUrl ? (
                       <PreviewableImage
-                        src={imageUrls[1]}
+                        src={shot.lastFrameUrl}
                         alt="尾帧"
                         className="max-h-full max-w-full rounded-md object-contain"
                       />

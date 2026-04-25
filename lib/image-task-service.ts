@@ -213,13 +213,13 @@ async function executeAssetImageTask(input: {
 async function markShotCompleted(
   shotId: string,
   taskId: string,
-  data: { imageUrl: string; imageUrls: string | null; imageType: ShotImageType }
+  data: { imageUrl: string; lastFrameUrl: string | null; imageType: ShotImageType }
 ) {
   await prisma.shot.update({
     where: { id: shotId },
     data: {
       imageUrl: data.imageUrl,
-      imageUrls: data.imageUrls,
+      lastFrameUrl: data.lastFrameUrl,
       imageType: data.imageType,
       imageStatus: "completed",
       imageTaskId: taskId,
@@ -274,7 +274,7 @@ async function executeShotImageTask(input: {
       const imageUrl = Array.isArray(result) ? result[0].url : result.url
       await markShotCompleted(input.shotId, input.taskId, {
         imageUrl,
-        imageUrls: null,
+        lastFrameUrl: null,
         imageType: "keyframe",
       })
       await markAiTaskSucceeded(input.taskId)
@@ -312,7 +312,7 @@ async function executeShotImageTask(input: {
 
       await markShotCompleted(input.shotId, input.taskId, {
         imageUrl: firstUrl,
-        imageUrls: JSON.stringify([firstUrl, lastUrl]),
+        lastFrameUrl: lastUrl,
         imageType: "first_last",
       })
       await markAiTaskSucceeded(input.taskId)
@@ -340,7 +340,7 @@ async function executeShotImageTask(input: {
 
     await markShotCompleted(input.shotId, input.taskId, {
       imageUrl,
-      imageUrls: null,
+      lastFrameUrl: null,
       imageType: "multi_grid",
     })
     await markAiTaskSucceeded(input.taskId)
@@ -428,6 +428,7 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
         {
           url: shot.imageUrl,
           imageUrls: shot.imageUrls,
+          lastFrameUrl: shot.lastFrameUrl,
           imageType: shot.imageType,
           createdAt: new Date().toISOString(),
         },
@@ -446,7 +447,7 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
       gridLayout,
       gridPrompts: imageType === "multi_grid" ? JSON.stringify(gridPrompts) : input.gridPrompts !== undefined ? null : shot.gridPrompts,
       imageUrl: null,
-      imageUrls: null,
+      lastFrameUrl: null,
       imageStatus: "generating",
       imageTaskId: task.id,
       imageErrorMessage: null,

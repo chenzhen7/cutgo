@@ -660,7 +660,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   clearImage: async (episodeId, shotId) => {
     await get().updateShot(episodeId, shotId, {
       imageUrl: null,
-      imageUrls: null,
+      lastFrameUrl: null,
       imageStatus: "idle",
       imageTaskId: null,
       imageErrorMessage: null,
@@ -767,6 +767,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
           {
             url: shot.imageUrl,
             imageUrls: shot.imageUrls,
+            lastFrameUrl: shot.lastFrameUrl,
             imageType: shot.imageType,
             createdAt: new Date().toISOString(),
           },

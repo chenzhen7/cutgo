@@ -419,6 +419,7 @@ export default function ScriptShotPage() {
           {
             url: shot.imageUrl,
             imageUrls: shot.imageUrls,
+            lastFrameUrl: shot.lastFrameUrl,
             imageType: shot.imageType,
             createdAt: new Date().toISOString(),
           },
@@ -428,7 +429,7 @@ export default function ScriptShotPage() {
 
     updateShot(scriptShotPlan.episodeId, shot.id, {
       imageUrl: item.url,
-      imageUrls: item.imageUrls,
+      lastFrameUrl: item.lastFrameUrl,
       imageType: item.imageType,
       imageStatus: "completed",
       imageHistory: JSON.stringify(newHistory),

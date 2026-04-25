@@ -27,18 +27,11 @@ export const POST = withError(async (
   }
 
   // 构建视频参考图列表
-  // - first_last：从 imageUrls JSON 数组中取首尾帧（最多 2 张）
+  // - first_last：使用 imageUrl（首帧）+ lastFrameUrl（尾帧）
   // - keyframe / multi_grid：使用 imageUrl 作为单首帧参考
-  let imageUrls: string[] = []
-  if (shot.imageType === "first_last" && shot.imageUrls) {
-    try {
-      const parsed = JSON.parse(shot.imageUrls) as string[]
-      imageUrls = parsed.filter(Boolean).slice(0, 2)
-    } catch {
-      imageUrls = [shot.imageUrl]
-    }
-  } else {
-    imageUrls = [shot.imageUrl]
+  const imageUrls: string[] = [shot.imageUrl]
+  if (shot.imageType === "first_last" && shot.lastFrameUrl) {
+    imageUrls.push(shot.lastFrameUrl)
   }
 
   // 从 shot.duration 解析秒数

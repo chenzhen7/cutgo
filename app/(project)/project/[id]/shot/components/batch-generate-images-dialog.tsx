@@ -52,13 +52,6 @@ const ShotRow = memo(function ShotRow({
     parsedGridPrompts = []
   }
 
-  let parsedImageUrls: string[] = []
-  try {
-    parsedImageUrls = shot.imageUrls ? JSON.parse(shot.imageUrls) : []
-  } catch {
-    parsedImageUrls = []
-  }
-
   const handleGridLayoutChange = (layout: string) => {
     const layoutOpt = GRID_LAYOUT_OPTIONS.find((o) => o.value === layout)
     if (!layoutOpt) return
@@ -104,15 +97,12 @@ const ShotRow = memo(function ShotRow({
             <Loader2 className="size-8 animate-spin text-primary" />
             <span className="text-xs font-medium text-muted-foreground text-center leading-tight">生成中</span>
           </div>
-        ) : shot.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={shot.imageUrl} alt="" className="w-full h-full object-cover" />
-        ) : imageType === "first_last" && parsedImageUrls.length >= 2 ? (
+        ) : imageType === "first_last" ? (
           <div className="flex flex-row gap-0.5 w-full h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={parsedImageUrls[0]} alt="首帧" className="w-1/2 h-full object-cover" />
+            <img src={shot.imageUrl || ""} alt="首帧" className="w-1/2 h-full object-cover" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={parsedImageUrls[1]} alt="尾帧" className="w-1/2 h-full object-cover" />
+            <img src={shot.lastFrameUrl || ""} alt="尾帧" className="w-1/2 h-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="bg-black/40 text-white text-[8px] px-1 py-0.5 rounded">首尾帧</div>
             </div>

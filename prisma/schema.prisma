@@ -221,8 +221,10 @@ model Shot {
   imageErrorMessage String?
   /// keyframe | first_last | multi_grid
   imageType      String  @default("keyframe")
-  /// first_last：首尾帧 URL 的 JSON 数组
+  /// 已废弃：首尾帧 URL 的 JSON 数组（请使用 imageUrl + lastFrameUrl）
   imageUrls      String?
+  /// first_last：尾帧图片 URL
+  lastFrameUrl   String?
   /// first_last：尾帧提示词
   promptEnd      String?
   /// multi_grid：布局如 2x2、1x3

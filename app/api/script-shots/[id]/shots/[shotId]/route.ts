@@ -13,7 +13,7 @@ export async function PATCH(
   const fields = [
     "content", "prompt", "negativePrompt", "duration", "imageUrl",
     "imageStatus", "imageTaskId", "imageErrorMessage",
-    "imageType", "imageUrls", "promptEnd", "gridLayout", "gridPrompts",
+    "imageType", "imageUrls", "lastFrameUrl", "promptEnd", "gridLayout", "gridPrompts",
     "scriptLineIds", "dialogueText", "actionNote",
     "videoUrl", "videoStatus", "videoPrompt", "videoDuration", "videoTaskId",
     "volume", "speed", "imageHistory", "videoHistory",
