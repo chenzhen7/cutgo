@@ -425,11 +425,11 @@ export const ShotCard = memo(function ShotCard({
           <p className={cn(
             "text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] leading-relaxed line-clamp-2",
             (detailTab === "video"
-              ? shot.videoPrompt?.trim()
+              ? shot.content?.trim()
               : imagePromptSummary(shot)) ? "text-foreground/90" : "text-muted-foreground italic"
           )}>
             {detailTab === "video"
-              ? (shot.videoPrompt?.trim() || "暂无视频提示词")
+              ? (shot.content?.trim() || "暂无分镜描述")
               : (imagePromptSummary(shot) || "暂无画面提示词")}
           </p>
         </div>
@@ -501,7 +501,7 @@ export const ShotCard = memo(function ShotCard({
                 )}
                 <p className="text-[11px] @[640px]:text-[12px] @[900px]:text-[13px] @[1200px]:text-[14px] text-foreground/90 line-clamp-2 @[600px]:line-clamp-3 @[900px]:line-clamp-4 @[1200px]:line-clamp-5 leading-relaxed">
                   {detailTab === "video"
-                    ? (shot.videoPrompt?.trim() || "暂无视频提示词")
+                    ? (shot.content?.trim() || "暂无分镜描述")
                     : (imagePromptSummary(shot) || "暂无画面提示词")}
                 </p>
               </div>

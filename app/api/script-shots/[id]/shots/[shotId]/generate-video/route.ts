@@ -81,11 +81,8 @@ export const POST = withError(async (
 
   try {
     const promptParts = []
-    // if (shot.content) {
-    //   promptParts.push(`画面讲述了：${shot.content}`)
-    // }
-    if (shot.videoPrompt) {
-      promptParts.push(shot.videoPrompt)
+    if (shot.content) {
+      promptParts.push(shot.content)
     }
     if (shot.imageType === "multi_grid") {
       let gridCount = 9

@@ -11,13 +11,10 @@ export {
 export {
   buildShotListSystemPrompt,
   buildShotListUserPrompt,
-  buildShotVideoPromptSystemPrompt,
-  buildShotVideoPromptUserPrompt,
 } from "./script-shots"
 export type {
   ShotListItem,
   BuildShotListPromptInput,
-  BuildShotPromptsInput,
 } from "./script-shots"
 export {
   ASSET_CHARACTER_IMAGE_PROMPT_PLACEHOLDER,

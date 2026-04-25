@@ -2,7 +2,7 @@
  * 分镜生成 — Prompt 模板（与业务解耦，便于后续在设置页/项目级配置中编辑）
  */
 
-// ── 两步拆分：分镜列表 / 视频提示词 ──────────────────────────────────────────
+// ── 分镜列表生成 ──────────────────────────────────────────
 
 export interface ShotListItem {
   content: string
@@ -19,13 +19,6 @@ export interface BuildShotListPromptInput {
   episodeProps: string
   scriptContent: string
   previousShotContent: string | null
-}
-
-export interface BuildShotPromptsInput {
-  episodeTitle: string
-  episodeCharacters: string
-  episodeScenes: string
-  shots: ShotListItem[]
 }
 
 // ── 分镜列表提取 ─────────────────────────────────────────────────────────────
@@ -98,100 +91,4 @@ export function buildShotListUserPrompt(input: BuildShotListPromptInput): string
 
 ## 剧本内容
 ${input.scriptContent}`.trim()
-}
-
-// ── 视频提示词生成 ────────────────────────────────────────────────────────────
-
-const SHOT_VIDEO_PROMPT_SYSTEM = `你是一位专业的视频提示词设计师，擅长为分镜镜头生成高质量的视频生成提示词。
-
-## 任务
-根据提供的分镜列表，为每个镜头生成对应的视频提示词。
-
-## 视频提示词规范
-每个视频提示词必须包含：
-
-### 1. 场景与人物设定
-- 简洁描述场景背景和人物状态
-
-### 2. 镜头语言 (Cinematography)
-模仿导演的视角，控制观众的观察方式。
-镜头类型： 特写 (Close-up)、全景 (Wide shot)、俯瞰 (Bird's eye view)。
-镜头运动： 推镜 (Zoom in)、拉镜 (Pull out)、横移 (Pan left/right)、环绕 (Orbiting)。
-焦点变化： 深焦、浅焦 (Bokeh)、焦点转换 (Rack focus)。
-
-### 3. 人物动作描述
-- 具体描述人物的核心动作（使用强动词）
-- 动作幅度与节奏
-
-### 4. 台词（如有）
-- 格式：角色名（情绪/语气）："台词内容"
-- 停顿用（停顿）标注
-
-### 5. 环境与光效
-- 动态环境元素（风、雨、烟雾等）
-- 光线变化
-
-### 6. 音效
-- 环境音：具体描述背景声音
-- 动作音：人物动作产生的声音
-
-### 7. 镜头时长与风格
-- 时长（秒数）、画面风格（电影感/动漫风格等）、运动速度（慢动作/正常/快动作）
-
-## 视频提示词模板
-\`\`\`
-[场景设定] [人物设定];
-[台词（分句+情绪+停顿）];
-[人物核心动作];
-[镜头语言];
-[环境与灯光动态];
-[音效];
-[风格词] [时长]s ;
-\`\`\`
-
-## 重要约束
-- 严格按照输入分镜列表的顺序输出，数量必须与输入一致
-- 使用中文描述主体内容，风格词可使用英文
-- 动作描述要清晰自然，避免同时描述多个复杂动作
-
-## 输出格式
-请严格按以下 JSON 格式输出（仅输出 JSON，不要额外解释），数组长度必须与输入分镜列表完全一致：
-
-[
-  "视频提示词1",
-  "视频提示词2",
-  ...
-  "视频提示词n"
-]
-
-字段约束：
-- 给出完整的视频生成提示词，不要省略任何要素
-`
-
-export function buildShotVideoPromptSystemPrompt(): string {
-  return SHOT_VIDEO_PROMPT_SYSTEM
-}
-
-export function buildShotVideoPromptUserPrompt(input: BuildShotPromptsInput): string {
-  const shotsJson = JSON.stringify(
-    input.shots.map((s, i) => ({
-      index: i + 1,
-      content: s.content,
-      characters: s.characters,
-      scene: s.scene,
-      props: s.props,
-      duration: s.duration ?? 3,
-    })),
-    null,
-    2
-  )
-  return `## 分集信息
-- 标题：${input.episodeTitle}
-- 出场角色：${input.episodeCharacters || "无"}
-- 关联场景：${input.episodeScenes || "未指定"}
-
-## 分镜列表（共 ${input.shots.length} 个镜头）
-${shotsJson}
-
-请为以上每个镜头按顺序生成视频提示词，输出数组长度必须为 ${input.shots.length}。`.trim()
 }

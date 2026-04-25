@@ -153,7 +153,6 @@ export function ShotDetailPanel({
 
   const [content, setContent] = useState(() => shot.content || "")
   const [lastContent, setLastContent] = useState(() => shot.lastContent || "")
-  const [videoPrompt, setVideoPrompt] = useState(() => shot.videoPrompt || "")
   const [duration, setDuration] = useState<string>(() => shot.duration?.toString() || "5")
   const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseJsonArray<string>(shot.refImageUrls))
   const [refImageNote, setRefImageNote] = useState(() => shot.refImageNote || "")
@@ -737,23 +736,6 @@ export function ShotDetailPanel({
                   }}
                   className="text-[13px] min-h-[60px] max-h-[120px] leading-relaxed"
                   placeholder="描述该镜头的剧情内容与画面意图（给人看的描述）..."
-                />
-              </div>
-
-              {/* Video prompt */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Label className="text-xs">视频提示词</Label>
-                  <Badge variant="outline" className="text-[8px] px-1 py-0">videoPrompt</Badge>
-                </div>
-                <Textarea
-                  value={videoPrompt}
-                  onChange={(e) => {
-                    setVideoPrompt(e.target.value)
-                    debouncedUpdate({ videoPrompt: e.target.value })
-                  }}
-                  className="text-[13px] min-h-[60px] max-h-[120px]  leading-relaxed"
-                  placeholder="描述视频运动效果和转场（英文），留空则自动生成..."
                 />
               </div>
 
