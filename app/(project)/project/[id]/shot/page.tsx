@@ -374,9 +374,9 @@ export default function ScriptShotPage() {
     setShowBatchImageDialog(true)
   }, [])
 
-  const handleClearImage = useCallback(() => {
+  const handleClearImage = useCallback((target?: "first" | "last") => {
     if (currentActiveShot) {
-      clearImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id)
+      clearImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id, target)
     }
   }, [currentActiveShot, clearImage])
 
@@ -394,9 +394,9 @@ export default function ScriptShotPage() {
   }, [currentActiveShot, clearVideo])
 
   const handleUploadImage = useCallback(
-    async (file: File) => {
+    async (file: File, target?: "first" | "last") => {
       if (!currentActiveShot) return
-      await uploadImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id, file)
+      await uploadImage(currentActiveShot.scriptShotPlan.episodeId, currentActiveShot.shot.id, file, target)
     },
     [currentActiveShot, uploadImage]
   )

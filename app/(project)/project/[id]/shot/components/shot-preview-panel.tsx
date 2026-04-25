@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useState } from "react"
 import {
   Loader2,
   ImageIcon,
@@ -28,14 +28,16 @@ interface ShotPreviewPanelProps {
   activeTab: "image" | "video"
   isGeneratingImage: boolean
   isGeneratingVideo: boolean
-  onClearImage: () => void
+  onClearImage: (target?: "first" | "last") => void
   onClearVideo: () => void
   onPlayVideo?: () => void
   onRestoreImageHistory?: (item: ShotImageHistoryItem) => void
   onRestoreVideoHistory?: (item: ShotVideoHistoryItem) => void
-  onUploadImage?: (file: File) => void
+  onUploadImage?: (file: File, target?: "first" | "last") => void
   onUploadVideo?: (file: File) => void
 }
+
+type FrameTarget = "first" | "last"
 
 export function ShotPreviewPanel({
   shot,
@@ -54,8 +56,10 @@ export function ShotPreviewPanel({
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
+  const [uploadingFrame, setUploadingFrame] = useState<FrameTarget | null>(null)
   const [dragOverImage, setDragOverImage] = useState(false)
   const [dragOverVideo, setDragOverVideo] = useState(false)
+  const [dragOverFrame, setDragOverFrame] = useState<FrameTarget | null>(null)
 
   const videoRef = useCallback((node: HTMLVideoElement | null) => {
     if (node) {
@@ -68,13 +72,15 @@ export function ShotPreviewPanel({
   const imageType = shot.imageType || "keyframe"
   const hasImage = !!shot.imageUrl
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File, target?: FrameTarget) => {
     if (!onUploadImage) return
-    setUploadingImage(true)
+    if (target) setUploadingFrame(target)
+    else setUploadingImage(true)
     try {
-      await onUploadImage(file)
+      await onUploadImage(file, target)
     } finally {
-      setUploadingImage(false)
+      if (target) setUploadingFrame(null)
+      else setUploadingImage(false)
     }
   }
 
@@ -88,7 +94,7 @@ export function ShotPreviewPanel({
     }
   }
 
-  // 图片拖放
+  // 图片整体拖放（仅 keyframe / multi_grid 使用）
   const onImageDragOver = (e: React.DragEvent) => {
     if (!onUploadImage) return
     e.preventDefault()
@@ -132,14 +138,36 @@ export function ShotPreviewPanel({
     if (file) void handleVideoUpload(file)
   }
 
+  // 单帧拖放（首/尾帧）
+  const onFrameDragOver = (target: FrameTarget) => (e: React.DragEvent) => {
+    if (!onUploadImage) return
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverFrame(target)
+  }
+  const onFrameDragLeave = (target: FrameTarget) => (e: React.DragEvent) => {
+    if (!onUploadImage) return
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverFrame((cur) => (cur === target ? null : cur))
+  }
+  const onFrameDrop = (target: FrameTarget) => (e: React.DragEvent) => {
+    if (!onUploadImage) return
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverFrame(null)
+    const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"))
+    if (file) void handleImageUpload(file, target)
+  }
+
   // 空状态上传区（图片）
   const EmptyImageZone = () => (
     <label
       className={cn(
-        "h-full w-full rounded-lg flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
+        "h-full w-full rounded-lg flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors border border-dashed",
         dragOverImage
-          ? "bg-primary/10 border-2 border-dashed border-primary"
-          : "bg-muted/20 border-2 border-dashed border-transparent hover:border-muted-foreground/20"
+          ? "bg-primary/10 border-primary"
+          : "bg-muted/20 border-transparent hover:border-muted-foreground/20"
       )}
     >
       {uploadingImage ? (
@@ -175,10 +203,10 @@ export function ShotPreviewPanel({
   const EmptyVideoZone = () => (
     <label
       className={cn(
-        "h-full w-full rounded-lg flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
+        "h-full w-full rounded-lg flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors border border-dashed",
         dragOverVideo
-          ? "bg-primary/10 border-2 border-dashed border-primary"
-          : "bg-muted/20 border-2 border-dashed border-transparent hover:border-muted-foreground/20"
+          ? "bg-primary/10 border-primary"
+          : "bg-muted/20 border-transparent hover:border-muted-foreground/20"
       )}
     >
       {uploadingVideo ? (
@@ -210,7 +238,7 @@ export function ShotPreviewPanel({
     </label>
   )
 
-  // 图片操作按钮区
+  // 图片操作按钮区（keyframe / multi_grid）
   const ImageActionButtons = () => (
     <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
       {onUploadImage && (
@@ -248,7 +276,7 @@ export function ShotPreviewPanel({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={onClearImage}
+              onClick={() => onClearImage()}
               className="size-7 flex items-center justify-center rounded-md bg-background/70 text-muted-foreground hover:text-destructive hover:bg-background transition-colors"
             >
               <Trash2 className="size-3.5" />
@@ -325,6 +353,114 @@ export function ShotPreviewPanel({
     </div>
   )
 
+  // 首/尾帧单卡片
+  const FrameSlot = ({ url, label, target }: { url: string | null | undefined; label: string; target: FrameTarget }) => {
+    const uploading = uploadingFrame === target
+    const isDragOver = dragOverFrame === target
+    return (
+      <div className="flex-1 min-h-0 flex flex-col gap-1">
+        <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
+        <div
+          className={cn(
+            "relative flex-1 min-h-0 w-full rounded-lg p-1 flex items-center justify-center transition-colors border border-dashed",
+            isDragOver
+              ? "bg-primary/10 border-primary"
+              : "bg-muted/20 border-transparent"
+          )}
+          onDragOver={onFrameDragOver(target)}
+          onDragLeave={onFrameDragLeave(target)}
+          onDrop={onFrameDrop(target)}
+        >
+          {url ? (
+            <>
+              <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
+                {onUploadImage && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <label
+                          className={cn(
+                            "size-6 flex items-center justify-center rounded-md bg-background/70 cursor-pointer hover:bg-background transition-colors",
+                            uploading ? "text-muted-foreground" : "text-muted-foreground hover:text-primary"
+                          )}
+                        >
+                          {uploading ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <Upload className="size-3" />
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.currentTarget.files?.[0]
+                              if (f) void handleImageUpload(f, target)
+                              e.currentTarget.value = ""
+                            }}
+                          />
+                        </label>
+                      </TooltipTrigger>
+                      <TooltipContent>替换{label}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => onClearImage(target)}
+                        className="size-6 flex items-center justify-center rounded-md bg-background/70 text-muted-foreground hover:text-destructive hover:bg-background transition-colors"
+                      >
+                        <Trash2 className="size-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>清除{label}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <PreviewableImage
+                src={url}
+                alt={label}
+                className="max-h-full max-w-full rounded-md object-contain"
+              />
+            </>
+          ) : (
+            <label
+              className={cn(
+                "absolute inset-1 rounded-md flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors",
+                !isDragOver && "hover:bg-muted-foreground/5"
+              )}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span className="text-[10px] text-muted-foreground">上传中...</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="size-6 text-muted-foreground/30" />
+                  <span className="text-[10px] text-muted-foreground/50">暂无{label}</span>
+                  <span className="text-[9px] text-muted-foreground/40">点击或拖入</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.currentTarget.files?.[0]
+                  if (f) void handleImageUpload(f, target)
+                  e.currentTarget.value = ""
+                }}
+              />
+            </label>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Preview content */}
@@ -332,9 +468,9 @@ export function ShotPreviewPanel({
         {activeTab === "image" ? (
           <div
             className="h-full min-h-0"
-            onDragOver={onImageDragOver}
-            onDragLeave={onImageDragLeave}
-            onDrop={onImageDrop}
+            onDragOver={imageType !== "first_last" ? onImageDragOver : undefined}
+            onDragLeave={imageType !== "first_last" ? onImageDragLeave : undefined}
+            onDrop={imageType !== "first_last" ? onImageDrop : undefined}
           >
             {isGeneratingImage ? (
               <div className={cn(
@@ -345,48 +481,15 @@ export function ShotPreviewPanel({
               </div>
             ) : imageType === "first_last" ? (
               <div className="h-full min-h-0 flex gap-2">
-                <div className="flex-1 min-h-0 flex flex-col gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">首帧</span>
-                  <div className={cn(
-                    "flex-1 min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
-                  )}>
-                    {shot.imageUrl ? (
-                      <PreviewableImage
-                        src={shot.imageUrl}
-                        alt="首帧"
-                        className="max-h-full max-w-full rounded-md object-contain"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-1.5">
-                        <ImageIcon className="size-6 text-muted-foreground/25" />
-                        <span className="text-[10px] text-muted-foreground/40">暂无首帧</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1 min-h-0 flex flex-col gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">尾帧</span>
-                  <div className={cn(
-                    "flex-1 min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
-                  )}>
-                    {shot.lastFrameUrl ? (
-                      <PreviewableImage
-                        src={shot.lastFrameUrl}
-                        alt="尾帧"
-                        className="max-h-full max-w-full rounded-md object-contain"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-1.5">
-                        <ImageIcon className="size-6 text-muted-foreground/25" />
-                        <span className="text-[10px] text-muted-foreground/40">暂无尾帧</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <FrameSlot url={shot.imageUrl} label="首帧" target="first" />
+                <FrameSlot url={shot.lastFrameUrl} label="尾帧" target="last" />
               </div>
             ) : imageType === "multi_grid" ? (
               <div className={cn(
-                "relative h-full min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
+                "relative h-full min-h-0 w-full rounded-lg p-1 flex items-center justify-center transition-colors border border-dashed",
+                dragOverImage
+                  ? "bg-primary/10 border-primary"
+                  : "bg-muted/20 border-transparent"
               )}>
                 {shot.imageUrl && <ImageActionButtons />}
                 {shot.imageUrl ? (
@@ -408,7 +511,10 @@ export function ShotPreviewPanel({
               </div>
             ) : hasImage ? (
               <div className={cn(
-                "relative h-full min-h-0 w-full rounded-lg bg-muted/20 p-1 flex items-center justify-center"
+                "relative h-full min-h-0 w-full rounded-lg p-1 flex items-center justify-center transition-colors border border-dashed",
+                dragOverImage
+                  ? "bg-primary/10 border-primary"
+                  : "bg-muted/20 border-transparent"
               )}>
                 <ImageActionButtons />
                 <PreviewableImage
@@ -438,7 +544,10 @@ export function ShotPreviewPanel({
                   <span className="text-[10px] text-muted-foreground">预计需要 30-60 秒</span>
                 </div>
               ) : shot.videoUrl ? (
-                <div className="relative h-full min-h-0 w-full rounded-lg overflow-hidden group/video">
+                <div className={cn(
+                  "relative h-full min-h-0 w-full rounded-lg overflow-hidden group/video transition-colors border border-dashed",
+                  dragOverVideo ? "bg-primary/10 border-primary" : "border-transparent"
+                )}>
                   <video
                     ref={videoRef}
                     src={shot.videoUrl}

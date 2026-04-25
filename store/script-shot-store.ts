@@ -228,13 +228,13 @@ interface ScriptShotState {
 
   generateImage: (episodeId: string, shotId: string) => Promise<void>
   generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only"; shotIds?: string[] }) => Promise<void>
-  clearImage: (episodeId: string, shotId: string) => Promise<void>
+  clearImage: (episodeId: string, shotId: string, target?: "first" | "last") => Promise<void>
 
   generateVideo: (episodeId: string, shotId: string) => Promise<void>
   generateBatchVideos: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only"; shotIds?: string[] }) => Promise<void>
   clearVideo: (episodeId: string, shotId: string) => Promise<void>
 
-  uploadImage: (episodeId: string, shotId: string, file: File) => Promise<void>
+  uploadImage: (episodeId: string, shotId: string, file: File, target?: "first" | "last") => Promise<void>
   uploadVideo: (episodeId: string, shotId: string, file: File) => Promise<void>
 
   setActiveEpisodeId: (episodeId: string | null) => void
@@ -657,7 +657,23 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  clearImage: async (episodeId, shotId) => {
+  clearImage: async (episodeId, shotId, target) => {
+    if (target === "first" || target === "last") {
+      const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
+      const shot = sb?.shots.find((s) => s.id === shotId)
+      if (!shot) return
+
+      const remainOther = target === "first" ? !!shot.lastFrameUrl : !!shot.imageUrl
+      const fieldUpdate = target === "first" ? { imageUrl: null } : { lastFrameUrl: null }
+
+      await get().updateShot(episodeId, shotId, {
+        ...fieldUpdate,
+        imageStatus: remainOther ? "completed" : "idle",
+        ...(remainOther ? {} : { imageTaskId: null, imageErrorMessage: null }),
+      })
+      return
+    }
+
     await get().updateShot(episodeId, shotId, {
       imageUrl: null,
       lastFrameUrl: null,
@@ -746,7 +762,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     await get().updateShot(episodeId, shotId, { videoUrl: null, videoStatus: null, videoDuration: null, videoTaskId: null })
   },
 
-  uploadImage: async (episodeId, shotId, file) => {
+  uploadImage: async (episodeId, shotId, file, target) => {
     const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot || !sb) return
@@ -760,6 +776,25 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       method: "POST",
       body: formData,
     })
+
+    if (target === "first" || target === "last") {
+      // 首尾帧分别替换：仅更新对应字段，不写入历史
+      const updated = await apiFetch<Shot>(`/api/script-shots/${episodeId}/shots/${shotId}`, {
+        method: "PATCH",
+        body: target === "first"
+          ? { imageUrl: url, imageStatus: "completed" }
+          : { lastFrameUrl: url, imageStatus: "completed" },
+      })
+
+      const scriptShotPlans = updateShotInPlans(get().scriptShotPlans, episodeId, shotId, updated)
+      set({
+        scriptShotPlans,
+        imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
+      })
+
+      toast.success(target === "first" ? "首帧上传成功" : "尾帧上传成功")
+      return
+    }
 
     // 将旧版本保存到历史记录
     const currentHistory: import("@/lib/types").ShotImageHistoryItem[] = shot.imageUrl
