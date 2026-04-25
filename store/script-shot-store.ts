@@ -90,6 +90,35 @@ function getImagePollKey(projectId: string, episodeId?: string): string {
   return episodeId ? `${projectId}:${episodeId}` : projectId
 }
 
+function hasShotChanges(a: Shot[], b: Shot[]): boolean {
+  if (a.length !== b.length) return true
+  for (let i = 0; i < a.length; i++) {
+    const sa = a[i]
+    const sb = b[i]
+    if (!sa || !sb) return true
+    if (sa.id !== sb.id) return true
+    if (sa.imageStatus !== sb.imageStatus) return true
+    if (sa.videoStatus !== sb.videoStatus) return true
+    if (sa.imageUrl !== sb.imageUrl) return true
+    if (sa.videoUrl !== sb.videoUrl) return true
+    if (sa.lastFrameUrl !== sb.lastFrameUrl) return true
+  }
+  return false
+}
+
+function hasPlanChanges(a: ScriptShotPlan[], b: ScriptShotPlan[]): boolean {
+  if (a.length !== b.length) return true
+  for (let i = 0; i < a.length; i++) {
+    const pa = a[i]
+    const pb = b[i]
+    if (!pa || !pb) return true
+    if (pa.id !== pb.id) return true
+    if (pa.episodeId !== pb.episodeId) return true
+    if (hasShotChanges(pa.shots, pb.shots)) return true
+  }
+  return false
+}
+
 function stopImagePolling() {
   if (imagePollTimer) {
     clearTimeout(imagePollTimer)
@@ -115,7 +144,7 @@ function scheduleImagePolling(projectId: string, episodeId?: string) {
     imagePollTimer = null
 
     try {
-      await useScriptShotsStore.getState().fetchScriptShotPlans(projectId, episodeId)
+      await useScriptShotsStore.getState().fetchScriptShotPlans(projectId, episodeId, true)
     } catch {
       // 忽略轮询错误
     }
@@ -186,6 +215,7 @@ interface ScriptShotState {
   selectedShotIds: Set<string>
   detailPanelOpen: boolean
   shotLayout: ShotCardLayout
+  activeDetailTab: "image" | "video"
 
   imageGeneratingIds: Set<string>
   batchImageStatus: "idle" | "generating" | "completed" | "error"
@@ -195,7 +225,7 @@ interface ScriptShotState {
   batchVideoStatus: "idle" | "generating" | "completed" | "error"
   batchVideoProgress: { current: number; total: number } | null
 
-  fetchScriptShotPlans: (projectId: string, episodeId?: string) => Promise<void>
+  fetchScriptShotPlans: (projectId: string, episodeId?: string, skipIfUnchanged?: boolean) => Promise<void>
   fetchEpisodeShotCounts: (projectId: string) => Promise<void>
   fetchEpisodes: (projectId: string) => Promise<Episode[]>
   fetchAssets: (
@@ -233,6 +263,7 @@ interface ScriptShotState {
   setActiveShotId: (shotId: string | null) => void
   setDetailPanelOpen: (open: boolean) => void
   setShotLayout: (layout: ShotCardLayout) => void
+  setActiveDetailTab: (tab: "image" | "video") => void
   toggleShotSelection: (shotId: string) => void
   clearShotSelection: () => void
 
@@ -269,6 +300,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   selectedShotIds: new Set(),
   detailPanelOpen: false,
   shotLayout: "list",
+  activeDetailTab: "image",
 
   imageGeneratingIds: new Set(),
   batchImageStatus: "idle",
@@ -278,7 +310,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   batchVideoStatus: "idle",
   batchVideoProgress: null,
 
-  fetchScriptShotPlans: async (projectId, episodeId) => {
+  fetchScriptShotPlans: async (projectId, episodeId, skipIfUnchanged) => {
     const currentFetchToken = ++scriptShotPlansFetchToken
     try {
       const url = episodeId
@@ -291,6 +323,22 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         return
       }
       const plans = data || []
+
+      // 轮询场景下：数据无实质变化则跳过状态更新，减少重渲染
+      if (skipIfUnchanged) {
+        const currentPlans = get().scriptShotPlans
+        if (!hasPlanChanges(currentPlans, plans)) {
+          // 仍需检查是否需要继续/停止轮询
+          const imageGeneratingIds = collectGeneratingShotIds(plans)
+          if (imageGeneratingIds.size > 0) {
+            scheduleImagePolling(projectId, episodeId)
+          } else if (imagePollKey === getImagePollKey(projectId, episodeId)) {
+            stopImagePolling()
+          }
+          return
+        }
+      }
+
       const imageGeneratingIds = collectGeneratingShotIds(plans)
       set((state) => ({
         scriptShotPlans: plans,
@@ -843,6 +891,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
   setActiveShotId: (shotId) => set({ activeShotId: shotId, detailPanelOpen: !!shotId }),
   setDetailPanelOpen: (open) => set({ detailPanelOpen: open, activeShotId: open ? get().activeShotId : null }),
   setShotLayout: (layout) => set({ shotLayout: layout }),
+  setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
 
   toggleShotSelection: (shotId) => {
     const selected = new Set(get().selectedShotIds)
@@ -934,6 +983,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       selectedShotIds: new Set(),
       detailPanelOpen: false,
       shotLayout: "list",
+      activeDetailTab: "image",
       imageGeneratingIds: new Set(),
       batchImageStatus: "idle",
       batchImageProgress: null,
