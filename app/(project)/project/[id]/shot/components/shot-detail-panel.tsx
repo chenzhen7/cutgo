@@ -37,6 +37,13 @@ import {
   ImageIcon,
   Video,
   Plus,
+  Link2,
+  Frame,
+  FileText,
+  LayoutGrid,
+  Clock,
+  MessageSquare,
+  BookOpen,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn, parseJsonArray } from "@/lib/utils"
@@ -307,16 +314,13 @@ export function ShotDetailPanel({
             <div className="space-y-4">
 
               {/* Asset bindings section */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联资产</Label>
-
-                <div className={cn("grid gap-3", aspectRatio === "9:16" ? "grid-cols-2" : "grid-cols-3")}>
+              <div className={cn("grid gap-3", aspectRatio === "9:16" ? "grid-cols-2" : "grid-cols-3")}>
                   {/* Scene */}
                   <div className={cn("space-y-1.5", aspectRatio === "9:16" ? "col-span-2" : "")}>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="size-4 text-muted-foreground" />
-                        <span className="text-[11px] font-medium">场景</span>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="size-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">场景</span>
                       </div>
                       <Popover open={scenePopoverOpen} onOpenChange={setScenePopoverOpen}>
                         <PopoverTrigger asChild>
@@ -394,9 +398,9 @@ export function ShotDetailPanel({
                   {/* Characters */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <User className="size-4 text-muted-foreground" />
-                        <span className="text-[11px] font-medium">角色</span>
+                      <div className="flex items-center gap-1.5">
+                        <User className="size-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">角色</span>
                         {boundCharacters.length > 0 && (
                           <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{boundCharacters.length}</Badge>
                         )}
@@ -469,9 +473,9 @@ export function ShotDetailPanel({
                   {/* Props */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Package className="size-4 text-muted-foreground" />
-                        <span className="text-[11px] font-medium">道具</span>
+                      <div className="flex items-center gap-1.5">
+                        <Package className="size-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">道具</span>
                         {boundProps.length > 0 && (
                           <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 leading-none">{boundProps.length}</Badge>
                         )}
@@ -541,12 +545,14 @@ export function ShotDetailPanel({
                     )}
                   </div>
                 </div>
-              </div>
 
               {/* Custom reference images */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">自定义参考</Label>
+                  <div className="flex items-center gap-1.5">
+                    <ImageIcon className="size-3.5 text-muted-foreground" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">自定义参考</Label>
+                  </div>
                   <span className="text-[10px] text-muted-foreground">支持点击上传或拖入图片</span>
                 </div>
 
@@ -625,7 +631,10 @@ export function ShotDetailPanel({
 
               {/* Image Type selector */}
               <div className="space-y-2.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面类型</Label>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Frame className="size-3.5 text-muted-foreground" />
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">画面类型</Label>
+                </div>
                 <div className="grid grid-cols-3 gap-1 p-0.5 bg-muted/50 rounded-lg">
                   {IMAGE_TYPE_OPTIONS.map((opt) => (
                     <TooltipProvider key={opt.value} delayDuration={300}>
@@ -653,7 +662,8 @@ export function ShotDetailPanel({
               {/* === Content Area === */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Label className="text-xs">分镜描述</Label>
+                  <FileText className="size-3.5 text-muted-foreground" />
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">分镜描述</Label>
                 </div>
                 <Textarea
                   value={content}
@@ -670,7 +680,8 @@ export function ShotDetailPanel({
               {imageType === "first_last" && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Label className="text-xs">尾帧分镜描述</Label>
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">尾帧分镜描述</Label>
                     <Badge variant="outline" className="text-[8px] px-1 py-0">lastContent</Badge>
                   </div>
                   <Textarea
@@ -688,7 +699,10 @@ export function ShotDetailPanel({
               {/* 多宫格布局选择 */}
               {imageType === "multi_grid" && (
                 <div>
-                  <Label className="text-xs mb-1.5 block">宫格布局</Label>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <LayoutGrid className="size-3.5 text-muted-foreground" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">宫格布局</Label>
+                  </div>
                   <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
@@ -703,6 +717,23 @@ export function ShotDetailPanel({
                   </Select>
                 </div>
               )}
+
+              {/* Dialogue */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <MessageSquare className="size-3.5 text-muted-foreground" />
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">台词</Label>
+                </div>
+                <Textarea
+                  value={dialogueText}
+                  onChange={(e) => {
+                    setDialogueText(e.target.value)
+                    debouncedUpdate({ dialogueText: e.target.value || null })
+                  }}
+                  className="text-[13px] min-h-[60px] max-h-[140px] leading-relaxed"
+                  placeholder="角色台词或旁白，每行一条，格式：角色名：台词内容"
+                />
+              </div>
 
               <Button
                 className="w-full"
@@ -727,7 +758,8 @@ export function ShotDetailPanel({
               {/* === Content Area === */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Label className="text-xs">分镜描述</Label>
+                  <FileText className="size-3.5 text-muted-foreground" />
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">分镜描述</Label>
                 </div>
                 <Textarea
                   value={content}
@@ -742,7 +774,10 @@ export function ShotDetailPanel({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-[10px] text-muted-foreground mb-1 block">分镜时长(秒)</Label>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Clock className="size-3.5 text-muted-foreground" />
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">分镜时长(秒)</Label>
+                  </div>
                   <Input
                     value={duration}
                     onChange={(e) => {
@@ -757,6 +792,23 @@ export function ShotDetailPanel({
                   />
                 </div>
 
+              </div>
+
+              {/* Dialogue */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <MessageSquare className="size-3.5 text-muted-foreground" />
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">台词</Label>
+                </div>
+                <Textarea
+                  value={dialogueText}
+                  onChange={(e) => {
+                    setDialogueText(e.target.value)
+                    debouncedUpdate({ dialogueText: e.target.value || null })
+                  }}
+                  className="text-[13px] min-h-[60px] max-h-[140px] leading-relaxed"
+                  placeholder="角色台词或旁白，每行一条，格式：角色名：台词内容"
+                />
               </div>
 
               <Button
@@ -775,25 +827,14 @@ export function ShotDetailPanel({
           </TabsContent>
         </Tabs>
 
-        {/* Dialogue */}
-        <div>
-          <Label className="text-xs">台词</Label>
-          <Textarea
-            value={dialogueText}
-            onChange={(e) => {
-              setDialogueText(e.target.value)
-              debouncedUpdate({ dialogueText: e.target.value || null })
-            }}
-            className="mt-1 text-[13px] min-h-[60px] max-h-[140px] leading-relaxed"
-            placeholder="角色台词或旁白，每行一条，格式：角色名：台词内容"
-          />
-        </div>
-
         {/* Related script */}
         {episode && (
           <div>
-            <Label className="text-xs">关联剧本</Label>
-            <div className="mt-1 text-xs rounded bg-muted/50 px-2 py-1.5 text-muted-foreground">
+            <div className="flex items-center gap-1.5 mb-1">
+              <BookOpen className="size-3.5 text-muted-foreground" />
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">关联剧本</Label>
+            </div>
+            <div className="text-xs rounded bg-muted/50 px-2 py-1.5 text-muted-foreground">
               {episode.title} · 第{episodeDisplayNumber}集
             </div>
           </div>
