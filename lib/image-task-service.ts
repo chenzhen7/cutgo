@@ -15,7 +15,7 @@ import {
   buildAssetPropImagePrompt,
   buildAssetSceneImagePrompt,
 } from "@/lib/prompts/asset-image"
-import { extractShotAssetIds } from "@/lib/utils"
+import { extractShotAssetIds, parseJsonArray } from "@/lib/utils"
 
 export type ImageStatus = "idle" | "generating" | "completed" | "error"
 export type ShotImageType = "keyframe" | "first_last" | "multi_grid"
@@ -97,14 +97,16 @@ async function findAsset(type: AssetType, id: string) {
   return asset
 }
 
-async function updateAssetGeneratingState(type: AssetType, id: string, taskId: string) {
-  const data = {
-    imageUrl: null,
-    imageStatus: "generating" as const,
-    imageTaskId: taskId,
-    imageErrorMessage: null,
+async function updateAssetImageState(
+  type: AssetType,
+  id: string,
+  data: {
+    imageUrl?: string | null
+    imageStatus?: string
+    imageTaskId?: string
+    imageErrorMessage?: string | null
   }
-
+) {
   if (type === "character") {
     return prisma.assetCharacter.update({ where: { id }, data })
   }
@@ -114,42 +116,31 @@ async function updateAssetGeneratingState(type: AssetType, id: string, taskId: s
   return prisma.assetProp.update({ where: { id }, data })
 }
 
-async function markAssetCompleted(type: AssetType, id: string, taskId: string, imageUrl: string) {
-  const data = {
-    imageUrl,
-    imageStatus: "completed" as const,
+async function updateAssetGeneratingState(type: AssetType, id: string, taskId: string) {
+  return updateAssetImageState(type, id, {
+    imageUrl: null,
+    imageStatus: "generating",
     imageTaskId: taskId,
     imageErrorMessage: null,
-  }
+  })
+}
 
-  if (type === "character") {
-    await prisma.assetCharacter.update({ where: { id }, data })
-    return
-  }
-  if (type === "scene") {
-    await prisma.assetScene.update({ where: { id }, data })
-    return
-  }
-  await prisma.assetProp.update({ where: { id }, data })
+async function markAssetCompleted(type: AssetType, id: string, taskId: string, imageUrl: string) {
+  await updateAssetImageState(type, id, {
+    imageUrl,
+    imageStatus: "completed",
+    imageTaskId: taskId,
+    imageErrorMessage: null,
+  })
 }
 
 async function markAssetErrored(type: AssetType, id: string, taskId: string, error: unknown) {
   const { message } = toErrorInfo(error)
-  const data = {
-    imageStatus: "error" as const,
+  await updateAssetImageState(type, id, {
+    imageStatus: "error",
     imageTaskId: taskId,
     imageErrorMessage: message,
-  }
-
-  if (type === "character") {
-    await prisma.assetCharacter.update({ where: { id }, data })
-    return
-  }
-  if (type === "scene") {
-    await prisma.assetScene.update({ where: { id }, data })
-    return
-  }
-  await prisma.assetProp.update({ where: { id }, data })
+  })
 }
 
 async function executeAssetImageTask(input: {
@@ -406,13 +397,7 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
   const negativePrompt = input.negativePrompt ?? shot.negativePrompt
 
   // 用户自定义参考图
-  const refImageUrls: string[] = input.referenceImages ?? (() => {
-    try {
-      return shot.refImageUrls ? (JSON.parse(shot.refImageUrls) as string[]) : []
-    } catch {
-      return []
-    }
-  })()
+  const refImageUrls = input.referenceImages ?? parseJsonArray<string>(shot.refImageUrls)
   const refImageNote = input.refImageNote ?? shot.refImageNote
 
   if (!content) {
@@ -604,13 +589,7 @@ export async function submitBatchShotImageTasks(input: {
     }
 
     // 合并用户自定义参考图
-    const customRefUrls: string[] = (() => {
-      try {
-        return shot.refImageUrls ? (JSON.parse(shot.refImageUrls) as string[]) : []
-      } catch {
-        return []
-      }
-    })()
+    const customRefUrls = parseJsonArray<string>(shot.refImageUrls)
     for (const url of customRefUrls) {
       if (url) {
         referenceImages.push(url)

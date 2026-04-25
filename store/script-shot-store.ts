@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types"
 import type { ShotCardLayout } from "@/app/(project)/project/[id]/shot/components/shot-card"
 import { apiFetch } from "@/lib/api-client"
+import { parseJsonArray } from "@/lib/utils"
 import { toast } from "sonner"
 
 let scriptShotPlansFetchToken = 0
@@ -316,7 +317,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
         episodeShotCounts: Object.fromEntries((data || []).map((item) => [item.episodeId, item.shotCount])),
       })
     } catch {
-      // 闈炲叧閿暟鎹姞杞斤紝闈欓粯澶辫触
+      // 非关键数据加载，静默失败
     }
   },
 
@@ -524,13 +525,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
 
     // 用户自定义参考图
-    const customRefUrls: string[] = (() => {
-      try {
-        return shot.refImageUrls ? (JSON.parse(shot.refImageUrls) as string[]) : []
-      } catch {
-        return []
-      }
-    })()
+    const customRefUrls = parseJsonArray<string>(shot.refImageUrls)
     for (const url of customRefUrls) {
       if (url) {
         referenceImages.push(url)
@@ -759,9 +754,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
 
     // 将旧版本保存到历史记录（去重）
     const oldUrl = target === "last" ? shot.lastFrameUrl : shot.imageUrl
-    const existingHistory: import("@/lib/types").ShotImageHistoryItem[] = shot.imageHistory
-      ? JSON.parse(shot.imageHistory)
-      : []
+    const existingHistory = parseJsonArray<import("@/lib/types").ShotImageHistoryItem>(shot.imageHistory)
     const currentHistory: import("@/lib/types").ShotImageHistoryItem[] = oldUrl && !existingHistory.some((h) => h.url === oldUrl)
       ? [
           {
@@ -819,9 +812,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     })
 
     // 将旧版本保存到历史记录（去重）
-    const existingVideoHistory: import("@/lib/types").ShotVideoHistoryItem[] = shot.videoHistory
-      ? JSON.parse(shot.videoHistory)
-      : []
+    const existingVideoHistory = parseJsonArray<import("@/lib/types").ShotVideoHistoryItem>(shot.videoHistory)
     const currentHistory: import("@/lib/types").ShotVideoHistoryItem[] = shot.videoUrl && !existingVideoHistory.some((h) => h.url === shot.videoUrl)
       ? [
           {

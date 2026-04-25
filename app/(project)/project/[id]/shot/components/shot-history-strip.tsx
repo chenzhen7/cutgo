@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, type ReactNode } from "react"
 import { History } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Shot } from "@/lib/types"
@@ -16,7 +16,7 @@ interface HistoryListProps {
   items: { url: string; createdAt: string }[]
   dragType: string
   itemClassName?: string
-  children: (item: { url: string; createdAt: string }) => React.ReactNode
+  children: (item: { url: string; createdAt: string }) => ReactNode
 }
 
 function HistoryList({ label, items, dragType, itemClassName, children }: HistoryListProps) {

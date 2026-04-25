@@ -5,11 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function parseJsonArray(val: string | null | undefined): string[] {
+export function parseJsonArray<T>(val: string | null | undefined): T[] {
   if (!val) return []
   try {
     const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed : []
+    return Array.isArray(parsed) ? (parsed as T[]) : []
   } catch {
     return []
   }

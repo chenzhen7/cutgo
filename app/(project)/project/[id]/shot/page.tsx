@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { useScriptShotsStore } from "@/store/script-shot-store"
 import { Button } from "@/components/ui/button"
 import { Loader2, Clapperboard } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -413,7 +413,7 @@ export default function ScriptShotPage() {
     if (!currentActiveShot) return
     const { shot, scriptShotPlan } = currentActiveShot
 
-    const currentHistory = shot.imageHistory ? JSON.parse(shot.imageHistory) as ShotImageHistoryItem[] : []
+    const currentHistory = parseJsonArray<ShotImageHistoryItem>(shot.imageHistory)
     const urlToArchive = target === "last" ? shot.lastFrameUrl : shot.imageUrl
 
     // 避免重复：被恢复的 url 不要加入历史；已存在的 url 也不要重复加入
@@ -445,7 +445,7 @@ export default function ScriptShotPage() {
     if (!currentActiveShot) return
     const { shot, scriptShotPlan } = currentActiveShot
 
-    const currentHistory = shot.videoHistory ? JSON.parse(shot.videoHistory) as ShotVideoHistoryItem[] : []
+    const currentHistory = parseJsonArray<ShotVideoHistoryItem>(shot.videoHistory)
     const newHistory: ShotVideoHistoryItem[] = shot.videoUrl
       ? [
           {

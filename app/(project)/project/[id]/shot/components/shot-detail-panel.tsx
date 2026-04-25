@@ -39,7 +39,7 @@ import {
   Plus,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
+import { cn, parseJsonArray } from "@/lib/utils"
 import { IMAGE_TYPE_OPTIONS, GRID_LAYOUT_OPTIONS } from "@/lib/types"
 import type { Shot, ScriptShotPlan, ShotInput, AssetCharacter, AssetScene, AssetProp, ImageType, GridLayout } from "@/lib/types"
 import {
@@ -99,14 +99,6 @@ function AssetThumbnail({
   )
 }
 
-function parseRefImageUrls(value: string | null): string[] {
-  try {
-    return value ? JSON.parse(value) : []
-  } catch {
-    return []
-  }
-}
-
 interface ShotDetailPanelProps {
   shot: Shot
   scriptShotPlan: ScriptShotPlan
@@ -163,7 +155,7 @@ export function ShotDetailPanel({
   const [lastContent, setLastContent] = useState(() => shot.lastContent || "")
   const [videoPrompt, setVideoPrompt] = useState(() => shot.videoPrompt || "")
   const [duration, setDuration] = useState<string>(() => shot.duration?.toString() || "5")
-  const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseRefImageUrls(shot.refImageUrls))
+  const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseJsonArray<string>(shot.refImageUrls))
   const [refImageNote, setRefImageNote] = useState(() => shot.refImageNote || "")
   const [readingRefFile, setReadingRefFile] = useState(false)
   const [dragOverRef, setDragOverRef] = useState(false)
