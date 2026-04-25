@@ -427,9 +427,7 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
     ? JSON.stringify([
         {
           url: shot.imageUrl,
-          imageUrls: shot.imageUrls,
           lastFrameUrl: shot.lastFrameUrl,
-          imageType: shot.imageType,
           createdAt: new Date().toISOString(),
         },
         ...(shot.imageHistory ? JSON.parse(shot.imageHistory) : []),

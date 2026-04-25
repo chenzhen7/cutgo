@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { History, RotateCcw, X } from "lucide-react"
-import { cn, parseJsonArray } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import type { Shot, ShotImageHistoryItem, ShotVideoHistoryItem } from "@/lib/types"
 import { parseShotImageHistory, parseShotVideoHistory } from "@/lib/types"
 import { PreviewableImage } from "@/components/ui/previewable-image"
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 interface ShotHistoryStripProps {
   shot: Shot
   activeTab: "image" | "video"
-  onRestoreImage?: (item: ShotImageHistoryItem) => void
+  onRestoreImage?: (item: ShotImageHistoryItem, target?: "first" | "last") => void
   onRestoreVideo?: (item: ShotVideoHistoryItem) => void
 }
 
@@ -25,6 +25,9 @@ export function ShotHistoryStrip({
 
   const imageHistory = useMemo(() => parseShotImageHistory(shot.imageHistory), [shot.imageHistory])
   const videoHistory = useMemo(() => parseShotVideoHistory(shot.videoHistory), [shot.videoHistory])
+
+  const imageType = shot.imageType || "keyframe"
+  const isFirstLast = imageType === "first_last"
 
   if (activeTab === "image") {
     if (imageHistory.length === 0) return null
@@ -47,7 +50,7 @@ export function ShotHistoryStrip({
           <div className="mb-2 rounded-lg border bg-muted/20 p-1.5">
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0 h-16 flex items-center justify-center bg-black/5 rounded overflow-hidden">
-                {previewItem.imageType === "first_last" && (previewItem.lastFrameUrl || previewItem.imageUrls) ? (
+                {isFirstLast && previewItem.lastFrameUrl ? (
                   <div className="flex gap-1 h-full">
                     <img
                       src={previewItem.url}
@@ -55,7 +58,7 @@ export function ShotHistoryStrip({
                       className="h-full object-contain rounded"
                     />
                     <img
-                      src={previewItem.lastFrameUrl || parseJsonArray(previewItem.imageUrls)[1] || ""}
+                      src={previewItem.lastFrameUrl}
                       alt="历史尾帧"
                       className="h-full object-contain rounded"
                     />
@@ -69,15 +72,38 @@ export function ShotHistoryStrip({
                 )}
               </div>
               <div className="flex flex-col gap-1.5 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-[10px] px-2"
-                  onClick={() => onRestoreImage?.(previewItem)}
-                >
-                  <RotateCcw className="size-3 mr-1" />
-                  恢复此版本
-                </Button>
+                {isFirstLast ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px] px-2"
+                      onClick={() => onRestoreImage?.(previewItem, "first")}
+                    >
+                      <RotateCcw className="size-3 mr-1" />
+                      恢复首帧
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px] px-2"
+                      onClick={() => onRestoreImage?.(previewItem, "last")}
+                    >
+                      <RotateCcw className="size-3 mr-1" />
+                      恢复尾帧
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[10px] px-2"
+                    onClick={() => onRestoreImage?.(previewItem)}
+                  >
+                    <RotateCcw className="size-3 mr-1" />
+                    恢复此版本
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

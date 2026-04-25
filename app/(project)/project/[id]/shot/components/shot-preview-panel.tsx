@@ -31,7 +31,7 @@ interface ShotPreviewPanelProps {
   onClearImage: (target?: "first" | "last") => void
   onClearVideo: () => void
   onPlayVideo?: () => void
-  onRestoreImageHistory?: (item: ShotImageHistoryItem) => void
+  onRestoreImageHistory?: (item: ShotImageHistoryItem, target?: "first" | "last") => void
   onRestoreVideoHistory?: (item: ShotVideoHistoryItem) => void
   onUploadImage?: (file: File, target?: "first" | "last") => void
   onUploadVideo?: (file: File) => void

@@ -460,9 +460,7 @@ export type VideoStatus = "idle" | "generating" | "completed" | "error"
 
 export interface ShotImageHistoryItem {
   url: string
-  imageUrls: string | null
   lastFrameUrl: string | null
-  imageType: ImageType
   createdAt: string
 }
 

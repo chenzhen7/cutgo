@@ -409,7 +409,7 @@ export default function ScriptShotPage() {
     [currentActiveShot, uploadVideo]
   )
 
-  const handleRestoreImageHistory = useCallback((item: ShotImageHistoryItem) => {
+  const handleRestoreImageHistory = useCallback((item: ShotImageHistoryItem, target?: "first" | "last") => {
     if (!currentActiveShot) return
     const { shot, scriptShotPlan } = currentActiveShot
 
@@ -418,22 +418,28 @@ export default function ScriptShotPage() {
       ? [
           {
             url: shot.imageUrl,
-            imageUrls: shot.imageUrls,
             lastFrameUrl: shot.lastFrameUrl,
-            imageType: shot.imageType,
             createdAt: new Date().toISOString(),
           },
           ...currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt),
         ]
       : currentHistory.filter((h) => h.url !== item.url || h.createdAt !== item.createdAt)
 
-    updateShot(scriptShotPlan.episodeId, shot.id, {
-      imageUrl: item.url,
-      lastFrameUrl: item.lastFrameUrl,
-      imageType: item.imageType,
+    const updateData: Partial<ShotInput> = {
       imageStatus: "completed",
       imageHistory: JSON.stringify(newHistory),
-    })
+    }
+
+    if (target === "first") {
+      updateData.imageUrl = item.url
+    } else if (target === "last") {
+      updateData.lastFrameUrl = item.lastFrameUrl || item.url
+    } else {
+      updateData.imageUrl = item.url
+      updateData.lastFrameUrl = item.lastFrameUrl
+    }
+
+    updateShot(scriptShotPlan.episodeId, shot.id, updateData)
   }, [currentActiveShot, updateShot])
 
   const handleRestoreVideoHistory = useCallback((item: ShotVideoHistoryItem) => {
