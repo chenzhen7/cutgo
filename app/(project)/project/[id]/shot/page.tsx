@@ -265,7 +265,7 @@ export default function ScriptShotPage() {
     if (!activeEpisodeId) return
     setShowShotTypeDialog(false)
     setDetailPanelOpen(false)
-    await generateScriptShots(projectId, [activeEpisodeId], "keyframe", null)
+    await generateScriptShots(projectId, [activeEpisodeId])
     // 生成流程包含先删后建，完成后主动重拉，确保页面显示最新镜头列表
     await fetchScriptShotPlans(projectId, activeEpisodeId)
   }, [projectId, activeEpisodeId, generateScriptShots, fetchScriptShotPlans, setDetailPanelOpen])
@@ -323,7 +323,7 @@ export default function ScriptShotPage() {
   const handleAddShot = useCallback(
     async (episodeId: string) => {
       await addShot(episodeId, {
-        prompt: "Storyboard prompt: cinematic scene, detailed environment, dramatic lighting, photorealistic",
+        content: "新分镜",
       })
     },
     [addShot]

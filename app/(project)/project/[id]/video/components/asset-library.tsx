@@ -53,7 +53,7 @@ export function AssetLibrary() {
       trimEnd: 0,
       videoUrl: shot.videoUrl,
       thumbnailUrl: shot.imageUrl,
-      label: shot.prompt?.slice(0, 20) || `镜头 ${shot.index + 1}`,
+      label: shot.content?.slice(0, 20) || `镜头 ${shot.index + 1}`,
       volume: shot.volume ?? 100,
       speed: shot.speed ?? 1,
       transition: "none",
@@ -145,7 +145,7 @@ export function AssetLibrary() {
                   <TooltipContent side="right" className="max-w-[200px]">
                     <p className="text-xs font-medium">镜头 {shot.index + 1}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {shot.prompt?.slice(0, 50) || "无分镜提示词"}
+                      {shot.content?.slice(0, 50) || "无分镜描述"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {!hasVideo

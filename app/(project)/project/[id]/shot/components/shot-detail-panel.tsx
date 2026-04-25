@@ -99,14 +99,6 @@ function AssetThumbnail({
   )
 }
 
-function parseGridPrompts(value: string | null): string[] {
-  try {
-    return value ? JSON.parse(value) : []
-  } catch {
-    return []
-  }
-}
-
 function parseRefImageUrls(value: string | null): string[] {
   try {
     return value ? JSON.parse(value) : []
@@ -168,9 +160,7 @@ export function ShotDetailPanel({
   }, [fetchAssets, projectId])
 
   const [content, setContent] = useState(() => shot.content || "")
-  const [prompt, setPrompt] = useState(() => shot.prompt || "")
-  const [promptEnd, setPromptEnd] = useState(() => shot.promptEnd || "")
-  const [gridPrompts, setGridPrompts] = useState<string[]>(() => parseGridPrompts(shot.gridPrompts))
+  const [lastContent, setLastContent] = useState(() => shot.lastContent || "")
   const [videoPrompt, setVideoPrompt] = useState(() => shot.videoPrompt || "")
   const [duration, setDuration] = useState<string>(() => shot.duration?.toString() || "5")
   const [refImageUrls, setRefImageUrls] = useState<string[]>(() => parseRefImageUrls(shot.refImageUrls))
@@ -249,22 +239,7 @@ export function ShotDetailPanel({
   }
 
   const handleGridLayoutChange = (layout: string) => {
-    const layoutOpt = GRID_LAYOUT_OPTIONS.find((o) => o.value === layout)
-    if (!layoutOpt) return
-    const currentPrompts = gridPrompts.length > 0 ? gridPrompts : []
-    const newPrompts = Array.from({ length: layoutOpt.count }, (_, i) => currentPrompts[i] || "")
-    setGridPrompts(newPrompts)
-    updateShotData({
-      gridLayout: layout as GridLayout,
-      gridPrompts: JSON.stringify(newPrompts),
-    })
-  }
-
-  const handleGridPromptChange = (index: number, value: string) => {
-    const newPrompts = [...gridPrompts]
-    newPrompts[index] = value
-    setGridPrompts(newPrompts)
-    debouncedUpdate({ gridPrompts: JSON.stringify(newPrompts) })
+    updateShotData({ gridLayout: layout as GridLayout })
   }
 
   const handleAddRefImage = async (file: File) => {
@@ -296,7 +271,6 @@ export function ShotDetailPanel({
   const imageType = shot.imageType || "keyframe"
   const hasImage = !!shot.imageUrl
   const episode = scriptShotPlan.episode
-  const currentGridLayout = GRID_LAYOUT_OPTIONS.find((o) => o.value === (shot.gridLayout || "2x2")) || GRID_LAYOUT_OPTIONS[0]
 
   return (
     <div className="flex flex-col h-full">
@@ -695,96 +669,46 @@ export function ShotDetailPanel({
                     setContent(e.target.value)
                     debouncedUpdate({ content: e.target.value })
                   }}
-                  className="text-[13px] min-h-[60px] max-h-[120px] leading-relaxed"
-                  placeholder="描述该镜头的剧情内容与画面意图（给人看的描述）..."
+                  className="text-[13px] min-h-[80px] max-h-[160px] leading-relaxed"
+                  placeholder="描述该镜头的画面内容（用于生成图片）..."
                 />
               </div>
 
-              {/* Prompts by Type */}
+              {/* 尾帧分镜描述（仅首尾帧模式） */}
               {imageType === "first_last" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Label className="text-xs">首帧提示词</Label>
-                      <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
-                    </div>
-                    <Textarea
-                      value={prompt}
-                      onChange={(e) => {
-                        setPrompt(e.target.value)
-                        debouncedUpdate({ prompt: e.target.value })
-                      }}
-                      className="text-[13px] h-[120px] leading-relaxed"
-                      placeholder="描述该镜头的首帧提示词（英文）..."
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Label className="text-xs">尾帧提示词</Label>
-                      <Badge variant="outline" className="text-[8px] px-1 py-0">promptEnd</Badge>
-                    </div>
-                    <Textarea
-                      value={promptEnd}
-                      onChange={(e) => {
-                        setPromptEnd(e.target.value)
-                        debouncedUpdate({ promptEnd: e.target.value })
-                      }}
-                      className="text-[13px] h-[120px] leading-relaxed"
-                      placeholder="描述镜头结束时的画面（英文），留空则与首帧相同..."
-                    />
-                  </div>
-                </div>
-              )}
-
-              {imageType === "multi_grid" && (
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs mb-1.5 block">宫格布局</Label>
-                    <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GRID_LAYOUT_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                            {opt.label} ({opt.count}格)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: currentGridLayout.count }).map((_, i) => (
-                      <div key={i} className="space-y-1">
-                        <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
-                        <Textarea
-                          value={gridPrompts[i] || ""}
-                          onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                          className="text-xs h-[40px]"
-                          placeholder={`第 ${i + 1} 格画面提示词...`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Image prompt */}
-              {imageType !== "first_last" && imageType !== "multi_grid" && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Label className="text-xs">分镜提示词</Label>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0">prompt</Badge>
+                    <Label className="text-xs">尾帧分镜描述</Label>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0">lastContent</Badge>
                   </div>
                   <Textarea
-                    value={prompt}
+                    value={lastContent}
                     onChange={(e) => {
-                      setPrompt(e.target.value)
-                      debouncedUpdate({ prompt: e.target.value })
+                      setLastContent(e.target.value)
+                      debouncedUpdate({ lastContent: e.target.value || null })
                     }}
-                    className="text-[13px] min-h-[80px] max-h-[160px]  leading-relaxed"
-                    placeholder="描述该镜头的分镜提示词（英文）..."
+                    className="text-[13px] min-h-[60px] max-h-[120px] leading-relaxed"
+                    placeholder="描述尾帧画面，留空则使用首帧作为尾帧..."
                   />
+                </div>
+              )}
+
+              {/* 多宫格布局选择 */}
+              {imageType === "multi_grid" && (
+                <div>
+                  <Label className="text-xs mb-1.5 block">宫格布局</Label>
+                  <Select value={shot.gridLayout || "2x2"} onValueChange={handleGridLayoutChange}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRID_LAYOUT_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label} ({opt.count}格)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 

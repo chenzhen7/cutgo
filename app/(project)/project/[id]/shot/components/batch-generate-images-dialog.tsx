@@ -17,13 +17,11 @@ interface ShotRowProps {
   index: number
   isSelected: boolean
   isGeneratingImage: boolean
-  promptValue: string
-  promptEndValue: string
-  gridPromptsValue: string
+  contentValue: string
+  lastContentValue: string
   onToggle: (id: string) => void
-  onPromptChange: (shotId: string, prompt: string) => void
-  onPromptEndChange: (shotId: string, promptEnd: string) => void
-  onGridPromptsChange: (shotId: string, gridPrompts: string) => void
+  onContentChange: (shotId: string, value: string) => void
+  onLastContentChange: (shotId: string, value: string) => void
   onUpdateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => void
 }
 
@@ -33,42 +31,19 @@ const ShotRow = memo(function ShotRow({
   index,
   isSelected,
   isGeneratingImage,
-  promptValue,
-  promptEndValue,
-  gridPromptsValue,
+  contentValue,
+  lastContentValue,
   onToggle,
-  onPromptChange,
-  onPromptEndChange,
-  onGridPromptsChange,
+  onContentChange,
+  onLastContentChange,
   onUpdateShot,
 }: ShotRowProps) {
   const imageType = shot.imageType || "keyframe"
-  const currentGridLayout = GRID_LAYOUT_OPTIONS.find((o) => o.value === (shot.gridLayout || "2x2")) || GRID_LAYOUT_OPTIONS[0]
-  
-  let parsedGridPrompts: string[] = []
-  try {
-    parsedGridPrompts = gridPromptsValue ? JSON.parse(gridPromptsValue) : []
-  } catch {
-    parsedGridPrompts = []
-  }
 
   const handleGridLayoutChange = (layout: string) => {
-    const layoutOpt = GRID_LAYOUT_OPTIONS.find((o) => o.value === layout)
-    if (!layoutOpt) return
-    const currentPrompts = parsedGridPrompts.length > 0 ? parsedGridPrompts : []
-    const newPrompts = Array.from({ length: layoutOpt.count }, (_, i) => currentPrompts[i] || "")
-    const newPromptsStr = JSON.stringify(newPrompts)
-    onGridPromptsChange(shot.id, newPromptsStr)
     onUpdateShot(scriptShotPlan.episodeId, shot.id, {
       gridLayout: layout as ShotInput["gridLayout"],
-      gridPrompts: newPromptsStr,
     })
-  }
-
-  const handleGridPromptChange = (i: number, value: string) => {
-    const newPrompts = [...parsedGridPrompts]
-    newPrompts[i] = value
-    onGridPromptsChange(shot.id, JSON.stringify(newPrompts))
   }
 
   return (
@@ -118,42 +93,25 @@ const ShotRow = memo(function ShotRow({
         {imageType === "first_last" ? (
           <div className="grid grid-cols-2 gap-2">
             <Textarea
-              value={promptValue}
-              onChange={(e) => onPromptChange(shot.id, e.target.value)}
-              placeholder="首帧提示词"
+              value={contentValue}
+              onChange={(e) => onContentChange(shot.id, e.target.value)}
+              placeholder="分镜描述（首帧）"
               className="min-h-[60px] text-sm resize-y"
               onPointerDown={(e) => e.stopPropagation()}
             />
             <Textarea
-              value={promptEndValue}
-              onChange={(e) => onPromptEndChange(shot.id, e.target.value)}
-              placeholder="尾帧提示词"
+              value={lastContentValue}
+              onChange={(e) => onLastContentChange(shot.id, e.target.value)}
+              placeholder="尾帧分镜描述（留空则使用首帧）"
               className="min-h-[60px] text-sm resize-y"
               onPointerDown={(e) => e.stopPropagation()}
             />
           </div>
-        ) : imageType === "multi_grid" ? (
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto px-1">
-              {Array.from({ length: currentGridLayout.count }).map((_, i) => (
-                <div key={i} className="space-y-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">格 {i + 1}</span>
-                  <Textarea
-                    value={parsedGridPrompts[i] || ""}
-                    onChange={(e) => handleGridPromptChange(i, e.target.value)}
-                    className="min-h-[40px] text-xs resize-y"
-                    placeholder={`第 ${i + 1} 格提示词`}
-                    onPointerDown={(e) => e.stopPropagation()}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         ) : (
           <Textarea
-            value={promptValue}
-            onChange={(e) => onPromptChange(shot.id, e.target.value)}
-            placeholder="提示词"
+            value={contentValue}
+            onChange={(e) => onContentChange(shot.id, e.target.value)}
+            placeholder="分镜描述"
             className="min-h-[60px] text-sm resize-y"
             onPointerDown={(e) => e.stopPropagation()}
           />
@@ -173,7 +131,7 @@ const ShotRow = memo(function ShotRow({
               <SelectItem value="multi_grid">多宫格</SelectItem>
             </SelectContent>
           </Select>
-          
+
           {imageType === "multi_grid" && (
             <>
               <span className="text-xs text-muted-foreground ml-2">布局:</span>
@@ -220,23 +178,20 @@ export function BatchGenerateImagesDialog({
   imageGeneratingIds,
 }: BatchGenerateImagesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [promptValues, setPromptValues] = useState<Record<string, string>>({})
-  const [promptEndValues, setPromptEndValues] = useState<Record<string, string>>({})
-  const [gridPromptsValues, setGridPromptsValues] = useState<Record<string, string>>({})
+  const [contentValues, setContentValues] = useState<Record<string, string>>({})
+  const [lastContentValues, setLastContentValues] = useState<Record<string, string>>({})
   const [confirming, setConfirming] = useState(false)
-  const promptDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
-  const promptEndDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
-  const gridPromptsDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const contentDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const lastContentDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const shotMetaMap = useMemo(
     () => new Map(shots.map(({ shot, scriptShotPlan }) => [
-      shot.id, 
-      { 
-        episodeId: scriptShotPlan.episodeId, 
-        originalPrompt: shot.prompt || "",
-        originalPromptEnd: shot.promptEnd || "",
-        originalGridPrompts: shot.gridPrompts || ""
-      }
+      shot.id,
+      {
+        episodeId: scriptShotPlan.episodeId,
+        originalContent: shot.content || "",
+        originalLastContent: shot.lastContent || "",
+      },
     ])),
     [shots]
   )
@@ -245,20 +200,17 @@ export function BatchGenerateImagesDialog({
     if (open) {
       const missingIds = new Set(shots.filter((s) => !s.shot.imageUrl && !imageGeneratingIds.has(s.shot.id)).map((s) => s.shot.id))
       setSelectedIds(missingIds)
-      setPromptValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.prompt || ""])))
-      setPromptEndValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.promptEnd || ""])))
-      setGridPromptsValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.gridPrompts || ""])))
+      setContentValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.content || ""])))
+      setLastContentValues(Object.fromEntries(shots.map(({ shot }) => [shot.id, shot.lastContent || ""])))
     }
   }, [open, shots, imageGeneratingIds])
 
   useEffect(() => {
     return () => {
-      promptDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
-      promptDebounceTimersRef.current.clear()
-      promptEndDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
-      promptEndDebounceTimersRef.current.clear()
-      gridPromptsDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
-      gridPromptsDebounceTimersRef.current.clear()
+      contentDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+      contentDebounceTimersRef.current.clear()
+      lastContentDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+      lastContentDebounceTimersRef.current.clear()
     }
   }, [])
 
@@ -283,91 +235,63 @@ export function BatchGenerateImagesDialog({
       else next.add(id)
       return next
     })
-  }, [])
+  }, [imageGeneratingIds])
 
   const flushPromptUpdates = useCallback(() => {
-    promptDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
-    promptDebounceTimersRef.current.clear()
-    promptEndDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
-    promptEndDebounceTimersRef.current.clear()
-    gridPromptsDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
-    gridPromptsDebounceTimersRef.current.clear()
+    contentDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+    contentDebounceTimersRef.current.clear()
+    lastContentDebounceTimersRef.current.forEach((timer) => clearTimeout(timer))
+    lastContentDebounceTimersRef.current.clear()
 
-    Object.entries(promptValues).forEach(([shotId, prompt]) => {
+    Object.entries(contentValues).forEach(([shotId, content]) => {
       const meta = shotMetaMap.get(shotId)
-      if (!meta || prompt === meta.originalPrompt) return
-      onUpdateShot(meta.episodeId, shotId, { prompt })
+      if (!meta || content === meta.originalContent) return
+      onUpdateShot(meta.episodeId, shotId, { content })
     })
 
-    Object.entries(promptEndValues).forEach(([shotId, promptEnd]) => {
+    Object.entries(lastContentValues).forEach(([shotId, lastContent]) => {
       const meta = shotMetaMap.get(shotId)
-      if (!meta || promptEnd === meta.originalPromptEnd) return
-      onUpdateShot(meta.episodeId, shotId, { promptEnd })
+      if (!meta || lastContent === meta.originalLastContent) return
+      onUpdateShot(meta.episodeId, shotId, { lastContent: lastContent || null })
     })
+  }, [onUpdateShot, contentValues, lastContentValues, shotMetaMap])
 
-    Object.entries(gridPromptsValues).forEach(([shotId, gridPrompts]) => {
-      const meta = shotMetaMap.get(shotId)
-      if (!meta || gridPrompts === meta.originalGridPrompts) return
-      onUpdateShot(meta.episodeId, shotId, { gridPrompts })
-    })
-  }, [onUpdateShot, promptValues, promptEndValues, gridPromptsValues, shotMetaMap])
+  const handleContentChange = useCallback(
+    (shotId: string, value: string) => {
+      setContentValues((prev) => ({ ...prev, [shotId]: value }))
 
-  const handlePromptChange = useCallback(
-    (shotId: string, prompt: string) => {
-      setPromptValues((prev) => ({ ...prev, [shotId]: prompt }))
-
-      const timer = promptDebounceTimersRef.current.get(shotId)
+      const timer = contentDebounceTimersRef.current.get(shotId)
       if (timer) clearTimeout(timer)
 
       const meta = shotMetaMap.get(shotId)
       if (!meta) return
 
       const nextTimer = setTimeout(() => {
-        onUpdateShot(meta.episodeId, shotId, { prompt })
-        promptDebounceTimersRef.current.delete(shotId)
+        onUpdateShot(meta.episodeId, shotId, { content: value })
+        contentDebounceTimersRef.current.delete(shotId)
       }, 600)
 
-      promptDebounceTimersRef.current.set(shotId, nextTimer)
+      contentDebounceTimersRef.current.set(shotId, nextTimer)
     },
     [onUpdateShot, shotMetaMap]
   )
 
-  const handlePromptEndChange = useCallback(
-    (shotId: string, promptEnd: string) => {
-      setPromptEndValues((prev) => ({ ...prev, [shotId]: promptEnd }))
+  const handleLastContentChange = useCallback(
+    (shotId: string, value: string) => {
+      setLastContentValues((prev) => ({ ...prev, [shotId]: value }))
 
-      const timer = promptEndDebounceTimersRef.current.get(shotId)
+      const timer = lastContentDebounceTimersRef.current.get(shotId)
       if (timer) clearTimeout(timer)
 
       const meta = shotMetaMap.get(shotId)
       if (!meta) return
 
       const nextTimer = setTimeout(() => {
-        onUpdateShot(meta.episodeId, shotId, { promptEnd })
-        promptEndDebounceTimersRef.current.delete(shotId)
+        onUpdateShot(meta.episodeId, shotId, { lastContent: value || null })
+        lastContentDebounceTimersRef.current.delete(shotId)
       }, 800)
 
-      promptEndDebounceTimersRef.current.set(shotId, nextTimer)
-    },
-    [onUpdateShot, shotMetaMap]
-  )
-
-  const handleGridPromptsChange = useCallback(
-    (shotId: string, gridPrompts: string) => {
-      setGridPromptsValues((prev) => ({ ...prev, [shotId]: gridPrompts }))
-
-      const timer = gridPromptsDebounceTimersRef.current.get(shotId)
-      if (timer) clearTimeout(timer)
-
-      const meta = shotMetaMap.get(shotId)
-      if (!meta) return
-
-      const nextTimer = setTimeout(() => {
-        onUpdateShot(meta.episodeId, shotId, { gridPrompts })
-        gridPromptsDebounceTimersRef.current.delete(shotId)
-      }, 800)
-
-      gridPromptsDebounceTimersRef.current.set(shotId, nextTimer)
+      lastContentDebounceTimersRef.current.set(shotId, nextTimer)
     },
     [onUpdateShot, shotMetaMap]
   )
@@ -400,7 +324,7 @@ export function BatchGenerateImagesDialog({
           <Button variant="outline" size="sm" onClick={handleSelectMissing}>
             仅选缺失图片
           </Button>
-          
+
           <span className="text-sm text-muted-foreground ml-auto">
             已选 {selectedIds.size} / {shots.length}
           </span>
@@ -415,13 +339,11 @@ export function BatchGenerateImagesDialog({
               index={index}
               isSelected={selectedIds.has(shot.id)}
               isGeneratingImage={imageGeneratingIds.has(shot.id)}
-              promptValue={promptValues[shot.id] ?? shot.prompt ?? ""}
-              promptEndValue={promptEndValues[shot.id] ?? shot.promptEnd ?? ""}
-              gridPromptsValue={gridPromptsValues[shot.id] ?? shot.gridPrompts ?? ""}
+              contentValue={contentValues[shot.id] ?? shot.content ?? ""}
+              lastContentValue={lastContentValues[shot.id] ?? shot.lastContent ?? ""}
               onToggle={handleToggleShot}
-              onPromptChange={handlePromptChange}
-              onPromptEndChange={handlePromptEndChange}
-              onGridPromptsChange={handleGridPromptsChange}
+              onContentChange={handleContentChange}
+              onLastContentChange={handleLastContentChange}
               onUpdateShot={onUpdateShot}
             />
           ))}

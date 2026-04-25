@@ -25,9 +25,7 @@ type SubmitShotImageInput = {
   shotId: string
   imageType?: ShotImageType
   content?: string
-  prompt?: string
-  promptEnd?: string
-  gridPrompts?: string[]
+  lastContent?: string | null
   gridLayout?: string
   negativePrompt?: string
   referenceImages?: string[]
@@ -249,10 +247,8 @@ async function executeShotImageTask(input: {
   stylePreset?: string | null
   imageType: ShotImageType
   content: string | null
-  prompt: string
-  promptEnd: string | null
+  lastContent: string | null
   gridLayout: string | null
-  gridPrompts: string[]
   negativePrompt: string | null
   referenceImages?: string[]
   refLabels?: string[]
@@ -260,7 +256,7 @@ async function executeShotImageTask(input: {
 }) {
   try {
     if (input.imageType === "keyframe") {
-      const generatedPrompt = buildImagePrompt(input.content, input.prompt, input.refLabels, input.stylePreset)
+      const generatedPrompt = buildImagePrompt(input.content, input.refLabels, input.stylePreset)
       const result = await callImage({
         prompt: generatedPrompt,
         projectId: input.projectId,
@@ -282,8 +278,32 @@ async function executeShotImageTask(input: {
     }
 
     if (input.imageType === "first_last") {
-      const promptStart = buildImagePrompt(input.content, input.prompt, input.refLabels, input.stylePreset)
-      const promptEnd = buildImagePrompt(input.content, input.promptEnd, input.refLabels, input.stylePreset)
+      const promptStart = buildImagePrompt(input.content, input.refLabels, input.stylePreset)
+
+      // 尾帧分镜描述为空：只生成首帧，尾帧使用首帧图（lastFrameUrl 留空表示"沿用首帧"）
+      const lastContentText = input.lastContent?.trim() || ""
+      if (!lastContentText) {
+        const startResult = await callImage({
+          prompt: promptStart,
+          projectId: input.projectId,
+          scope: "shot",
+          negativePrompt: input.negativePrompt ?? undefined,
+          aspectRatio: input.aspectRatio,
+          resolution: input.resolution,
+          referenceImages: input.referenceImages,
+          referenceImageNote: input.referenceImageNote,
+        })
+        const firstUrl = Array.isArray(startResult) ? startResult[0].url : startResult.url
+        await markShotCompleted(input.shotId, input.taskId, {
+          imageUrl: firstUrl,
+          lastFrameUrl: null,
+          imageType: "first_last",
+        })
+        await markAiTaskSucceeded(input.taskId)
+        return
+      }
+
+      const promptEnd = buildImagePrompt(lastContentText, input.refLabels, input.stylePreset)
       const [startResult, endResult] = await Promise.all([
         callImage({
           prompt: promptStart,
@@ -321,7 +341,6 @@ async function executeShotImageTask(input: {
 
     const combinedPrompt = buildMultiGridPrompt(
       input.content,
-      input.gridPrompts,
       input.gridLayout,
       input.refLabels,
       input.stylePreset
@@ -382,17 +401,9 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
 
   const imageType = input.imageType ?? (shot.imageType as ShotImageType) ?? "keyframe"
   const content = input.content ?? shot.content
-  const prompt = input.prompt ?? shot.prompt
-  const promptEnd = input.promptEnd ?? shot.promptEnd
+  const lastContent = input.lastContent ?? shot.lastContent
   const gridLayout = input.gridLayout ?? shot.gridLayout
   const negativePrompt = input.negativePrompt ?? shot.negativePrompt
-  const gridPrompts = input.gridPrompts ?? (() => {
-    try {
-      return shot.gridPrompts ? (JSON.parse(shot.gridPrompts) as string[]) : []
-    } catch {
-      return []
-    }
-  })()
 
   // 用户自定义参考图
   const refImageUrls: string[] = input.referenceImages ?? (() => {
@@ -404,14 +415,8 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
   })()
   const refImageNote = input.refImageNote ?? shot.refImageNote
 
-  if (imageType !== "multi_grid" && !prompt) {
-    throwCutGoError("MISSING_PARAMS", "prompt is required")
-  }
-  if (imageType === "first_last" && !promptEnd) {
-    throwCutGoError("VALIDATION", "promptEnd is required for first_last type")
-  }
-  if (imageType === "multi_grid" && gridPrompts.length === 0) {
-    throwCutGoError("VALIDATION", "gridPrompts are required for multi_grid type")
+  if (!content) {
+    throwCutGoError("MISSING_PARAMS", "分镜描述不能为空")
   }
 
   const task = await createRunningAiTask({
@@ -440,12 +445,10 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
     where: { id: shot.id },
     data: {
       content,
-      prompt,
-      promptEnd,
+      lastContent,
       negativePrompt,
       imageType,
       gridLayout,
-      gridPrompts: imageType === "multi_grid" ? JSON.stringify(gridPrompts) : input.gridPrompts !== undefined ? null : shot.gridPrompts,
       imageUrl: null,
       lastFrameUrl: null,
       imageStatus: "generating",
@@ -466,10 +469,8 @@ export async function submitShotImageTask(input: SubmitShotImageInput): Promise<
       stylePreset: shot.episode.project.stylePreset,
       imageType,
       content,
-      prompt,
-      promptEnd,
+      lastContent,
       gridLayout,
-      gridPrompts,
       negativePrompt,
       referenceImages: refImageUrls.length > 0 ? refImageUrls : input.referenceImages,
       refLabels: input.refLabels,

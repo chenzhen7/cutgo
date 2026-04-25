@@ -9,8 +9,6 @@ import type {
   AssetCharacter,
   AssetScene,
   AssetProp,
-  ImageType,
-  GridLayout,
 } from "@/lib/types"
 import type { ShotCardLayout } from "@/app/(project)/project/[id]/shot/components/shot-card"
 import { apiFetch } from "@/lib/api-client"
@@ -204,12 +202,7 @@ interface ScriptShotState {
     filters?: { characterIds?: string[]; sceneIds?: string[]; propIds?: string[] }
   ) => Promise<void>
 
-  generateScriptShots: (
-    projectId: string,
-    episodeIds?: string[],
-    imageType?: ImageType,
-    gridLayout?: GridLayout | null
-  ) => Promise<void>
+  generateScriptShots: (projectId: string, episodeIds?: string[]) => Promise<void>
 
   addShot: (episodeId: string, data: ShotInput) => Promise<void>
   updateShot: (episodeId: string, shotId: string, data: Partial<ShotInput>) => Promise<void>
@@ -223,8 +216,6 @@ interface ScriptShotState {
     targetEpisodeId: string,
     targetIndex: number
   ) => Promise<void>
-
-  optimizePrompt: (episodeId: string, shotId: string) => Promise<{ optimizedPrompt: string; negativePrompt: string }>
 
   generateImage: (episodeId: string, shotId: string) => Promise<void>
   generateBatchImages: (projectId: string, options?: { episodeId?: string; mode?: "all" | "missing_only"; shotIds?: string[] }) => Promise<void>
@@ -368,12 +359,12 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
   },
 
-  generateScriptShots: async (projectId, episodeIds, imageType, gridLayout) => {
+  generateScriptShots: async (projectId, episodeIds) => {
     set({ generateStatus: "generating", generateError: null, generateProgress: null })
     try {
       const data = await apiFetch<{ scriptShotPlans?: ScriptShotPlan[] }>("/api/script-shots/generate", {
         method: "POST",
-        body: { projectId, episodeIds, imageType, gridLayout },
+        body: { projectId, episodeIds },
       })
       const scriptShotPlans = data.scriptShotPlans || []
       set({
@@ -434,7 +425,8 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     const shot = sb?.shots.find((s) => s.id === shotId)
     if (!shot) return
     await get().addShot(episodeId, {
-      prompt: shot.prompt,
+      content: shot.content ?? undefined,
+      lastContent: shot.lastContent || undefined,
       negativePrompt: shot.negativePrompt || undefined,
       scriptLineIds: shot.scriptLineIds || undefined,
       dialogueText: shot.dialogueText || undefined,
@@ -477,16 +469,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       episodeShotCounts: mergeEpisodeShotCounts(get().episodeShotCounts, scriptShotPlans),
       imageGeneratingIds: collectGeneratingShotIds(scriptShotPlans),
     })
-  },
-
-  optimizePrompt: async (episodeId, shotId) => {
-    const sb = get().scriptShotPlans.find((s) => s.id === episodeId)
-    const shot = sb?.shots.find((s) => s.id === shotId)
-    if (!shot) throw new Error("镜头不存在")
-    return apiFetch<{ optimizedPrompt: string; negativePrompt: string }>(
-      `/api/script-shots/${episodeId}/shots/${shotId}/optimize-prompt`,
-      { method: "POST", body: { currentPrompt: shot.prompt } }
-    )
   },
 
   generateImage: async (episodeId, shotId) => {
@@ -561,8 +543,7 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
       shotId,
       imageType: shot.imageType || "keyframe",
       content: shot.content,
-      prompt: shot.prompt,
-      promptEnd: shot.promptEnd,
+      lastContent: shot.lastContent,
       negativePrompt: shot.negativePrompt,
       referenceImages,
       refLabels,
@@ -570,7 +551,6 @@ export const useScriptShotsStore = create<ScriptShotState>((set, get) => ({
     }
 
     if (shot.imageType === "multi_grid") {
-      body.gridPrompts = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
       body.gridLayout = shot.gridLayout || "2x2"
     }
 

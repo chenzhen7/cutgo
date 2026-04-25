@@ -417,7 +417,8 @@ export interface Shot {
   episodeId: string
   index: number
   content: string | null
-  prompt: string
+  /** first_last：尾帧分镜描述（为空时使用首帧图作为尾帧） */
+  lastContent: string | null
   negativePrompt: string | null
   duration: number
   imageUrl: string | null
@@ -427,9 +428,7 @@ export interface Shot {
   imageType: ImageType
   imageUrls: string | null
   lastFrameUrl: string | null
-  promptEnd: string | null
   gridLayout: GridLayout | null
-  gridPrompts: string | null
   scriptLineIds: string | null
   dialogueText: string | null
   actionNote: string | null
@@ -513,7 +512,7 @@ export interface ScriptShotGenerateProgress {
 
 export interface ShotInput {
   content?: string
-  prompt: string
+  lastContent?: string | null
   negativePrompt?: string
   duration?: number
   imageType?: ImageType | null
@@ -523,9 +522,7 @@ export interface ShotInput {
   imageErrorMessage?: string | null
   imageUrls?: string | null
   lastFrameUrl?: string | null
-  promptEnd?: string | null
   gridLayout?: GridLayout | null
-  gridPrompts?: string | null
   scriptLineIds?: string | null
   dialogueText?: string | null
   actionNote?: string | null

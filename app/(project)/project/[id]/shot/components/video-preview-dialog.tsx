@@ -140,8 +140,8 @@ export function VideoPreviewDialog({
             <Video className="size-4 text-primary" />
             镜头 #{shot.index + 1} 视频预览
           </DialogTitle>
-          {shot.prompt && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{shot.prompt}</p>
+          {shot.content && (
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{shot.content}</p>
           )}
         </DialogHeader>
 

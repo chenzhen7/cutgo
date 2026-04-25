@@ -23,22 +23,14 @@ export type ShotDetailTab = "image" | "video"
 
 function imagePromptSummary(shot: Shot): string {
   const imageType = shot.imageType || "keyframe"
+  const head = shot.content?.trim() ?? ""
   if (imageType === "first_last") {
-    const head = shot.prompt?.trim() ?? ""
-    const tail = shot.promptEnd?.trim() ?? ""
+    const tail = shot.lastContent?.trim() ?? ""
     if (head && tail) return `首：${head}　尾：${tail}`
-    return head || tail
+    if (head) return `首：${head}　尾：（同首帧）`
+    return tail
   }
-  if (imageType === "multi_grid") {
-    const cells = shot.gridPrompts ? JSON.parse(shot.gridPrompts) : []
-    const parts = cells.map((p: string, i: number) => {
-      const t = String(p).trim()
-      return t ? `格${i + 1} ${t}` : ""
-    }).filter(Boolean)
-    if (parts.length > 0) return parts.join(" · ")
-    return shot.prompt?.trim() ?? ""
-  }
-  return shot.prompt?.trim() ?? ""
+  return head
 }
 
 interface ShotCardProps {

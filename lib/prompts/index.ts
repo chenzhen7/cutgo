@@ -11,9 +11,6 @@ export {
 export {
   buildShotListSystemPrompt,
   buildShotListUserPrompt,
-  buildShotWithImageUserPrompt,
-  buildShotImagePromptSystemPrompt,
-  buildShotImagePromptUserPrompt,
   buildShotVideoPromptSystemPrompt,
   buildShotVideoPromptUserPrompt,
 } from "./script-shots"
@@ -21,7 +18,6 @@ export type {
   ShotListItem,
   BuildShotListPromptInput,
   BuildShotPromptsInput,
-  BuildShotWithImagePromptInput,
 } from "./script-shots"
 export {
   ASSET_CHARACTER_IMAGE_PROMPT_PLACEHOLDER,

@@ -8,22 +8,10 @@ import {
   markAiTaskSucceeded,
   toErrorInfo,
 } from "@/lib/ai-task-service"
-import {
-  buildShotListSystemPrompt,
-  buildShotListUserPrompt,
-  buildShotImagePromptSystemPrompt,
-  buildShotImagePromptUserPrompt,
-} from "@/lib/prompts"
+import { buildShotListSystemPrompt, buildShotListUserPrompt } from "@/lib/prompts"
 import type { ShotListItem } from "@/lib/prompts"
 import { buildShotAssetData, extractEpisodeAssetIds } from "@/lib/utils"
 import { episodeWithShotsInclude, toScriptShotPlan } from "../utils"
-import type { ImageType, GridLayout } from "@/lib/types"
-
-interface AIShotImagePromptsItem {
-  prompt?: string
-  promptEnd?: string
-  gridPrompts?: string[]
-}
 
 function parseLLMJsonArray<T>(raw: string, label: string): T[] {
   let text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
@@ -38,7 +26,7 @@ function parseLLMJsonArray<T>(raw: string, label: string): T[] {
   }
 }
 
-// Call 1：提取分镜列表
+// 提取分镜列表
 async function callAIExtractShotList(
   episodeTitle: string,
   scriptContent: string,
@@ -88,50 +76,9 @@ async function callAIExtractShotList(
     .filter((item): item is ShotListItem => Boolean(item.content))
 }
 
-// Call 2：基于分镜列表生成生图提示词
-async function callAIExtractImagePrompts(
-  episodeTitle: string,
-  episodeCharacters: string,
-  episodeScenes: string,
-  shots: ShotListItem[],
-  imageType: ImageType,
-  gridLayout: GridLayout | null
-): Promise<AIShotImagePromptsItem[]> {
-  const systemPrompt = buildShotImagePromptSystemPrompt(imageType, gridLayout)
-  const userPrompt = buildShotImagePromptUserPrompt({
-    episodeTitle,
-    episodeCharacters,
-    episodeScenes,
-    shots,
-  })
-  const result = await callLLM({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  })
-  const rawItems = parseLLMJsonArray<unknown>(result.content?.trim() || "", "生图提示词生成")
-
-  return rawItems.map((item) => {
-    if (typeof item === "string") {
-      const prompt = item.trim()
-      return { prompt: prompt || undefined }
-    }
-    if (!item || typeof item !== "object") return {}
-    const obj = item as Record<string, unknown>
-
-    const prompt = typeof obj.prompt === "string" && obj.prompt.trim() ? obj.prompt.trim() : undefined
-    const promptEnd = typeof obj.promptEnd === "string" && obj.promptEnd.trim() ? obj.promptEnd.trim() : undefined
-    const gridPrompts = Array.isArray(obj.gridPrompts)
-      ? (obj.gridPrompts as unknown[]).filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
-      : undefined
-    return { prompt, promptEnd, gridPrompts }
-  })
-}
-
 export const POST = withError(async (request: NextRequest) => {
   const body = await request.json()
-  const { projectId, episodeIds, imageType = "keyframe", gridLayout = null } = body
+  const { projectId, episodeIds } = body
 
   if (!projectId) {
     throwCutGoError("MISSING_PARAMS", "projectId is required")
@@ -160,7 +107,7 @@ export const POST = withError(async (request: NextRequest) => {
   const assetScenes = await prisma.assetScene.findMany({ where: { projectId } })
   const assetProps = await prisma.assetProp.findMany({ where: { projectId } })
 
-  // 上一集最后一个镜头的 content，用于 Call 1 叙事衔接
+  // 上一集最后一个镜头的 content，用于叙事衔接
   let previousShotContent: string | null = null
 
   try {
@@ -185,7 +132,6 @@ export const POST = withError(async (request: NextRequest) => {
       const episodeScenesStr = matchedScene?.name || ""
 
       try {
-        // Call 1: 先生成分镜列表
         const shotList = await callAIExtractShotList(
           episode.title,
           episode.script,
@@ -194,19 +140,6 @@ export const POST = withError(async (request: NextRequest) => {
           episodeScenesStr,
           previousShotContent
         )
-
-        // Call 2: 再基于分镜列表生成生图提示词
-        const shotImagePromptItems =
-          shotList.length > 0
-            ? await callAIExtractImagePrompts(
-              episode.title,
-              episodeCharactersStr,
-              episodeScenesStr,
-              shotList,
-              imageType as ImageType,
-              gridLayout as GridLayout | null
-            )
-            : []
 
         // 资产名称 → ID 映射
         const episodeCharacterMap = new Map(matchedCharacters.map((c) => [c.name.trim(), c.id]))
@@ -218,14 +151,9 @@ export const POST = withError(async (request: NextRequest) => {
         )
         const projectSceneMap = new Map(assetScenes.map((s) => [s.name.trim(), s.id]))
 
-        // 按 index 合并分镜列表与生图提示词
         const shotItems = shotList
           .map((shot, si) => {
-            const imageItem = shotImagePromptItems[si] ?? {}
-
-            const prompt = imageItem.prompt?.trim() || ""
-            // 无 content 且无 prompt 的镜头跳过
-            if (!shot.content && !prompt) return null
+            if (!shot.content) return null
 
             const characterIds = shot.characters
               .map((name) => episodeCharacterMap.get(name) ?? projectCharacterMap.get(name))
@@ -238,21 +166,16 @@ export const POST = withError(async (request: NextRequest) => {
               ?? matchedScene?.id
               ?? null
 
-            const gridPrompts =
-              imageItem.gridPrompts?.length ? JSON.stringify(imageItem.gridPrompts) : null
-
             return {
               shotData: {
                 episodeId: episode.id,
                 index: si,
-                content: shot.content ?? null,
-                prompt,
-                promptEnd: imageItem.promptEnd ?? null,
+                content: shot.content,
+                lastContent: null,
                 negativePrompt: null,
                 duration: shot.duration ?? 3,
-                imageType: imageType as string,
-                gridLayout: imageType === "multi_grid" ? (gridLayout as string | null) : null,
-                gridPrompts,
+                imageType: "keyframe",
+                gridLayout: null,
                 videoPrompt: null,
                 dialogueText: null,
                 actionNote: null,
@@ -266,10 +189,6 @@ export const POST = withError(async (request: NextRequest) => {
 
         await prisma.$transaction(async (tx) => {
           await tx.shot.deleteMany({ where: { episodeId: episode.id } })
-          await tx.episode.update({
-            where: { id: episode.id },
-            data: { shotType: imageType as string },
-          })
           for (const { shotData, characterIds, sceneId, propIds } of shotItems) {
             const shot = await tx.shot.create({ data: shotData })
             const assets = buildShotAssetData(shot.id, characterIds, sceneId, propIds)
@@ -279,10 +198,10 @@ export const POST = withError(async (request: NextRequest) => {
           }
         })
 
-        // 更新 previousShotContent 供下一集 Call 1 使用
-        const lastContent = shotList[shotList.length - 1]?.content?.trim() || ""
-        if (lastContent) {
-          previousShotContent = lastContent
+        // 更新 previousShotContent 供下一集使用
+        const tail = shotList[shotList.length - 1]?.content?.trim() || ""
+        if (tail) {
+          previousShotContent = tail
         }
 
         await markAiTaskSucceeded(task.id)

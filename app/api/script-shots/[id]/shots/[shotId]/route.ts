@@ -11,9 +11,9 @@ export async function PATCH(
 
   const updateData: Record<string, unknown> = {}
   const fields = [
-    "content", "prompt", "negativePrompt", "duration", "imageUrl",
+    "content", "lastContent", "negativePrompt", "duration", "imageUrl",
     "imageStatus", "imageTaskId", "imageErrorMessage",
-    "imageType", "imageUrls", "lastFrameUrl", "promptEnd", "gridLayout", "gridPrompts",
+    "imageType", "imageUrls", "lastFrameUrl", "gridLayout",
     "scriptLineIds", "dialogueText", "actionNote",
     "videoUrl", "videoStatus", "videoPrompt", "videoDuration", "videoTaskId",
     "volume", "speed", "imageHistory", "videoHistory",

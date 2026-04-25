@@ -2,10 +2,7 @@
  * 分镜生成 — Prompt 模板（与业务解耦，便于后续在设置页/项目级配置中编辑）
  */
 
-import type { ImageType, GridLayout } from "@/lib/types"
-import { GRID_LAYOUT_OPTIONS } from "@/lib/types"
-
-// ── 三步拆分：Call 1 / Call 2 / Call 3 ──────────────────────────────────────
+// ── 两步拆分：分镜列表 / 视频提示词 ──────────────────────────────────────────
 
 export interface ShotListItem {
   content: string
@@ -24,11 +21,6 @@ export interface BuildShotListPromptInput {
   previousShotContent: string | null
 }
 
-export interface BuildShotWithImagePromptInput extends BuildShotListPromptInput {
-  imageType: ImageType
-  gridLayout?: GridLayout | null
-}
-
 export interface BuildShotPromptsInput {
   episodeTitle: string
   episodeCharacters: string
@@ -36,7 +28,7 @@ export interface BuildShotPromptsInput {
   shots: ShotListItem[]
 }
 
-// ── Call 1: 分镜列表提取 ─────────────────────────────────────────────────────
+// ── 分镜列表提取 ─────────────────────────────────────────────────────────────
 
 const SHOT_LIST_SYSTEM_PROMPT = `你是一位电影剧和漫剧分镜设计师，擅长将剧本拆解为结构化的分镜列表。
 
@@ -108,142 +100,7 @@ export function buildShotListUserPrompt(input: BuildShotListPromptInput): string
 ${input.scriptContent}`.trim()
 }
 
-
-export function buildShotWithImageUserPrompt(input: BuildShotWithImagePromptInput): string {
-  const previousShotBlock = input.previousShotContent?.trim()
-    ? `## 前一个分集最后一个镜头内容\n${input.previousShotContent.trim()}（请确保本集首个镜头与之自然衔接）\n\n`
-    : ""
-
-  return `${previousShotBlock}## 剧本信息
-- 标题：${input.episodeTitle}
-- 关联场景：${input.episodeScenes || "未指定"}
-- 出场角色：${input.episodeCharacters || "无"}
-- 涉及道具：${input.episodeProps || "无"}
-
-## 剧本内容
-${input.scriptContent}`.trim()
-}
-
-// ── Call 2: 生图提示词生成 ─────────────────────────────────────────────────────
-
-const SHOT_IMAGE_PROMPT_SYSTEM_PREFIX = `你是一位专业的分镜图像提示词设计师。
-
-## 任务
-基于给定分镜列表，为每个镜头生成高质量、可直接用于图像生成模型的提示词。
-
-## 图像提示词规范
-每个图像提示词应尽量覆盖以下维度：
-
-### 1. 景别
-- 大远景、远景、全景、中景、近景、特写、大特写
-
-### 2. 机位角度
-- 平视、俯拍、仰拍、斜角/荷兰角、过肩镜头、主观视角
-
-### 3. 光线设计
-- 光源方向：顺光/侧光/逆光/顶光/底光
-- 光线质感：硬光/柔光
-- 光线色温：暖光（金黄/橙红）/冷光（蓝调/青白）
-- 特殊光效：丁达尔效应/轮廓光/眼神光
-
-### 4. 构图与主体
-- 构图法则：三分法、中心构图、对角线构图、框架构图、引导线构图
-- 人物站位、朝向、动作、表情、服装状态
-
-### 5. 环境与氛围
-- 时间氛围、天气、前景/背景元素、色彩基调、情绪词
-
-## 重要约束
-- 严格按输入分镜顺序输出
-- 输出数量必须与输入分镜数量一致
-- 仅输出 JSON，不要额外解释
-- 使用中文，内容具体可执行
-`
-
-export function buildShotImagePromptSystemPrompt(
-  imageType: ImageType = "keyframe",
-  gridLayout?: GridLayout | null
-): string {
-  return `${SHOT_IMAGE_PROMPT_SYSTEM_PREFIX}\n\n${buildShotImagePromptOutputInstructions(imageType, gridLayout)}`
-}
-
-function buildShotImagePromptOutputInstructions(imageType: ImageType, gridLayout?: GridLayout | null): string {
-  if (imageType === "first_last") {
-    return `## 输出格式
-
-请输出 JSON 数组，数组每一项对应一个分镜：
-
-[
-  {
-    "prompt": "首帧镜头提示词（镜头开始画面）",
-    "promptEnd": "尾帧镜头提示词（镜头结束画面，与首帧形成推进）"
-  }
-]
-
-字段约束：
-1. prompt: 必填
-2. promptEnd: 必填，且与 prompt 有连续变化关系`
-  }
-
-  if (imageType === "multi_grid") {
-    const layout = GRID_LAYOUT_OPTIONS.find((o) => o.value === gridLayout) ?? GRID_LAYOUT_OPTIONS[0]
-    const count = layout.count
-    const gridPromptsExample = Array.from({ length: count }, (_, i) => `"子帧${i + 1}提示词"`).join(", ")
-    return `## 输出格式
-
-请输出 JSON 数组，数组每一项对应一个分镜：
-
-[
-  {
-    "gridPrompts": [${gridPromptsExample}]
-  }
-]
-
-字段约束：
-1. gridPrompts: 必填
-2. gridPrompts 数组长度必须为 ${count}（对应 ${layout.label} 宫格布局）`
-  }
-
-  return `## 输出格式
-
-请输出 JSON 字符串数组，数组每一项对应一个分镜：
-
-[
-  "镜头1图像提示词",
-  "镜头2图像提示词"
-]
-
-字段约束：
-1. 每个字符串必须是完整图像提示词
-2. 数组长度必须与输入分镜数量一致`
-}
-
-
-
-export function buildShotImagePromptUserPrompt(input: BuildShotPromptsInput): string {
-  const shotsJson = JSON.stringify(
-    input.shots.map((s, i) => ({
-      index: i + 1,
-      content: s.content,
-      characters: s.characters,
-      scene: s.scene,
-      props: s.props,
-    })),
-    null,
-    2
-  )
-  return `## 分集信息
-- 标题：${input.episodeTitle}
-- 出场角色：${input.episodeCharacters || "无"}
-- 关联场景：${input.episodeScenes || "未指定"}
-
-## 分镜列表（共 ${input.shots.length} 个镜头）
-${shotsJson}
-
-请为以上每个镜头按顺序生成图像提示词，输出数组长度必须为 ${input.shots.length}。`.trim()
-}
-
-// ── Call 3: 视频提示词生成 ────────────────────────────────────────────────────
+// ── 视频提示词生成 ────────────────────────────────────────────────────────────
 
 const SHOT_VIDEO_PROMPT_SYSTEM = `你是一位专业的视频提示词设计师，擅长为分镜镜头生成高质量的视频生成提示词。
 

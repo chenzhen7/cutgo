@@ -6,9 +6,7 @@ interface GenerateImageRequest {
   shotId: string
   imageType?: "keyframe" | "first_last" | "multi_grid"
   content?: string
-  prompt?: string
-  promptEnd?: string
-  gridPrompts?: string[]
+  lastContent?: string | null
   gridLayout?: string
   negativePrompt?: string
   aspectRatio?: string

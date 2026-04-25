@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { throwCutGoError, withError } from "@/lib/api-error"
 import { buildShotAssetData, extractShotAssetIds } from "@/lib/utils"
 
-export async function POST(
+export const POST = withError(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id: episodeId } = await params
   const body = await request.json()
 
   const {
     content,
-    prompt,
+    lastContent,
     negativePrompt,
     duration = 3,
     scriptLineIds,
@@ -25,11 +26,8 @@ export async function POST(
     speed = 1,
   } = body
 
-  if (!prompt) {
-    return NextResponse.json(
-      { error: "prompt is required" },
-      { status: 400 }
-    )
+  if (!content) {
+    throwCutGoError("MISSING_PARAMS", "缺少分镜描述")
   }
 
   const existingShots = await prisma.shot.findMany({
@@ -57,8 +55,8 @@ export async function POST(
     data: {
       episodeId,
       index: newIndex,
-      content: content || null,
-      prompt,
+      content,
+      lastContent: lastContent || null,
       negativePrompt: negativePrompt || null,
       duration,
       scriptLineIds: scriptLineIds || null,
@@ -87,4 +85,4 @@ export async function POST(
       shotAssets: undefined,
     }))
   )
-}
+})

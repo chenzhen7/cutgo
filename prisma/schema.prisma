@@ -206,10 +206,10 @@ model Shot {
 
   /// 镜头序号
   index          Int
-  /// 分镜内容描述（剧情和画面意图）
+  /// 分镜内容描述（首帧/keyframe/multi_grid 共用）
   content        String?
-  /// 分镜提示词（用于生图）
-  prompt         String
+  /// first_last：尾帧分镜描述（为空时使用首帧图作为尾帧）
+  lastContent    String?
   negativePrompt String?
   /// 镜头时长
   duration       Float  @default(3)
@@ -225,12 +225,8 @@ model Shot {
   imageUrls      String?
   /// first_last：尾帧图片 URL
   lastFrameUrl   String?
-  /// first_last：尾帧提示词
-  promptEnd      String?
   /// multi_grid：布局如 2x2、1x3
   gridLayout     String?
-  /// multi_grid：每格提示词 JSON 数组
-  gridPrompts    String?
 
   scriptLineIds String?
   dialogueText  String?
